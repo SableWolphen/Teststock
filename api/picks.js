@@ -327,7 +327,7 @@ export default async function handler(req,res){
     const stockQualified=!hardNo&&best.score>=(segment==='penny'?88:86)&&historyOkay&&best.direction==='BULLISH'&&best.price>best.ma200&&best.m60>0&&financialEvidence;
     const action=hardNo?'WAIT':stockQualified?'TRADE CANDIDATE':'WATCH';
     const shares=Math.max(0,Math.floor(budget/Math.max(best.entry,.01)));
-    const stockPlan={shares,estimatedCost:round(shares*best.entry),maxLossAtStop:round(shares*Math.max(0,best.entry-best.stop)),holdingStyle:'Swing / hold while trend remains valid'};
+    const stockPlan={shares,estimatedCost:round(shares*best.entry),maxLossAtStop:round(shares*Math.max(0,best.entry-best.stop)),holdingStyle:'Position trade: usually several weeks to several months',reviewCadence:'Weekly'};
     const reasons=[];
     reasons.push(`${best.direction.toLowerCase()} setup scored ${best.score}/100`);
     if(best.direction==='BULLISH'&&best.price>best.ma20&&best.price>best.ma50)reasons.push('Price is above 20-day and 50-day trends');
@@ -359,8 +359,8 @@ export default async function handler(req,res){
       dataSources:['Alpaca IEX market prices','Alpaca News','SEC EDGAR company filings and XBRL financial statements','SPY/QQQ market regime','Sector and breadth history','Teststock tracked outcomes'],
       action,
       featured:{...best,grade:grade(best.score),option,stockPlan,alternatives:best.options.slice(1,4),reasons,warnings,
-        setup:action==='TRADE CANDIDATE'?`Qualified ${segment==='penny'?'liquid penny-stock':'stock'} setup for shares${option?' with an optional defined-risk option':''}`:action==='WATCH'?`Interesting stock, but the buy gates are not fully aligned yet`:'No trade: protection rules blocked the setup',
-        instruction:action==='TRADE CANDIDATE'?`Buy only near the trigger around ${best.entry}; use the stop and hold while the trend remains valid.`:action==='WATCH'?`Watch ${best.entry}; do not force an entry.`:'Keep cash. Re-scan later.',
+        setup:action==='TRADE CANDIDATE'?`Qualified stock position for a multi-week or multi-month hold`:action==='WATCH'?`Interesting stock, but the position-trade gates are not fully aligned yet`:'No position: protection rules blocked the setup',
+        instruction:action==='TRADE CANDIDATE'?`Buy only near ${best.entry}; review weekly and exit if the trend breaks below ${best.stop}.`:action==='WATCH'?`Watch ${best.entry}; do not force an entry.`:'Keep cash. Re-scan later.',
         exitPlan:{stockStop:best.stop,target1:best.target1,target2:best.target2,optionTakeProfit:'Consider scaling near +50%; reassess near +100% rather than waiting for max profit',timeStop:option?`Reassess with 21+ DTE remaining; avoid drifting into expiration.`:'N/A'}},
       cards,
       protection:['Stocks are the primary recommendation','No 0DTE/ultra-short default trades','Hard spending budget','Historical stock-signal validation','Penny-stock price and liquidity gates','Market-regime gate','Catalyst/news risk penalty','No-trade is an allowed result']
