@@ -6,6 +6,9 @@ on:
     paths:
       - 'docs/**'
       - '.github/workflows/pages.yml'
+  workflow_run:
+    workflows: ['Refresh Teststock picks']
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -19,13 +22,16 @@ concurrency:
 
 jobs:
   deploy:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout latest main
         uses: actions/checkout@v4
+        with:
+          ref: main
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:
