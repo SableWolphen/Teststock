@@ -318,15 +318,22 @@ export default async function handler(req,res){
       return {...s,score:Math.round(clamp(adjusted,0,100)),options:opt.choices,contractsScanned:opt.contractsScanned};
     }).sort((a,b)=>b.score-a.score);
 
-    const best=tested[0],option=best.options[0]||null;
-    const directionConflict=(regime.label==='RISK ON'&&best.direction==='BEARISH')||(regime.label==='RISK OFF'&&best.direction==='BULLISH');
-    const historyOkay=best.validation.samples>=6&&best.validation.winRate>=52;
+    const conflicts=x=>(regime.label==='RISK ON'&&x.direction==='BEARISH')||(regime.label==='RISK OFF'&&x.direction==='BULLISH');
+    const qualifies=x=>{
+      const historyOkay=x.validation.samples>=6&&x.validation.winRate>=52;
+      const pennyLiquid=segment!=='penny'||(x.avgVolume>=1000000&&x.dollarVolume>=3000000&&x.atrPct<=15);
+      const financialEvidence=x.fundamentals?.coverage>=4&&x.fundamentals?.score>=58;
+      const hardBlock=x.score<76||x.news.risk==='HIGH'||conflicts(x)||!pennyLiquid||(x.fundamentals?.coverage>=4&&x.fundamentals?.score<42);
+      return !hardBlock&&x.score>=(segment==='penny'?88:86)&&historyOkay&&x.direction==='BULLISH'&&x.price>x.ma200&&x.m60>0&&financialEvidence;
+    };
+    const qualified=tested.filter(qualifies).slice(0,4),best=qualified[0]||tested[0],option=null;
+    const directionConflict=conflicts(best),historyOkay=best.validation.samples>=6&&best.validation.winRate>=52;
     const pennyLiquid=segment!=='penny'||(best.avgVolume>=1000000&&best.dollarVolume>=3000000&&best.atrPct<=15);
     const financialEvidence=best.fundamentals?.coverage>=4&&best.fundamentals?.score>=58;
     const hardNo=best.score<76||best.news.risk==='HIGH'||directionConflict||!pennyLiquid||(best.fundamentals?.coverage>=4&&best.fundamentals?.score<42);
-    const stockQualified=!hardNo&&best.score>=(segment==='penny'?88:86)&&historyOkay&&best.direction==='BULLISH'&&best.price>best.ma200&&best.m60>0&&financialEvidence;
+    const stockQualified=qualifies(best);
     const action=hardNo?'WAIT':stockQualified?'TRADE CANDIDATE':'WATCH';
-    const shares=Math.max(0,Math.floor(budget/Math.max(best.entry,.01)));
+    const primaryAllocation=round(budget/Math.max(1,qualified.length)),shares=Math.max(0,round(primaryAllocation/Math.max(best.entry,.01),4));
     const stockPlan={shares,estimatedCost:round(shares*best.entry),maxLossAtStop:round(shares*Math.max(0,best.entry-best.stop)),holdingStyle:'Position trade: usually several weeks to several months',reviewCadence:'Weekly'};
     const reasons=[];
     reasons.push(`${best.direction.toLowerCase()} setup scored ${best.score}/100`);
@@ -352,12 +359,17 @@ export default async function handler(req,res){
     if(best.fundamentals?.shareDilution>6)warnings.push(`Share count increased ${best.fundamentals.shareDilution}% in the latest annual comparison`);
 
     const cards=tested.slice(1,5).map(x=>({symbol:x.symbol,score:x.score,price:x.price,direction:x.direction,label:x.options.length?'Alternate':'Stock watch',risk:x.atrPct>5?'High':'Medium',tag:`${x.m20}% 1M · RSI ${x.rsi} · ${x.validation.winRate??'—'}% hist`,hasOption:Boolean(x.options.length)}));
+    const recommendations=qualified.map((x,rank)=>{
+      const allocation=round(budget/qualified.length),shares=Math.max(0,round(allocation/Math.max(x.entry,.01),4));
+      return {rank:rank+1,symbol:x.symbol,price:x.price,score:x.score,entry:x.entry,stop:x.stop,target1:x.target1,target2:x.target2,allocation,shares,estimatedCost:round(shares*x.entry),maxLossAtStop:round(shares*Math.max(0,x.entry-x.stop)),fundamentals:x.fundamentals,validation:x.validation,holdingStyle:'Position trade: several weeks to several months',reviewCadence:'Weekly'};
+    });
     res.setHeader('Cache-Control','s-maxage=120, stale-while-revalidate=180');
     res.status(200).json({
       asOf:new Date().toISOString(),market:session.label,budget,mode,segment,session,regime,
       dataQuality:{stockFeed:'IEX',news:'Alpaca News',fundamentals:'SEC EDGAR XBRL',history:'Alpaca bars + Teststock outcomes'},
       dataSources:['Alpaca IEX market prices','Alpaca News','SEC EDGAR company filings and XBRL financial statements','SPY/QQQ market regime','Sector and breadth history','Teststock tracked outcomes'],
       action,
+      recommendations,
       featured:{...best,grade:grade(best.score),option,stockPlan,alternatives:best.options.slice(1,4),reasons,warnings,
         setup:action==='TRADE CANDIDATE'?`Qualified stock position for a multi-week or multi-month hold`:action==='WATCH'?`Interesting stock, but the position-trade gates are not fully aligned yet`:'No position: protection rules blocked the setup',
         instruction:action==='TRADE CANDIDATE'?`Buy only near ${best.entry}; review weekly and exit if the trend breaks below ${best.stop}.`:action==='WATCH'?`Watch ${best.entry}; do not force an entry.`:'Keep cash. Re-scan later.',
