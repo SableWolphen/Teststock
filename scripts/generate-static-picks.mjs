@@ -98,7 +98,7 @@ function intradayCheck(symbol,direction,intra){
 function calibrationFor(data,calibration){const p=data.featured||{},k=`${p.direction||'BULLISH'}:${scoreBucket(p.score||0)}`;return {key:k,...(calibration.groups[k]||{samples:0,winRate:null,avg20dMove:null,median20dMove:null})};}
 function beginnerDecision(data,action,p){
   const stockQualified=action==='TRADE CANDIDATE'&&p.direction==='BULLISH'&&Number(p.stockPlan?.shares)>0;
-  const optionQualified=stockQualified&&p.option&&Number(p.option.maxRisk)>0&&Number(p.option.maxRisk)<=Number(data.budget||0);
+  const optionQualified=Boolean(stockQualified&&p.option&&Number(p.option.maxRisk)>0&&Number(p.option.maxRisk)<=Number(data.budget||0));
   return {
     defaultPath:'stock',stockAction:stockQualified?'BUY STOCK':action==='WATCH'?'WATCH':'DO NOTHING',
     optionsAction:optionQualified?'BUY OPTION':stockQualified?'BUY STOCK':action==='WATCH'?'WATCH':'DO NOTHING',
