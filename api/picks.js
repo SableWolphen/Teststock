@@ -260,7 +260,8 @@ export default async function handler(req,res){
       return {...s,score:Math.round(clamp(adjusted,0,100)),news,validation};
     }).sort((a,b)=>b.score-a.score);
 
-    const optionTargets=segment==='penny'?[]:prelim.slice(0,4);
+    // Long-term mode recommends shares only. Options are intentionally not scanned.
+    const optionTargets=[];
     const optionResults=await Promise.all(optionTargets.map(async s=>{
       try{return [s.symbol,await optionCandidates(s.symbol,s.price,budget,mode,s.direction,s.validation,requestedFeed)];}
       catch(error){return [s.symbol,{contractsScanned:0,choices:[],error:error.message}];}
