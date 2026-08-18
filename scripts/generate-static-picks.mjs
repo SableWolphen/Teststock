@@ -96,6 +96,18 @@ function intradayCheck(symbol,direction,intra){
   return {confirm,label:confirm?'CONFIRMS':'NOT CONFIRMED',bars:xs.length,current:round(cur),vwap:round(vwap),openingRangeHigh:round(orHigh),openingRangeLow:round(orLow)};
 }
 function calibrationFor(data,calibration){const p=data.featured||{},k=`${p.direction||'BULLISH'}:${scoreBucket(p.score||0)}`;return {key:k,...(calibration.groups[k]||{samples:0,winRate:null,avg20dMove:null,median20dMove:null})};}
+function beginnerDecision(data,action,p){
+  const stockQualified=action==='TRADE CANDIDATE'&&p.direction==='BULLISH'&&Number(p.stockPlan?.shares)>0;
+  const optionQualified=stockQualified&&p.option&&Number(p.option.maxRisk)>0&&Number(p.option.maxRisk)<=Number(data.budget||0);
+  return {
+    defaultPath:'stock',stockAction:stockQualified?'BUY STOCK':action==='WATCH'?'WATCH':'DO NOTHING',
+    optionsAction:optionQualified?'BUY OPTION':stockQualified?'BUY STOCK':action==='WATCH'?'WATCH':'DO NOTHING',
+    ticker:p.symbol,currentPrice:round(p.price),maxAllocation:stockQualified?round(p.stockPlan.estimatedCost):0,
+    buyTrigger:round(p.entry),invalidation:round(p.stop),target1:round(p.target1),target2:round(p.target2),
+    holdingGuidance:p.stockPlan?.holdingStyle||'Position trade: usually several weeks to several months',reviewCadence:p.stockPlan?.reviewCadence||'Weekly',
+    stockQualified,optionQualified,noGuarantee:true,autoExecution:false
+  };
+}
 function enhance(data,ctx){
   const p=data.featured;if(!p)return data;
   const sector=sectorCheck(p.symbol,p.direction,ctx.daily),intraday=intradayCheck(p.symbol,p.direction,ctx.intraday),cal=calibrationFor(data,ctx.calibration),b=ctx.breadth;
@@ -120,7 +132,8 @@ function enhance(data,ctx){
   if(sector.confirm)reasons.push(`${sector.proxy} confirms the setup direction`);
   if(intraday.confirm)reasons.push('15-minute price confirms VWAP/opening-range direction');
   if(cal.samples>=20)reasons.push(`Past ${cal.key} signals: ${cal.winRate}% directional win rate across ${cal.samples} samples`);
-  return {...data,action,learning,featured:{...p,learningScore,reasons,warnings,setup:action==='TRADE CANDIDATE'?`Elite ${p.direction.toLowerCase()} setup passed trend, option, sector, intraday and historical gates`:action==='WATCH'?`Promising ${p.direction.toLowerCase()} setup, but the learning gates are not fully aligned`:'No trade: one or more protection/learning gates blocked the setup'}};
+  const featured={...p,learningScore,reasons,warnings,setup:action==='TRADE CANDIDATE'?`Elite ${p.direction.toLowerCase()} setup passed trend, option, sector, intraday and historical gates`:action==='WATCH'?`Promising ${p.direction.toLowerCase()} setup, but the learning gates are not fully aligned`:'No trade: one or more protection/learning gates blocked the setup'};
+  return {...data,action,learning,featured,beginnerDecision:beginnerDecision(data,action,featured)};
 }
 
 function runHandler(budget,segment='core') {
@@ -153,7 +166,8 @@ for (const segment of ['core','penny']) for (const budget of budgets) {
   try {
     const raw = await runHandler(budget,segment),data=segment==='core'?enhance(raw,ctx):{
       ...raw,
-      learning:{score:raw.featured?.score??0,confirmations:{confirmed:raw.featured?.validation?.winRate>=52?1:0,total:1},calibration:{samples:raw.featured?.validation?.samples??0,winRate:raw.featured?.validation?.winRate??null},method:'Historical validation of the selected penny stock; strict price and liquidity gates also apply.'}
+      learning:{score:raw.featured?.score??0,confirmations:{confirmed:raw.featured?.validation?.winRate>=52?1:0,total:1},calibration:{samples:raw.featured?.validation?.samples??0,winRate:raw.featured?.validation?.winRate??null},method:'Historical validation of the selected penny stock; strict price and liquidity gates also apply.'},
+      beginnerDecision:raw.featured?beginnerDecision(raw,raw.action,raw.featured):null
     };
     data.generatedBy = 'GitHub Actions';data.staticBudget = budget;data.freeStack = true;
     const file=segment==='penny'?`latest-penny-${budget}.json`:`latest-${budget}.json`;
@@ -177,4 +191,5 @@ await fs.writeFile(historyFile,JSON.stringify(history,null,2));
 const learningFile={generatedAt:new Date().toISOString(),breadth:marketBreadth,calibration,history:historySummary(history)};
 await fs.writeFile(path.join(outDir,'learning.json'),JSON.stringify(learningFile,null,2));
 await fs.writeFile(path.join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+
 
