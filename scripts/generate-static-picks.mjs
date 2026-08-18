@@ -123,9 +123,9 @@ function enhance(data,ctx){
   return {...data,action,learning,featured:{...p,learningScore,reasons,warnings,setup:action==='TRADE CANDIDATE'?`Elite ${p.direction.toLowerCase()} setup passed trend, option, sector, intraday and historical gates`:action==='WATCH'?`Promising ${p.direction.toLowerCase()} setup, but the learning gates are not fully aligned`:'No trade: one or more protection/learning gates blocked the setup'}};
 }
 
-function runHandler(budget) {
+function runHandler(budget,segment='core') {
   return new Promise((resolve, reject) => {
-    const req = { query: { budget: String(budget), mode: 'aggressive' } };
+    const req = { query: { budget: String(budget), mode: 'aggressive', segment } };
     const res = {code:200,headers:{},setHeader(name,value){this.headers[name]=value;},status(code){this.code=code;return this;},json(body){if(this.code>=400)reject(new Error(body?.error||`Scanner failed with ${this.code}`));else resolve(body);}};
     Promise.resolve(handler(req, res)).catch(reject);
   });
@@ -147,28 +147,34 @@ console.log('Loading shared free historical + intraday context…');
 const [daily,intraday]=await Promise.all([fetchBars('1Day',startDaily,allSymbols,5),fetchBars('15Min',startIntra,[...universe,'SPY','QQQ'],3)]);
 const calibration=buildCalibration(daily),marketBreadth=breadth(daily),ctx={daily,intraday,calibration,breadth:marketBreadth};
 
-const manifest = { generatedAt: new Date().toISOString(), budgets: [], freeStack:true };
+const manifest = { generatedAt: new Date().toISOString(), budgets: [], freeStack:true, segments:['core','penny'] };
 const generated=[];
-for (const budget of budgets) {
+for (const segment of ['core','penny']) for (const budget of budgets) {
   try {
-    const raw = await runHandler(budget),data=enhance(raw,ctx);
+    const raw = await runHandler(budget,segment),data=segment==='core'?enhance(raw,ctx):{
+      ...raw,
+      learning:{score:raw.featured?.score??0,confirmations:{confirmed:raw.featured?.validation?.winRate>=52?1:0,total:1},calibration:{samples:raw.featured?.validation?.samples??0,winRate:raw.featured?.validation?.winRate??null},method:'Historical validation of the selected penny stock; strict price and liquidity gates also apply.'}
+    };
     data.generatedBy = 'GitHub Actions';data.staticBudget = budget;data.freeStack = true;
-    await fs.writeFile(path.join(outDir, `latest-${budget}.json`), JSON.stringify(data, null, 2));
-    generated.push(data);manifest.budgets.push({ budget, ok: true, asOf: data.asOf, action:data.action, symbol:data.featured?.symbol });
-    console.log(`Generated $${budget} scan: ${data.action} ${data.featured?.symbol || ''} · learning ${data.learning?.score ?? '—'}`);
+    const file=segment==='penny'?`latest-penny-${budget}.json`:`latest-${budget}.json`;
+    await fs.writeFile(path.join(outDir,file), JSON.stringify(data, null, 2));
+    generated.push(data);manifest.budgets.push({ segment,budget,ok:true,asOf:data.asOf,action:data.action,symbol:data.featured?.symbol });
+    console.log(`Generated ${segment} $${budget} scan: ${data.action} ${data.featured?.symbol || ''} · learning ${data.learning?.score ?? '—'}`);
   } catch (error) {
-    const failure = { generatedAt: new Date().toISOString(), budget, error: error.message };
-    await fs.writeFile(path.join(outDir, `latest-${budget}.json`), JSON.stringify(failure, null, 2));
-    manifest.budgets.push({ budget, ok: false, error: error.message });console.error(`$${budget} scan failed:`, error.message);
+    const failure = { generatedAt:new Date().toISOString(),segment,budget,error:error.message };
+    const file=segment==='penny'?`latest-penny-${budget}.json`:`latest-${budget}.json`;
+    await fs.writeFile(path.join(outDir,file),JSON.stringify(failure,null,2));
+    manifest.budgets.push({segment,budget,ok:false,error:error.message});console.error(`${segment} $${budget} scan failed:`,error.message);
   }
 }
 
 const historyFile=path.join(outDir,'trade-history.json');
 let history=updateOutcomes(await readJson(historyFile,[]),daily);
 const today=new Date().toISOString().slice(0,10);
-for(const d of generated){if(d.action!=='TRADE CANDIDATE'||!d.featured?.option)continue;const p=d.featured,o=p.option,id=`${today}-${d.budget}-${p.symbol}-${optionId(o)}`;if(history.some(x=>x.id===id))continue;history.push({id,date:today,createdAt:d.asOf,budget:d.budget,symbol:p.symbol,direction:p.direction,entryStock:p.price,trigger:p.entry,stop:p.stop,target1:p.target1,target2:p.target2,setupScore:p.score,learningScore:p.learningScore,option:{kind:o.kind,side:o.side,expiry:o.expiry,longStrike:o.longStrike,shortStrike:o.shortStrike,maxRisk:o.maxRisk,maxProfit:o.maxProfit,probProfit:o.probProfit,iv:o.iv,delta:o.delta},status:'OPEN'});}
+for(const d of generated){if(d.action!=='TRADE CANDIDATE'||!d.featured)continue;const p=d.featured,o=p.option,id=`${today}-${d.segment||'core'}-${d.budget}-${p.symbol}-${optionId(o)}`;if(history.some(x=>x.id===id))continue;history.push({id,date:today,createdAt:d.asOf,segment:d.segment||'core',budget:d.budget,symbol:p.symbol,direction:p.direction,entryStock:p.price,trigger:p.entry,stop:p.stop,target1:p.target1,target2:p.target2,setupScore:p.score,learningScore:p.learningScore,stockPlan:p.stockPlan,option:o?{kind:o.kind,side:o.side,expiry:o.expiry,longStrike:o.longStrike,shortStrike:o.shortStrike,maxRisk:o.maxRisk,maxProfit:o.maxProfit,probProfit:o.probProfit,iv:o.iv,delta:o.delta}:null,status:'OPEN'});}
 history=history.slice(-400);
 await fs.writeFile(historyFile,JSON.stringify(history,null,2));
 const learningFile={generatedAt:new Date().toISOString(),breadth:marketBreadth,calibration,history:historySummary(history)};
 await fs.writeFile(path.join(outDir,'learning.json'),JSON.stringify(learningFile,null,2));
 await fs.writeFile(path.join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+
