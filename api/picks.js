@@ -74,10 +74,11 @@ function stockMetrics(symbol,bars){
     const risk=Math.max(.01,stop-entry);
     target1=round(entry-risk*1.5); target2=round(entry-risk*2.6);
   }
+  const avgVolume=Math.round(avg(bars.slice(-20).map(b=>Number(b.v||0)))),dollarVolume=Math.round(avgVolume*last);
   return {symbol,price:round(last),score,bullScore:Math.round(clamp(bull,0,100)),bearScore:Math.round(clamp(bear,0,100)),direction,
     m20:round(m20,1),m60:round(m60,1),rsi:round(r,1),atr:round(a),atrPct:round(aPct,1),volatility:round(vol,1),
     ma20:round(ma20),ma50:round(ma50),ma200:round(ma200),distHigh:round(distHigh,1),distLow:round(distLow,1),
-    entry,stop,target1,target2,rr:2.6};
+    entry,stop,target1,target2,rr:2.6,avgVolume,dollarVolume};
 }
 function regimeFrom(bySymbol){
   const parts=BENCHMARKS.map(s=>stockMetrics(s,bySymbol[s])).filter(Boolean);
@@ -139,6 +140,18 @@ async function marketSession(){
     const raw=await alpaca('https://paper-api.alpaca.markets/v2/clock',{timeout:5000});
     return {isOpen:Boolean(raw.is_open),timestamp:raw.timestamp,nextOpen:raw.next_open,nextClose:raw.next_close,label:raw.is_open?'OPEN':'CLOSED'};
   }catch{return {isOpen:null,label:'UNKNOWN'};}
+}
+async function discoverPennyUniverse(){
+  const raw=await alpaca('https://data.alpaca.markets/v1beta1/screener/stocks/most-actives?top=100&by=volume');
+  const symbols=(raw.most_actives||raw.mostActives||[]).map(x=>x.symbol).filter(Boolean);
+  if(!symbols.length)throw new Error('No active penny-stock candidates returned');
+  const q=new URLSearchParams({symbols:symbols.join(','),feed:'iex'});
+  const snaps=await alpaca(`https://data.alpaca.markets/v2/stocks/snapshots?${q}`);
+  return symbols.filter(symbol=>{
+    const s=snaps[symbol]||{},price=Number(s.latestTrade?.p||s.latest_trade?.p||s.dailyBar?.c||s.daily_bar?.c||0);
+    const volume=Number(s.dailyBar?.v||s.daily_bar?.v||0);
+    return price>=1&&price<=5&&volume>=1000000;
+  }).slice(0,25);
 }
 async function fetchChain(symbol,stockPrice,mode,feed){
   const now=new Date(),minDte=mode==='aggressive'?28:42,maxDte=mode==='aggressive'?90:120;
@@ -216,15 +229,18 @@ function grade(n){return n>=92?'A+':n>=86?'A':n>=80?'A-':n>=74?'B+':n>=68?'B':'C
 
 export default async function handler(req,res){
   try{
-    const budget=clamp(Number(req.query?.budget)||200,25,5000),mode=req.query?.mode==='balanced'?'balanced':'aggressive';
+    const budget=clamp(Number(req.query?.budget)||200,25,5000),mode=req.query?.mode==='balanced'?'balanced':'aggressive',segment=req.query?.segment==='penny'?'penny':'core';
     const requestedFeed=(process.env.ALPACA_OPTIONS_FEED||'indicative').toLowerCase()==='opra'?'opra':'indicative';
-    const start=new Date(Date.now()-420*86400000).toISOString().slice(0,10),symbols=[...UNIVERSE,...BENCHMARKS].join(',');
+    const selectedUniverse=segment==='penny'?await discoverPennyUniverse():UNIVERSE;
+    if(segment==='penny'&&!selectedUniverse.length)throw new Error('No liquid $1-$5 penny stocks passed today');
+    const start=new Date(Date.now()-420*86400000).toISOString().slice(0,10),symbols=[...selectedUniverse,...BENCHMARKS].join(',');
     const [raw,session]=await Promise.all([
       alpaca(`https://data.alpaca.markets/v2/stocks/bars?symbols=${symbols}&timeframe=1Day&start=${start}&limit=10000&adjustment=all&feed=iex`),
       marketSession()
     ]);
     const by=raw.bars||{},regime=regimeFrom(by);
-    let ranked=UNIVERSE.map(s=>stockMetrics(s,by[s])).filter(Boolean).sort((a,b)=>b.score-a.score);
+    let ranked=selectedUniverse.map(s=>stockMetrics(s,by[s])).filter(Boolean).sort((a,b)=>b.score-a.score);
+    if(segment==='penny')ranked=ranked.filter(x=>x.price>=1&&x.price<=5&&x.avgVolume>=1000000&&x.dollarVolume>=3000000&&x.atrPct<=15);
     if(!ranked.length)throw new Error('No stock history returned');
 
     const top=ranked.slice(0,8);
@@ -240,7 +256,7 @@ export default async function handler(req,res){
       return {...s,score:Math.round(clamp(adjusted,0,100)),news,validation};
     }).sort((a,b)=>b.score-a.score);
 
-    const optionTargets=prelim.slice(0,4);
+    const optionTargets=segment==='penny'?[]:prelim.slice(0,4);
     const optionResults=await Promise.all(optionTargets.map(async s=>{
       try{return [s.symbol,await optionCandidates(s.symbol,s.price,budget,mode,s.direction,s.validation,requestedFeed)];}
       catch(error){return [s.symbol,{contractsScanned:0,choices:[],error:error.message}];}
@@ -254,8 +270,13 @@ export default async function handler(req,res){
 
     const best=tested[0],option=best.options[0]||null;
     const directionConflict=(regime.label==='RISK ON'&&best.direction==='BEARISH')||(regime.label==='RISK OFF'&&best.direction==='BULLISH');
-    const hardNo=best.score<76||best.news.risk==='HIGH'||directionConflict;
-    const action=hardNo?'WAIT':option&&best.score>=82&&option.qualityScore>=58?'TRADE CANDIDATE':'WATCH';
+    const historyOkay=best.validation.samples>=6&&best.validation.winRate>=52;
+    const pennyLiquid=segment!=='penny'||(best.avgVolume>=1000000&&best.dollarVolume>=3000000&&best.atrPct<=15);
+    const hardNo=best.score<76||best.news.risk==='HIGH'||directionConflict||!pennyLiquid;
+    const stockQualified=!hardNo&&best.score>=(segment==='penny'?88:86)&&historyOkay&&best.direction==='BULLISH';
+    const action=hardNo?'WAIT':stockQualified?'TRADE CANDIDATE':'WATCH';
+    const shares=Math.max(0,Math.floor(budget/Math.max(best.entry,.01)));
+    const stockPlan={shares,estimatedCost:round(shares*best.entry),maxLossAtStop:round(shares*Math.max(0,best.entry-best.stop)),holdingStyle:'Swing / hold while trend remains valid'};
     const reasons=[];
     reasons.push(`${best.direction.toLowerCase()} setup scored ${best.score}/100`);
     if(best.direction==='BULLISH'&&best.price>best.ma20&&best.price>best.ma50)reasons.push('Price is above 20-day and 50-day trends');
@@ -276,15 +297,16 @@ export default async function handler(req,res){
     const cards=tested.slice(1,5).map(x=>({symbol:x.symbol,score:x.score,price:x.price,direction:x.direction,label:x.options.length?'Alternate':'Stock watch',risk:x.atrPct>5?'High':'Medium',tag:`${x.m20}% 1M · RSI ${x.rsi} · ${x.validation.winRate??'—'}% hist`,hasOption:Boolean(x.options.length)}));
     res.setHeader('Cache-Control','s-maxage=120, stale-while-revalidate=180');
     res.status(200).json({
-      asOf:new Date().toISOString(),market:session.label,budget,mode,session,regime,
+      asOf:new Date().toISOString(),market:session.label,budget,mode,segment,session,regime,
       dataQuality:{stockFeed:'IEX',optionsFeed:requestedFeed.toUpperCase(),optionsOfficial:requestedFeed==='opra',news:'Alpaca News'},
       action,
-      featured:{...best,grade:grade(best.score),option,alternatives:best.options.slice(1,4),reasons,warnings,
-        setup:action==='TRADE CANDIDATE'?`Qualified ${best.direction.toLowerCase()} defined-risk setup`:action==='WATCH'?`Good ${best.direction.toLowerCase()} stock setup, but entry/options are not strong enough yet`:'No trade: protection rules blocked the setup',
-        instruction:action==='TRADE CANDIDATE'?`Only consider the ${best.direction.toLowerCase()} trigger near ${best.entry} while the setup remains valid.`:action==='WATCH'?`Watch ${best.entry}; do not force an entry.`:'Keep cash. Re-scan later.',
+      featured:{...best,grade:grade(best.score),option,stockPlan,alternatives:best.options.slice(1,4),reasons,warnings,
+        setup:action==='TRADE CANDIDATE'?`Qualified ${segment==='penny'?'liquid penny-stock':'stock'} setup for shares${option?' with an optional defined-risk option':''}`:action==='WATCH'?`Interesting stock, but the buy gates are not fully aligned yet`:'No trade: protection rules blocked the setup',
+        instruction:action==='TRADE CANDIDATE'?`Buy only near the trigger around ${best.entry}; use the stop and hold while the trend remains valid.`:action==='WATCH'?`Watch ${best.entry}; do not force an entry.`:'Keep cash. Re-scan later.',
         exitPlan:{stockStop:best.stop,target1:best.target1,target2:best.target2,optionTakeProfit:'Consider scaling near +50%; reassess near +100% rather than waiting for max profit',timeStop:option?`Reassess with 21+ DTE remaining; avoid drifting into expiration.`:'N/A'}},
       cards,
-      protection:['No 0DTE/ultra-short default trades','Hard max-loss budget','Bullish and bearish structure selection','Long option + debit-spread comparison','Full option-chain pagination','Expected-move vs breakeven filter','Probability-of-profit model','Historical stock-signal validation','Wide-spread rejection','IV cap','Market-regime gate','Catalyst/news risk penalty','No-trade is an allowed result']
+      protection:['Stocks are the primary recommendation','No 0DTE/ultra-short default trades','Hard spending budget','Historical stock-signal validation','Penny-stock price and liquidity gates','Market-regime gate','Catalyst/news risk penalty','No-trade is an allowed result']
     });
   }catch(error){res.status(500).json({error:error.name==='AbortError'?'Market-data request timed out':error.message});}
 }
+
