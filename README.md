@@ -7,16 +7,17 @@ A mobile-first stock + options decision engine for finding small, defined-risk o
 The home screen answers one question first: **what should I do today?**
 
 It returns one of:
-- **TRADE CANDIDATE** — the stock, entry trigger, invalidation, targets, and a defined-risk option passed the filters.
+- **TRADE CANDIDATE** — the stock, direction, entry trigger, invalidation, targets, and a qualified option structure passed the filters.
 - **WATCH** — the underlying may be good, but timing/options are not good enough yet.
-- **WAIT** — keep cash; market regime, catalyst risk, trend quality, or option pricing failed the protection rules.
+- **WAIT** — keep cash; market regime, catalyst risk, trend quality, historical validation, or option pricing failed the protection rules.
 
 ## Decision engine
 
 ### Market regime
 - SPY + QQQ trend scoring
 - Risk-on / mixed / risk-off gate
-- Aggressive bullish ideas are penalized or blocked in hostile market conditions
+- Bullish and bearish bias detection
+- Directional trades are penalized when they conflict with the broad market
 
 ### Stock scoring
 - ~20-day momentum
@@ -24,21 +25,50 @@ It returns one of:
 - 20/50/200-day trend
 - RSI
 - ATR and realized volatility
-- Distance from recent highs
+- Distance from recent highs and lows
+- Bullish vs bearish score comparison
 - Automatic entry trigger, invalidation, and two target levels
 
+### Historical signal validation
+For each top-ranked stock, Teststock looks back through recent daily history for similar directional stock signals and reports:
+- historical sample count
+- percentage of samples that moved in the expected direction over the next ~20 trading days
+- average directional move
+
+This is validation of the **underlying stock signal**, not a historical options-P&L guarantee.
+
 ### Catalyst check
-- Recent Alpaca news scan
-- Flags earnings/guidance, FDA/trial, investigations, offerings, M&A, upgrades/downgrades and similar event risk
+- Recent Alpaca news is fetched in one batched request for the top candidates
+- Flags earnings/guidance, FDA/trial, investigations, offerings, M&A, bankruptcy/recall and similar event-risk language
 - Positive-catalyst keywords can modestly improve a setup, while event risk is penalized
 
 ### Options engine
-- Defaults to roughly 28–75 DTE in Aggressive mode and 42–105 DTE in Balanced mode
-- Evaluates delta, theta, IV, bid/ask width, break-even and payoff
-- Prefers defined-risk call debit spreads
+- Aggressive mode searches roughly 28–90 DTE; Balanced mode roughly 42–120 DTE
+- Scans both calls and puts based on the underlying direction
+- Compares long calls/puts with defined-risk debit spreads
+- Evaluates delta, theta, gamma, IV, bid/ask width, break-even, expected move and payoff
+- Calculates a model-based probability of finishing beyond breakeven; this is an approximation, not a guarantee
 - Hard maximum-loss budget
-- Rejects wide spreads, extreme IV, weak payoff, poor liquidity proxies and over-budget structures
+- Rejects wide spreads, extreme IV, weak payoff, bad breakeven-to-expected-move relationships and over-budget structures
+- Paginates the option chain instead of assuming the first page contains the best contract
+- Scans the strongest candidates in parallel to reduce serverless latency
 - No 0DTE / ultra-short default trades
+
+## Data quality
+
+The UI tells you which options feed is being used.
+
+Alpaca supports:
+- `indicative` — free indicative options data; trades are delayed and quotes are modified
+- `opra` — official consolidated OPRA options data when your Alpaca subscription supports it
+
+Set the server environment variable below to opt into OPRA:
+
+```text
+ALPACA_OPTIONS_FEED=opra
+```
+
+If it is omitted, Teststock defaults to `indicative`.
 
 ## Paper Lab
 
@@ -47,8 +77,9 @@ Qualified setups can be saved locally as paper trades. The app tracks:
 - closed setups
 - win rate
 - average result
+- direction and exact option structure
 
-This is intentionally simple at first so the scanner can be judged on outcomes before real-money automation is considered.
+The purpose is to build evidence before increasing real-money risk.
 
 ## Road to $1M
 
@@ -77,9 +108,10 @@ Set these environment variables on the server/deployment platform — never in c
 ```text
 ALPACA_API_KEY=...
 ALPACA_API_SECRET=...
+ALPACA_OPTIONS_FEED=indicative
 ```
 
-The app uses Alpaca historical stock bars, option-chain snapshots and news. The option scanner currently requests the free `indicative` feed; switch to OPRA when the account has the required subscription and you want official real-time options data.
+Change the last value to `opra` if your Alpaca market-data subscription includes OPRA.
 
 ## Build safety
 
@@ -87,4 +119,4 @@ GitHub Actions runs `npm install` and `npm run build` on pushes and pull request
 
 ## Important
 
-Teststock is a screening and paper-tracking tool, not a guarantee of profit. Options can lose the entire amount at risk. The design deliberately allows **no trade** to be the best result.
+Teststock is a screening and paper-tracking tool, not a guarantee of profit. Options can lose the entire amount at risk. Probability estimates and historical signal hit rates can be wrong and can change. The design deliberately allows **no trade** to be the best result.
