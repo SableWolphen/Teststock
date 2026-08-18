@@ -147,9 +147,9 @@ console.log('Loading shared free historical + intraday context…');
 const [daily,intraday]=await Promise.all([fetchBars('1Day',startDaily,allSymbols,5),fetchBars('15Min',startIntra,[...universe,'SPY','QQQ'],3)]);
 const calibration=buildCalibration(daily),marketBreadth=breadth(daily),ctx={daily,intraday,calibration,breadth:marketBreadth};
 
-const manifest = { generatedAt: new Date().toISOString(), budgets: [], freeStack:true, segments:['core','penny'] };
+const manifest = { generatedAt: new Date().toISOString(), budgets: [], freeStack:true, segments:['core'] };
 const generated=[];
-for (const segment of ['core','penny']) for (const budget of budgets) {
+for (const segment of ['core']) for (const budget of budgets) {
   try {
     const raw = await runHandler(budget,segment),data=segment==='core'?enhance(raw,ctx):{
       ...raw,
