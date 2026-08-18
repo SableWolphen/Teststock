@@ -83,7 +83,8 @@ function stockMetrics(symbol,bars){
 async function secJson(url,{timeout=12000}={}){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout);
   try{
-    const r=await fetch(url,{headers:{'User-Agent':'Teststock research app https://github.com/SableWolphen/Teststock','Accept-Encoding':'gzip, deflate'},signal:controller.signal});
+    const secIdentity=process.env.SEC_USER_AGENT||'Teststock research app https://github.com/SableWolphen/Teststock';
+    const r=await fetch(url,{headers:{'User-Agent':secIdentity,'From':secIdentity.includes('@')?secIdentity.split(/\s+/).find(x=>x.includes('@'))||'':'','Accept-Encoding':'gzip, deflate'},signal:controller.signal});
     if(!r.ok)throw new Error(`SEC ${r.status}`);
     return r.json();
   }finally{clearTimeout(timer);}
