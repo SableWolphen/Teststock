@@ -8,8 +8,8 @@ The home screen answers one question first: **what should I do today?**
 
 It returns one of:
 - **TRADE CANDIDATE** — the stock, direction, entry trigger, invalidation, targets, and a qualified option structure passed the filters.
-- **WATCH** — the underlying may be good, but timing/options are not good enough yet.
-- **WAIT** — keep cash; market regime, catalyst risk, trend quality, historical validation, or option pricing failed the protection rules.
+- **WATCH** — the underlying may be good, but timing/options or learning confirmations are not good enough yet.
+- **WAIT** — keep cash; market regime, catalyst risk, trend quality, historical calibration, sector/intraday confirmation, or option pricing failed the protection rules.
 
 ## Decision engine
 
@@ -29,13 +29,37 @@ It returns one of:
 - Bullish vs bearish score comparison
 - Automatic entry trigger, invalidation, and two target levels
 
+### Historical learning engine
+The free GitHub Actions scan also loads roughly the last 1,000 calendar days of daily history and builds a walk-forward-like calibration of the same underlying signal family.
+
+For the stock universe it:
+- samples historical setups every ~10 trading days to reduce duplicated observations
+- evaluates the next ~20 trading days without looking forward when forming the historical setup
+- groups outcomes by bullish/bearish direction and score band
+- reports sample count, directional win rate, average forward move and median forward move
+- uses the matching historical score band as an additional confirmation/penalty for the current setup
+
+This is an **underlying-signal calibration**, not a reconstruction of historical option fills or an options P/L backtest.
+
+### Market breadth
+The GitHub scan measures the percentage of the stock universe above its 20-, 50- and 200-day averages plus the percentage currently producing bullish signals. A directional setup receives an additional confirmation or penalty based on whether broad participation agrees with it.
+
+### Sector confirmation
+Each candidate is checked against a free sector/industry proxy such as SMH, XLK, XLF, XLE, XLV, XLY, XLC, XLP, XLI or XLU. A candidate is penalized when the relevant group is moving the other way.
+
+### Intraday confirmation
+The scheduled scan also downloads recent 15-minute IEX bars and checks:
+- session VWAP
+- opening-range high / low
+- current 15-minute direction
+
+A trade candidate can be downgraded to WATCH when the daily setup has not confirmed intraday.
+
 ### Historical signal validation
-For each top-ranked stock, Teststock looks back through recent daily history for similar directional stock signals and reports:
+The core API still runs per-symbol historical validation and reports:
 - historical sample count
 - percentage of samples that moved in the expected direction over the next ~20 trading days
 - average directional move
-
-This is validation of the **underlying stock signal**, not a historical options-P&L guarantee.
 
 ### Catalyst check
 - Recent Alpaca news is fetched in one batched request for the top candidates
@@ -54,43 +78,60 @@ This is validation of the **underlying stock signal**, not a historical options-
 - Scans the strongest candidates in parallel to reduce serverless latency
 - No 0DTE / ultra-short default trades
 
+## Learning score / elite gate
+The free static scan adds a second score on top of the core setup score. It considers:
+- sector confirmation
+- 15-minute confirmation
+- market breadth alignment
+- matching historical calibration win rate
+
+A core TRADE CANDIDATE is downgraded to WATCH if too few independent learning confirmations agree. Very weak historical calibration can force WAIT.
+
+## Automatic past-pick tracking
+When a generated result remains a TRADE CANDIDATE after the learning gates, Teststock stores it in `docs/data/trade-history.json`.
+
+Later scheduled runs check the underlying daily bars and classify the setup as:
+- `TARGET1`
+- `TARGET2`
+- `STOP`
+- `MATURED_WIN`
+- `MATURED_LOSS`
+- `AMBIGUOUS` when the daily bar makes target/stop ordering unknowable
+
+The webpage displays tracked count, resolved count, win rate, stops and recent picks. This measures the underlying trade thesis rather than exact historical option P/L.
+
+## Free scheduled scanner
+`.github/workflows/static-scan.yml` runs on a weekday schedule and can also be triggered manually. It uses GitHub Actions plus Alpaca's free data path to write:
+- `docs/data/latest-50.json`
+- `docs/data/latest-100.json`
+- `docs/data/latest-200.json`
+- `docs/data/latest-500.json`
+- `docs/data/learning.json`
+- `docs/data/trade-history.json`
+- `docs/data/manifest.json`
+
+The website reads those static files, so no paid server is required for the GitHub Pages version.
+
 ## Data quality
 
-The UI tells you which options feed is being used.
+The free configuration uses:
+- Alpaca IEX stock bars
+- Alpaca `indicative` options data
+- Alpaca News
+- GitHub Actions for scheduled computation
+- GitHub Pages for hosting
 
-Alpaca supports:
-- `indicative` — free indicative options data; trades are delayed and quotes are modified
-- `opra` — official consolidated OPRA options data when your Alpaca subscription supports it
+The core API also supports `opra` if a future Alpaca subscription provides it, but OPRA is not required for the free GitHub build.
 
-Set the server environment variable below to opt into OPRA:
+## GitHub secrets
+The scheduled scanner requires these repository Actions secrets:
 
 ```text
-ALPACA_OPTIONS_FEED=opra
+ALPACA_API_KEY=...
+ALPACA_API_SECRET=...
 ```
 
-If it is omitted, Teststock defaults to `indicative`.
-
-## Paper Lab
-
-Qualified setups can be saved locally as paper trades. The app tracks:
-- number of setups
-- closed setups
-- win rate
-- average result
-- direction and exact option structure
-
-The purpose is to build evidence before increasing real-money risk.
-
-## Road to $1M
-
-The wealth tab stores:
-- current investable amount
-- monthly contribution
-- $1M goal
-- perfect-doubling math
-- timeline scenarios at several annualized return assumptions
-
-It does **not** promise that a small account can reliably become $1M quickly. The purpose is to keep the goal visible while protecting the compounding engine from account-ending trades.
+The workflow explicitly uses the free indicative options feed. Never place those secrets in `docs/`, frontend JavaScript, or any committed file.
 
 ## Run locally
 
@@ -99,24 +140,6 @@ npm install
 npm run dev
 ```
 
-## Deploy
-
-The project is designed for Vercel because the frontend is Vite and `/api/picks.js` is a serverless function. `vercel.json` gives the scanner additional execution time for market-data requests.
-
-Set these environment variables on the server/deployment platform — never in client-side code:
-
-```text
-ALPACA_API_KEY=...
-ALPACA_API_SECRET=...
-ALPACA_OPTIONS_FEED=indicative
-```
-
-Change the last value to `opra` if your Alpaca market-data subscription includes OPRA.
-
-## Build safety
-
-GitHub Actions runs `npm install` and `npm run build` on pushes and pull requests.
-
 ## Important
 
-Teststock is a screening and paper-tracking tool, not a guarantee of profit. Options can lose the entire amount at risk. Probability estimates and historical signal hit rates can be wrong and can change. The design deliberately allows **no trade** to be the best result.
+Teststock is a screening, historical-calibration and paper/outcome-tracking tool, not a guarantee of profit. Options can lose the entire amount at risk. Probability estimates, historical hit rates and historical calibration can be wrong, can be affected by survivorship/selection bias, and can change. The design deliberately allows **no trade** to be the best result.
