@@ -1,159 +1,152 @@
 const UNIVERSE = [
-  'NVDA','MSFT','AAPL','AMZN','GOOGL','META','AVGO','AMD','PLTR','PANW',
-  'CRWD','ORCL','CRM','JPM','GS','V','MA','LLY','UNH','COST','WMT','CAT',
-  'GE','XOM','CVX','NEE','UBER','TSLA'
+  'NVDA','MSFT','AAPL','AMZN','GOOGL','META','AVGO','AMD','PLTR','PANW','CRWD','ORCL','CRM',
+  'JPM','GS','V','MA','LLY','UNH','COST','WMT','CAT','GE','XOM','CVX','NEE','UBER','TSLA'
 ];
+const BENCHMARKS = ['SPY','QQQ'];
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const avg=a=>a.length?a.reduce((s,n)=>s+n,0)/a.length:0;
+const pct=(a,b)=>a&&b?((a/b)-1)*100:0;
+const round=(n,d=2)=>Number(Number(n||0).toFixed(d));
 
-const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
-const pct = (a, b) => (a && b ? ((a / b) - 1) * 100 : 0);
-const avg = (xs) => xs.length ? xs.reduce((a,b)=>a+b,0)/xs.length : 0;
-
-function authHeaders(){
-  const key = process.env.ALPACA_API_KEY || process.env.APCA_API_KEY_ID;
-  const secret = process.env.ALPACA_API_SECRET || process.env.APCA_API_SECRET_KEY;
-  if(!key || !secret) throw new Error('Missing Alpaca environment variables');
-  return { 'APCA-API-KEY-ID': key, 'APCA-API-SECRET-KEY': secret };
+function headers(){
+  const key=process.env.ALPACA_API_KEY||process.env.APCA_API_KEY_ID;
+  const secret=process.env.ALPACA_API_SECRET||process.env.APCA_API_SECRET_KEY;
+  if(!key||!secret) throw new Error('Missing Alpaca server environment variables');
+  return {'APCA-API-KEY-ID':key,'APCA-API-SECRET-KEY':secret};
 }
-
 async function alpaca(url){
-  const r = await fetch(url, { headers: authHeaders() });
+  const r=await fetch(url,{headers:headers()});
   if(!r.ok) throw new Error(`Alpaca ${r.status}: ${await r.text()}`);
   return r.json();
 }
-
-function scoreStock(symbol, bars){
-  if(!bars || bars.length < 65) return null;
-  const closes = bars.map(b=>b.c).filter(Number.isFinite);
-  const last = closes.at(-1);
-  const c20 = closes.at(-21);
-  const c60 = closes.at(-61);
-  const ma20 = avg(closes.slice(-20));
-  const ma50 = avg(closes.slice(-50));
-  const m20 = pct(last,c20);
-  const m60 = pct(last,c60);
-  const trend20 = pct(last,ma20);
-  const trend50 = pct(last,ma50);
-  const recentHigh = Math.max(...closes.slice(-20));
-  const pullback = pct(last,recentHigh);
-
-  let score = 50;
-  score += clamp(m20, -15, 20) * 1.15;
-  score += clamp(m60, -25, 35) * 0.8;
-  score += trend20 > 0 ? 6 : -7;
-  score += trend50 > 0 ? 9 : -12;
-  if(pullback > -4) score += 5;
-  if(pullback < -12) score -= 8;
-  score = Math.round(clamp(score,0,100));
-
-  return { symbol, price:last, score, m20, m60, pullback, ma20, ma50 };
+function sma(xs,n){return avg(xs.slice(-n));}
+function std(xs){const m=avg(xs);return Math.sqrt(avg(xs.map(x=>(x-m)**2)));}
+function rsi(closes,n=14){
+  if(closes.length<n+1) return 50;
+  let g=0,l=0;
+  for(let i=closes.length-n;i<closes.length;i++){const d=closes[i]-closes[i-1];if(d>=0)g+=d;else l-=d;}
+  if(!l) return 100; const rs=(g/n)/(l/n); return 100-(100/(1+rs));
 }
-
-function parseOccSymbol(symbol){
-  const m = symbol.match(/^([A-Z.]+)(\d{6})([CP])(\d{8})$/);
-  if(!m) return null;
-  const [,root,date,type,strikeRaw] = m;
-  const yy = Number(date.slice(0,2));
-  const mm = Number(date.slice(2,4));
-  const dd = Number(date.slice(4,6));
-  const expiry = new Date(Date.UTC(2000+yy,mm-1,dd));
-  return { root, expiry, type, strike:Number(strikeRaw)/1000 };
+function atr(bars,n=14){
+  const xs=[]; for(let i=Math.max(1,bars.length-n);i<bars.length;i++){
+    const b=bars[i],p=bars[i-1]; xs.push(Math.max(b.h-b.l,Math.abs(b.h-p.c),Math.abs(b.l-p.c)));
+  } return avg(xs);
 }
-
-function daysBetween(a,b){ return Math.round((b-a)/86400000); }
-
-async function chooseOption(symbol, stockPrice, budget){
-  const raw = await alpaca(`https://data.alpaca.markets/v1beta1/options/snapshots/${symbol}?feed=indicative&limit=1000`);
-  const snapshots = raw.snapshots || raw;
-  const now = new Date();
-  const calls = Object.entries(snapshots).map(([contract,s])=>{
-    const p = parseOccSymbol(contract);
-    if(!p || p.type !== 'C') return null;
-    const dte = daysBetween(now,p.expiry);
-    const q = s.latestQuote || s.latest_quote || {};
-    const bid = q.bp ?? q.bid_price ?? 0;
-    const ask = q.ap ?? q.ask_price ?? 0;
-    const iv = s.impliedVolatility ?? s.implied_volatility ?? 0;
-    const g = s.greeks || {};
-    return { contract, strike:p.strike, expiry:p.expiry, dte, bid, ask, iv, delta:g.delta ?? 0, theta:g.theta ?? 0 };
-  }).filter(Boolean).filter(x=>x.dte>=35 && x.dte<=90 && x.strike>=stockPrice*.96 && x.strike<=stockPrice*1.12 && x.bid>0 && x.ask>0);
-
-  let best = null;
+function stockMetrics(symbol,bars){
+  if(!bars||bars.length<70) return null;
+  const c=bars.map(b=>b.c), last=c.at(-1), ma20=sma(c,20), ma50=sma(c,50), ma200=sma(c,Math.min(200,c.length));
+  const m20=pct(last,c.at(-21)),m60=pct(last,c.at(-61)),r=rsi(c),a=atr(bars),aPct=a/last*100;
+  const returns=c.slice(-31).map((x,i,z)=>i?pct(x,z[i-1]):0).slice(1),vol=std(returns)*Math.sqrt(252);
+  const high20=Math.max(...bars.slice(-20).map(b=>b.h)),low20=Math.min(...bars.slice(-20).map(b=>b.l));
+  const distHigh=pct(last,high20),trend20=pct(last,ma20),trend50=pct(last,ma50),trend200=pct(last,ma200);
+  let score=50;
+  score+=clamp(m20,-15,18)*1.05+clamp(m60,-25,35)*.65;
+  score+=trend20>0?7:-8; score+=trend50>0?9:-12; score+=trend200>0?5:-7;
+  if(r>=48&&r<=68)score+=7; if(r>75)score-=8; if(r<38)score-=6;
+  if(distHigh>-5)score+=5; if(distHigh<-14)score-=8;
+  if(aPct>7)score-=5;
+  score=Math.round(clamp(score,0,100));
+  const entry=round(Math.max(last,high20*.998));
+  const stop=round(Math.min(ma20,last-a*1.35));
+  const risk=Math.max(.01,entry-stop),target1=round(entry+risk*1.5),target2=round(entry+risk*2.6);
+  return {symbol,price:round(last),score,m20:round(m20,1),m60:round(m60,1),rsi:round(r,1),atr:round(a),atrPct:round(aPct,1),volatility:round(vol,1),ma20:round(ma20),ma50:round(ma50),ma200:round(ma200),distHigh:round(distHigh,1),entry,stop,target1,target2,rr:2.6};
+}
+function regimeFrom(bySymbol){
+  const parts=BENCHMARKS.map(s=>stockMetrics(s,bySymbol[s])).filter(Boolean);
+  if(!parts.length)return {label:'UNKNOWN',score:50,tradeGate:'WATCH',detail:'Benchmark data unavailable'};
+  const score=Math.round(avg(parts.map(x=>x.score)));
+  const breadth=parts.filter(x=>x.price>x.ma20&&x.price>x.ma50).length;
+  if(score>=72&&breadth===parts.length)return {label:'RISK ON',score,tradeGate:'TRADE',detail:'SPY and QQQ trends support bullish setups'};
+  if(score<48||breadth===0)return {label:'RISK OFF',score,tradeGate:'WAIT',detail:'Broad market trend is hostile to aggressive bullish trades'};
+  return {label:'MIXED',score,tradeGate:'SELECTIVE',detail:'Only exceptional setups should pass'};
+}
+function parseOcc(symbol){
+  const m=symbol.match(/^([A-Z.]+)(\d{6})([CP])(\d{8})$/); if(!m)return null;
+  const [,root,d,type,raw]=m; return {root,type,strike:Number(raw)/1000,expiry:new Date(Date.UTC(2000+Number(d.slice(0,2)),Number(d.slice(2,4))-1,Number(d.slice(4,6))))};
+}
+function days(a,b){return Math.ceil((b-a)/86400000);}
+async function newsRisk(symbol){
+  try{
+    const start=new Date(Date.now()-5*86400000).toISOString();
+    const raw=await alpaca(`https://data.alpaca.markets/v1beta1/news?symbols=${symbol}&start=${encodeURIComponent(start)}&limit=15&sort=desc`);
+    const items=raw.news||[];
+    const danger=/(earnings|guidance|fda|trial|investigation|lawsuit|offering|secondary|downgrade|upgrade|merger|acquisition)/i;
+    const catalyst=/(beats|raises|approval|contract|partnership|launch|record|buyback|upgrade)/i;
+    const risky=items.filter(n=>danger.test(`${n.headline||''} ${n.summary||''}`)).length;
+    const positive=items.filter(n=>catalyst.test(`${n.headline||''} ${n.summary||''}`)).length;
+    return {count:items.length,risk:risky>=2?'HIGH':risky===1?'MEDIUM':'LOW',positive,headlines:items.slice(0,3).map(n=>n.headline).filter(Boolean)};
+  }catch{return {count:0,risk:'UNKNOWN',positive:0,headlines:[]};}
+}
+async function optionCandidates(symbol,stockPrice,budget,mode){
+  const raw=await alpaca(`https://data.alpaca.markets/v1beta1/options/snapshots/${symbol}?feed=indicative&limit=1000`);
+  const snaps=raw.snapshots||{}; const now=new Date();
+  const minDte=mode==='aggressive'?28:42,maxDte=mode==='aggressive'?75:105;
+  const calls=Object.entries(snaps).map(([contract,s])=>{
+    const p=parseOcc(contract); if(!p||p.type!=='C')return null;
+    const q=s.latestQuote||s.latest_quote||{},g=s.greeks||{}; const bid=q.bp??q.bid_price??0,ask=q.ap??q.ask_price??0;
+    const mid=(bid+ask)/2,spreadPct=mid?((ask-bid)/mid):9;
+    return {contract,strike:p.strike,expiry:p.expiry,dte:days(now,p.expiry),bid,ask,spreadPct,iv:s.impliedVolatility??s.implied_volatility??0,delta:g.delta??0,theta:g.theta??0};
+  }).filter(Boolean).filter(x=>x.dte>=minDte&&x.dte<=maxDte&&x.strike>=stockPrice*.95&&x.strike<=stockPrice*1.15&&x.bid>0&&x.ask>0&&x.spreadPct<=.14&&x.iv<=.9);
+  const spreads=[];
   for(const long of calls){
-    if(long.delta && (long.delta < .32 || long.delta > .68)) continue;
-    const spreadPct = (long.ask-long.bid)/Math.max(.01,(long.ask+long.bid)/2);
-    if(spreadPct > .16 || long.iv > .85) continue;
-    const shorts = calls.filter(s=>s.expiry.getTime()===long.expiry.getTime() && s.strike>long.strike && s.strike<=long.strike+15);
-    for(const short of shorts){
-      const debit = long.ask - short.bid;
-      const width = short.strike-long.strike;
-      if(debit<=0 || debit>=width) continue;
-      const maxRisk = Math.round(debit*100);
-      const maxProfit = Math.round((width-debit)*100);
-      if(maxRisk > budget || maxRisk < 25 || maxProfit <= maxRisk*.5) continue;
-      const ror = Math.round((maxProfit/maxRisk)*100);
-      const quality = ror - Math.abs(long.dte-60)*.7 - spreadPct*100 - Math.max(0,(long.iv-.55)*50);
-      if(!best || quality>best.quality){
-        best={quality,kind:'Call debit spread',expiry:long.expiry.toISOString().slice(0,10),longStrike:long.strike,shortStrike:short.strike,debit:Number(debit.toFixed(2)),maxRisk,maxProfit,returnOnRisk:ror,delta:Number((long.delta||0).toFixed(2)),iv:Number((long.iv||0).toFixed(2)),note:'Defined-risk setup selected from the live option chain. Prices can move before an order fills.'};
-      }
+    if(long.delta&&(long.delta<.34||long.delta>.72))continue;
+    for(const short of calls){
+      if(short.expiry.getTime()!==long.expiry.getTime()||short.strike<=long.strike)continue;
+      const width=short.strike-long.strike; if(width>Math.max(15,stockPrice*.06))continue;
+      const debit=long.ask-short.bid; if(debit<=.2||debit>=width)continue;
+      const maxRisk=Math.ceil(debit*100),maxProfit=Math.floor((width-debit)*100); if(maxRisk>budget||maxRisk<25)continue;
+      const ror=maxProfit/maxRisk*100,breakeven=long.strike+debit; if(ror<55)continue;
+      const quality=ror*.34+Math.max(0,20-Math.abs(long.dte-60)*.35)+Math.max(0,18-long.spreadPct*100)-Math.max(0,(long.iv-.55)*35)-Math.max(0,(Math.abs(long.theta)-.25)*25);
+      spreads.push({quality,kind:'Call debit spread',expiry:long.expiry.toISOString().slice(0,10),dte:long.dte,longStrike:long.strike,shortStrike:short.strike,debit:round(debit),maxRisk,maxProfit,returnOnRisk:Math.round(ror),breakeven:round(breakeven),delta:round(long.delta,2),theta:round(long.theta,3),iv:round(long.iv,2),spreadPct:round(long.spreadPct*100,1)});
     }
   }
-  return best;
+  spreads.sort((a,b)=>b.quality-a.quality);
+  return spreads.slice(0,3);
 }
+function grade(n){return n>=92?'A+':n>=86?'A':n>=80?'A-':n>=74?'B+':n>=68?'B':'C';}
 
 export default async function handler(req,res){
   try{
-    const budget = clamp(Number(req.query?.budget)||200,25,5000);
-    const start = new Date(Date.now()-220*86400000).toISOString().slice(0,10);
-    const symbols = UNIVERSE.join(',');
-    const url = `https://data.alpaca.markets/v2/stocks/bars?symbols=${symbols}&timeframe=1Day&start=${start}&limit=10000&adjustment=all&feed=iex`;
-    const raw = await alpaca(url);
-    const bySymbol = raw.bars || {};
-    const ranked = UNIVERSE.map(s=>scoreStock(s,bySymbol[s])).filter(Boolean).sort((a,b)=>b.score-a.score);
-    if(!ranked.length) throw new Error('No market data returned');
-
-    let featured = ranked[0];
-    let option = null;
-    for(const candidate of ranked.slice(0,4)){
-      try{
-        const o = await chooseOption(candidate.symbol,candidate.price,budget);
-        if(o){ featured=candidate; option=o; break; }
-      }catch(e){ /* try next candidate */ }
+    const budget=clamp(Number(req.query?.budget)||200,25,5000),mode=req.query?.mode==='balanced'?'balanced':'aggressive';
+    const start=new Date(Date.now()-330*86400000).toISOString().slice(0,10),symbols=[...UNIVERSE,...BENCHMARKS].join(',');
+    const raw=await alpaca(`https://data.alpaca.markets/v2/stocks/bars?symbols=${symbols}&timeframe=1Day&start=${start}&limit=10000&adjustment=all&feed=iex`);
+    const by=raw.bars||{},regime=regimeFrom(by);
+    let ranked=UNIVERSE.map(s=>stockMetrics(s,by[s])).filter(Boolean).sort((a,b)=>b.score-a.score);
+    if(!ranked.length)throw new Error('No stock history returned');
+    const tested=[];
+    for(const s of ranked.slice(0,7)){
+      const news=await newsRisk(s.symbol); let options=[];
+      try{options=await optionCandidates(s.symbol,s.price,budget,mode);}catch{}
+      let adjusted=s.score-(news.risk==='HIGH'?9:news.risk==='MEDIUM'?3:0)+(news.positive?Math.min(4,news.positive):0);
+      if(regime.label==='RISK OFF')adjusted-=12; if(regime.label==='MIXED')adjusted-=4;
+      if(!options.length)adjusted-=3;
+      tested.push({...s,score:Math.round(clamp(adjusted,0,100)),news,options});
     }
-
-    const grade = featured.score>=90?'A+':featured.score>=84?'A':featured.score>=78?'A-':featured.score>=72?'B+':'B';
-    const why=[];
-    if(featured.m20>5) why.push(`${featured.m20.toFixed(1)}% 1-month momentum`);
-    if(featured.m60>10) why.push(`${featured.m60.toFixed(1)}% 3-month momentum`);
-    if(featured.price>featured.ma50) why.push('Above 50-day trend');
-    if(option) why.push('Defined-risk option fits budget');
-
-    const cards = ranked.filter(x=>x.symbol!==featured.symbol).slice(0,3).map((x,i)=>({
-      label:i===0?'Steadier pick':i===1?'Breakout watch':'Next best',
-      symbol:x.symbol,
-      score:x.score,
-      tag:x.m20>0?`${x.m20.toFixed(1)}% over ~1 month`:'Needs momentum confirmation',
-      risk:x.score>=85?'Medium':x.m60>20?'High':'Medium-high'
-    }));
-
-    res.setHeader('Cache-Control','s-maxage=300, stale-while-revalidate=600');
+    tested.sort((a,b)=>b.score-a.score); const best=tested[0],option=best.options[0]||null;
+    const hardNo=regime.label==='RISK OFF'||best.score<76||best.news.risk==='HIGH';
+    const action=hardNo?'WAIT':option&&best.score>=82?'TRADE CANDIDATE':'WATCH';
+    const reasons=[];
+    if(best.price>best.ma20&&best.price>best.ma50)reasons.push('Trend is above 20-day and 50-day averages');
+    if(best.m20>4)reasons.push(`${best.m20}% momentum over ~1 month`);
+    if(best.rsi>=45&&best.rsi<=70)reasons.push(`RSI ${best.rsi}: strong without extreme overbought conditions`);
+    if(option)reasons.push(`${option.returnOnRisk}% maximum return-on-risk with defined loss`);
+    if(best.news.risk==='LOW')reasons.push('No major catalyst-risk keywords in recent Alpaca news scan');
+    const warnings=[];
+    if(regime.label!=='RISK ON')warnings.push(regime.detail);
+    if(best.news.risk!=='LOW')warnings.push(`${best.news.risk} recent catalyst/news risk`);
+    if(best.rsi>72)warnings.push('RSI is stretched; chasing is discouraged');
+    if(!option)warnings.push('No option structure passed budget/liquidity/IV filters');
+    const cards=tested.slice(1,5).map(x=>({symbol:x.symbol,score:x.score,price:x.price,label:x.options.length?'Alternate':'Stock watch',risk:x.atrPct>5?'High':'Medium',tag:`${x.m20}% 1M · RSI ${x.rsi}`,hasOption:Boolean(x.options.length)}));
+    res.setHeader('Cache-Control','s-maxage=180, stale-while-revalidate=300');
     res.status(200).json({
-      asOf:new Date().toISOString(),
-      market:'LIVE SCAN',
-      budget,
-      featured:{
-        symbol:featured.symbol,
-        price:Number(featured.price.toFixed(2)),
-        score:featured.score,
-        grade,
-        setup:option?'Momentum + affordable defined-risk option':'Best stock setup; options rejected',
-        entry:'Wait for price confirmation; do not chase a gap',
-        invalidation:'Exit/reassess if the trend breaks below recent support',
-        why,
-        option
-      },
-      cards
+      asOf:new Date().toISOString(),market:'LIVE',budget,mode,regime,
+      action,
+      featured:{...best,grade:grade(best.score),option,alternatives:best.options.slice(1),reasons,warnings,
+        setup:action==='TRADE CANDIDATE'?'Qualified defined-risk bullish setup':action==='WATCH'?'Good stock, entry/options not strong enough yet':'No trade: protection rules blocked the setup',
+        instruction:action==='TRADE CANDIDATE'?`Only consider entry near/above $${best.entry} while the setup remains valid.`:action==='WATCH'?`Watch $${best.entry}; do not force an entry.`:'Keep cash. Re-scan later.',
+        exitPlan:{stockStop:best.stop,target1:best.target1,target2:best.target2,optionTakeProfit:'Consider scaling at +50%; reassess near +100%',timeStop:option?`Reassess with 21+ DTE remaining; avoid drifting into expiration.`:'N/A'}},
+      cards,
+      protection:['No 0DTE/ultra-short default trades','Hard max-loss budget','Wide-spread rejection','IV cap','Market-regime gate','Catalyst/news risk penalty','Trend + RSI + ATR checks','No-trade is an allowed result']
     });
-  }catch(error){
-    res.status(500).json({error:error.message});
-  }
+  }catch(error){res.status(500).json({error:error.message});}
 }
