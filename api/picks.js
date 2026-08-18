@@ -80,6 +80,49 @@ function stockMetrics(symbol,bars){
     ma20:round(ma20),ma50:round(ma50),ma200:round(ma200),distHigh:round(distHigh,1),distLow:round(distLow,1),
     entry,stop,target1,target2,rr:2.6,avgVolume,dollarVolume};
 }
+async function secJson(url,{timeout=12000}={}){
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout);
+  try{
+    const r=await fetch(url,{headers:{'User-Agent':'Teststock research app https://github.com/SableWolphen/Teststock','Accept-Encoding':'gzip, deflate'},signal:controller.signal});
+    if(!r.ok)throw new Error(`SEC ${r.status}`);
+    return r.json();
+  }finally{clearTimeout(timer);}
+}
+function factRows(facts,tags,unit='USD'){
+  for(const tag of tags){const rows=facts?.['us-gaap']?.[tag]?.units?.[unit];if(rows?.length)return rows;}
+  return [];
+}
+function annualRows(facts,tags,unit='USD'){
+  const rows=factRows(facts,tags,unit).filter(x=>['10-K','10-K/A'].includes(x.form)&&Number.isFinite(Number(x.fy))&&x.fp==='FY');
+  const byYear=new Map();for(const x of rows){const old=byYear.get(Number(x.fy));if(!old||String(x.end)>String(old.end)||(String(x.end)===String(old.end)&&String(x.filed)>String(old.filed)))byYear.set(Number(x.fy),x);}
+  return [...byYear.values()].sort((a,b)=>Number(b.fy)-Number(a.fy));
+}
+function latestFiled(facts,tags,unit='USD'){
+  return factRows(facts,tags,unit).filter(x=>['10-K','10-K/A','10-Q','10-Q/A'].includes(x.form)).sort((a,b)=>String(b.filed).localeCompare(String(a.filed)))[0]||null;
+}
+function financialScore(symbol,raw){
+  const facts=raw?.facts||{},revenue=annualRows(facts,['RevenueFromContractWithCustomerExcludingAssessedTax','Revenues','SalesRevenueNet']),income=annualRows(facts,['NetIncomeLoss','ProfitLoss']),cash=annualRows(facts,['NetCashProvidedByUsedInOperatingActivities']);
+  const assets=latestFiled(facts,['Assets']),liabilities=latestFiled(facts,['Liabilities']),shares=annualRows(facts,['CommonStockSharesOutstanding','EntityCommonStockSharesOutstanding'],'shares');
+  const revNow=Number(revenue[0]?.val),revPrev=Number(revenue[1]?.val),net=Number(income[0]?.val),ocf=Number(cash[0]?.val),asset=Number(assets?.val),debt=Number(liabilities?.val),shareNow=Number(shares[0]?.val),sharePrev=Number(shares[1]?.val);
+  const revenueGrowth=revNow>0&&revPrev>0?pct(revNow,revPrev):null,netMargin=revNow>0&&Number.isFinite(net)?net/revNow*100:null,liabilityRatio=asset>0&&Number.isFinite(debt)?debt/asset*100:null,dilution=shareNow>0&&sharePrev>0?pct(shareNow,sharePrev):null;
+  const values=[revenueGrowth,netMargin,Number.isFinite(ocf)?ocf:null,liabilityRatio,dilution],coverage=values.filter(x=>x!=null&&Number.isFinite(x)).length;
+  let score=50;
+  if(revenueGrowth!=null)score+=clamp(revenueGrowth,-20,30)*.5;
+  if(netMargin!=null)score+=netMargin>15?12:netMargin>5?8:netMargin>0?3:-12;
+  if(Number.isFinite(ocf))score+=ocf>0?10:-14;
+  if(liabilityRatio!=null&&!['JPM','GS'].includes(symbol))score+=liabilityRatio<55?8:liabilityRatio<75?1:-9;
+  if(dilution!=null)score+=dilution<=2?5:dilution<=6?0:-10;
+  score=Math.round(clamp(score,0,100));
+  return {source:'SEC EDGAR',filedThrough:[revenue[0]?.filed,income[0]?.filed,cash[0]?.filed].filter(Boolean).sort().at(-1)||null,coverage,score,revenueGrowth:revenueGrowth==null?null:round(revenueGrowth,1),netMargin:netMargin==null?null:round(netMargin,1),operatingCashFlowPositive:Number.isFinite(ocf)?ocf>0:null,liabilityRatio:liabilityRatio==null?null:round(liabilityRatio,1),shareDilution:dilution==null?null:round(dilution,1),label:coverage<4?'INCOMPLETE':score>=70?'STRONG':score>=58?'ACCEPTABLE':'WEAK'};
+}
+async function secFundamentals(symbols){
+  try{
+    const tickers=await secJson('https://www.sec.gov/files/company_tickers.json');
+    const cikBySymbol={};for(const row of Object.values(tickers||{}))cikBySymbol[String(row.ticker||'').toUpperCase()]=String(row.cik_str).padStart(10,'0');
+    const pairs=await Promise.all(symbols.map(async symbol=>{try{const cik=cikBySymbol[symbol];if(!cik)return[symbol,{source:'SEC EDGAR',coverage:0,score:null,label:'UNAVAILABLE'}];const raw=await secJson(`https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`);return[symbol,financialScore(symbol,raw)];}catch{return[symbol,{source:'SEC EDGAR',coverage:0,score:null,label:'UNAVAILABLE'}];}}));
+    return Object.fromEntries(pairs);
+  }catch{return Object.fromEntries(symbols.map(s=>[s,{source:'SEC EDGAR',coverage:0,score:null,label:'UNAVAILABLE'}]));}
+}
 function regimeFrom(bySymbol){
   const parts=BENCHMARKS.map(s=>stockMetrics(s,bySymbol[s])).filter(Boolean);
   if(!parts.length)return {label:'UNKNOWN',score:50,tradeGate:'WATCH',detail:'Benchmark data unavailable'};
@@ -248,16 +291,17 @@ export default async function handler(req,res){
     if(!ranked.length)throw new Error('No stock history returned');
 
     const top=ranked.slice(0,8);
-    const newsMap=await batchNewsRisk(top.map(x=>x.symbol));
+    const [newsMap,fundamentalsMap]=await Promise.all([batchNewsRisk(top.map(x=>x.symbol)),secFundamentals(top.map(x=>x.symbol))]);
     const prelim=top.map(s=>{
-      const validation=historicalValidation(by[s.symbol],s.direction),news=newsMap[s.symbol]||{risk:'UNKNOWN',positive:0,headlines:[]};
+      const validation=historicalValidation(by[s.symbol],s.direction),news=newsMap[s.symbol]||{risk:'UNKNOWN',positive:0,headlines:[]},fundamentals=fundamentalsMap[s.symbol]||{coverage:0,score:null,label:'UNAVAILABLE'};
       let adjusted=s.score-(news.risk==='HIGH'?10:news.risk==='MEDIUM'?3:0)+(news.positive?Math.min(4,news.positive):0);
       if(regime.label==='RISK ON'&&s.direction==='BEARISH')adjusted-=9;
       if(regime.label==='RISK OFF'&&s.direction==='BULLISH')adjusted-=9;
       if(regime.label==='MIXED')adjusted-=2;
       if(validation.samples>=6&&validation.winRate<45)adjusted-=6;
       if(validation.samples>=6&&validation.winRate>=60)adjusted+=4;
-      return {...s,score:Math.round(clamp(adjusted,0,100)),news,validation};
+      if(fundamentals.coverage>=4)adjusted+=(fundamentals.score-60)*.22;else adjusted-=8;
+      return {...s,score:Math.round(clamp(adjusted,0,100)),news,validation,fundamentals};
     }).sort((a,b)=>b.score-a.score);
 
     // Long-term mode recommends shares only. Options are intentionally not scanned.
@@ -277,8 +321,9 @@ export default async function handler(req,res){
     const directionConflict=(regime.label==='RISK ON'&&best.direction==='BEARISH')||(regime.label==='RISK OFF'&&best.direction==='BULLISH');
     const historyOkay=best.validation.samples>=6&&best.validation.winRate>=52;
     const pennyLiquid=segment!=='penny'||(best.avgVolume>=1000000&&best.dollarVolume>=3000000&&best.atrPct<=15);
-    const hardNo=best.score<76||best.news.risk==='HIGH'||directionConflict||!pennyLiquid;
-    const stockQualified=!hardNo&&best.score>=(segment==='penny'?88:86)&&historyOkay&&best.direction==='BULLISH';
+    const financialEvidence=best.fundamentals?.coverage>=4&&best.fundamentals?.score>=58;
+    const hardNo=best.score<76||best.news.risk==='HIGH'||directionConflict||!pennyLiquid||(best.fundamentals?.coverage>=4&&best.fundamentals?.score<42);
+    const stockQualified=!hardNo&&best.score>=(segment==='penny'?88:86)&&historyOkay&&best.direction==='BULLISH'&&best.price>best.ma200&&best.m60>0&&financialEvidence;
     const action=hardNo?'WAIT':stockQualified?'TRADE CANDIDATE':'WATCH';
     const shares=Math.max(0,Math.floor(budget/Math.max(best.entry,.01)));
     const stockPlan={shares,estimatedCost:round(shares*best.entry),maxLossAtStop:round(shares*Math.max(0,best.entry-best.stop)),holdingStyle:'Swing / hold while trend remains valid'};
@@ -290,6 +335,9 @@ export default async function handler(req,res){
     if(option)reasons.push(`${option.kind}: ${option.probProfit}% model probability of finishing beyond breakeven`);
     if(option?.returnOnRisk)reasons.push(`${option.returnOnRisk}% maximum return-on-risk with defined loss`);
     if(best.news.risk==='LOW')reasons.push('Recent Alpaca news scan found no major event-risk keywords');
+    if(best.fundamentals?.coverage>=4)reasons.push(`SEC fundamentals ${best.fundamentals.label.toLowerCase()}: ${best.fundamentals.score}/100`);
+    if(best.fundamentals?.revenueGrowth!=null)reasons.push(`Latest SEC annual revenue growth: ${best.fundamentals.revenueGrowth}%`);
+    if(best.fundamentals?.operatingCashFlowPositive)reasons.push('Latest SEC annual operating cash flow is positive');
 
     const warnings=[];
     if(directionConflict)warnings.push(`${best.direction} setup conflicts with the broad market regime`);
@@ -298,12 +346,16 @@ export default async function handler(req,res){
     if(!option)warnings.push('No option structure passed budget, liquidity, IV, DTE and expected-move filters');
     if(requestedFeed!=='opra')warnings.push('Options use Alpaca indicative quotes; use OPRA for official real-time consolidated options data');
     if(best.validation.samples<6)warnings.push('Historical signal sample is small; confidence is reduced');
+    if((best.fundamentals?.coverage||0)<4)warnings.push('SEC fundamental coverage is incomplete; BUY & HOLD is blocked');
+    if(best.fundamentals?.score!=null&&best.fundamentals.score<58)warnings.push(`SEC fundamental score is only ${best.fundamentals.score}/100`);
+    if(best.fundamentals?.shareDilution>6)warnings.push(`Share count increased ${best.fundamentals.shareDilution}% in the latest annual comparison`);
 
     const cards=tested.slice(1,5).map(x=>({symbol:x.symbol,score:x.score,price:x.price,direction:x.direction,label:x.options.length?'Alternate':'Stock watch',risk:x.atrPct>5?'High':'Medium',tag:`${x.m20}% 1M · RSI ${x.rsi} · ${x.validation.winRate??'—'}% hist`,hasOption:Boolean(x.options.length)}));
     res.setHeader('Cache-Control','s-maxage=120, stale-while-revalidate=180');
     res.status(200).json({
       asOf:new Date().toISOString(),market:session.label,budget,mode,segment,session,regime,
-      dataQuality:{stockFeed:'IEX',optionsFeed:requestedFeed.toUpperCase(),optionsOfficial:requestedFeed==='opra',news:'Alpaca News'},
+      dataQuality:{stockFeed:'IEX',news:'Alpaca News',fundamentals:'SEC EDGAR XBRL',history:'Alpaca bars + Teststock outcomes'},
+      dataSources:['Alpaca IEX market prices','Alpaca News','SEC EDGAR company filings and XBRL financial statements','SPY/QQQ market regime','Sector and breadth history','Teststock tracked outcomes'],
       action,
       featured:{...best,grade:grade(best.score),option,stockPlan,alternatives:best.options.slice(1,4),reasons,warnings,
         setup:action==='TRADE CANDIDATE'?`Qualified ${segment==='penny'?'liquid penny-stock':'stock'} setup for shares${option?' with an optional defined-risk option':''}`:action==='WATCH'?`Interesting stock, but the buy gates are not fully aligned yet`:'No trade: protection rules blocked the setup',
