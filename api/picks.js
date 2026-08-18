@@ -142,12 +142,16 @@ async function marketSession(){
   }catch{return {isOpen:null,label:'UNKNOWN'};}
 }
 async function discoverPennyUniverse(){
-  const raw=await alpaca('https://data.alpaca.markets/v1beta1/screener/stocks/most-actives?top=100&by=volume');
+  const [raw,assets]=await Promise.all([
+    alpaca('https://data.alpaca.markets/v1beta1/screener/stocks/most-actives?top=100&by=volume'),
+    alpaca('https://paper-api.alpaca.markets/v2/assets?status=active&asset_class=us_equity')
+  ]);
+  const allowed=new Set((assets||[]).filter(a=>a.tradable!==false&&!/(ETF|ETN|exchange.traded|fund|trust|warrant|unit|preferred|depositary)/i.test(a.name||'')).map(a=>a.symbol));
   const symbols=(raw.most_actives||raw.mostActives||[]).map(x=>x.symbol).filter(Boolean);
   if(!symbols.length)throw new Error('No active penny-stock candidates returned');
   const q=new URLSearchParams({symbols:symbols.join(','),feed:'iex'});
   const snaps=await alpaca(`https://data.alpaca.markets/v2/stocks/snapshots?${q}`);
-  return symbols.filter(symbol=>{
+  return symbols.filter(symbol=>allowed.has(symbol)).filter(symbol=>{
     const s=snaps[symbol]||{},price=Number(s.latestTrade?.p||s.latest_trade?.p||s.dailyBar?.c||s.daily_bar?.c||0);
     const volume=Number(s.dailyBar?.v||s.daily_bar?.v||0);
     return price>=1&&price<=5&&volume>=1000000;
