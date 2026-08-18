@@ -1,18 +1,65 @@
 # Teststock
 
-A mobile-first stock + options opportunity scanner focused on small, defined-risk setups.
+A mobile-first stock + options decision engine for finding small, defined-risk opportunities without forcing a trade every day.
 
-## What it does
+## The experience
 
-- Ranks a liquid US-stock universe by recent momentum and trend quality.
-- Searches the top-ranked names for call debit spreads roughly 35–90 days to expiration.
-- Rejects trades that exceed the user's risk budget, have ugly spreads, excessive IV, or poor payoff.
-- Shows one featured setup plus alternates instead of a giant raw-data table.
-- Falls back to clearly labeled demo data if the live backend is not configured.
+The home screen answers one question first: **what should I do today?**
 
-## Important
+It returns one of:
+- **TRADE CANDIDATE** — the stock, entry trigger, invalidation, targets, and a defined-risk option passed the filters.
+- **WATCH** — the underlying may be good, but timing/options are not good enough yet.
+- **WAIT** — keep cash; market regime, catalyst risk, trend quality, or option pricing failed the protection rules.
 
-This is a screening tool, not a promise of profit. Options can lose 100% of the premium paid. The app deliberately favors defined-risk structures and rejects many high-leverage setups.
+## Decision engine
+
+### Market regime
+- SPY + QQQ trend scoring
+- Risk-on / mixed / risk-off gate
+- Aggressive bullish ideas are penalized or blocked in hostile market conditions
+
+### Stock scoring
+- ~20-day momentum
+- ~60-day momentum
+- 20/50/200-day trend
+- RSI
+- ATR and realized volatility
+- Distance from recent highs
+- Automatic entry trigger, invalidation, and two target levels
+
+### Catalyst check
+- Recent Alpaca news scan
+- Flags earnings/guidance, FDA/trial, investigations, offerings, M&A, upgrades/downgrades and similar event risk
+- Positive-catalyst keywords can modestly improve a setup, while event risk is penalized
+
+### Options engine
+- Defaults to roughly 28–75 DTE in Aggressive mode and 42–105 DTE in Balanced mode
+- Evaluates delta, theta, IV, bid/ask width, break-even and payoff
+- Prefers defined-risk call debit spreads
+- Hard maximum-loss budget
+- Rejects wide spreads, extreme IV, weak payoff, poor liquidity proxies and over-budget structures
+- No 0DTE / ultra-short default trades
+
+## Paper Lab
+
+Qualified setups can be saved locally as paper trades. The app tracks:
+- number of setups
+- closed setups
+- win rate
+- average result
+
+This is intentionally simple at first so the scanner can be judged on outcomes before real-money automation is considered.
+
+## Road to $1M
+
+The wealth tab stores:
+- current investable amount
+- monthly contribution
+- $1M goal
+- perfect-doubling math
+- timeline scenarios at several annualized return assumptions
+
+It does **not** promise that a small account can reliably become $1M quickly. The purpose is to keep the goal visible while protecting the compounding engine from account-ending trades.
 
 ## Run locally
 
@@ -21,35 +68,23 @@ npm install
 npm run dev
 ```
 
-The frontend runs in Vite. The `/api/picks` route is designed for a serverless deployment such as Vercel.
+## Deploy
 
-## Live Alpaca data
+The project is designed for Vercel because the frontend is Vite and `/api/picks.js` is a serverless function. `vercel.json` gives the scanner additional execution time for market-data requests.
 
-Configure these environment variables on the server/deployment platform (never in client-side React):
+Set these environment variables on the server/deployment platform — never in client-side code:
 
 ```text
 ALPACA_API_KEY=...
 ALPACA_API_SECRET=...
 ```
 
-The backend uses Alpaca's stock historical-bars endpoint plus option-chain snapshots. The free `indicative` options feed can be used by the scanner; a paid OPRA feed can be substituted if available.
+The app uses Alpaca historical stock bars, option-chain snapshots and news. The option scanner currently requests the free `indicative` feed; switch to OPRA when the account has the required subscription and you want official real-time options data.
 
-## Current scoring model
+## Build safety
 
-Stock score combines:
-- ~20-trading-day momentum
-- ~60-trading-day momentum
-- Price vs. 20-day trend
-- Price vs. 50-day trend
-- Distance from recent highs
+GitHub Actions runs `npm install` and `npm run build` on pushes and pull requests.
 
-Option candidate filters include:
-- 35–90 DTE
-- Long-call delta roughly 0.32–0.68 when Greeks are available
-- Bid/ask spread cap
-- IV cap
-- Defined maximum loss
-- Maximum loss under the user's chosen dollar budget
-- Minimum reward-to-risk threshold
+## Important
 
-The model is intentionally conservative about presenting a trade: if an option chain fails the filters, the UI says to skip options rather than forcing a recommendation.
+Teststock is a screening and paper-tracking tool, not a guarantee of profit. Options can lose the entire amount at risk. The design deliberately allows **no trade** to be the best result.
