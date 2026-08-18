@@ -3,6 +3,16 @@ const UNIVERSE = [
   'JPM','GS','V','MA','LLY','UNH','COST','WMT','CAT','GE','XOM','CVX','NEE','UBER','TSLA'
 ];
 const BENCHMARKS = ['SPY','QQQ'];
+function sectorBucket(symbol){
+  if(['NVDA','AMD','AVGO','MSFT','AAPL','PLTR','PANW','CRWD','ORCL','CRM'].includes(symbol))return 'Technology';
+  if(['JPM','GS','V','MA'].includes(symbol))return 'Financials';
+  if(['LLY','UNH'].includes(symbol))return 'Healthcare';
+  if(['XOM','CVX'].includes(symbol))return 'Energy';
+  if(['AMZN','TSLA','UBER'].includes(symbol))return 'Consumer';
+  if(['CAT','GE'].includes(symbol))return 'Industrials';
+  if(['COST','WMT'].includes(symbol))return 'Staples';
+  return 'Other';
+}
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const avg=a=>a.length?a.reduce((s,n)=>s+n,0)/a.length:0;
 const pct=(a,b)=>a&&b?((a/b)-1)*100:0;
@@ -98,14 +108,24 @@ function annualRows(facts,tags,unit='USD'){
   const byYear=new Map();for(const x of rows){const old=byYear.get(Number(x.fy));if(!old||String(x.end)>String(old.end)||(String(x.end)===String(old.end)&&String(x.filed)>String(old.filed)))byYear.set(Number(x.fy),x);}
   return [...byYear.values()].sort((a,b)=>Number(b.fy)-Number(a.fy));
 }
+function quarterlyRows(facts,tags,unit='USD'){
+  const rows=factRows(facts,tags,unit).filter(x=>['10-Q','10-Q/A'].includes(x.form)&&/^Q[1-3]$/.test(x.fp||'')&&x.start&&x.end&&((new Date(x.end)-new Date(x.start))/86400000)>=65&&((new Date(x.end)-new Date(x.start))/86400000)<=120);
+  const byEnd=new Map();for(const x of rows){const old=byEnd.get(x.end);if(!old||String(x.filed)>String(old.filed))byEnd.set(x.end,x);}
+  return [...byEnd.values()].sort((a,b)=>String(b.end).localeCompare(String(a.end)));
+}
 function latestFiled(facts,tags,unit='USD'){
   return factRows(facts,tags,unit).filter(x=>['10-K','10-K/A','10-Q','10-Q/A'].includes(x.form)).sort((a,b)=>String(b.filed).localeCompare(String(a.filed)))[0]||null;
 }
-function financialScore(symbol,raw){
+function financialScore(symbol,raw,stockPrice){
   const facts=raw?.facts||{},revenue=annualRows(facts,['RevenueFromContractWithCustomerExcludingAssessedTax','Revenues','SalesRevenueNet']),income=annualRows(facts,['NetIncomeLoss','ProfitLoss']),cash=annualRows(facts,['NetCashProvidedByUsedInOperatingActivities']);
+  const quarterlyRevenue=quarterlyRows(facts,['RevenueFromContractWithCustomerExcludingAssessedTax','Revenues','SalesRevenueNet']),quarterlyIncome=quarterlyRows(facts,['NetIncomeLoss','ProfitLoss']);
   const assets=latestFiled(facts,['Assets']),liabilities=latestFiled(facts,['Liabilities']),shares=annualRows(facts,['CommonStockSharesOutstanding','EntityCommonStockSharesOutstanding'],'shares');
   const revNow=Number(revenue[0]?.val),revPrev=Number(revenue[1]?.val),net=Number(income[0]?.val),ocf=Number(cash[0]?.val),asset=Number(assets?.val),debt=Number(liabilities?.val),shareNow=Number(shares[0]?.val),sharePrev=Number(shares[1]?.val);
   const revenueGrowth=revNow>0&&revPrev>0?pct(revNow,revPrev):null,netMargin=revNow>0&&Number.isFinite(net)?net/revNow*100:null,liabilityRatio=asset>0&&Number.isFinite(debt)?debt/asset*100:null,dilution=shareNow>0&&sharePrev>0?pct(shareNow,sharePrev):null;
+  const quarterlyRevenueGrowth=Number(quarterlyRevenue[0]?.val)>0&&Number(quarterlyRevenue[4]?.val)>0?pct(Number(quarterlyRevenue[0].val),Number(quarterlyRevenue[4].val)):null;
+  const ttmRevenue=quarterlyRevenue.length>=4?quarterlyRevenue.slice(0,4).reduce((s,x)=>s+Number(x.val||0),0):null,ttmIncome=quarterlyIncome.length>=4?quarterlyIncome.slice(0,4).reduce((s,x)=>s+Number(x.val||0),0):null;
+  const marketCap=shareNow>0&&stockPrice>0?shareNow*stockPrice:null,pe=marketCap>0&&ttmIncome>0?marketCap/ttmIncome:null,priceToSales=marketCap>0&&ttmRevenue>0?marketCap/ttmRevenue:null,operatingCashFlowYield=marketCap>0&&ocf>0?ocf/marketCap*100:null;
+  const lastReportDate=[quarterlyRevenue[0]?.filed,revenue[0]?.filed].filter(Boolean).sort().at(-1)||null,estimatedNextReport=lastReportDate?new Date(new Date(lastReportDate).getTime()+91*86400000).toISOString().slice(0,10):null;
   const values=[revenueGrowth,netMargin,Number.isFinite(ocf)?ocf:null,liabilityRatio,dilution],coverage=values.filter(x=>x!=null&&Number.isFinite(x)).length;
   let score=50;
   if(revenueGrowth!=null)score+=clamp(revenueGrowth,-20,30)*.5;
@@ -113,14 +133,18 @@ function financialScore(symbol,raw){
   if(Number.isFinite(ocf))score+=ocf>0?10:-14;
   if(liabilityRatio!=null&&!['JPM','GS'].includes(symbol))score+=liabilityRatio<55?8:liabilityRatio<75?1:-9;
   if(dilution!=null)score+=dilution<=2?5:dilution<=6?0:-10;
+  if(quarterlyRevenueGrowth!=null)score+=quarterlyRevenueGrowth>15?5:quarterlyRevenueGrowth>0?2:-5;
+  if(pe!=null)score+=pe<15?5:pe<30?3:pe>70?-5:0;
+  if(priceToSales!=null)score+=priceToSales<4?3:priceToSales>15?-4:0;
+  if(operatingCashFlowYield!=null)score+=operatingCashFlowYield>5?4:operatingCashFlowYield<1?-3:0;
   score=Math.round(clamp(score,0,100));
-  return {source:'SEC EDGAR',filedThrough:[revenue[0]?.filed,income[0]?.filed,cash[0]?.filed].filter(Boolean).sort().at(-1)||null,coverage,score,revenueGrowth:revenueGrowth==null?null:round(revenueGrowth,1),netMargin:netMargin==null?null:round(netMargin,1),operatingCashFlowPositive:Number.isFinite(ocf)?ocf>0:null,liabilityRatio:liabilityRatio==null?null:round(liabilityRatio,1),shareDilution:dilution==null?null:round(dilution,1),label:coverage<4?'INCOMPLETE':score>=70?'STRONG':score>=58?'ACCEPTABLE':'WEAK'};
+  return {source:'SEC EDGAR',filedThrough:[revenue[0]?.filed,income[0]?.filed,cash[0]?.filed].filter(Boolean).sort().at(-1)||null,coverage,score,revenueGrowth:revenueGrowth==null?null:round(revenueGrowth,1),quarterlyRevenueGrowth:quarterlyRevenueGrowth==null?null:round(quarterlyRevenueGrowth,1),netMargin:netMargin==null?null:round(netMargin,1),operatingCashFlowPositive:Number.isFinite(ocf)?ocf>0:null,operatingCashFlowYield:operatingCashFlowYield==null?null:round(operatingCashFlowYield,1),liabilityRatio:liabilityRatio==null?null:round(liabilityRatio,1),shareDilution:dilution==null?null:round(dilution,1),pe:pe==null?null:round(pe,1),priceToSales:priceToSales==null?null:round(priceToSales,1),estimatedNextReport,label:coverage<4?'INCOMPLETE':score>=70?'STRONG':score>=58?'ACCEPTABLE':'WEAK'};
 }
-async function secFundamentals(symbols){
+async function secFundamentals(symbols,priceMap={}){
   try{
     const tickers=await secJson('https://www.sec.gov/files/company_tickers.json');
     const cikBySymbol={};for(const row of Object.values(tickers||{}))cikBySymbol[String(row.ticker||'').toUpperCase()]=String(row.cik_str).padStart(10,'0');
-    const pairs=await Promise.all(symbols.map(async symbol=>{try{const cik=cikBySymbol[symbol];if(!cik)return[symbol,{source:'SEC EDGAR',coverage:0,score:null,label:'UNAVAILABLE'}];const raw=await secJson(`https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`);return[symbol,financialScore(symbol,raw)];}catch{return[symbol,{source:'SEC EDGAR',coverage:0,score:null,label:'UNAVAILABLE'}];}}));
+    const pairs=await Promise.all(symbols.map(async symbol=>{try{const cik=cikBySymbol[symbol];if(!cik)return[symbol,{source:'SEC EDGAR',coverage:0,score:null,label:'UNAVAILABLE'}];const raw=await secJson(`https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`);return[symbol,financialScore(symbol,raw,priceMap[symbol])];}catch{return[symbol,{source:'SEC EDGAR',coverage:0,score:null,label:'UNAVAILABLE'}];}}));
     return Object.fromEntries(pairs);
   }catch{return Object.fromEntries(symbols.map(s=>[s,{source:'SEC EDGAR',coverage:0,score:null,label:'UNAVAILABLE'}]));}
 }
@@ -184,6 +208,16 @@ async function marketSession(){
     const raw=await alpaca('https://paper-api.alpaca.markets/v2/clock',{timeout:5000});
     return {isOpen:Boolean(raw.is_open),timestamp:raw.timestamp,nextOpen:raw.next_open,nextClose:raw.next_close,label:raw.is_open?'OPEN':'CLOSED'};
   }catch{return {isOpen:null,label:'UNKNOWN'};}
+}
+async function corporateActionRisk(symbols){
+  const out=Object.fromEntries(symbols.map(s=>[s,{source:'Alpaca corporate actions',risk:'UNKNOWN',events:[]}]))
+  try{
+    const start=isoDate(new Date(Date.now()-365*86400000)),end=isoDate(new Date(Date.now()+120*86400000));
+    const q=new URLSearchParams({symbols:symbols.join(','),start,end,limit:'1000'}),raw=await alpaca(`https://data.alpaca.markets/v1/corporate-actions?${q}`);
+    for(const [type,events] of Object.entries(raw?.corporate_actions||raw||{}))for(const event of Array.isArray(events)?events:[]){const symbol=event.symbol||event.initiating_symbol;if(!out[symbol])continue;out[symbol].events.push({type,date:event.ex_date||event.declaration_date||event.process_date||null});}
+    for(const s of symbols){const dangerous=out[s].events.filter(x=>/(reverse_split|unit_split|merger|reorganization|worthless|redemption)/i.test(x.type));out[s].risk=dangerous.length?'HIGH':out[s].events.length?'LOW':'NONE';}
+  }catch{}
+  return out;
 }
 async function discoverPennyUniverse(){
   const [raw,assets]=await Promise.all([
@@ -292,9 +326,10 @@ export default async function handler(req,res){
     if(!ranked.length)throw new Error('No stock history returned');
 
     const top=ranked.slice(0,8);
-    const [newsMap,fundamentalsMap]=await Promise.all([batchNewsRisk(top.map(x=>x.symbol)),secFundamentals(top.map(x=>x.symbol))]);
+    const topSymbols=top.map(x=>x.symbol),priceMap=Object.fromEntries(top.map(x=>[x.symbol,x.price]));
+    const [newsMap,fundamentalsMap,actionsMap]=await Promise.all([batchNewsRisk(topSymbols),secFundamentals(topSymbols,priceMap),corporateActionRisk(topSymbols)]);
     const prelim=top.map(s=>{
-      const validation=historicalValidation(by[s.symbol],s.direction),news=newsMap[s.symbol]||{risk:'UNKNOWN',positive:0,headlines:[]},fundamentals=fundamentalsMap[s.symbol]||{coverage:0,score:null,label:'UNAVAILABLE'};
+      const validation=historicalValidation(by[s.symbol],s.direction),news=newsMap[s.symbol]||{risk:'UNKNOWN',positive:0,headlines:[]},fundamentals=fundamentalsMap[s.symbol]||{coverage:0,score:null,label:'UNAVAILABLE'},corporateActions=actionsMap[s.symbol]||{risk:'UNKNOWN',events:[]};
       let adjusted=s.score-(news.risk==='HIGH'?10:news.risk==='MEDIUM'?3:0)+(news.positive?Math.min(4,news.positive):0);
       if(regime.label==='RISK ON'&&s.direction==='BEARISH')adjusted-=9;
       if(regime.label==='RISK OFF'&&s.direction==='BULLISH')adjusted-=9;
@@ -302,7 +337,8 @@ export default async function handler(req,res){
       if(validation.samples>=6&&validation.winRate<45)adjusted-=6;
       if(validation.samples>=6&&validation.winRate>=60)adjusted+=4;
       if(fundamentals.coverage>=4)adjusted+=(fundamentals.score-60)*.22;else adjusted-=8;
-      return {...s,score:Math.round(clamp(adjusted,0,100)),news,validation,fundamentals};
+      if(corporateActions.risk==='HIGH')adjusted-=12;
+      return {...s,score:Math.round(clamp(adjusted,0,100)),news,validation,fundamentals,corporateActions};
     }).sort((a,b)=>b.score-a.score);
 
     // Long-term mode recommends shares only. Options are intentionally not scanned.
@@ -323,17 +359,19 @@ export default async function handler(req,res){
       const historyOkay=x.validation.samples>=6&&x.validation.winRate>=52;
       const pennyLiquid=segment!=='penny'||(x.avgVolume>=1000000&&x.dollarVolume>=3000000&&x.atrPct<=15);
       const financialEvidence=x.fundamentals?.coverage>=4&&x.fundamentals?.score>=58;
-      const hardBlock=x.score<76||x.news.risk==='HIGH'||conflicts(x)||!pennyLiquid||(x.fundamentals?.coverage>=4&&x.fundamentals?.score<42);
+      const hardBlock=x.score<76||x.news.risk==='HIGH'||x.corporateActions?.risk==='HIGH'||conflicts(x)||!pennyLiquid||(x.fundamentals?.coverage>=4&&x.fundamentals?.score<42);
       return !hardBlock&&x.score>=(segment==='penny'?88:86)&&historyOkay&&x.direction==='BULLISH'&&x.price>x.ma200&&x.m60>0&&financialEvidence;
     };
-    const qualified=tested.filter(qualifies).slice(0,4),best=qualified[0]||tested[0],option=null;
+    const qualified=[],usedSectors=new Set();for(const x of tested.filter(qualifies)){const sector=sectorBucket(x.symbol);if(usedSectors.has(sector))continue;qualified.push({...x,sector});usedSectors.add(sector);if(qualified.length===4)break;}
+    const best=qualified[0]||tested[0],option=null;
     const directionConflict=conflicts(best),historyOkay=best.validation.samples>=6&&best.validation.winRate>=52;
     const pennyLiquid=segment!=='penny'||(best.avgVolume>=1000000&&best.dollarVolume>=3000000&&best.atrPct<=15);
     const financialEvidence=best.fundamentals?.coverage>=4&&best.fundamentals?.score>=58;
     const hardNo=best.score<76||best.news.risk==='HIGH'||directionConflict||!pennyLiquid||(best.fundamentals?.coverage>=4&&best.fundamentals?.score<42);
     const stockQualified=qualifies(best);
     const action=hardNo?'WAIT':stockQualified?'TRADE CANDIDATE':'WATCH';
-    const primaryAllocation=round(budget/Math.max(1,qualified.length)),shares=Math.max(0,round(primaryAllocation/Math.max(best.entry,.01),4));
+    const stopRisk=x=>Math.max(.01,Math.abs(x.entry-x.stop)/Math.max(x.entry,.01)),riskWeights=qualified.map(x=>1/stopRisk(x)),weightTotal=riskWeights.reduce((s,n)=>s+n,0)||1;
+    const primaryAllocation=qualified.length?round(budget*(riskWeights[0]/weightTotal)):budget,shares=Math.max(0,round(primaryAllocation/Math.max(best.entry,.01),4));
     const stockPlan={shares,estimatedCost:round(shares*best.entry),maxLossAtStop:round(shares*Math.max(0,best.entry-best.stop)),holdingStyle:'Position trade: usually several weeks to several months',reviewCadence:'Weekly'};
     const reasons=[];
     reasons.push(`${best.direction.toLowerCase()} setup scored ${best.score}/100`);
@@ -357,12 +395,15 @@ export default async function handler(req,res){
     if((best.fundamentals?.coverage||0)<4)warnings.push('SEC fundamental coverage is incomplete; BUY & HOLD is blocked');
     if(best.fundamentals?.score!=null&&best.fundamentals.score<58)warnings.push(`SEC fundamental score is only ${best.fundamentals.score}/100`);
     if(best.fundamentals?.shareDilution>6)warnings.push(`Share count increased ${best.fundamentals.shareDilution}% in the latest annual comparison`);
+    if(best.corporateActions?.risk==='HIGH')warnings.push('Recent or upcoming corporate action creates elevated position risk');
+    if(best.fundamentals?.estimatedNextReport)warnings.push(`Next earnings/filing window is estimated near ${best.fundamentals.estimatedNextReport}; free data does not guarantee the exact date`);
 
     const cards=tested.slice(1,5).map(x=>({symbol:x.symbol,score:x.score,price:x.price,direction:x.direction,label:x.options.length?'Alternate':'Stock watch',risk:x.atrPct>5?'High':'Medium',tag:`${x.m20}% 1M · RSI ${x.rsi} · ${x.validation.winRate??'—'}% hist`,hasOption:Boolean(x.options.length)}));
     const recommendations=qualified.map((x,rank)=>{
-      const allocation=round(budget/qualified.length),shares=Math.max(0,round(allocation/Math.max(x.entry,.01),4));
-      return {rank:rank+1,symbol:x.symbol,price:x.price,score:x.score,entry:x.entry,stop:x.stop,target1:x.target1,target2:x.target2,allocation,shares,estimatedCost:round(shares*x.entry),maxLossAtStop:round(shares*Math.max(0,x.entry-x.stop)),fundamentals:x.fundamentals,validation:x.validation,holdingStyle:'Position trade: several weeks to several months',reviewCadence:'Weekly'};
+      const allocation=round(budget*(riskWeights[rank]/weightTotal)),shares=Math.max(0,round(allocation/Math.max(x.entry,.01),4));
+      return {rank:rank+1,symbol:x.symbol,sector:x.sector,price:x.price,score:x.score,entry:x.entry,stop:x.stop,target1:x.target1,target2:x.target2,allocation,shares,estimatedCost:round(shares*x.entry),maxLossAtStop:round(shares*Math.max(0,x.entry-x.stop)),riskWeight:round(riskWeights[rank]/weightTotal*100,1),fundamentals:x.fundamentals,validation:x.validation,corporateActions:x.corporateActions,holdingStyle:'Position trade: several weeks to several months',reviewCadence:'Weekly'};
     });
+    const portfolioPlan={method:'Risk-weighted by distance to stop, with one pick per sector',totalBudget:budget,estimatedLossAtAllStops:round(recommendations.reduce((s,x)=>s+x.maxLossAtStop,0)),sectors:[...new Set(recommendations.map(x=>x.sector))]};
     res.setHeader('Cache-Control','s-maxage=120, stale-while-revalidate=180');
     res.status(200).json({
       asOf:new Date().toISOString(),market:session.label,budget,mode,segment,session,regime,
@@ -370,6 +411,8 @@ export default async function handler(req,res){
       dataSources:['Alpaca IEX market prices','Alpaca News','SEC EDGAR company filings and XBRL financial statements','SPY/QQQ market regime','Sector and breadth history','Teststock tracked outcomes'],
       action,
       recommendations,
+      portfolioPlan,
+      marketSnapshot:ranked.map(x=>({symbol:x.symbol,price:x.price,direction:x.direction,ma20:x.ma20,ma50:x.ma50,ma200:x.ma200,entry:x.entry,stop:x.stop,target1:x.target1,target2:x.target2,atrPct:x.atrPct})),
       featured:{...best,grade:grade(best.score),option,stockPlan,alternatives:best.options.slice(1,4),reasons,warnings,
         setup:action==='TRADE CANDIDATE'?`Qualified stock position for a multi-week or multi-month hold`:action==='WATCH'?`Interesting stock, but the position-trade gates are not fully aligned yet`:'No position: protection rules blocked the setup',
         instruction:action==='TRADE CANDIDATE'?`Buy only near ${best.entry}; review weekly and exit if the trend breaks below ${best.stop}.`:action==='WATCH'?`Watch ${best.entry}; do not force an entry.`:'Keep cash. Re-scan later.',
