@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#07090d" />
+  <title>Teststock</title>
+  <style>
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#f7f8fb;background:#07090d}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% -8%,rgba(93,108,255,.24),transparent 31%),#07090d;min-height:100vh}.wrap{max-width:980px;margin:auto;padding:24px 16px 60px}.eyebrow{color:#96a4ff;font-weight:900;letter-spacing:.14em;font-size:11px}h1{font-size:clamp(38px,8vw,68px);line-height:.95;letter-spacing:-.055em;margin:12px 0}.sub{color:#929cad;max-width:680px;line-height:1.5}.grid{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;margin-top:18px}.card{border:1px solid #283143;background:linear-gradient(180deg,#151a25,#0b0e14);border-radius:22px;padding:18px}.decision{background:radial-gradient(circle at 88% 7%,rgba(91,108,255,.18),transparent 26%),linear-gradient(180deg,#171c29,#0d1118)}.pill{display:inline-block;padding:6px 9px;border-radius:999px;border:1px solid #5a4b21;background:#2a2415;color:#efd276;font-size:10px;font-weight:900}.ticker{font-size:48px;font-weight:950;letter-spacing:-.05em;margin-top:12px}.muted{color:#8894a6}.levels{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}.stat{border:1px solid #242d3b;background:#0e131b;border-radius:14px;padding:11px}.stat span{display:block;color:#7d899b;font-size:10px}.stat strong{display:block;font-size:19px;margin-top:4px}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}button,input{font:inherit}.btn{border:1px solid #3b4e8b;background:linear-gradient(180deg,#5368ff,#3e50d8);color:white;border-radius:12px;padding:10px 13px;font-weight:900;cursor:pointer}.btn.secondary{background:#171c27;border-color:#2b3447}.input{width:110px;border:1px solid #30394a;background:#090d13;color:white;border-radius:10px;padding:9px}.status{margin-top:12px;padding:11px 13px;border:1px solid #30394a;background:#0e131b;border-radius:14px;color:#aab3c1;font-size:12px}.good{color:#72e19e}.warn{color:#efd276}.bad{color:#ff8d9c}.option{margin-top:12px}.option h2{margin:4px 0 10px}.ticket{display:grid;grid-template-columns:1fr 1fr;gap:8px}.leg{border:1px solid #293244;background:#0b0f16;border-radius:14px;padding:12px}.leg small{display:block;color:#7e8a9d;font-size:9px;font-weight:900}.leg b{display:block;margin-top:4px}.wide{grid-column:1/-1}.footer{margin-top:18px;color:#657084;font-size:10px;line-height:1.5}.api-note{font-size:11px;color:#7f8a9c;margin-top:8px}.link{color:#96a4ff;text-decoration:none}@media(max-width:760px){.grid{grid-template-columns:1fr}.ticker{font-size:40px}.wrap{padding:18px 11px 48px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="eyebrow">TESTSTOCK · GITHUB WEB</div>
+    <h1>One decision.<br/>No clutter.</h1>
+    <p class="sub">A mobile-first stock + options decision screen. This GitHub-hosted version works as a front end; live Alpaca scanning requires a separate server API so your private keys never appear in the browser.</p>
+
+    <div class="controls">
+      <input id="budget" class="input" type="number" min="25" value="200" aria-label="Max loss budget" />
+      <input id="api" class="input" style="min-width:280px;flex:1" placeholder="Optional live API URL, e.g. https://your-app.vercel.app/api/picks" aria-label="API URL" />
+      <button class="btn" id="scan">Scan now</button>
+      <button class="btn secondary" id="demo">Demo</button>
+    </div>
+    <div class="api-note">If the API URL is blank, the page stays in demo mode. Your Alpaca keys should remain server-side.</div>
+    <div id="status" class="status">Demo mode ready.</div>
+
+    <section class="grid">
+      <article class="card decision">
+        <span id="action" class="pill">WATCH</span>
+        <div id="ticker" class="ticker">NVDA</div>
+        <div id="setup" class="muted">Demo setup — connect a live API when ready.</div>
+        <div class="levels">
+          <div class="stat"><span>Trigger</span><strong id="entry">$227.90</strong></div>
+          <div class="stat"><span>Invalid below</span><strong id="stop">$218.40</strong></div>
+          <div class="stat"><span>Target 1</span><strong id="target1">$242.15</strong></div>
+          <div class="stat"><span>Stretch target</span><strong id="target2">$252.60</strong></div>
+        </div>
+      </article>
+
+      <article class="card option">
+        <div class="eyebrow">BEST QUALIFIED OPTION</div>
+        <h2 id="kind">Call debit spread</h2>
+        <div class="ticket">
+          <div class="leg"><small>BUY</small><b id="buy">NVDA 2026-10-16 235C</b></div>
+          <div class="leg"><small>SELL</small><b id="sell">NVDA 2026-10-16 240C</b></div>
+          <div class="stat"><span>Max loss</span><strong id="loss">$186</strong></div>
+          <div class="stat"><span>Max profit</span><strong id="profit">$314</strong></div>
+          <div class="stat"><span>Max return</span><strong id="ror">169%</strong></div>
+          <div class="stat"><span>Breakeven</span><strong id="be">$236.86</strong></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="card wide" style="margin-top:12px">
+      <div class="eyebrow">WHY THIS EXISTS</div>
+      <h2 style="margin:6px 0">Find asymmetric opportunities without forcing a trade.</h2>
+      <p class="muted" style="margin:0">Teststock is designed to allow WAIT/no-trade when market regime, price action, catalysts, liquidity, volatility, expected move, or option payoff are not good enough. Options can lose the full amount at risk.</p>
+    </section>
+
+    <div class="footer">GitHub Pages hosts static files only. The live scanner belongs on a serverless backend such as Vercel. Repository: <a class="link" href="https://github.com/SableWolphen/Teststock">SableWolphen/Teststock</a>.</div>
+  </main>
+
+  <script>
+    const $=id=>document.getElementById(id);
+    const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:Number(n)<10?2:0}).format(Number(n||0));
+    const demo={action:'WATCH',featured:{symbol:'NVDA',setup:'Demo setup — connect a live API when ready.',entry:227.90,stop:218.40,target1:242.15,target2:252.60,option:{kind:'Call debit spread',expiry:'2026-10-16',longStrike:235,shortStrike:240,maxRisk:186,maxProfit:314,returnOnRisk:169,breakeven:236.86}}};
+    function render(d,label='Demo mode ready.'){
+      const p=d.featured||demo.featured,o=p.option;
+      $('action').textContent=d.action||'WATCH';$('ticker').textContent=p.symbol||'—';$('setup').textContent=p.setup||'No qualified setup';
+      $('entry').textContent=money(p.entry);$('stop').textContent=money(p.stop);$('target1').textContent=money(p.target1);$('target2').textContent=money(p.target2);
+      if(o){$('kind').textContent=o.kind||'Qualified option';const suffix=(o.direction||'bullish')==='bearish'?'P':'C';$('buy').textContent=`${p.symbol} ${o.expiry} ${o.longStrike??o.strike}${suffix}`;$('sell').textContent=o.shortStrike?`${p.symbol} ${o.expiry} ${o.shortStrike}${suffix}`:'Single long option';$('loss').textContent=money(o.maxRisk);$('profit').textContent=o.maxProfit==null?'Unlimited/variable':money(o.maxProfit);$('ror').textContent=o.returnOnRisk==null?'—':`${o.returnOnRisk}%`;$('be').textContent=money(o.breakeven)}
+      $('status').textContent=label;
+    }
+    $('demo').onclick=()=>render(demo,'Demo mode ready.');
+    $('scan').onclick=async()=>{
+      const base=$('api').value.trim(),budget=Math.max(25,Number($('budget').value)||200);
+      if(!base){render(demo,'No API URL entered — showing demo data.');return;}
+      $('status').textContent='Scanning…';
+      try{const u=new URL(base);u.searchParams.set('budget',budget);u.searchParams.set('mode','aggressive');const r=await fetch(u);const j=await r.json();if(!r.ok)throw new Error(j.error||`API ${r.status}`);render(j,`Live response · ${j.asOf||'just now'}`)}catch(e){render(demo,`Live API failed: ${e.message}. Showing demo data.`)}
+    };
+    render(demo);
+  </script>
+</body>
+</html>
