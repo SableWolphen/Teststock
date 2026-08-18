@@ -8,6 +8,7 @@ on:
       - '.github/workflows/static-scan.yml'
       - 'api/picks.js'
       - 'scripts/generate-static-picks.mjs'
+      - 'scripts/build-agent-signal.mjs'
   workflow_dispatch:
   schedule:
     # Every 30 minutes on US market weekdays during a broad UTC window.
@@ -40,15 +41,16 @@ jobs:
           ALPACA_OPTIONS_FEED: indicative
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: node scripts/generate-static-picks.mjs
+      - name: Build Claude/Robinhood signal
+        run: node scripts/build-agent-signal.mjs
       - name: Publish refreshed JSON
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/data
+          git add docs/data docs/signal.json
           if git diff --cached --quiet; then
             echo "No changes to publish"
           else
             git commit -m "Refresh static Teststock picks"
             git push
           fi
-
