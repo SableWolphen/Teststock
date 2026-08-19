@@ -1,0 +1,25 @@
+TESTSTOCK REAL-FILL LEARNING POLICY
+
+Robinhood Agentic account history is the source of truth for real-money performance. Teststock's modeled trade-history.json may still be used for scanner calibration, but it must never override confirmed Robinhood fills, exits, positions, or realized P&L.
+
+On every Claude autopilot run:
+1. Reconcile the persistent Teststock real-trade journal against Robinhood order history, option order history, positions, closed positions, and account/activity history exposed by the connected tools.
+2. Create or update one journal record per real Teststock position. Use stable Robinhood order IDs whenever available so the same trade cannot be counted twice.
+3. Record actual average entry fill, quantity/contracts, entry time, planned entry, initial stop/invalidation, protective order IDs/status, targets, actual exit fills, exit reason, realized P&L, realized return, estimated slippage, and realized R when the inputs are reliable.
+4. A trade is RESOLVED only when Robinhood confirms the position is closed. Ambiguous/partial/unmatched records remain UNKNOWN/OPEN and are excluded from any rule that could increase risk.
+5. Never infer a fill from a submitted order. Never infer an exit from price touching a target/stop. Robinhood fill/position history must confirm it.
+6. Recompute summary statistics from resolved real trades after reconciliation: wins, losses, win rate, total realized P&L, average winner, average loser, average realized R, and observed drawdown when reliable equity history exists.
+
+REAL-FILL ADAPTATION — CONSERVATIVE ONLY
+- Fewer than 10 resolved real trades total: do not increase risk based on the real-fill sample. Existing Teststock limits remain the maximum.
+- At least 10 resolved real trades and average realized R <= 0: reduce all new-entry size by 50% until average realized R is positive again over at least 10 resolved trades.
+- At least 10 resolved real trades and win rate < 40%: no new options and reduce stock/crypto size by 50%.
+- At least 15 resolved real trades and average realized R < -0.25: pause all new positions; manage exits only until a user review or until a later reconciled sample of at least 15 resolved trades improves above -0.10 R.
+- Per-symbol or per-setup learning may reduce or block size only when there are at least 5 resolved real trades for that exact symbol/setup. Never increase size from a sample smaller than 10 for the exact bucket.
+- Good performance may never override the capital ladder, profit locks, account floor, daily/weekly circuit breakers, spread/slippage limits, funding lock, or any smaller risk limit.
+- The real-fill journal may make Teststock more conservative automatically. It must not make the system more aggressive than the current Teststock signal without a future explicit policy change.
+
+The persistent journal should use the schema at:
+https://sablewolphen.github.io/Teststock/teststock-real-trade-journal-template.json
+
+If a persistent project/workspace journal file is unavailable on a run, reconstruct the relevant recent real-trade statistics directly from Robinhood history before considering a new trade. Do not guess and do not use missing history to justify more risk.
