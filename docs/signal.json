@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 14,
+  "schemaVersion": 15,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-08-19T09:54:32.813Z",
+  "generatedAt": "2026-08-19T09:56:01.632Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -261,15 +261,17 @@
     "WHOLE-CONTRACT OPTIONS CHECK: option percentages are not fractional-contract sizing. Before any option order, calculate the live dollar risk cap from current Agentic-account equity and the active tier, then compare it with the actual max dollar risk/premium of one whole contract. If one contract exceeds the cap, skip the option.",
     "HOLDOUT + REGIME VALIDATION: inspect entryGateRobustness before new risk. Weak holdout regimes may reduce or block new positions. Never loosen the 52% win-rate, 2.5:1 reward/risk, 15-sample, or 0.5R conservative-expected-value gates because a recent slice looks favorable.",
     "EVENT RISK: obey any stockPlan.policy event blackout and advanced guard. Never bypass an encoded earnings/filing/corporate-action block to force a trade.",
-    "SHADOW DATA: shadowDiagnostics is model-only. Never count it as real P&L or use it to automatically increase live-money risk."
+    "SHADOW DATA: shadowDiagnostics is model-only. Never count it as real P&L or use it to automatically increase live-money risk.",
+    "CRITICAL DEPENDENCY FAIL-CLOSED: if the Teststock signal, Robinhood account/order/position state, protective-exit capability, or journal/history reconciliation is stale, missing, contradictory, or unknown, open no new position. Manage existing exposure only.",
+    "EXECUTION TELEMETRY: record confirmed order/fill/spread/slippage/protection timing when available. Missing telemetry may never be guessed, and bad observed execution may only make sizing more conservative."
   ],
   "stockPlan": {
     "assetClass": "STOCK",
     "overallAction": "WAIT_FOR_MARKET_OPEN",
     "reason": "Market is closed.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T09:39:19.667Z",
-    "expiresAt": "2026-08-20T21:39:19.667Z",
+    "signalAsOf": "2026-08-19T09:55:56.592Z",
+    "expiresAt": "2026-08-20T21:55:56.592Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 3,
       "maxOptionPremiumPct": 8,
@@ -320,8 +322,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T09:54:32.762Z",
-    "expiresAt": "2026-08-19T10:24:32.762Z",
+    "signalAsOf": "2026-08-19T09:56:01.584Z",
+    "expiresAt": "2026-08-19T10:26:01.584Z",
     "policy": {
       "aPlusMinGrowthQuality": 94,
       "aMinGrowthQuality": 88,
@@ -346,7 +348,7 @@
   "entryGateRobustness": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
     "status": "RED_FLAG",
-    "generatedAt": "2026-08-19T09:39:21.967Z",
+    "generatedAt": "2026-08-19T09:56:00.064Z",
     "holdoutStart": "2024-01-01",
     "gatesUnderReview": {
       "minHistoricalWinRatePct": 52,
@@ -581,7 +583,7 @@
   },
   "shadowDiagnostics": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/shadow-trades.json",
-    "generatedAt": "2026-08-19T09:39:22.281Z",
+    "generatedAt": "2026-08-19T09:56:00.580Z",
     "summary": {
       "ACCEPTED": {
         "resolved": 0,
@@ -598,6 +600,83 @@
     },
     "modelOnly": true,
     "instructions": "Accepted/rejected shadow outcomes are diagnostic opportunity-cost data only. Never treat them as Robinhood fills, real P&L, or automatic permission to loosen live-money gates."
+  },
+  "shadowEvidencePolicy": {
+    "minimumResolvedAcceptedBeforeRuleReview": 30,
+    "minimumResolvedRejectedBeforeRuleReview": 30,
+    "automaticLooseningAllowed": false,
+    "instructions": "Do not change or loosen live-money gates from shadow results until at least 30 ACCEPTED and 30 REJECTED shadow decisions are resolved. Even after that threshold, shadow data may justify a review only; it may never automatically increase live risk."
+  },
+  "systemHealth": {
+    "generatedAt": "2026-08-19T09:56:01.664Z",
+    "signalAgeMinutes": 0,
+    "entryGateValidation": {
+      "status": "RED_FLAG",
+      "ageMinutes": 0,
+      "required": true
+    },
+    "shadowLedger": {
+      "status": "AVAILABLE",
+      "ageMinutes": 0,
+      "requiredForTrading": false
+    },
+    "runtimeBroker": {
+      "status": "RUNTIME_CHECK_REQUIRED",
+      "required": true
+    },
+    "runtimeJournalPersistence": {
+      "status": "RUNTIME_CHECK_REQUIRED",
+      "requiredForRiskIncrease": true
+    },
+    "runtimeProtectiveExitCapability": {
+      "status": "RUNTIME_CHECK_REQUIRED",
+      "requiredForNewStockOrOption": true
+    },
+    "actionOnCriticalFailure": "NO_NEW_TRADES_MANAGE_EXITS_IF_POSSIBLE",
+    "criticalDependencies": [
+      "fresh Teststock signal",
+      "live Robinhood equity/cash",
+      "known order/position state",
+      "verified protective-exit capability for a new stock/option",
+      "journal reconciliation or reliable Robinhood-history reconstruction"
+    ],
+    "instructions": "At runtime, any missing, stale, contradictory, or unknown CRITICAL dependency means no new position. Cash is preferred to guessing. Existing exposure should still be protected or exited when possible."
+  },
+  "dailySummaryPolicy": {
+    "enabled": true,
+    "oncePerCalendarDay": true,
+    "preferredLocalHour": 8,
+    "fields": [
+      "account value",
+      "cash buying power",
+      "open positions",
+      "open planned risk",
+      "realized P&L",
+      "trades today",
+      "current regime",
+      "blocked setups",
+      "system health",
+      "journal persistence"
+    ],
+    "instructions": "Claude should emit one concise daily health/performance summary on the first scheduled run at or after 08:00 local time when local time is available; otherwise use the first run of each UTC calendar day. Do not spam repeated daily summaries."
+  },
+  "executionTelemetryPolicy": {
+    "enabled": true,
+    "sourceOfTruth": "ROBINHOOD_CONFIRMED_FILLS_AND_ORDERS",
+    "track": [
+      "submitted order type",
+      "submitted limit/stop price",
+      "bid/ask spread at submission when available",
+      "actual average fill",
+      "time to fill",
+      "adverse entry slippage",
+      "protective-order creation latency",
+      "protective-order verification status",
+      "exit reference",
+      "actual exit fill",
+      "adverse exit slippage"
+    ],
+    "instructions": "Record only observed values from Robinhood/runtime tools. Never invent unavailable telemetry. Repeated bad execution may only reduce or block risk under the real-fill learning policy."
   },
   "strategyChangeLogUrl": "https://sablewolphen.github.io/Teststock/strategy-changelog.txt"
 }
