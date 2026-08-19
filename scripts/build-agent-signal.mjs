@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const budgets=[50,100,200,500];
+const REFERENCE_BUDGET=500;
 const outDir=path.resolve('docs');
 const dataDir=path.join(outDir,'data');
 const round=(n,d=2)=>Number(Number(n||0).toFixed(d));
@@ -12,7 +12,7 @@ function freshness(plan){
   const ageMinutes=Number.isFinite(asOf)?Math.max(0,Math.round((Date.now()-asOf)/60000)):null;
   const crypto=plan?.assetClass==='CRYPTO';
   const marketOpen=crypto?true:Boolean(plan?.session?.isOpen||plan?.market==='OPEN');
-  const maxAgeMinutes=crypto?150:marketOpen?45:2160;
+  const maxAgeMinutes=crypto?30:marketOpen?45:2160;
   return {marketOpen,ageMinutes,maxAgeMinutes,stale:ageMinutes==null||ageMinutes>maxAgeMinutes};
 }
 function stockState(r,f){
@@ -24,69 +24,77 @@ function stockState(r,f){
   if(px>max)return'DO_NOT_CHASE';
   return'AUTO_BUY_ELIGIBLE';
 }
+const pctOfReference=n=>round((Number(n||0)/REFERENCE_BUDGET)*100,2);
+
 function buildStock(plan){
-  if(plan?.error)return{budget:plan.budget,overallAction:'DO_NOT_TRADE',reason:plan.error};
+  if(plan?.error)return{overallAction:'DO_NOT_TRADE',reason:plan.error};
   const f=freshness(plan);
   const stocks=(plan.allocations||[]).map((r,i)=>({
-    rank:i+1,ticker:r.symbol,sector:r.sector||null,action:stockState(r,f),allocationDollars:round(r.allocationDollars),estimatedSharesAtEntry:r.estimatedSharesAtEntry,
+    rank:i+1,ticker:r.symbol,sector:r.sector||null,action:stockState(r,f),
+    allocationPctOfRobinhoodBuyingPower:pctOfReference(r.allocationDollars),
     scanPrice:round(r.price),minimumEntry:round(r.entry),maximumEntry:round(Number(r.entry||0)*1.02),stop:round(r.stop),target1:round(r.target1),target2:round(r.target2),
-    estimatedLossAtStop:round(r.estimatedLossAtStop),rewardRisk:r.rewardRisk,growthQuality:r.growthQuality,historicalWinRate:r.validation?.winRate??null,historicalSamples:r.validation?.samples??null
+    plannedStopRiskPctOfRobinhoodBuyingPower:pctOfReference(r.estimatedLossAtStop),rewardRisk:r.rewardRisk,growthQuality:r.growthQuality,historicalWinRate:r.validation?.winRate??null,historicalSamples:r.validation?.samples??null
   }));
   const ready=stocks.filter(x=>x.action==='AUTO_BUY_ELIGIBLE');
   const elite=plan.eliteOption||{};
   const option=elite.passed?{
     action:f.stale?'STALE_DO_NOT_TRADE':!f.marketOpen?'MARKET_CLOSED_RECHECK':ready.length?'AUTO_BUY_ELIGIBLE':'WAIT_FOR_UNDERLYING_TRIGGER',
     ticker:plan.allocations?.[0]?.symbol||plan.ranked?.[0]?.symbol||null,
-    maxRiskDollars:round(elite.contract?.maxRisk),kind:elite.contract?.kind||null,side:elite.contract?.side||null,expiry:elite.contract?.expiry||null,
+    maxRiskPctOfRobinhoodBuyingPower:round(Math.min(Number(plan.policy?.maxOptionPremiumPct||12),pctOfReference(elite.contract?.maxRisk)),2),
+    contractReferenceMaxRiskDollars:round(elite.contract?.maxRisk),kind:elite.contract?.kind||null,side:elite.contract?.side||null,expiry:elite.contract?.expiry||null,
     longStrike:elite.contract?.longStrike??elite.contract?.strike??null,shortStrike:elite.contract?.shortStrike??null,dte:elite.dte,checks:elite.checks
   }:null;
   let overallAction='DO_NOT_TRADE',reason='Cash is the selected position.';
   if(f.stale){reason='Signal is stale.';}
   else if(!f.marketOpen){overallAction='WAIT_FOR_MARKET_OPEN';reason='Market is closed.';}
-  else if(option?.action==='AUTO_BUY_ELIGIBLE'){overallAction='AUTO_BUY_OPTION_ELIGIBLE';reason='An elite defined-risk option passed every growth gate; verify live Robinhood pricing before execution.';}
-  else if(ready.length){overallAction='AUTO_BUY_STOCK_ELIGIBLE';reason='One or more high-quality stock allocations are inside the allowed entry range.';}
+  else if(option?.action==='AUTO_BUY_ELIGIBLE'){overallAction='AUTO_BUY_OPTION_ELIGIBLE';reason='An elite defined-risk option passed every growth gate; size it from live Robinhood cash buying power and verify live pricing before execution.';}
+  else if(ready.length){overallAction='AUTO_BUY_STOCK_ELIGIBLE';reason='One or more high-quality stock allocations are inside the allowed entry range; size them from live Robinhood cash buying power.';}
   else if(stocks.length){overallAction='WAIT_FOR_TRIGGER';reason='Qualified ideas exist but are not inside the valid entry range.';}
-  return {budget:plan.budget,overallAction,reason,confidence:plan.confidence,signalAsOf:plan.asOf,expiresAt:plan.asOf?new Date(new Date(plan.asOf).getTime()+(f.marketOpen?45:2160)*60000).toISOString():null,keepCashDollars:plan.keepCashDollars,estimatedPortfolioStopLoss:plan.estimatedPortfolioStopLoss,policy:plan.policy,outcomeGuard:plan.outcomeGuard,stockOrders:stocks,eliteOption:option};
+  return {
+    overallAction,reason,confidence:plan.confidence,signalAsOf:plan.asOf,
+    expiresAt:plan.asOf?new Date(new Date(plan.asOf).getTime()+(f.marketOpen?45:2160)*60000).toISOString():null,
+    policy:{...plan.policy,sizingMode:'ROBINHOOD_LIVE_CASH_BUYING_POWER'},outcomeGuard:plan.outcomeGuard,stockOrders:stocks,eliteOption:option
+  };
 }
 function buildCrypto(plan){
-  if(plan?.error)return{budget:plan.budget,overallAction:'DO_NOT_TRADE',reason:plan.error};
+  if(plan?.error)return{overallAction:'DO_NOT_TRADE',reason:plan.error};
   const f=freshness(plan);
   const orders=(plan.allocations||[]).map((r,i)=>{
     let action='SIGNAL_ONLY_WAIT';const px=Number(r.price||0),entry=Number(r.entry||0);
     if(f.stale)action='STALE_DO_NOT_TRADE';else if(px>=entry*.998&&px<=entry*1.02)action='SIGNAL_ONLY_BUY_ZONE';else if(px>entry*1.02)action='DO_NOT_CHASE';
-    return{rank:i+1,ticker:r.symbol,action,allocationDollars:round(r.allocationDollars),estimatedUnitsAtEntry:r.estimatedUnitsAtEntry,scanPrice:round(r.price,6),minimumEntry:round(r.entry,6),maximumEntry:round(Number(r.entry||0)*1.02,6),stop:round(r.stop,6),target1:round(r.target1,6),target2:round(r.target2,6),estimatedLossAtStop:round(r.estimatedLossAtStop),rewardRisk:r.rewardRisk1,growthQuality:r.growthQuality,confirm4h:r.confirm4h,historicalWinRate:r.validation?.winRate??null,historicalSamples:r.validation?.samples??null};
+    return{rank:i+1,ticker:r.symbol,action,allocationPctOfRobinhoodBuyingPower:pctOfReference(r.allocationDollars),scanPrice:round(r.price,6),minimumEntry:round(r.entry,6),maximumEntry:round(Number(r.entry||0)*1.02,6),stop:round(r.stop,6),target1:round(r.target1,6),target2:round(r.target2,6),plannedStopRiskPctOfRobinhoodBuyingPower:pctOfReference(r.estimatedLossAtStop),rewardRisk:r.rewardRisk1,growthQuality:r.growthQuality,confirm4h:r.confirm4h,historicalWinRate:r.validation?.winRate??null,historicalSamples:r.validation?.samples??null};
   });
   const buyZone=orders.filter(x=>x.action==='SIGNAL_ONLY_BUY_ZONE');
-  return{budget:plan.budget,overallAction:f.stale?'DO_NOT_TRADE':buyZone.length?'CRYPTO_BUY_ZONE':'WAIT_FOR_CRYPTO_TRIGGER',reason:f.stale?'Crypto signal is stale.':buyZone.length?'A high-conviction crypto setup is in its buy zone, but Robinhood Agentic Trading does not currently support crypto order placement.':'No high-conviction crypto is currently in its allowed buy zone.',confidence:plan.confidence,signalAsOf:plan.asOf,expiresAt:plan.asOf?new Date(new Date(plan.asOf).getTime()+150*60000).toISOString():null,keepCashDollars:plan.keepCashDollars,estimatedPortfolioStopLoss:plan.estimatedPortfolioStopLoss,policy:plan.policy,execution:{agenticTradingSupported:false,mode:'SIGNAL_ONLY',note:'Current Robinhood Agentic Trading supports long equities and options, not crypto order placement.'},cryptoOrders:orders};
+  return{overallAction:f.stale?'DO_NOT_TRADE':buyZone.length?'CRYPTO_BUY_ZONE':'WAIT_FOR_CRYPTO_TRIGGER',reason:f.stale?'Crypto signal is stale.':buyZone.length?'A high-conviction crypto setup is in its buy zone.':'No high-conviction crypto is currently in its allowed buy zone.',confidence:plan.confidence,signalAsOf:plan.asOf,expiresAt:plan.asOf?new Date(new Date(plan.asOf).getTime()+30*60000).toISOString():null,policy:{...plan.policy,sizingMode:'ROBINHOOD_LIVE_CASH_BUYING_POWER'},execution:{mode:'USE_ONLY_IF_CONNECTED_ROBINHOOD_TOOLS_SUPPORT_CRYPTO',note:'At runtime, use crypto order tools only if the connected Robinhood MCP actually exposes them.'},cryptoOrders:orders};
 }
 
-const plans=[],cryptoPlans=[];
-for(const budget of budgets){
-  try{plans.push(buildStock(await read(path.join(dataDir,`growth-plan-${budget}.json`))));}catch(error){plans.push({budget,overallAction:'DO_NOT_TRADE',reason:`Growth plan unavailable: ${error.message}`});}
-  try{cryptoPlans.push(buildCrypto(await read(path.join(dataDir,`crypto-plan-${budget}.json`))));}catch(error){cryptoPlans.push({budget,overallAction:'DO_NOT_TRADE',reason:`Crypto plan unavailable: ${error.message}`});}
-}
+let stockPlan,cryptoPlan;
+try{stockPlan=buildStock(await read(path.join(dataDir,`growth-plan-${REFERENCE_BUDGET}.json`)));}catch(error){stockPlan={overallAction:'DO_NOT_TRADE',reason:`Growth plan unavailable: ${error.message}`};}
+try{cryptoPlan=buildCrypto(await read(path.join(dataDir,`crypto-plan-${REFERENCE_BUDGET}.json`)));}catch(error){cryptoPlan={overallAction:'DO_NOT_TRADE',reason:`Crypto plan unavailable: ${error.message}`};}
 
 const signal={
-  schemaVersion:5,source:'Teststock',purpose:'Strict growth-autopilot policy for stocks/options plus high-conviction crypto signals.',generatedAt:new Date().toISOString(),defaultBudget:50,
-  autopilot:{enabled:true,requiresPerOrderApproval:false,scope:'Dedicated Robinhood Agentic account; current execution support is equities/options only.'},
+  schemaVersion:6,source:'Teststock',purpose:'Account-aware growth autopilot. Teststock supplies percentages and trade gates; the trading agent sizes from the live Robinhood Agentic account.',generatedAt:new Date().toISOString(),
+  sizing:{mode:'ROBINHOOD_LIVE_CASH_BUYING_POWER',fixedWebsiteBudgets:false,instructions:'Read the connected Robinhood Agentic account on every run. Use only current non-margin cash buying power. Convert allocation percentages into dollar amounts at execution time. Never infer the account balance from Teststock.'},
+  autopilot:{enabled:true,requiresPerOrderApproval:false,scope:'Dedicated Robinhood Agentic account only.'},
   hardRules:[
-    'Never use margin, borrowed funds, naked options, short stock, leveraged crypto, or undefined-risk option positions.',
+    'The connected Robinhood Agentic account is the only source of truth for account balance, cash buying power, positions, and open orders.',
+    'Never use a fixed Teststock dollar budget. Re-read Robinhood cash buying power immediately before sizing a new trade.',
+    'Use only non-margin cash buying power. Never use margin, borrowed funds, naked options, short stock, leveraged crypto, or undefined-risk option positions.',
     'Never add to a losing position and never move a stop farther away from the entry.',
-    'Never exceed allocationDollars for a stock/crypto signal or maxRiskDollars for an option.',
+    'For stocks, allocationPctOfRobinhoodBuyingPower is the maximum allocation. For options, maxRiskPctOfRobinhoodBuyingPower is the maximum premium/risk allocation.',
     'Before every supported trade, verify Robinhood market status, live executable price, spread, buying power, existing position, open orders, and signal expiration.',
     'Do not buy below minimumEntry or above maximumEntry. If price is outside the range, wait.',
-    'Options are allowed only when eliteOption exists, every elite check is true, and live Robinhood pricing remains acceptable.',
-    'Crypto is signal-only until the connected trading MCP exposes crypto order-placement tools; do not fabricate unsupported crypto execution.',
+    'Options are allowed only when eliteOption exists, every elite check is true, the exact contract is available, and live Robinhood pricing remains acceptable.',
     'If outcomeGuard.optionsLocked is true, do not open a new option position.',
     'If Teststock and Robinhood materially disagree, do not trade.',
     'Unused capital stays in cash; never force a trade to chase a return target.',
-    'For an open supported position, exit when the saved invalidation is breached; never widen risk to avoid realizing a loss.',
+    'For an open position, exit when the saved invalidation is breached; never widen risk to avoid realizing a loss.',
     'At target1, protect gains by reducing risk or taking partial profit; at target2, prioritize profit capture.',
-    'No model or stop can guarantee against loss or slippage.'
+    'No model or stop can guarantee against loss, gaps, slippage, or option decay.'
   ],
-  plans,cryptoPlans
+  stockPlan,cryptoPlan
 };
 await fs.writeFile(path.join(outDir,'signal.json'),JSON.stringify(signal,null,2));
 await fs.writeFile(path.join(dataDir,'claude-signal.json'),JSON.stringify(signal,null,2));
-await fs.writeFile(path.join(dataDir,'crypto-signal.json'),JSON.stringify({schemaVersion:1,generatedAt:signal.generatedAt,cryptoPlans},null,2));
-console.log('Generated Teststock agent signal schema v5 with crypto');
+await fs.writeFile(path.join(dataDir,'crypto-signal.json'),JSON.stringify({schemaVersion:2,generatedAt:signal.generatedAt,sizing:signal.sizing,cryptoPlan},null,2));
+console.log('Generated Teststock agent signal schema v6 with live Robinhood sizing');
