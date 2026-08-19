@@ -2,6 +2,16 @@ TESTSTOCK STRATEGY CHANGE LOG
 
 This file records changes to trading RULES, thresholds, tiers, sizing, validation, and safety behavior. Routine market-data refreshes and changing trade signals are intentionally not listed here.
 
+2026-08-19 — SYSTEM HEALTH + PERSISTENCE + EXECUTION TELEMETRY
+- Added machine-readable systemHealth policy to signal.json. Critical dependencies now fail closed: stale/missing/contradictory Teststock data, unknown Robinhood balances/orders/positions, failed journal/history reconciliation, or unavailable required protective-exit capability means no new position.
+- Added a visible System Health dashboard to the public Teststock page. GitHub-side signal/validation status is shown directly; Robinhood, protective-exit, and journal-persistence checks are clearly marked as runtime checks rather than guessed.
+- Added a cross-run journal persistence self-test using a nonce. Claude may mark the journal PERSISTENT only after a later scheduled run reads back the same nonce. Failed/unverified persistence falls back to Robinhood-history reconstruction and may never justify more risk.
+- Expanded real-fill execution telemetry to include order type/price, bid/ask spread at submission when available, time-to-fill, adverse slippage, protective-order creation/verification timing, and protection latency. Missing telemetry remains unknown rather than inferred.
+- Added a protective-order reliability guard: if enough recent supported stock/option entries exist and verified protection falls below 90%, pause new stock/option entries until reliability is restored.
+- Added one concise daily summary policy covering account value, cash, positions, planned risk, realized P&L, trades, regime, blocked setups, system health, and journal persistence.
+- Added a minimum shadow-evidence rule: at least 30 resolved ACCEPTED and 30 resolved REJECTED shadow decisions are required before shadow results can justify even a manual gate-review discussion. Shadow data can never automatically loosen live-money rules.
+- Signal schema advanced to v15 and signal validation now requires fail-closed health metadata, execution-telemetry source-of-truth, daily-summary policy, and shadow sample floors.
+
 2026-08-19 — HOLDOUT VALIDATION + REGIME-SPECIFIC RISK + EVENT/SLIPPAGE/SHADOW GUARDS
 - Entry-gate validation now uses a chronological development period and an untouched holdout period beginning 2024-01-01. The fixed 52% historical win-rate, 2.5:1 reward/risk, 15-sample, and 0.5R conservative-expected-value thresholds are not tuned on the holdout.
 - Validation now publishes a runtime policy separately for calm, volatile, trending-down, trending-up, mixed, and unknown regimes. Weak holdout regimes can block new risk; sparse regimes automatically reduce stock size and block options. Regime validation may only reduce risk, never loosen the base gates.
