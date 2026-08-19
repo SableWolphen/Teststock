@@ -1,0 +1,40 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+const dataDir=path.resolve('docs/data');
+const ledgerFile=path.join(dataDir,'shadow-trades.json');
+const planFile=path.join(dataDir,'growth-plan-500.json');
+const read=async(f,x=null)=>{try{return JSON.parse(await fs.readFile(f,'utf8'));}catch{return x;}};
+const round=(n,d=2)=>Number(Number(n||0).toFixed(d));
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const day=x=>String(x||'').slice(0,10);
+function headers(){const key=process.env.ALPACA_API_KEY||process.env.APCA_API_KEY_ID,secret=process.env.ALPACA_API_SECRET||process.env.APCA_API_SECRET_KEY;if(!key||!secret)throw new Error('Missing Alpaca credentials');return {'APCA-API-KEY-ID':key,'APCA-API-SECRET-KEY':secret};}
+async function bars(symbol,start){const q=new URLSearchParams({symbols:symbol,timeframe:'1Day',start,limit:'1000',adjustment:'all',feed:'iex'});const r=await fetch(`https://data.alpaca.markets/v2/stocks/bars?${q}`,{headers:headers()});if(!r.ok)throw new Error(`Alpaca ${r.status}`);const raw=await r.json();return raw.bars?.[symbol]||[];}
+function resolveTrade(t,xs){
+  if(t.status!=='OPEN')return t;const entry=Number(t.entry),stop=Number(t.stop),target=Number(t.target2||t.target1),risk=Math.max(.01,entry-stop);if(!(entry>stop&&target>entry))return {...t,status:'UNKNOWN',notes:'Invalid shadow geometry'};
+  let entered=false,count=0;
+  for(const b of xs){if(day(b.t)<=t.createdDate)continue;if(count>=20)break;count++;
+    if(!entered){if(!(b.l<=entry&&b.h>=entry))continue;entered=true;t.entryTouchedAt=day(b.t);}
+    const stopHit=b.l<=stop,targetHit=b.h>=target;
+    if(stopHit&&targetHit)return {...t,status:'AMBIGUOUS',resolvedAt:day(b.t),realizedR:null};
+    if(stopHit)return {...t,status:'RESOLVED',outcome:'LOSS',resolvedAt:day(b.t),realizedR:-1};
+    if(targetHit)return {...t,status:'RESOLVED',outcome:'WIN',resolvedAt:day(b.t),realizedR:round((target-entry)/risk,2)};
+  }
+  if(entered&&count>=20){const last=xs.filter(b=>day(b.t)>t.createdDate).slice(0,20).at(-1);if(last){const r=clamp((Number(last.c)-entry)/risk,-1,(target-entry)/risk);return {...t,status:'RESOLVED',outcome:r>0?'WIN':r<0?'LOSS':'FLAT',resolvedAt:day(last.t),realizedR:round(r,2)};}}
+  return t;
+}
+function summary(rows){const done=rows.filter(x=>x.status==='RESOLVED'&&Number.isFinite(Number(x.realizedR))),stats={};for(const decision of ['ACCEPTED','REJECTED']){const xs=done.filter(x=>x.decision===decision),wins=xs.filter(x=>Number(x.realizedR)>0).length;stats[decision]={resolved:xs.length,winRatePct:xs.length?round(wins/xs.length*100,1):null,averageR:xs.length?round(xs.reduce((s,x)=>s+Number(x.realizedR),0)/xs.length,2):null};}const a=stats.ACCEPTED.averageR,r=stats.REJECTED.averageR;return {...stats,opportunityCostSignal:a!=null&&r!=null?(r>a?'REJECTED_OUTPERFORMED_ACCEPTED':'ACCEPTED_OUTPERFORMED_REJECTED'):'NOT_ENOUGH_DATA',note:'Diagnostic only. Shadow outcomes must never automatically loosen live-money gates.'};}
+
+const plan=await read(planFile,{});let ledger=await read(ledgerFile,{schemaVersion:1,generatedAt:null,trades:[],summary:{}});ledger.trades=Array.isArray(ledger.trades)?ledger.trades:[];
+const openSymbols=[...new Set(ledger.trades.filter(x=>x.status==='OPEN').map(x=>x.symbol))];
+for(const symbol of openSymbols){try{const xs=await bars(symbol,ledger.trades.filter(x=>x.symbol===symbol&&x.status==='OPEN').map(x=>x.createdDate).sort()[0]);ledger.trades=ledger.trades.map(t=>t.symbol===symbol?resolveTrade({...t},xs):t);}catch(error){console.warn(`Shadow update ${symbol}: ${error.message}`);}}
+const today=new Date().toISOString().slice(0,10),accepted=new Set((plan.allocations||[]).map(x=>x.symbol));
+const candidates=(plan.ranked||[]).slice(0,5);
+for(const r of candidates){
+  const decision=accepted.has(r.symbol)?'ACCEPTED':'REJECTED';
+  const reasons=decision==='ACCEPTED'?['Cleared current Teststock gates and advanced guards']:(plan.advancedGuards?.rejectedCandidates||[]).find(x=>x.symbol===r.symbol)?.reasons||['Rejected by one or more current gates'];
+  const id=`${today}-${r.symbol}-${decision}-${round(r.entry,2)}-${round(r.stop,2)}`;if(ledger.trades.some(x=>x.id===id))continue;
+  ledger.trades.push({id,createdDate:today,createdAt:new Date().toISOString(),decision,symbol:r.symbol,setupType:'STOCK_TREND',runtimeRegime:plan.advancedGuards?.runtimeRegime||'UNKNOWN',entry:round(r.entry),stop:round(r.stop),target1:round(r.target1),target2:round(r.target2),growthQuality:r.growthQuality,rewardRisk:r.rewardRisk,reasons,status:'OPEN',outcome:null,realizedR:null,modelOnly:true});
+}
+ledger.trades=ledger.trades.slice(-1000);ledger.generatedAt=new Date().toISOString();ledger.summary=summary(ledger.trades);ledger.rules=['Tracks both accepted and rejected model candidates for opportunity-cost diagnostics.','Uses future Alpaca daily bars only after the decision date; never uses future data to create the decision.','Shadow performance may identify overly strict or weak gates, but it may never automatically increase live-money risk or loosen a gate.','Robinhood real-fill history remains authoritative for actual-money performance.'];
+await fs.writeFile(ledgerFile,JSON.stringify(ledger,null,2));console.log(`Shadow ledger: ${ledger.trades.length} records; ${JSON.stringify(ledger.summary)}`);
