@@ -1,12 +1,20 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "source": "Teststock",
-  "purpose": "Account-aware growth autopilot with explicitly separated STOCK, OPTION, and CRYPTO instructions.",
-  "generatedAt": "2026-08-19T00:29:08.709Z",
+  "purpose": "Account-aware growth autopilot with explicit asset-class routing and a user-only funding lock.",
+  "generatedAt": "2026-08-19T00:37:27.819Z",
+  "funding": {
+    "mode": "USER_DEPOSITS_ONLY",
+    "initialUserFundingIntentDollars": 100,
+    "agentMayInitiateDeposits": false,
+    "agentMayInitiateWithdrawals": false,
+    "agentMayInitiateBankTransfers": false,
+    "instructions": "Use only cash and proceeds already inside the dedicated Robinhood Agentic account. Never pull money from Chase, Crew, Citi, Capital One, any bank, debit card, credit line, or any external account. Only the user may manually add more money. If the user adds more later, the agent may use the newly available non-margin cash under the normal risk rules."
+  },
   "sizing": {
-    "mode": "ROBINHOOD_LIVE_CASH_BUYING_POWER",
+    "mode": "ROBINHOOD_EXISTING_CASH_ONLY",
     "fixedWebsiteBudgets": false,
-    "instructions": "Read the connected Robinhood Agentic account on every run. Use only current non-margin cash buying power. Convert allocation percentages into dollar amounts at execution time. Never infer the account balance from Teststock."
+    "instructions": "Read the dedicated Robinhood Agentic account on every run. Use only current non-margin cash buying power already present there. Convert allocation percentages into dollar amounts at execution time. Never initiate funding or infer external money is available."
   },
   "autopilot": {
     "enabled": true,
@@ -19,13 +27,16 @@
     "CRYPTO": "Use only cryptoPlan.cryptoOrders. Never treat a crypto symbol as a stock or option."
   },
   "hardRules": [
-    "The connected Robinhood Agentic account is the only source of truth for account balance, cash buying power, positions, and open orders.",
-    "Never use a fixed Teststock dollar budget. Re-read Robinhood cash buying power immediately before sizing a new trade.",
+    "FUNDING LOCK: the agent must never initiate a deposit, ACH transfer, debit-card transfer, bank transfer, wire, internal transfer, or any other movement of money into the Robinhood Agentic account.",
+    "Only the user may manually add capital. If the user initially deposits $100, that is the only outside principal available until the user personally adds more. Trading profits may remain and be reused inside the Agentic account.",
+    "The agent must never withdraw money from, charge, borrow against, or otherwise access Chase, Crew, Citi, Capital One, any linked bank, debit card, credit line, retirement account, or any external financial account.",
+    "The dedicated Robinhood Agentic account is the only source of truth for cash buying power, positions, and open orders.",
+    "Never use a fixed website dollar budget. Re-read existing Robinhood non-margin cash buying power immediately before sizing a new trade.",
     "Never confuse asset classes: STOCK orders come only from stockPlan.stockOrders, OPTION orders come only from stockPlan.eliteOption, and CRYPTO orders come only from cryptoPlan.cryptoOrders.",
-    "Use only non-margin cash buying power. Never use margin, borrowed funds, naked options, short stock, leveraged crypto, or undefined-risk option positions.",
+    "Use only non-margin cash already inside the dedicated Agentic account. Never use margin, borrowed funds, naked options, short stock, leveraged crypto, or undefined-risk option positions.",
     "Never add to a losing position and never move a stop farther away from the entry.",
     "For stocks and crypto, allocationPctOfRobinhoodBuyingPower is the maximum allocation. For options, maxRiskPctOfRobinhoodBuyingPower is the maximum premium/risk allocation.",
-    "Before every supported trade, verify Robinhood market status when applicable, live executable price, spread, buying power, existing position, open orders, and signal expiration.",
+    "Before every supported trade, verify Robinhood market status when applicable, live executable price, spread, current Agentic-account buying power, existing position, open orders, and signal expiration.",
     "Do not buy below minimumEntry or above maximumEntry. If price is outside the range, wait.",
     "Options are allowed only when eliteOption exists, every elite check is true, the exact contract is available, and live Robinhood pricing remains acceptable.",
     "Crypto may be executed only if the connected Robinhood tools explicitly expose crypto order placement at runtime; otherwise crypto remains signal-only.",
@@ -41,24 +52,30 @@
     "overallAction": "WAIT_FOR_MARKET_OPEN",
     "reason": "Market is closed.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T00:29:04.305Z",
-    "expiresAt": "2026-08-20T12:29:04.305Z",
+    "signalAsOf": "2026-08-19T00:37:23.678Z",
+    "expiresAt": "2026-08-20T12:37:23.678Z",
     "policy": {
-      "maxPlannedPortfolioStopPct": 5,
-      "maxOptionPremiumPct": 12,
+      "maxPlannedPortfolioStopPct": 3,
+      "maxOptionPremiumPct": 10,
       "noMargin": true,
       "noAverageDown": true,
       "noNakedOptions": true,
       "noChasingPct": 2,
       "optionsRequireEliteGate": true,
-      "sizingMode": "ROBINHOOD_LIVE_CASH_BUYING_POWER"
+      "minRewardRisk": 2.5,
+      "minHistoricalSamples": 15,
+      "minHistoricalWinRate": 52,
+      "minConservativeExpectedR": 0.5,
+      "sizingMode": "ROBINHOOD_EXISTING_CASH_ONLY"
     },
     "outcomeGuard": {
       "resolvedSample": 0,
       "recentWins": 0,
       "recentLosses": 0,
+      "recentWinRate": null,
       "consecutiveLosses": 0,
       "optionsLocked": false,
+      "cooldown": "NORMAL",
       "sizeMultiplier": 1
     },
     "stockOrders": [],
@@ -69,8 +86,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No high-conviction crypto is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T00:29:08.663Z",
-    "expiresAt": "2026-08-19T00:59:08.663Z",
+    "signalAsOf": "2026-08-19T00:37:27.783Z",
+    "expiresAt": "2026-08-19T01:07:27.783Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 4,
       "minGrowthQuality": 92,
@@ -80,7 +97,7 @@
       "noAverageDown": true,
       "noChasingPct": 2,
       "cryptoIs24x7": true,
-      "sizingMode": "ROBINHOOD_LIVE_CASH_BUYING_POWER"
+      "sizingMode": "ROBINHOOD_EXISTING_CASH_ONLY"
     },
     "execution": {
       "mode": "USE_ONLY_IF_CONNECTED_ROBINHOOD_TOOLS_SUPPORT_CRYPTO",

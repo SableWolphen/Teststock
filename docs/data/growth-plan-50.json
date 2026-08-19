@@ -1,12 +1,12 @@
 {
-  "schemaVersion": 1,
-  "generatedAt": "2026-08-19T00:29:07.664Z",
-  "asOf": "2026-08-19T00:29:02.351Z",
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-19T00:37:26.824Z",
+  "asOf": "2026-08-19T00:37:21.312Z",
   "budget": 50,
   "market": "CLOSED",
   "session": {
     "isOpen": false,
-    "timestamp": "2026-08-18T20:29:01.598670708-04:00",
+    "timestamp": "2026-08-18T20:37:20.023614888-04:00",
     "nextOpen": "2026-08-19T09:30:00-04:00",
     "nextClose": "2026-08-19T16:00:00-04:00",
     "label": "CLOSED"
@@ -24,22 +24,28 @@
     "fundamentals": "SEC EDGAR XBRL",
     "history": "Alpaca bars + Teststock outcomes"
   },
-  "objective": "Aggressive growth with capital preservation gates; no return is guaranteed.",
+  "objective": "Aggressive selective compounding with expectancy and capital-preservation gates; no return is guaranteed.",
   "policy": {
-    "maxPlannedPortfolioStopPct": 5,
-    "maxOptionPremiumPct": 12,
+    "maxPlannedPortfolioStopPct": 3,
+    "maxOptionPremiumPct": 10,
     "noMargin": true,
     "noAverageDown": true,
     "noNakedOptions": true,
     "noChasingPct": 2,
-    "optionsRequireEliteGate": true
+    "optionsRequireEliteGate": true,
+    "minRewardRisk": 2.5,
+    "minHistoricalSamples": 15,
+    "minHistoricalWinRate": 52,
+    "minConservativeExpectedR": 0.5
   },
   "outcomeGuard": {
     "resolvedSample": 0,
     "recentWins": 0,
     "recentLosses": 0,
+    "recentWinRate": null,
     "consecutiveLosses": 0,
     "optionsLocked": false,
+    "cooldown": "NORMAL",
     "sizeMultiplier": 1
   },
   "action": "TRADE CANDIDATE",
@@ -90,7 +96,11 @@
       "holdingStyle": "Position trade: several weeks to several months",
       "reviewCadence": "Weekly",
       "rewardRisk": 1.5,
-      "growthQuality": 100
+      "expectancy": {
+        "expectedR": 0.8,
+        "conservativeExpectedR": 0.58
+      },
+      "growthQuality": 98
     },
     {
       "rank": 2,
@@ -158,7 +168,11 @@
       "holdingStyle": "Position trade: several weeks to several months",
       "reviewCadence": "Weekly",
       "rewardRisk": 1.5,
-      "growthQuality": 100
+      "expectancy": {
+        "expectedR": 0.52,
+        "conservativeExpectedR": 0.41
+      },
+      "growthQuality": 97
     }
   ],
   "allocations": [],
@@ -167,7 +181,7 @@
   "eliteOption": {
     "passed": false,
     "label": "NO OPTION",
-    "maxOptionRiskDollars": 6,
+    "maxOptionRiskDollars": 5,
     "dte": null,
     "checks": {
       "exists": false,
@@ -175,7 +189,8 @@
       "bullish": false,
       "quality": true,
       "learning": true,
-      "historical": true,
+      "historical": false,
+      "expectancy": false,
       "rewardRisk": false,
       "market": true,
       "sector": true,
@@ -187,6 +202,6 @@
     "contract": null
   },
   "reasons": [
-    "No setup cleared the growth and risk gates; cash is the selected position."
+    "No setup cleared the stricter expectancy and risk gates; cash is the selected position."
   ]
 }
