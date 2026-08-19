@@ -1,12 +1,12 @@
 {
-  "schemaVersion": 2,
-  "generatedAt": "2026-08-19T00:37:26.828Z",
-  "asOf": "2026-08-19T00:37:22.186Z",
+  "schemaVersion": 3,
+  "generatedAt": "2026-08-19T00:54:00.814Z",
+  "asOf": "2026-08-19T00:53:55.833Z",
   "budget": 100,
   "market": "CLOSED",
   "session": {
     "isOpen": false,
-    "timestamp": "2026-08-18T20:37:21.348520292-04:00",
+    "timestamp": "2026-08-18T20:53:55.06381273-04:00",
     "nextOpen": "2026-08-19T09:30:00-04:00",
     "nextClose": "2026-08-19T16:00:00-04:00",
     "label": "CLOSED"
@@ -24,10 +24,11 @@
     "fundamentals": "SEC EDGAR XBRL",
     "history": "Alpaca bars + Teststock outcomes"
   },
-  "objective": "Aggressive selective compounding with expectancy and capital-preservation gates; no return is guaranteed.",
+  "objective": "Aggressive selective compounding with conservative expectancy, adaptive performance, and capital-preservation gates; no return is guaranteed.",
   "policy": {
     "maxPlannedPortfolioStopPct": 3,
-    "maxOptionPremiumPct": 10,
+    "maxOptionPremiumPct": 8,
+    "maxConcurrentNewPositions": 2,
     "noMargin": true,
     "noAverageDown": true,
     "noNakedOptions": true,
@@ -46,7 +47,8 @@
     "consecutiveLosses": 0,
     "optionsLocked": false,
     "cooldown": "NORMAL",
-    "sizeMultiplier": 1
+    "sizeMultiplier": 1,
+    "reason": "Normal risk mode."
   },
   "action": "TRADE CANDIDATE",
   "confidence": "CASH",
@@ -99,6 +101,15 @@
       "expectancy": {
         "expectedR": 0.8,
         "conservativeExpectedR": 0.58
+      },
+      "adaptivePerformance": {
+        "samples": 0,
+        "wins": 0,
+        "losses": 0,
+        "winRate": null,
+        "sizeMultiplier": 1,
+        "qualityAdjustment": 0,
+        "label": "UNPROVEN"
       },
       "growthQuality": 98
     },
@@ -172,6 +183,15 @@
         "expectedR": 0.52,
         "conservativeExpectedR": 0.41
       },
+      "adaptivePerformance": {
+        "samples": 0,
+        "wins": 0,
+        "losses": 0,
+        "winRate": null,
+        "sizeMultiplier": 1,
+        "qualityAdjustment": 0,
+        "label": "UNPROVEN"
+      },
       "growthQuality": 97
     }
   ],
@@ -181,7 +201,7 @@
   "eliteOption": {
     "passed": false,
     "label": "NO OPTION",
-    "maxOptionRiskDollars": 10,
+    "maxOptionRiskDollars": 8,
     "dte": null,
     "checks": {
       "exists": false,
@@ -195,6 +215,7 @@
       "market": true,
       "sector": true,
       "intraday": false,
+      "adaptive": true,
       "definedRisk": false,
       "dte": true,
       "lossGuard": true
@@ -202,6 +223,6 @@
     "contract": null
   },
   "reasons": [
-    "No setup cleared the stricter expectancy and risk gates; cash is the selected position."
+    "No setup cleared the stricter expectancy, adaptive-performance, and risk gates; cash is the selected position."
   ]
 }

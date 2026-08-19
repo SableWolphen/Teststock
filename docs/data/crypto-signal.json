@@ -1,36 +1,91 @@
 {
-  "schemaVersion": 4,
-  "generatedAt": "2026-08-19T00:37:27.819Z",
+  "schemaVersion": 5,
+  "generatedAt": "2026-08-19T00:54:02.130Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
     "agentMayInitiateDeposits": false,
     "agentMayInitiateWithdrawals": false,
     "agentMayInitiateBankTransfers": false,
-    "instructions": "Use only cash and proceeds already inside the dedicated Robinhood Agentic account. Never pull money from Chase, Crew, Citi, Capital One, any bank, debit card, credit line, or any external account. Only the user may manually add more money. If the user adds more later, the agent may use the newly available non-margin cash under the normal risk rules."
+    "instructions": "Use only cash and trading proceeds already inside the dedicated Robinhood Agentic account. Never pull money from any external account. Only the user may manually add more money."
   },
   "sizing": {
-    "mode": "ROBINHOOD_EXISTING_CASH_ONLY",
+    "mode": "ROBINHOOD_EXISTING_CASH_ONLY_WITH_CAPITAL_LADDER",
     "fixedWebsiteBudgets": false,
-    "instructions": "Read the dedicated Robinhood Agentic account on every run. Use only current non-margin cash buying power already present there. Convert allocation percentages into dollar amounts at execution time. Never initiate funding or infer external money is available."
+    "instructions": "Read current non-margin cash buying power and total Agentic-account equity on every run. Apply the capital ladder first, then the smaller Teststock allocation/risk limit. Never initiate funding."
+  },
+  "capitalLadder": {
+    "basis": "Current dedicated Robinhood Agentic-account equity. Manual user deposits are allowed; the agent may never initiate them.",
+    "tiers": [
+      {
+        "minEquity": 0,
+        "maxEquity": 79.99,
+        "label": "RECOVERY",
+        "stockAllocationMultiplier": 0.35,
+        "maxOptionRiskPct": 0,
+        "maxPlannedStopRiskPct": 1,
+        "newOptionsAllowed": false
+      },
+      {
+        "minEquity": 80,
+        "maxEquity": 99.99,
+        "label": "DEFENSE",
+        "stockAllocationMultiplier": 0.5,
+        "maxOptionRiskPct": 0,
+        "maxPlannedStopRiskPct": 1.5,
+        "newOptionsAllowed": false
+      },
+      {
+        "minEquity": 100,
+        "maxEquity": 124.99,
+        "label": "PROVE",
+        "stockAllocationMultiplier": 0.7,
+        "maxOptionRiskPct": 5,
+        "maxPlannedStopRiskPct": 2,
+        "newOptionsAllowed": true
+      },
+      {
+        "minEquity": 125,
+        "maxEquity": 149.99,
+        "label": "SCALE",
+        "stockAllocationMultiplier": 0.85,
+        "maxOptionRiskPct": 7.5,
+        "maxPlannedStopRiskPct": 2.5,
+        "newOptionsAllowed": true
+      },
+      {
+        "minEquity": 150,
+        "maxEquity": null,
+        "label": "GROWTH",
+        "stockAllocationMultiplier": 1,
+        "maxOptionRiskPct": 10,
+        "maxPlannedStopRiskPct": 3,
+        "newOptionsAllowed": true
+      }
+    ],
+    "instructions": "Select exactly one tier from live account equity. Multiply each stock allocationPctOfRobinhoodBuyingPower by stockAllocationMultiplier. For options use the smaller of eliteOption.maxRiskPctOfRobinhoodBuyingPower and tier.maxOptionRiskPct. If the tier disables options, do not open one. Never exceed the tier stop-risk cap."
   },
   "cryptoPlan": {
     "assetClass": "CRYPTO",
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No high-conviction crypto is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T00:37:27.783Z",
-    "expiresAt": "2026-08-19T01:07:27.783Z",
+    "signalAsOf": "2026-08-19T00:54:02.085Z",
+    "expiresAt": "2026-08-19T01:24:02.085Z",
     "policy": {
-      "maxPlannedPortfolioStopPct": 4,
-      "minGrowthQuality": 92,
+      "aPlusMinGrowthQuality": 94,
+      "aMinGrowthQuality": 88,
       "minRewardRisk": 3,
-      "maxPositions": 2,
+      "maxPositions": 1,
+      "aPlusMaxPlannedPortfolioStopPct": 4,
+      "aMaxPlannedPortfolioStopPct": 2,
+      "aPlusMaxAllocationPct": 65,
+      "aMaxAllocationPct": 35,
       "noLeverage": true,
       "noAverageDown": true,
       "noChasingPct": 2,
       "cryptoIs24x7": true,
-      "sizingMode": "ROBINHOOD_EXISTING_CASH_ONLY"
+      "sizingMode": "ROBINHOOD_EXISTING_CASH_ONLY_WITH_CAPITAL_LADDER"
     },
     "execution": {
       "mode": "USE_ONLY_IF_CONNECTED_ROBINHOOD_TOOLS_SUPPORT_CRYPTO",
