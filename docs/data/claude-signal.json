@@ -2,7 +2,7 @@
   "schemaVersion": 20,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-08-19T15:56:44.029Z",
+  "generatedAt": "2026-08-19T16:03:32.615Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -285,11 +285,11 @@
   ],
   "stockPlan": {
     "assetClass": "STOCK",
-    "overallAction": "DO_NOT_TRADE",
-    "reason": "Tracked loss/performance guard paused new trades.",
+    "overallAction": "AUTO_BUY_STOCK_ELIGIBLE",
+    "reason": "One or more high-quality stock allocations passed expectancy and entry gates; live-account protection, profit locks, and circuit breakers must also pass.",
     "confidence": "A_PLUS",
-    "signalAsOf": "2026-08-19T15:56:19.359Z",
-    "expiresAt": "2026-08-19T16:41:19.359Z",
+    "signalAsOf": "2026-08-19T16:02:58.243Z",
+    "expiresAt": "2026-08-19T16:47:58.243Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 3,
       "maxOptionPremiumPct": 8,
@@ -307,6 +307,7 @@
       "minConservativeExpectedR": 0.5,
       "minCostAdjustedConservativeExpectedR": 0.5,
       "assumedStockRoundTripFrictionPct": 0.3,
+      "liveOutcomeBrakeSource": "CONFIRMED_ROBINHOOD_FILLS_ONLY",
       "holdoutValidationRequired": true,
       "eventRiskPolicy": {
         "stockBlackoutDaysBeforeEstimatedReport": 3,
@@ -349,10 +350,12 @@
       "recentLosses": 13,
       "recentWinRate": 0,
       "consecutiveLosses": 13,
-      "optionsLocked": true,
-      "cooldown": "PAUSE_NEW_TRADES",
-      "sizeMultiplier": 0,
-      "reason": "Recent resolved win rate fell below 40%; pause new trades."
+      "source": "MODEL_RESEARCH_ONLY",
+      "liveTradingAuthority": false,
+      "cooldown": "RUNTIME_REAL_FILLS_ONLY",
+      "sizeMultiplier": 1,
+      "optionsLocked": false,
+      "reason": "Scanner/model trade-history is diagnostic only. It must never pause or size live Robinhood trading. Live outcome brakes are computed only from confirmed Robinhood fills/history at runtime."
     },
     "stockOrders": [
       {
@@ -361,14 +364,14 @@
         "ticker": "RPRX",
         "sector": null,
         "action": "AUTO_BUY_ELIGIBLE",
-        "allocationPctOfRobinhoodBuyingPower": 34.07,
-        "scanPrice": 61.1,
-        "minimumEntry": 61.1,
-        "maximumEntry": 62.32,
+        "allocationPctOfRobinhoodBuyingPower": 29.75,
+        "scanPrice": 61.11,
+        "minimumEntry": 61.11,
+        "maximumEntry": 62.33,
         "stop": 58.41,
-        "target1": 65.14,
-        "target2": 68.09,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": 1.5,
+        "target1": 65.16,
+        "target2": 68.13,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 1.31,
         "rewardRisk": 2.6,
         "growthQuality": 100,
         "expectancy": {
@@ -385,7 +388,8 @@
           "winRate": null,
           "sizeMultiplier": 1,
           "qualityAdjustment": 0,
-          "label": "UNPROVEN"
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY"
         },
         "historicalWinRate": 87,
         "historicalSamples": 31
@@ -396,14 +400,14 @@
         "ticker": "SLB",
         "sector": null,
         "action": "WAIT_FOR_TRIGGER",
-        "allocationPctOfRobinhoodBuyingPower": 6.95,
-        "scanPrice": 53.45,
+        "allocationPctOfRobinhoodBuyingPower": 14.03,
+        "scanPrice": 53.59,
         "minimumEntry": 54.38,
         "maximumEntry": 55.47,
-        "stop": 51.33,
-        "target1": 58.96,
-        "target2": 62.31,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.39,
+        "stop": 51.34,
+        "target1": 58.94,
+        "target2": 62.28,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.78,
         "rewardRisk": 2.6,
         "growthQuality": 100,
         "expectancy": {
@@ -411,7 +415,7 @@
           "conservativeExpectedR": 1.71,
           "costAdjustedConservativeExpectedR": 1.65,
           "assumedRoundTripFrictionPct": 0.3,
-          "frictionR": 0.053
+          "frictionR": 0.054
         },
         "adaptivePerformance": {
           "samples": 0,
@@ -420,10 +424,47 @@
           "winRate": null,
           "sizeMultiplier": 1,
           "qualityAdjustment": 0,
-          "label": "UNPROVEN"
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY"
         },
         "historicalWinRate": 78,
         "historicalSamples": 27
+      },
+      {
+        "assetClass": "STOCK",
+        "rank": 3,
+        "ticker": "MRK",
+        "sector": null,
+        "action": "WAIT_FOR_TRIGGER",
+        "allocationPctOfRobinhoodBuyingPower": 1.12,
+        "scanPrice": 149.86,
+        "minimumEntry": 151.46,
+        "maximumEntry": 154.49,
+        "stop": 132.11,
+        "target1": 180.49,
+        "target2": 201.77,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.14,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "expectancy": {
+          "expectedR": 1.63,
+          "conservativeExpectedR": 1.52,
+          "costAdjustedConservativeExpectedR": 1.49,
+          "assumedRoundTripFrictionPct": 0.3,
+          "frictionR": 0.023
+        },
+        "adaptivePerformance": {
+          "samples": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "sizeMultiplier": 1,
+          "qualityAdjustment": 0,
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY"
+        },
+        "historicalWinRate": 73,
+        "historicalSamples": 26
       }
     ],
     "eliteOption": null
@@ -433,8 +474,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T15:56:43.895Z",
-    "expiresAt": "2026-08-19T16:26:43.895Z",
+    "signalAsOf": "2026-08-19T16:03:32.451Z",
+    "expiresAt": "2026-08-19T16:33:32.451Z",
     "policy": {
       "aPlusMinGrowthQuality": 94,
       "aMinGrowthQuality": 88,
@@ -459,7 +500,7 @@
   "entryGateRobustness": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
     "status": "RED_FLAG",
-    "generatedAt": "2026-08-19T15:56:40.489Z",
+    "generatedAt": "2026-08-19T16:03:27.864Z",
     "holdoutStart": "2024-01-01",
     "holdoutEnd": "2025-12-31",
     "secondHoldoutStart": "2026-01-01",
@@ -819,7 +860,7 @@
   },
   "shadowDiagnostics": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/shadow-trades.json",
-    "generatedAt": "2026-08-19T15:56:41.818Z",
+    "generatedAt": "2026-08-19T16:03:29.650Z",
     "summary": {
       "ACCEPTED": {
         "resolved": 0,
@@ -843,7 +884,7 @@
   },
   "probabilityFirstPolicy": {
     "schemaVersion": 2,
-    "generatedAt": "2026-08-19T15:56:43.931Z",
+    "generatedAt": "2026-08-19T16:03:32.499Z",
     "objective": "Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto selective, and cash acceptable. This policy cannot eliminate market loss risk.",
     "stocks": {
       "minGrowthQuality": 92,
@@ -903,7 +944,7 @@
   },
   "crossAssetOpportunityRanking": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/opportunity-ranking-500.json",
-    "generatedAt": "2026-08-19T15:56:43.986Z",
+    "generatedAt": "2026-08-19T16:03:32.565Z",
     "rankingPolicy": {
       "stocksPrimaryOnTies": true,
       "noForcedDiversification": true,
@@ -917,15 +958,15 @@
         "symbol": "RPRX",
         "researchEligible": true,
         "liveChecksRequired": true,
-        "score": 135.21,
+        "score": 135.23,
         "growthQuality": 100,
         "historicalWinRatePct": 87,
         "historicalSamples": 31,
         "rewardRiskTarget1": 1.5,
         "rewardRiskTarget2": 2.6,
         "costAdjustedConservativeExpectedR": 2.06,
-        "plannedAllocationDollars": 170.35,
-        "plannedStopLossDollars": 7.5,
+        "plannedAllocationDollars": 148.75,
+        "plannedStopLossDollars": 6.57,
         "notes": [
           "Primary asset class.",
           "Must still pass live entry, spread, gap, cash, correlation, protection, frequency, account-floor, and real-fill learning checks."
@@ -937,20 +978,40 @@
         "symbol": "SLB",
         "researchEligible": true,
         "liveChecksRequired": true,
-        "score": 129.57,
+        "score": 129.59,
         "growthQuality": 100,
         "historicalWinRatePct": 78,
         "historicalSamples": 27,
         "rewardRiskTarget1": 1.5,
         "rewardRiskTarget2": 2.6,
         "costAdjustedConservativeExpectedR": 1.65,
-        "plannedAllocationDollars": 34.77,
-        "plannedStopLossDollars": 1.95,
+        "plannedAllocationDollars": 70.13,
+        "plannedStopLossDollars": 3.92,
         "notes": [
           "Primary asset class.",
           "Must still pass live entry, spread, gap, cash, correlation, protection, frequency, account-floor, and real-fill learning checks."
         ],
         "rank": 2
+      },
+      {
+        "assetClass": "STOCK",
+        "symbol": "MRK",
+        "researchEligible": true,
+        "liveChecksRequired": true,
+        "score": 128.27,
+        "growthQuality": 100,
+        "historicalWinRatePct": 73,
+        "historicalSamples": 26,
+        "rewardRiskTarget1": 1.5,
+        "rewardRiskTarget2": 2.6,
+        "costAdjustedConservativeExpectedR": 1.49,
+        "plannedAllocationDollars": 5.59,
+        "plannedStopLossDollars": 0.71,
+        "notes": [
+          "Primary asset class.",
+          "Must still pass live entry, spread, gap, cash, correlation, protection, frequency, account-floor, and real-fill learning checks."
+        ],
+        "rank": 3
       }
     ],
     "preferredResearchOpportunity": {
@@ -958,15 +1019,15 @@
       "symbol": "RPRX",
       "researchEligible": true,
       "liveChecksRequired": true,
-      "score": 135.21,
+      "score": 135.23,
       "growthQuality": 100,
       "historicalWinRatePct": 87,
       "historicalSamples": 31,
       "rewardRiskTarget1": 1.5,
       "rewardRiskTarget2": 2.6,
       "costAdjustedConservativeExpectedR": 2.06,
-      "plannedAllocationDollars": 170.35,
-      "plannedStopLossDollars": 7.5,
+      "plannedAllocationDollars": 148.75,
+      "plannedStopLossDollars": 6.57,
       "notes": [
         "Primary asset class.",
         "Must still pass live entry, spread, gap, cash, correlation, protection, frequency, account-floor, and real-fill learning checks."
@@ -986,13 +1047,13 @@
   },
   "dataFreshness": {
     "status": "GENERATED_THIS_RUN",
-    "lastSuccessfulGeneration": "2026-08-19T15:56:44.062Z",
+    "lastSuccessfulGeneration": "2026-08-19T16:03:32.655Z",
     "expectedRefreshCadenceMinutes": 10,
     "stockExpectedRefreshMinutesDuringMarket": 10,
     "cryptoExpectedRefreshMinutes": 10,
-    "stockSignalAsOf": "2026-08-19T15:56:19.359Z",
-    "cryptoSignalAsOf": "2026-08-19T15:56:43.895Z",
-    "stockAgeMinutes": 0,
+    "stockSignalAsOf": "2026-08-19T16:02:58.243Z",
+    "cryptoSignalAsOf": "2026-08-19T16:03:32.451Z",
+    "stockAgeMinutes": 1,
     "cryptoAgeMinutes": 0,
     "entryGateValidationAgeMinutes": 0,
     "staleAfterMinutes": {
@@ -1029,7 +1090,7 @@
     }
   },
   "systemHealth": {
-    "generatedAt": "2026-08-19T15:56:44.062Z",
+    "generatedAt": "2026-08-19T16:03:32.655Z",
     "signalAgeMinutes": 0,
     "dataFreshnessStatus": "GENERATED_THIS_RUN",
     "entryGateValidation": {
