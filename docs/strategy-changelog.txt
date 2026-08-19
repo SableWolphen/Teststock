@@ -2,6 +2,17 @@ TESTSTOCK STRATEGY CHANGE LOG
 
 This file records changes to trading RULES, thresholds, tiers, sizing, validation, and safety behavior. Routine market-data refreshes and changing trade signals are intentionally not listed here.
 
+2026-08-19 — TARGET2 REWARD/RISK + COST-ADJUSTED CROSS-ASSET RANKING
+- Fixed the stock optimizer's reward/risk qualification metric. The minimum reward/risk gate now uses target2 (the full planned target), while target1 remains a partial-profit/de-risking milestone. This removes the unintended conflict where a deliberately closer target1 could block a setup that actually met the full-target asymmetry requirement.
+- Removed the optimizer's leftover two-stock candidate cap. The optimizer can now consider up to four independently qualified stock allocations, consistent with the newer portfolio/frequency rules.
+- Added conservative cost-adjusted stock expectancy. A planning allowance for round-trip execution friction is converted into R and subtracted from conservative expectancy before eligibility and ranking. This is a conservative planning estimate, not a claim that exact future costs are known.
+- Added portfolioOpportunityScore so stock candidates are prioritized using quality, cost-adjusted expectancy, target2 reward/risk, validation depth, liquidity when available, and volatility rather than simple quality score alone.
+- Fixed regime inference in the multi-opportunity expansion pass and made regime-profile gating use cost-adjusted expected R when available.
+- Added cross-asset opportunity ranking across already-qualified STOCK, OPTION, and CRYPTO research candidates. The ranking is priority only: it never overrides live broker/account, whole-contract, event, real-fill, entry, spread, gap, protection, cash, correlation, frequency, or risk checks and never creates a trade quota.
+- Probability-first stock and option gates now explicitly check cost-adjusted expectancy when available.
+- Cross-asset ranking is now a required signal-health dependency so missing ranking data fails closed instead of silently using a more aggressive fallback.
+- Signal schema advances to v19 after the next successful scan/build.
+
 2026-08-19 — MULTI-OPPORTUNITY + SECOND HOLDOUT + GAP/LIQUIDITY GUARDS
 - Added stricter regime-specific entry profiles for trending-up, calm, volatile, trending-down, mixed, and unknown markets.
 - Validation now separates development history, a 2024-2025 untouched holdout, and a second untouched confirmation holdout beginning 2026-01-01. Weak untouched-regime evidence blocks or reduces that regime; sparse second-holdout evidence reduces size instead of increasing risk.
