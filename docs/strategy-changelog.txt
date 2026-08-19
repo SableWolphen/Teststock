@@ -2,6 +2,15 @@ TESTSTOCK STRATEGY CHANGE LOG
 
 This file records changes to trading RULES, thresholds, tiers, sizing, validation, and safety behavior. Routine market-data refreshes and changing trade signals are intentionally not listed here.
 
+2026-08-19 — PROBABILITY-FIRST STOCKS + EVIDENCE-GATED OPTIONS/CRYPTO
+- Added a probability-first overlay that runs after the existing Teststock stock/options/crypto plans and may only make them stricter.
+- Stocks are now the default growth engine. New stock allocations must meet at least 20 historical samples, 55% historical win rate, 0.60 conservative expected R, 2.5:1 reward/risk, growthQuality >= 92, and controlled volatility. Higher volatility automatically cuts size. A single new stock is capped near 1.5% planned stop risk of the reference sleeve and combined new-stock planned stop risk near 2.5%, before smaller live-account limits.
+- Options remain exceptional. In addition to all existing elite, event, spread, whole-contract, tier, protection, and broker checks, options now require an underlying with growthQuality >= 97, at least 25 historical samples, at least 62% historical win rate, conservative expected R >= 0.90, reward/risk >= 3, plus at least 10 resolved real Teststock trades overall with average realized R >= 0.25 and win rate >= 50% before Claude may execute a new option.
+- Crypto remains optional. A/A+ setups now require at least 15 historical samples, positive historical average forward move, A+ win rate >= 60% or A win rate >= 55%, and altcoins require a positive BTC trend. A+ reference allocation is capped near 40% with ~2% planned stop risk; A near 20% with ~1% planned stop risk, before smaller live-account limits.
+- Before Claude may execute a new crypto position, the overall real-fill sample must also have at least 10 resolved real Teststock trades, average realized R >= 0.25, and win rate >= 50%. If broker crypto order tools are unavailable at runtime, crypto remains signal-only.
+- Missing probability-first policy is now a critical dependency: fail closed and open no new position rather than silently falling back to more aggressive behavior.
+- Signal schema advances to v17 after the next successful scan/build.
+
 2026-08-19 — PERFORMANCE-GATED RISK SCALING
 - Added performanceScalingGuard so account equity alone can never unlock more aggressive trading risk.
 - The normal capital ladder still selects the equity tier, but Claude must also compute an effective risk tier from confirmed real-money performance and use the more conservative settings.
