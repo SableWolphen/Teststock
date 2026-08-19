@@ -8,12 +8,13 @@ on:
       - '.github/workflows/static-scan.yml'
       - 'api/picks.js'
       - 'scripts/generate-static-picks.mjs'
+      - 'scripts/optimize-growth-plan.mjs'
+      - 'scripts/generate-crypto-picks.mjs'
       - 'scripts/build-agent-signal.mjs'
   workflow_dispatch:
   schedule:
-    # Every 30 minutes on US market weekdays during a broad UTC window.
-    # GitHub cron uses UTC; this intentionally includes a little pre/post market time.
     - cron: '*/30 13-21 * * 1-5'
+    - cron: '15 */2 * * *'
 
 permissions:
   contents: write
@@ -34,13 +35,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Generate free static picks
+      - name: Generate free static stock picks
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
           ALPACA_OPTIONS_FEED: indicative
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: node scripts/generate-static-picks.mjs
+      - name: Optimize aggressive growth plan
+        run: node scripts/optimize-growth-plan.mjs
+      - name: Generate selective crypto plan
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+        run: node scripts/generate-crypto-picks.mjs
       - name: Build Claude/Robinhood signal
         run: node scripts/build-agent-signal.mjs
       - name: Publish refreshed JSON
