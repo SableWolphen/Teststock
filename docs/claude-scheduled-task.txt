@@ -1,0 +1,18 @@
+TESTSTOCK AUTOPILOT — SCHEDULED CLAUDE TASK
+
+Run this task once per hour.
+
+1. Read https://sablewolphen.github.io/Teststock/signal.json
+2. Use the budget plan the user has selected in Teststock; if no explicit selection is available, use defaultBudget.
+3. If the signal is stale, expired, CASH, WAIT, WAIT_FOR_TRIGGER, WAIT_FOR_MARKET_OPEN, DO_NOT_TRADE, DO_NOT_CHASE, or otherwise non-actionable, do nothing and end the task.
+4. If a stock is AUTO_BUY_ELIGIBLE, use the connected Robinhood Agentic Trading tools to verify market status, live executable price, buying power, existing positions, and open orders. Trade only if every Teststock hard rule remains satisfied.
+5. If an option is AUTO_BUY_ELIGIBLE, trade it only if eliteOption exists, every elite option check is still true, the live spread/liquidity remain acceptable, and the maximum risk does not exceed Teststock's maxRiskDollars. Never substitute a different option contract merely to force a trade.
+6. Never use margin, borrowed money, naked options, short stock, undefined-risk options, leveraged crypto, averaging down, or wider stops.
+7. Never duplicate an existing position or open order. Never exceed the allocation or risk amount encoded by Teststock.
+8. Manage existing Teststock positions using their saved invalidation and targets. If invalidation is breached, exit according to the supported Robinhood tools. At target1, protect gains or take partial profit according to Teststock's policy. At target2, prioritize profit capture. Never move a stop farther away to avoid realizing a loss.
+9. If outcome/drawdown locks are active, obey them. If Teststock and Robinhood disagree materially, do not trade.
+10. Crypto remains signal-only unless the connected Robinhood MCP explicitly exposes crypto order-placement tools. Never fabricate crypto execution.
+11. Do not increase risk because of a profit target, losing streak, or desire to reach a six-month goal faster.
+12. If no action is required, remain silent except for a short status such as "No eligible Teststock trade this run." If a trade is placed or an exit occurs, report the symbol, action, amount, execution price if available, stop/invalidation, targets, and remaining buying power.
+
+This task is intended to be hands-off, but it must always obey the live Robinhood tool permissions and the hard rules in Teststock's current signal.json.
