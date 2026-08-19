@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 7,
-  "generatedAt": "2026-08-19T00:59:05.629Z",
+  "schemaVersion": 8,
+  "generatedAt": "2026-08-19T01:33:27.934Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -22,10 +22,17 @@
   },
   "capitalLadder": {
     "basis": "Current dedicated Robinhood Agentic-account equity. Manual user deposits are allowed; the agent may never initiate them.",
+    "intervalSemantics": "LOWER_BOUND_INCLUSIVE_UPPER_BOUND_EXCLUSIVE",
+    "exactBoundaryExamples": {
+      "equity80": "DEFENSE",
+      "equity100": "PROVE",
+      "equity125": "SCALE",
+      "equity150": "GROWTH"
+    },
     "tiers": [
       {
         "minEquity": 0,
-        "maxEquity": 79.99,
+        "maxEquityExclusive": 80,
         "label": "RECOVERY",
         "stockAllocationMultiplier": 0.35,
         "maxOptionRiskPct": 0,
@@ -35,7 +42,7 @@
       },
       {
         "minEquity": 80,
-        "maxEquity": 99.99,
+        "maxEquityExclusive": 100,
         "label": "DEFENSE",
         "stockAllocationMultiplier": 0.5,
         "maxOptionRiskPct": 0,
@@ -45,7 +52,7 @@
       },
       {
         "minEquity": 100,
-        "maxEquity": 124.99,
+        "maxEquityExclusive": 125,
         "label": "PROVE",
         "stockAllocationMultiplier": 0.7,
         "maxOptionRiskPct": 5,
@@ -55,7 +62,7 @@
       },
       {
         "minEquity": 125,
-        "maxEquity": 149.99,
+        "maxEquityExclusive": 150,
         "label": "SCALE",
         "stockAllocationMultiplier": 0.85,
         "maxOptionRiskPct": 6,
@@ -65,7 +72,7 @@
       },
       {
         "minEquity": 150,
-        "maxEquity": null,
+        "maxEquityExclusive": null,
         "label": "GROWTH",
         "stockAllocationMultiplier": 1,
         "maxOptionRiskPct": 8,
@@ -74,7 +81,7 @@
         "newOptionsAllowed": true
       }
     ],
-    "instructions": "Select exactly one tier from live account equity. Multiply stock allocation by stockAllocationMultiplier. Never exceed tier maxDeployedPct or planned-stop-risk cap. For options use the smaller of eliteOption.maxRiskPctOfRobinhoodBuyingPower and tier.maxOptionRiskPct. If the tier disables options, do not open one."
+    "instructions": "Select exactly one tier using lower-bound-inclusive, upper-bound-exclusive intervals: >=0 and <80 RECOVERY; >=80 and <100 DEFENSE; >=100 and <125 PROVE; >=125 and <150 SCALE; >=150 GROWTH. Exactly $80 is DEFENSE, exactly $100 is PROVE, exactly $125 is SCALE, and exactly $150 is GROWTH. Never choose the lower tier at an exact boundary. Multiply stock allocation by stockAllocationMultiplier. Never exceed tier maxDeployedPct or planned-stop-risk cap. For options use the smaller of eliteOption.maxRiskPctOfRobinhoodBuyingPower and tier.maxOptionRiskPct. If the tier disables options, do not open one."
   },
   "profitLock": {
     "mode": "TIERED_EQUITY_FLOOR",
@@ -220,8 +227,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T00:59:05.579Z",
-    "expiresAt": "2026-08-19T01:29:05.579Z",
+    "signalAsOf": "2026-08-19T01:33:27.884Z",
+    "expiresAt": "2026-08-19T02:03:27.884Z",
     "policy": {
       "aPlusMinGrowthQuality": 94,
       "aMinGrowthQuality": 88,

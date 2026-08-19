@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 11,
+  "schemaVersion": 12,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-08-19T00:59:05.629Z",
+  "generatedAt": "2026-08-19T01:33:27.934Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -24,10 +24,17 @@
   },
   "capitalLadder": {
     "basis": "Current dedicated Robinhood Agentic-account equity. Manual user deposits are allowed; the agent may never initiate them.",
+    "intervalSemantics": "LOWER_BOUND_INCLUSIVE_UPPER_BOUND_EXCLUSIVE",
+    "exactBoundaryExamples": {
+      "equity80": "DEFENSE",
+      "equity100": "PROVE",
+      "equity125": "SCALE",
+      "equity150": "GROWTH"
+    },
     "tiers": [
       {
         "minEquity": 0,
-        "maxEquity": 79.99,
+        "maxEquityExclusive": 80,
         "label": "RECOVERY",
         "stockAllocationMultiplier": 0.35,
         "maxOptionRiskPct": 0,
@@ -37,7 +44,7 @@
       },
       {
         "minEquity": 80,
-        "maxEquity": 99.99,
+        "maxEquityExclusive": 100,
         "label": "DEFENSE",
         "stockAllocationMultiplier": 0.5,
         "maxOptionRiskPct": 0,
@@ -47,7 +54,7 @@
       },
       {
         "minEquity": 100,
-        "maxEquity": 124.99,
+        "maxEquityExclusive": 125,
         "label": "PROVE",
         "stockAllocationMultiplier": 0.7,
         "maxOptionRiskPct": 5,
@@ -57,7 +64,7 @@
       },
       {
         "minEquity": 125,
-        "maxEquity": 149.99,
+        "maxEquityExclusive": 150,
         "label": "SCALE",
         "stockAllocationMultiplier": 0.85,
         "maxOptionRiskPct": 6,
@@ -67,7 +74,7 @@
       },
       {
         "minEquity": 150,
-        "maxEquity": null,
+        "maxEquityExclusive": null,
         "label": "GROWTH",
         "stockAllocationMultiplier": 1,
         "maxOptionRiskPct": 8,
@@ -76,7 +83,7 @@
         "newOptionsAllowed": true
       }
     ],
-    "instructions": "Select exactly one tier from live account equity. Multiply stock allocation by stockAllocationMultiplier. Never exceed tier maxDeployedPct or planned-stop-risk cap. For options use the smaller of eliteOption.maxRiskPctOfRobinhoodBuyingPower and tier.maxOptionRiskPct. If the tier disables options, do not open one."
+    "instructions": "Select exactly one tier using lower-bound-inclusive, upper-bound-exclusive intervals: >=0 and <80 RECOVERY; >=80 and <100 DEFENSE; >=100 and <125 PROVE; >=125 and <150 SCALE; >=150 GROWTH. Exactly $80 is DEFENSE, exactly $100 is PROVE, exactly $125 is SCALE, and exactly $150 is GROWTH. Never choose the lower tier at an exact boundary. Multiply stock allocation by stockAllocationMultiplier. Never exceed tier maxDeployedPct or planned-stop-risk cap. For options use the smaller of eliteOption.maxRiskPctOfRobinhoodBuyingPower and tier.maxOptionRiskPct. If the tier disables options, do not open one."
   },
   "profitLock": {
     "mode": "TIERED_EQUITY_FLOOR",
@@ -232,6 +239,7 @@
     "Only the user may manually add capital. Trading profits may remain and be reused inside the Agentic account.",
     "Never access, withdraw from, charge, or borrow against any external bank, card, credit line, retirement account, or other financial account.",
     "HARD ACCOUNT FLOOR: below $75 live Agentic-account equity, manage exits only and open no new trades. Do not auto-fund. Resume new-trade eligibility only at $80 or more and only if all other guards pass.",
+    "CAPITAL TIER BOUNDARIES: >=0/<80 RECOVERY; >=80/<100 DEFENSE; >=100/<125 PROVE; >=125/<150 SCALE; >=150 GROWTH. Exactly $100 is PROVE. Never select the lower tier at an exact boundary.",
     "Apply capitalLadder, profitLock, circuitBreakers, tradeFrequencyGuard, correlationGuard, executionQuality, exitAutomation, healthGuard, portfolioGuard, and outcomeGuard before every new position.",
     "Use only existing non-margin cash buying power. Never use margin, borrowed funds, naked options, short stock, leveraged crypto, or undefined-risk option positions.",
     "Never confuse asset classes: STOCK orders come only from stockPlan.stockOrders, OPTION orders come only from stockPlan.eliteOption, and CRYPTO orders come only from cryptoPlan.cryptoOrders.",
@@ -256,8 +264,8 @@
     "overallAction": "WAIT_FOR_MARKET_OPEN",
     "reason": "Market is closed.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T00:59:01.589Z",
-    "expiresAt": "2026-08-20T12:59:01.589Z",
+    "signalAsOf": "2026-08-19T01:33:23.121Z",
+    "expiresAt": "2026-08-20T13:33:23.121Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 3,
       "maxOptionPremiumPct": 8,
@@ -292,8 +300,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T00:59:05.579Z",
-    "expiresAt": "2026-08-19T01:29:05.579Z",
+    "signalAsOf": "2026-08-19T01:33:27.884Z",
+    "expiresAt": "2026-08-19T02:03:27.884Z",
     "policy": {
       "aPlusMinGrowthQuality": 94,
       "aMinGrowthQuality": 88,
