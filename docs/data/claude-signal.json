@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 15,
+  "schemaVersion": 16,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-08-19T09:59:07.184Z",
+  "generatedAt": "2026-08-19T10:48:19.661Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -263,15 +263,16 @@
     "EVENT RISK: obey any stockPlan.policy event blackout and advanced guard. Never bypass an encoded earnings/filing/corporate-action block to force a trade.",
     "SHADOW DATA: shadowDiagnostics is model-only. Never count it as real P&L or use it to automatically increase live-money risk.",
     "CRITICAL DEPENDENCY FAIL-CLOSED: if the Teststock signal, Robinhood account/order/position state, protective-exit capability, or journal/history reconciliation is stale, missing, contradictory, or unknown, open no new position. Manage existing exposure only.",
-    "EXECUTION TELEMETRY: record confirmed order/fill/spread/slippage/protection timing when available. Missing telemetry may never be guessed, and bad observed execution may only make sizing more conservative."
+    "EXECUTION TELEMETRY: record confirmed order/fill/spread/slippage/protection timing when available. Missing telemetry may never be guessed, and bad observed execution may only make sizing more conservative.",
+    "PERFORMANCE-GATED SCALING: live equity determines the normal capital tier, but real-money evidence caps the effective risk tier. Do not use SCALE risk before at least 20 resolved real trades with average realized R >= 0.20 and win rate >= 45%. Do not use GROWTH risk before at least 30 resolved real trades with average realized R >= 0.30 and win rate >= 48%. Reliable drawdown must remain below 6% and all other guards must pass. Missing or ambiguous evidence cannot unlock higher risk."
   ],
   "stockPlan": {
     "assetClass": "STOCK",
     "overallAction": "WAIT_FOR_MARKET_OPEN",
     "reason": "Market is closed.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T09:59:03.643Z",
-    "expiresAt": "2026-08-20T21:59:03.643Z",
+    "signalAsOf": "2026-08-19T10:48:13.354Z",
+    "expiresAt": "2026-08-20T22:48:13.354Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 3,
       "maxOptionPremiumPct": 8,
@@ -322,8 +323,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T09:59:07.131Z",
-    "expiresAt": "2026-08-19T10:29:07.131Z",
+    "signalAsOf": "2026-08-19T10:48:19.610Z",
+    "expiresAt": "2026-08-19T11:18:19.610Z",
     "policy": {
       "aPlusMinGrowthQuality": 94,
       "aMinGrowthQuality": 88,
@@ -348,7 +349,7 @@
   "entryGateRobustness": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
     "status": "RED_FLAG",
-    "generatedAt": "2026-08-19T09:59:06.321Z",
+    "generatedAt": "2026-08-19T10:48:18.103Z",
     "holdoutStart": "2024-01-01",
     "gatesUnderReview": {
       "minHistoricalWinRatePct": 52,
@@ -583,7 +584,7 @@
   },
   "shadowDiagnostics": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/shadow-trades.json",
-    "generatedAt": "2026-08-19T09:59:06.573Z",
+    "generatedAt": "2026-08-19T10:48:18.710Z",
     "summary": {
       "ACCEPTED": {
         "resolved": 0,
@@ -608,7 +609,7 @@
     "instructions": "Do not change or loosen live-money gates from shadow results until at least 30 ACCEPTED and 30 REJECTED shadow decisions are resolved. Even after that threshold, shadow data may justify a review only; it may never automatically increase live risk."
   },
   "systemHealth": {
-    "generatedAt": "2026-08-19T09:59:07.218Z",
+    "generatedAt": "2026-08-19T10:48:19.697Z",
     "signalAgeMinutes": 0,
     "entryGateValidation": {
       "status": "RED_FLAG",
@@ -642,6 +643,26 @@
     ],
     "instructions": "At runtime, any missing, stale, contradictory, or unknown CRITICAL dependency means no new position. Cash is preferred to guessing. Existing exposure should still be protected or exited when possible."
   },
+  "performanceScalingGuard": {
+    "mode": "REAL_FILL_PROOF_BEFORE_HIGHER_RISK",
+    "appliesAfterEquityTierSelection": true,
+    "defaultMaximumRiskTierWithoutProof": "PROVE",
+    "scaleUnlock": {
+      "minimumResolvedRealTrades": 20,
+      "minimumAverageRealizedR": 0.2,
+      "minimumWinRatePct": 45,
+      "maximumReliableObservedDrawdownPct": 6,
+      "requirements": "SCALE risk may be used only when all available reliable real-fill metrics meet these minimums and no real-fill, slippage, protection, circuit-breaker, health, or persistence guard is blocking risk."
+    },
+    "growthUnlock": {
+      "minimumResolvedRealTrades": 30,
+      "minimumAverageRealizedR": 0.3,
+      "minimumWinRatePct": 48,
+      "maximumReliableObservedDrawdownPct": 6,
+      "requirements": "GROWTH risk may be used only when all available reliable real-fill metrics meet these stronger minimums and no real-fill, slippage, protection, circuit-breaker, health, or persistence guard is blocking risk."
+    },
+    "instructions": "Account equity alone must never unlock more aggressive risk. First select the normal capitalLadder tier from live equity, then cap the EFFECTIVE RISK TIER by proven real-money performance. Before SCALE proof, never use risk settings above PROVE even if the user manually deposits more or profits lift equity. Before GROWTH proof, never use risk settings above SCALE. Missing, ambiguous, or non-persistent performance evidence cannot unlock a higher risk tier. This guard can only reduce risk, never increase it above the equity-based capital tier."
+  },
   "dailySummaryPolicy": {
     "enabled": true,
     "oncePerCalendarDay": true,
@@ -656,7 +677,9 @@
       "current regime",
       "blocked setups",
       "system health",
-      "journal persistence"
+      "journal persistence",
+      "equity tier",
+      "effective risk tier"
     ],
     "instructions": "Claude should emit one concise daily health/performance summary on the first scheduled run at or after 08:00 local time when local time is available; otherwise use the first run of each UTC calendar day. Do not spam repeated daily summaries."
   },
