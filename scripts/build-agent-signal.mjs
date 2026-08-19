@@ -75,7 +75,7 @@ try{stockPlan=buildStock(await read(path.join(dataDir,`growth-plan-${REFERENCE_B
 try{cryptoPlan=buildCrypto(await read(path.join(dataDir,`crypto-plan-${REFERENCE_BUDGET}.json`)));}catch(error){cryptoPlan={assetClass:'CRYPTO',overallAction:'DO_NOT_TRADE',reason:`Crypto plan unavailable: ${error.message}`};}
 
 const signal={
-  schemaVersion:11,source:'Teststock',purpose:'Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.',generatedAt:new Date().toISOString(),
+  schemaVersion:12,source:'Teststock',purpose:'Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.',generatedAt:new Date().toISOString(),
   funding:{mode:'USER_DEPOSITS_ONLY',initialUserFundingIntentDollars:100,agentMayInitiateDeposits:false,agentMayInitiateWithdrawals:false,agentMayInitiateBankTransfers:false,instructions:'Use only cash and trading proceeds already inside the dedicated Robinhood Agentic account. Never pull money from any external account. Only the user may manually add more money.'},
   sizing:{mode:'ROBINHOOD_EXISTING_CASH_ONLY_WITH_CAPITAL_LADDER',fixedWebsiteBudgets:false,instructions:'Read current non-margin cash buying power and total Agentic-account equity on every run. Apply hard floor, capital ladder, portfolio guard, circuit breakers, profit lock, trade-frequency guard, and correlation guard before the smaller Teststock allocation/risk limit. Never initiate funding.'},
   hardAccountFloor:{
@@ -86,14 +86,16 @@ const signal={
   },
   capitalLadder:{
     basis:'Current dedicated Robinhood Agentic-account equity. Manual user deposits are allowed; the agent may never initiate them.',
+    intervalSemantics:'LOWER_BOUND_INCLUSIVE_UPPER_BOUND_EXCLUSIVE',
+    exactBoundaryExamples:{equity80:'DEFENSE',equity100:'PROVE',equity125:'SCALE',equity150:'GROWTH'},
     tiers:[
-      {minEquity:0,maxEquity:79.99,label:'RECOVERY',stockAllocationMultiplier:.35,maxOptionRiskPct:0,maxPlannedStopRiskPct:1,maxDeployedPct:45,newOptionsAllowed:false},
-      {minEquity:80,maxEquity:99.99,label:'DEFENSE',stockAllocationMultiplier:.5,maxOptionRiskPct:0,maxPlannedStopRiskPct:1.5,maxDeployedPct:55,newOptionsAllowed:false},
-      {minEquity:100,maxEquity:124.99,label:'PROVE',stockAllocationMultiplier:.7,maxOptionRiskPct:5,maxPlannedStopRiskPct:2,maxDeployedPct:70,newOptionsAllowed:true},
-      {minEquity:125,maxEquity:149.99,label:'SCALE',stockAllocationMultiplier:.85,maxOptionRiskPct:6,maxPlannedStopRiskPct:2.25,maxDeployedPct:75,newOptionsAllowed:true},
-      {minEquity:150,maxEquity:null,label:'GROWTH',stockAllocationMultiplier:1,maxOptionRiskPct:8,maxPlannedStopRiskPct:2.5,maxDeployedPct:80,newOptionsAllowed:true}
+      {minEquity:0,maxEquityExclusive:80,label:'RECOVERY',stockAllocationMultiplier:.35,maxOptionRiskPct:0,maxPlannedStopRiskPct:1,maxDeployedPct:45,newOptionsAllowed:false},
+      {minEquity:80,maxEquityExclusive:100,label:'DEFENSE',stockAllocationMultiplier:.5,maxOptionRiskPct:0,maxPlannedStopRiskPct:1.5,maxDeployedPct:55,newOptionsAllowed:false},
+      {minEquity:100,maxEquityExclusive:125,label:'PROVE',stockAllocationMultiplier:.7,maxOptionRiskPct:5,maxPlannedStopRiskPct:2,maxDeployedPct:70,newOptionsAllowed:true},
+      {minEquity:125,maxEquityExclusive:150,label:'SCALE',stockAllocationMultiplier:.85,maxOptionRiskPct:6,maxPlannedStopRiskPct:2.25,maxDeployedPct:75,newOptionsAllowed:true},
+      {minEquity:150,maxEquityExclusive:null,label:'GROWTH',stockAllocationMultiplier:1,maxOptionRiskPct:8,maxPlannedStopRiskPct:2.5,maxDeployedPct:80,newOptionsAllowed:true}
     ],
-    instructions:'Select exactly one tier from live account equity. Multiply stock allocation by stockAllocationMultiplier. Never exceed tier maxDeployedPct or planned-stop-risk cap. For options use the smaller of eliteOption.maxRiskPctOfRobinhoodBuyingPower and tier.maxOptionRiskPct. If the tier disables options, do not open one.'
+    instructions:'Select exactly one tier using lower-bound-inclusive, upper-bound-exclusive intervals: >=0 and <80 RECOVERY; >=80 and <100 DEFENSE; >=100 and <125 PROVE; >=125 and <150 SCALE; >=150 GROWTH. Exactly $80 is DEFENSE, exactly $100 is PROVE, exactly $125 is SCALE, and exactly $150 is GROWTH. Never choose the lower tier at an exact boundary. Multiply stock allocation by stockAllocationMultiplier. Never exceed tier maxDeployedPct or planned-stop-risk cap. For options use the smaller of eliteOption.maxRiskPctOfRobinhoodBuyingPower and tier.maxOptionRiskPct. If the tier disables options, do not open one.'
   },
   profitLock:{
     mode:'TIERED_EQUITY_FLOOR',
@@ -167,6 +169,7 @@ const signal={
     'Only the user may manually add capital. Trading profits may remain and be reused inside the Agentic account.',
     'Never access, withdraw from, charge, or borrow against any external bank, card, credit line, retirement account, or other financial account.',
     'HARD ACCOUNT FLOOR: below $75 live Agentic-account equity, manage exits only and open no new trades. Do not auto-fund. Resume new-trade eligibility only at $80 or more and only if all other guards pass.',
+    'CAPITAL TIER BOUNDARIES: >=0/<80 RECOVERY; >=80/<100 DEFENSE; >=100/<125 PROVE; >=125/<150 SCALE; >=150 GROWTH. Exactly $100 is PROVE. Never select the lower tier at an exact boundary.',
     'Apply capitalLadder, profitLock, circuitBreakers, tradeFrequencyGuard, correlationGuard, executionQuality, exitAutomation, healthGuard, portfolioGuard, and outcomeGuard before every new position.',
     'Use only existing non-margin cash buying power. Never use margin, borrowed funds, naked options, short stock, leveraged crypto, or undefined-risk option positions.',
     'Never confuse asset classes: STOCK orders come only from stockPlan.stockOrders, OPTION orders come only from stockPlan.eliteOption, and CRYPTO orders come only from cryptoPlan.cryptoOrders.',
@@ -190,5 +193,5 @@ const signal={
 };
 await fs.writeFile(path.join(outDir,'signal.json'),JSON.stringify(signal,null,2));
 await fs.writeFile(path.join(dataDir,'claude-signal.json'),JSON.stringify(signal,null,2));
-await fs.writeFile(path.join(dataDir,'crypto-signal.json'),JSON.stringify({schemaVersion:7,generatedAt:signal.generatedAt,funding:signal.funding,sizing:signal.sizing,hardAccountFloor:signal.hardAccountFloor,capitalLadder:signal.capitalLadder,profitLock:signal.profitLock,circuitBreakers:signal.circuitBreakers,tradeFrequencyGuard:signal.tradeFrequencyGuard,correlationGuard:signal.correlationGuard,executionQuality:signal.executionQuality,exitAutomation:signal.exitAutomation,healthGuard:signal.healthGuard,portfolioGuard:signal.portfolioGuard,cryptoPlan},null,2));
-console.log('Generated Teststock agent signal schema v11 with hands-off protective exits and advanced guards');
+await fs.writeFile(path.join(dataDir,'crypto-signal.json'),JSON.stringify({schemaVersion:8,generatedAt:signal.generatedAt,funding:signal.funding,sizing:signal.sizing,hardAccountFloor:signal.hardAccountFloor,capitalLadder:signal.capitalLadder,profitLock:signal.profitLock,circuitBreakers:signal.circuitBreakers,tradeFrequencyGuard:signal.tradeFrequencyGuard,correlationGuard:signal.correlationGuard,executionQuality:signal.executionQuality,exitAutomation:signal.exitAutomation,healthGuard:signal.healthGuard,portfolioGuard:signal.portfolioGuard,cryptoPlan},null,2));
+console.log('Generated Teststock agent signal schema v12 with explicit tier boundaries');
