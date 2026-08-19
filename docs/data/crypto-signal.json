@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 5,
-  "generatedAt": "2026-08-19T00:54:02.130Z",
+  "schemaVersion": 7,
+  "generatedAt": "2026-08-19T00:59:05.629Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -12,7 +12,13 @@
   "sizing": {
     "mode": "ROBINHOOD_EXISTING_CASH_ONLY_WITH_CAPITAL_LADDER",
     "fixedWebsiteBudgets": false,
-    "instructions": "Read current non-margin cash buying power and total Agentic-account equity on every run. Apply the capital ladder first, then the smaller Teststock allocation/risk limit. Never initiate funding."
+    "instructions": "Read current non-margin cash buying power and total Agentic-account equity on every run. Apply hard floor, capital ladder, portfolio guard, circuit breakers, profit lock, trade-frequency guard, and correlation guard before the smaller Teststock allocation/risk limit. Never initiate funding."
+  },
+  "hardAccountFloor": {
+    "noNewTradesBelowEquity": 75,
+    "automaticResumeAtOrAboveEquity": 80,
+    "actionBelowFloor": "MANAGE_EXITS_ONLY",
+    "instructions": "If live Agentic-account equity is below $75, do not open any new position. Manage and close existing positions only. Do not add money automatically. Normal new-trade eligibility may resume only after live equity is at least $80 and every other guard passes."
   },
   "capitalLadder": {
     "basis": "Current dedicated Robinhood Agentic-account equity. Manual user deposits are allowed; the agent may never initiate them.",
@@ -24,6 +30,7 @@
         "stockAllocationMultiplier": 0.35,
         "maxOptionRiskPct": 0,
         "maxPlannedStopRiskPct": 1,
+        "maxDeployedPct": 45,
         "newOptionsAllowed": false
       },
       {
@@ -33,6 +40,7 @@
         "stockAllocationMultiplier": 0.5,
         "maxOptionRiskPct": 0,
         "maxPlannedStopRiskPct": 1.5,
+        "maxDeployedPct": 55,
         "newOptionsAllowed": false
       },
       {
@@ -42,6 +50,7 @@
         "stockAllocationMultiplier": 0.7,
         "maxOptionRiskPct": 5,
         "maxPlannedStopRiskPct": 2,
+        "maxDeployedPct": 70,
         "newOptionsAllowed": true
       },
       {
@@ -49,8 +58,9 @@
         "maxEquity": 149.99,
         "label": "SCALE",
         "stockAllocationMultiplier": 0.85,
-        "maxOptionRiskPct": 7.5,
-        "maxPlannedStopRiskPct": 2.5,
+        "maxOptionRiskPct": 6,
+        "maxPlannedStopRiskPct": 2.25,
+        "maxDeployedPct": 75,
         "newOptionsAllowed": true
       },
       {
@@ -58,20 +68,160 @@
         "maxEquity": null,
         "label": "GROWTH",
         "stockAllocationMultiplier": 1,
-        "maxOptionRiskPct": 10,
-        "maxPlannedStopRiskPct": 3,
+        "maxOptionRiskPct": 8,
+        "maxPlannedStopRiskPct": 2.5,
+        "maxDeployedPct": 80,
         "newOptionsAllowed": true
       }
     ],
-    "instructions": "Select exactly one tier from live account equity. Multiply each stock allocationPctOfRobinhoodBuyingPower by stockAllocationMultiplier. For options use the smaller of eliteOption.maxRiskPctOfRobinhoodBuyingPower and tier.maxOptionRiskPct. If the tier disables options, do not open one. Never exceed the tier stop-risk cap."
+    "instructions": "Select exactly one tier from live account equity. Multiply stock allocation by stockAllocationMultiplier. Never exceed tier maxDeployedPct or planned-stop-risk cap. For options use the smaller of eliteOption.maxRiskPctOfRobinhoodBuyingPower and tier.maxOptionRiskPct. If the tier disables options, do not open one."
+  },
+  "profitLock": {
+    "mode": "TIERED_EQUITY_FLOOR",
+    "floors": [
+      {
+        "minEquity": 0,
+        "maxEquity": 124.99,
+        "protectedEquityFloor": 0
+      },
+      {
+        "minEquity": 125,
+        "maxEquity": 149.99,
+        "protectedEquityFloor": 100
+      },
+      {
+        "minEquity": 150,
+        "maxEquity": 199.99,
+        "protectedEquityFloor": 125
+      },
+      {
+        "minEquity": 200,
+        "maxEquity": 299.99,
+        "protectedEquityFloor": 160
+      },
+      {
+        "minEquity": 300,
+        "maxEquity": 499.99,
+        "protectedEquityFloor": 225
+      },
+      {
+        "minEquity": 500,
+        "maxEquity": null,
+        "protectedEquityFloorPctOfCurrentEquity": 75
+      }
+    ],
+    "instructions": "Before a new trade, estimate total planned stop-loss across all open Teststock positions plus the proposed trade. Do not intentionally size a new trade so that equity minus total planned stop-loss falls below the active protected floor. Floors reduce planned risk but cannot prevent gaps or slippage."
+  },
+  "circuitBreakers": {
+    "dailyLossPct": 3,
+    "sevenDayDrawdownPct": 6,
+    "action": "NO_NEW_TRADES",
+    "instructions": "If live Robinhood account history exposes reliable day P&L and 7-day high-water/equity data, open no new positions when current-day loss is 3% or more or 7-day drawdown is 6% or more. Continue managing exits. If the needed history is unavailable, do not invent it; fall back to capitalLadder and outcomeGuard."
+  },
+  "tradeFrequencyGuard": {
+    "maxNewPositionsPerDay": 2,
+    "maxNewPositionsPerSevenDays": 6,
+    "maxNewOptionsPerDay": 1,
+    "instructions": "When reliable Robinhood order history is available, count filled Teststock entries before placing another one. Never exceed two new Teststock positions in a calendar day, six in rolling seven days, or one new option position in a calendar day. Protective exits never count toward these limits. If history is ambiguous, choose the safer interpretation and do not overtrade."
+  },
+  "correlationGuard": {
+    "maxNewPositionsPerRiskCluster": 1,
+    "clusters": {
+      "technology": [
+        "AAPL",
+        "MSFT",
+        "AMZN",
+        "GOOGL",
+        "META",
+        "NVDA",
+        "AVGO",
+        "AMD",
+        "PLTR",
+        "PANW",
+        "CRWD",
+        "ORCL",
+        "CRM",
+        "SMH",
+        "XLK"
+      ],
+      "financial": [
+        "JPM",
+        "GS",
+        "V",
+        "MA",
+        "XLF"
+      ],
+      "energy": [
+        "XOM",
+        "CVX",
+        "XLE"
+      ],
+      "healthcare": [
+        "LLY",
+        "UNH",
+        "XLV"
+      ],
+      "consumer": [
+        "COST",
+        "WMT",
+        "UBER",
+        "TSLA",
+        "XLY",
+        "XLP"
+      ],
+      "industrialUtilities": [
+        "CAT",
+        "GE",
+        "NEE",
+        "XLI",
+        "XLU"
+      ],
+      "crypto": [
+        "BTC/USD",
+        "ETH/USD",
+        "SOL/USD",
+        "AVAX/USD",
+        "LINK/USD",
+        "DOGE/USD"
+      ]
+    },
+    "instructions": "Avoid stacking highly correlated bets. Do not open more than one new position from the same listed risk cluster at a time. If live sector/correlation information shows two unlisted positions are effectively the same bet, treat them as one cluster. Existing exposure should make new correlated entries smaller or ineligible."
+  },
+  "executionQuality": {
+    "preferLimitOrders": true,
+    "maxStockSpreadPct": 0.5,
+    "maxOptionSpreadPct": 10,
+    "maxCryptoSpreadPct": 0.75,
+    "instructions": "Prefer limit orders when supported. Never pay above maximumEntry. Skip a new entry when the live bid/ask spread exceeds the applicable cap or when executable pricing is materially worse than the signal. A missed trade is better than a bad fill."
+  },
+  "exitAutomation": {
+    "fullyAutomatic": true,
+    "protectiveExitRequiredBeforeConsideringEntryComplete": true,
+    "stockProtection": "After a stock buy fills, immediately place a persistent protective sell stop or stop-limit order at the Teststock stop when the connected Robinhood tool supports that order type. Prefer GTC when supported. Verify the protective order is accepted and covers the full intended quantity.",
+    "optionProtection": "After an option buy fills, immediately place a persistent sell-to-close protective stop-market or stop-limit order when the connected Robinhood option tool supports that order type. Verify the protective order is accepted and covers the full intended contract quantity.",
+    "cryptoProtection": "If crypto execution becomes supported by the connected Robinhood tools, place the strongest supported persistent protective exit at or near the Teststock invalidation immediately after entry.",
+    "noProtectionNoEntry": "If the connected tool cannot create or verify a persistent protective exit for a new stock or option position, do not open that new position. Existing positions still must be managed and reduced/closed according to the saved invalidation.",
+    "target1": "When target1 is reached, protect gains automatically. Before any partial sell or protective-order replacement, inspect and cancel/replace conflicting open sell orders as needed so total sell quantity never exceeds the live position. Take partial profit when practical, then move the remaining protection no farther from market than breakeven/original risk and never widen it.",
+    "target2": "When target2 is reached, prioritize taking profit on most or all of the remaining position unless the current signal explicitly provides a tighter trailing plan. Never let a profit target increase risk.",
+    "bracketCaution": "Do not assume bracket/OCO support. If the broker/tool does not support linked bracket orders, sequence protective-order changes and profit-taking carefully and verify quantities after every fill."
+  },
+  "healthGuard": {
+    "actionOnFailure": "NO_NEW_TRADES_MANAGE_EXITS_IF_POSSIBLE",
+    "instructions": "If Teststock is stale, Robinhood tools are unavailable, order status is unknown, a protective order cannot be verified, account equity/buying power is missing, or an unexpected partial fill/duplicate appears, open no new positions. Resolve or safely manage existing exposure first. Never guess an order filled or a stop exists."
+  },
+  "portfolioGuard": {
+    "maxNewPositions": 2,
+    "maxCryptoPositions": 1,
+    "noDuplicateExposure": true,
+    "instructions": "Count existing positions and open orders before any new entry. Do not open more than two new Teststock positions in one run, do not hold more than one Teststock crypto position, and do not duplicate the same ticker/contract. Existing planned risk counts against every new trade."
   },
   "cryptoPlan": {
     "assetClass": "CRYPTO",
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
-    "reason": "No high-conviction crypto is currently in its allowed buy zone.",
+    "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T00:54:02.085Z",
-    "expiresAt": "2026-08-19T01:24:02.085Z",
+    "signalAsOf": "2026-08-19T00:59:05.579Z",
+    "expiresAt": "2026-08-19T01:29:05.579Z",
     "policy": {
       "aPlusMinGrowthQuality": 94,
       "aMinGrowthQuality": 88,
