@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 19,
+  "schemaVersion": 20,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-08-19T14:02:39.146Z",
+  "generatedAt": "2026-08-19T14:03:35.794Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -280,15 +280,16 @@
     "CROSS-ASSET PRIORITY: rank already-qualified stocks, options, and crypto by risk-adjusted opportunity, but ranking never overrides live eligibility or safety gates and never creates a quota.",
     "SYMBOL PROBATION: lightly tested symbols start at reduced size until historical and real-fill evidence improves.",
     "GAP + LIQUIDITY: avoid large opening gaps, never widen stops for gaps, and prefer tighter spreads/higher reliable dollar volume among otherwise-equal candidates.",
-    "OPTIONS + CRYPTO REMAIN SELECTIVE: they may participate when all dedicated research, real-fill, broker, whole-contract/liquidity/protection and frequency gates pass; frequency permission is never a reason to force a trade."
+    "OPTIONS + CRYPTO REMAIN SELECTIVE: they may participate when all dedicated research, real-fill, broker, whole-contract/liquidity/protection and frequency gates pass; frequency permission is never a reason to force a trade.",
+    "PIPELINE FRESHNESS: dataFreshness.lastSuccessfulGeneration and per-asset ages are machine-readable. A stale dependency fails closed; never hide a stalled generator by extending validity windows."
   ],
   "stockPlan": {
     "assetClass": "STOCK",
     "overallAction": "DO_NOT_TRADE",
     "reason": "Tracked loss/performance guard paused new trades.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T14:02:24.905Z",
-    "expiresAt": "2026-08-19T14:47:24.905Z",
+    "signalAsOf": "2026-08-19T14:03:21.046Z",
+    "expiresAt": "2026-08-19T14:48:21.046Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 3,
       "maxOptionPremiumPct": 8,
@@ -361,8 +362,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T14:02:38.989Z",
-    "expiresAt": "2026-08-19T14:32:38.989Z",
+    "signalAsOf": "2026-08-19T14:03:35.683Z",
+    "expiresAt": "2026-08-19T14:33:35.683Z",
     "policy": {
       "aPlusMinGrowthQuality": 94,
       "aMinGrowthQuality": 88,
@@ -387,7 +388,7 @@
   "entryGateRobustness": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
     "status": "RED_FLAG",
-    "generatedAt": "2026-08-19T14:02:35.168Z",
+    "generatedAt": "2026-08-19T14:03:31.224Z",
     "holdoutStart": "2024-01-01",
     "holdoutEnd": "2025-12-31",
     "secondHoldoutStart": "2026-01-01",
@@ -747,7 +748,7 @@
   },
   "shadowDiagnostics": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/shadow-trades.json",
-    "generatedAt": "2026-08-19T14:02:35.617Z",
+    "generatedAt": "2026-08-19T14:03:32.017Z",
     "summary": {
       "ACCEPTED": {
         "resolved": 0,
@@ -771,7 +772,7 @@
   },
   "probabilityFirstPolicy": {
     "schemaVersion": 2,
-    "generatedAt": "2026-08-19T14:02:39.041Z",
+    "generatedAt": "2026-08-19T14:03:35.717Z",
     "objective": "Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto selective, and cash acceptable. This policy cannot eliminate market loss risk.",
     "stocks": {
       "minGrowthQuality": 92,
@@ -831,7 +832,7 @@
   },
   "crossAssetOpportunityRanking": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/opportunity-ranking-500.json",
-    "generatedAt": "2026-08-19T14:02:39.101Z",
+    "generatedAt": "2026-08-19T14:03:35.762Z",
     "rankingPolicy": {
       "stocksPrimaryOnTies": true,
       "noForcedDiversification": true,
@@ -852,9 +853,54 @@
     "realFillPromotionRequired": true,
     "instructions": "New or lightly tested symbols start smaller. Historical sample depth and real Robinhood fills can promote a symbol; weak symbol-level real-fill performance can reduce or block it. Probation never increases risk."
   },
+  "dataFreshness": {
+    "status": "GENERATED_THIS_RUN",
+    "lastSuccessfulGeneration": "2026-08-19T14:03:35.822Z",
+    "expectedRefreshCadenceMinutes": 10,
+    "stockExpectedRefreshMinutesDuringMarket": 10,
+    "cryptoExpectedRefreshMinutes": 10,
+    "stockSignalAsOf": "2026-08-19T14:03:21.046Z",
+    "cryptoSignalAsOf": "2026-08-19T14:03:35.683Z",
+    "stockAgeMinutes": 0,
+    "cryptoAgeMinutes": 0,
+    "entryGateValidationAgeMinutes": 0,
+    "staleAfterMinutes": {
+      "unified": 20,
+      "stockDuringMarket": 25,
+      "crypto": 25,
+      "entryGateValidation": 120
+    },
+    "failClosed": true,
+    "instructions": "This block is regenerated on every successful publish attempt. If lastSuccessfulGeneration or an asset signal age exceeds its stale threshold, treat that dependency as stale and open no new position from it."
+  },
+  "generatorIntegrity": {
+    "schemaVersion": 1,
+    "generatorFiles": [
+      "scripts/build-agent-signal.mjs",
+      "scripts/augment-signal-safety.mjs",
+      "scripts/validate-signal.mjs"
+    ],
+    "lastKnownGoodFallback": true,
+    "traceableFeatures": {
+      "dualUntouchedHoldouts": true,
+      "regimeSpecificEntryProfiles": true,
+      "wholeContractOptionSizing": true,
+      "setupClusterAndSymbolRealFillLearning": true,
+      "staleDataFailClosed": true,
+      "costAdjustedExpectancy": true,
+      "target2RewardRiskQualification": true,
+      "crossAssetOpportunityRanking": true
+    },
+    "evidence": {
+      "entryGateReport": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
+      "realFillPolicy": "https://sablewolphen.github.io/Teststock/real-fill-learning-policy.txt",
+      "strategyChangelog": "https://sablewolphen.github.io/Teststock/strategy-changelog.txt"
+    }
+  },
   "systemHealth": {
-    "generatedAt": "2026-08-19T14:02:39.182Z",
+    "generatedAt": "2026-08-19T14:03:35.822Z",
     "signalAgeMinutes": 0,
+    "dataFreshnessStatus": "GENERATED_THIS_RUN",
     "entryGateValidation": {
       "status": "RED_FLAG",
       "ageMinutes": 0,
