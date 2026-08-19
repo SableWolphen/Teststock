@@ -2,6 +2,14 @@ TESTSTOCK STRATEGY CHANGE LOG
 
 This file records changes to trading RULES, thresholds, tiers, sizing, validation, and safety behavior. Routine market-data refreshes and changing trade signals are intentionally not listed here.
 
+2026-08-19 — HOLDOUT VALIDATION + REGIME-SPECIFIC RISK + EVENT/SLIPPAGE/SHADOW GUARDS
+- Entry-gate validation now uses a chronological development period and an untouched holdout period beginning 2024-01-01. The fixed 52% historical win-rate, 2.5:1 reward/risk, 15-sample, and 0.5R conservative-expected-value thresholds are not tuned on the holdout.
+- Validation now publishes a runtime policy separately for calm, volatile, trending-down, trending-up, mixed, and unknown regimes. Weak holdout regimes can block new risk; sparse regimes automatically reduce stock size and block options. Regime validation may only reduce risk, never loosen the base gates.
+- Added event-risk blackouts before new positions: high corporate-action risk blocks entries; stock entries are blocked around the estimated report window from 3 days before through 1 day after; options use a stricter 7-day pre-event window through 1 day after. Estimated dates remain uncertain, so the guard is intentionally conservative.
+- Added real-fill adverse-slippage learning. With enough confirmed fills, repeated bad execution can reduce size or block the exact stock/option/crypto setup, cluster, or symbol bucket. Robinhood fills remain authoritative.
+- Added a paper shadow ledger that tracks both accepted and rejected Teststock candidates and later measures modeled R/opportunity cost from future Alpaca bars. Shadow results are diagnostic only and can never automatically increase live-money risk or override Robinhood real-fill results.
+- Claude scheduled instructions now explicitly apply holdout-regime scaling, event blackouts, slippage learning, and the rule that shadow data cannot be treated as real P&L.
+
 2026-08-18 — MULTI-REGIME VALIDATION + WHOLE-CONTRACT OPTION SAFETY
 - Added a wider historical entry-gate validation covering calm, volatile, trending-down, trending-up, and mixed SPY regimes.
 - Current thresholds under review are: 52% historical win rate, 2.5:1 minimum reward/risk, 15 minimum historical samples, and 0.5R minimum conservative expected value.
