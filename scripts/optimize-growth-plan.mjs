@@ -46,7 +46,7 @@ function adaptiveSymbolStats(history,symbol){
     else if(rows.length>=10&&winRate>=65){sizeMultiplier=1.05;qualityAdjustment=2;label='HOT_CONFIRMED';}
     else label='NORMAL';
   }
-  return {samples:rows.length,wins,losses,winRate,sizeMultiplier,qualityAdjustment,label};
+  return {samples:rows.length,wins,losses,winRate,sizeMultiplier,qualityAdjustment,label,source:'MODEL_RESEARCH_ONLY'};
 }
 function quality(r,data,adaptive){
   const score=Number(r.score||0),win=Number(r.validation?.winRate||50),samples=Number(r.validation?.samples||0),exp=expectancy(r);
@@ -68,20 +68,13 @@ function portfolioScore(r){
   const sampleBonus=Math.min(6,samples/10),liquidityBonus=dollarVolume>0?Math.min(4,Math.log10(Math.max(1,dollarVolume))-6):0,volPenalty=Math.max(0,atr-4)*1.5;
   return round(q+exp*10+Math.min(8,rr*2)+Math.max(0,win-50)*.15+sampleBonus+liquidityBonus-volPenalty,2);
 }
-function recentOutcomeGuard(history){
+function researchOutcomeDiagnostics(history){
   const done=history.filter(resolved).slice(-20);
   let streak=0; for(let i=done.length-1;i>=0;i--){if(LOSS.has(done[i].status))streak++;else break;}
   const wins=done.filter(x=>WIN.has(x.status)).length;
   const losses=done.filter(x=>LOSS.has(x.status)).length;
   const recentWinRate=done.length?round(wins/done.length*100,1):null;
-  const sampleFailure=done.length>=8&&recentWinRate<40;
-  const weakWindow=done.length>=6&&recentWinRate<45;
-  const pause=streak>=4||sampleFailure;
-  const stocksOnly=!pause&&(streak>=3||(done.length>=8&&recentWinRate<48));
-  const reduce=!pause&&!stocksOnly&&(streak>=2||weakWindow);
-  const cooldown=pause?'PAUSE_NEW_TRADES':stocksOnly?'STOCKS_ONLY':reduce?'REDUCE_SIZE':'NORMAL';
-  const sizeMultiplier=pause?0:stocksOnly?.4:reduce?.65:1;
-  return {resolvedSample:done.length,recentWins:wins,recentLosses:losses,recentWinRate,consecutiveLosses:streak,optionsLocked:pause||stocksOnly,cooldown,sizeMultiplier,reason:sampleFailure?'Recent resolved win rate fell below 40%; pause new trades.':streak>=4?'Four consecutive tracked losses; pause new trades.':stocksOnly?'Loss guard requires stocks/cash only.':reduce?'Loss guard reduced new position size.':'Normal risk mode.'};
+  return {resolvedSample:done.length,recentWins:wins,recentLosses:losses,recentWinRate,consecutiveLosses:streak,source:'MODEL_RESEARCH_ONLY',liveTradingAuthority:false,cooldown:'RUNTIME_REAL_FILLS_ONLY',sizeMultiplier:1,optionsLocked:false,reason:'Scanner/model trade-history is diagnostic only. It must never pause or size live Robinhood trading. Live outcome brakes are computed only from confirmed Robinhood fills/history at runtime.'};
 }
 function optionGate(data,budget,best,guard){
   const o=data.featured?.option;
@@ -91,13 +84,13 @@ function optionGate(data,budget,best,guard){
   let dte=null; if(o?.expiry){const t=new Date(o.expiry+'T20:00:00Z').getTime()-Date.now();dte=Math.round(t/86400000);}
   const maxOptionRisk=round(Math.min(budget*.08,20));
   const adaptive=best?.adaptivePerformance||{};
-  const checks={exists:!!o,tradeCandidate:data.action==='TRADE CANDIDATE',bullish:best?.direction==='BULLISH',quality:Number(best?.growthQuality||0)>=96,learning:learning>=92,historical:samples>=20&&win>=60,expectancy:Number(exp.costAdjustedConservativeExpectedR??exp.conservativeExpectedR??0)>=.8,rewardRisk:ratio>=3,market:data.regime?.tradeGate==='TRADE'&&data.regime?.bias==='BULLISH',sector:data.learning?.sector?.confirm===true,intraday:data.learning?.intraday?.confirm===true,adaptive:adaptive.label!=='COLD'&&adaptive.label!=='WEAK',definedRisk:maxRisk>0&&maxRisk<=maxOptionRisk,dte:dte==null||(dte>=30&&dte<=75),lossGuard:!guard.optionsLocked&&guard.cooldown!=='PAUSE_NEW_TRADES'};
-  const passed=Object.values(checks).every(Boolean);
+  const checks={exists:!!o,tradeCandidate:data.action==='TRADE CANDIDATE',bullish:best?.direction==='BULLISH',quality:Number(best?.growthQuality||0)>=96,learning:learning>=92,historical:samples>=20&&win>=60,expectancy:Number(exp.costAdjustedConservativeExpectedR??exp.conservativeExpectedR??0)>=.8,rewardRisk:ratio>=3,market:data.regime?.tradeGate==='TRADE'&&data.regime?.bias==='BULLISH',sector:data.learning?.sector?.confirm===true,intraday:data.learning?.intraday?.confirm===true,adaptive:adaptive.label!=='COLD'&&adaptive.label!=='WEAK',definedRisk:maxRisk>0&&maxRisk<=maxOptionRisk,dte:dte==null||(dte>=30&&dte<=75),liveOutcomeGuard:'RUNTIME_REAL_FILLS_ONLY'};
+  const passed=Object.entries(checks).filter(([k])=>k!=='liveOutcomeGuard').every(([,v])=>Boolean(v));
   return {passed,label:passed?'ELITE OPTION':'NO OPTION',maxOptionRiskDollars:maxOptionRisk,dte,checks,contract:passed?o:null};
 }
 
 const history=await read(path.join(dataDir,'trade-history.json'),[]);
-const guard=recentOutcomeGuard(history);
+const guard=researchOutcomeDiagnostics(history);
 for(const budget of budgets){
   const data=await read(path.join(dataDir,`latest-${budget}.json`));
   if(!data||data.error){await fs.writeFile(path.join(dataDir,`growth-plan-${budget}.json`),JSON.stringify({budget,error:data?.error||'No scan'},null,2));continue;}
@@ -110,28 +103,25 @@ for(const budget of budgets){
   const eligible=ranked.filter(r=>r.direction==='BULLISH'&&r.growthQuality>=90&&r.rewardRisk>=2.5&&Number(r.expectancy?.costAdjustedConservativeExpectedR??r.expectancy?.conservativeExpectedR??0)>=.5&&Number(r.validation?.samples||0)>=15&&Number(r.validation?.winRate||0)>=52&&r.adaptivePerformance?.label!=='COLD'&&data.learning?.sector?.confirm!==false&&data.learning?.intraday?.confirm!==false).slice(0,8);
 
   const maxPortfolioStop=budget*.03;
-  const sizeMultiplier=guard.sizeMultiplier;
   let remainingBudget=budget,remainingRisk=maxPortfolioStop;
   const allocations=[];
-  if(guard.cooldown!=='PAUSE_NEW_TRADES'){
-    for(const r of eligible){
-      if(allocations.length>=MAX_NEW_STOCKS)break;
-      const entry=Number(r.entry||0),stop=Number(r.stop||0),riskPct=entry>stop?(entry-stop)/entry:1;
-      if(!entry||riskPct<=0||riskPct>.15)continue;
-      const desired=budget*(allocations.length===0?.35:.22);
-      const byRisk=remainingRisk/riskPct;
-      const adaptiveSize=clamp(Number(r.adaptivePerformance?.sizeMultiplier||1),.5,1.05);
-      const amount=round(Math.max(0,Math.min(remainingBudget,desired*sizeMultiplier*adaptiveSize,byRisk)));
-      if(amount<Math.min(5,budget*.05))continue;
-      const stopRisk=round(amount*riskPct);
-      allocations.push({...r,allocationDollars:amount,estimatedSharesAtEntry:round(amount/entry,6),estimatedLossAtStop:stopRisk});
-      remainingBudget=round(remainingBudget-amount); remainingRisk=round(remainingRisk-stopRisk);
-      if(remainingBudget<=1||remainingRisk<=.25)break;
-    }
+  for(const r of eligible){
+    if(allocations.length>=MAX_NEW_STOCKS)break;
+    const entry=Number(r.entry||0),stop=Number(r.stop||0),riskPct=entry>stop?(entry-stop)/entry:1;
+    if(!entry||riskPct<=0||riskPct>.15)continue;
+    const desired=budget*(allocations.length===0?.35:.22);
+    const byRisk=remainingRisk/riskPct;
+    const adaptiveSize=clamp(Number(r.adaptivePerformance?.sizeMultiplier||1),.5,1.05);
+    const amount=round(Math.max(0,Math.min(remainingBudget,desired*adaptiveSize,byRisk)));
+    if(amount<Math.min(5,budget*.05))continue;
+    const stopRisk=round(amount*riskPct);
+    allocations.push({...r,allocationDollars:amount,estimatedSharesAtEntry:round(amount/entry,6),estimatedLossAtStop:stopRisk});
+    remainingBudget=round(remainingBudget-amount); remainingRisk=round(remainingRisk-stopRisk);
+    if(remainingBudget<=1||remainingRisk<=.25)break;
   }
   const best=allocations[0]||eligible[0]||ranked[0]||null;
   const option=optionGate(data,budget,best,guard);
-  const plan={schemaVersion:7,generatedAt:new Date().toISOString(),asOf:data.asOf,budget,market:data.market,session:data.session,regime:data.regime,dataQuality:data.dataQuality,objective:'Selective compounding using full-target reward/risk, cost-adjusted expectancy, portfolio ranking, adaptive performance, and capital-preservation gates; no return is guaranteed.',policy:{maxPlannedPortfolioStopPct:3,maxOptionPremiumPct:8,maxConcurrentNewPositions:MAX_NEW_STOCKS,noMargin:true,noAverageDown:true,noNakedOptions:true,noChasingPct:2,optionsRequireEliteGate:true,minRewardRisk:2.5,rewardRiskQualificationTarget:'TARGET2',target1Purpose:'Partial-profit / de-risking milestone; not the 2.5R qualification target',minHistoricalSamples:15,minHistoricalWinRate:52,minConservativeExpectedR:.5,minCostAdjustedConservativeExpectedR:.5,assumedStockRoundTripFrictionPct:ASSUMED_STOCK_ROUND_TRIP_FRICTION_PCT},outcomeGuard:guard,action:data.action,confidence:allocations.length&&allocations[0].growthQuality>=96?'A_PLUS':allocations.length?'A':'CASH',ranked:ranked.slice(0,8),allocations,keepCashDollars:round(remainingBudget),estimatedPortfolioStopLoss:round(allocations.reduce((s,x)=>s+x.estimatedLossAtStop,0)),eliteOption:option,reasons:allocations.length?['Reward/risk qualification now uses target2, while target1 remains a partial-profit/de-risking milestone.','Historical expectancy is reduced by a conservative stock execution-friction allowance before eligibility and ranking.','Up to four independently qualified stocks can be selected; portfolio opportunity score prioritizes quality, cost-adjusted expectancy, reward/risk, validation depth, liquidity, and volatility.','Loss streaks and weak recent outcomes can still reduce size, lock options, or pause new trades.','Options remain exceptional and require stricter evidence plus live whole-contract/risk checks.']:[guard.cooldown==='PAUSE_NEW_TRADES'?guard.reason:'No setup cleared the cost-adjusted expectancy, adaptive-performance, reward/risk, and protection gates; cash is selected.']};
+  const plan={schemaVersion:8,generatedAt:new Date().toISOString(),asOf:data.asOf,budget,market:data.market,session:data.session,regime:data.regime,dataQuality:data.dataQuality,objective:'Selective compounding using full-target reward/risk, cost-adjusted expectancy, portfolio ranking, adaptive performance, and capital-preservation gates; no return is guaranteed.',policy:{maxPlannedPortfolioStopPct:3,maxOptionPremiumPct:8,maxConcurrentNewPositions:MAX_NEW_STOCKS,noMargin:true,noAverageDown:true,noNakedOptions:true,noChasingPct:2,optionsRequireEliteGate:true,minRewardRisk:2.5,rewardRiskQualificationTarget:'TARGET2',target1Purpose:'Partial-profit / de-risking milestone; not the 2.5R qualification target',minHistoricalSamples:15,minHistoricalWinRate:52,minConservativeExpectedR:.5,minCostAdjustedConservativeExpectedR:.5,assumedStockRoundTripFrictionPct:ASSUMED_STOCK_ROUND_TRIP_FRICTION_PCT,liveOutcomeBrakeSource:'CONFIRMED_ROBINHOOD_FILLS_ONLY'},outcomeGuard:guard,action:data.action,confidence:allocations.length&&allocations[0].growthQuality>=96?'A_PLUS':allocations.length?'A':'CASH',ranked:ranked.slice(0,8),allocations,keepCashDollars:round(remainingBudget),estimatedPortfolioStopLoss:round(allocations.reduce((s,x)=>s+x.estimatedLossAtStop,0)),eliteOption:option,reasons:allocations.length?['Reward/risk qualification uses target2, while target1 remains a partial-profit/de-risking milestone.','Historical expectancy is reduced by a conservative stock execution-friction allowance before eligibility and ranking.','Up to four independently qualified stocks can be selected; portfolio opportunity score prioritizes quality, cost-adjusted expectancy, reward/risk, validation depth, liquidity, and volatility.','Scanner/model trade history is diagnostic only and cannot pause live trading; only confirmed Robinhood fills may trigger live outcome brakes.','Options remain exceptional and require stricter evidence plus live whole-contract/risk checks.']:['No setup cleared the cost-adjusted expectancy, adaptive-performance, reward/risk, and protection gates; cash is selected.']};
   await fs.writeFile(path.join(dataDir,`growth-plan-${budget}.json`),JSON.stringify(plan,null,2));
-  console.log(`Growth $${budget}: ${allocations.map(x=>`${x.symbol} $${x.allocationDollars} costAdjR ${x.expectancy?.costAdjustedConservativeExpectedR}`).join(', ')||'CASH'} | option ${option.label} | guard ${guard.cooldown}`);
+  console.log(`Growth $${budget}: ${allocations.map(x=>`${x.symbol} $${x.allocationDollars} costAdjR ${x.expectancy?.costAdjustedConservativeExpectedR}`).join(', ')||'CASH'} | option ${option.label} | live outcome brake Robinhood-only`);
 }
