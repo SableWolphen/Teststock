@@ -8,6 +8,7 @@ on:
       - '.github/workflows/static-scan.yml'
       - 'api/picks.js'
       - 'scripts/generate-static-picks.mjs'
+      - 'scripts/expand-stock-universe.mjs'
       - 'scripts/scan-small-account-options.mjs'
       - 'scripts/optimize-growth-plan.mjs'
       - 'scripts/generate-crypto-picks.mjs'
@@ -25,8 +26,6 @@ on:
       - 'docs/strategy-changelog.txt'
   workflow_dispatch:
   schedule:
-    # Offset from round-number cron minutes to reduce scheduler congestion.
-    # Crypto refreshes every run, 24/7. Stocks/options refresh on the same cadence during the broad US-market UTC window.
     - cron: '3,13,23,33,43,53 * * * *'
 
 permissions:
@@ -34,7 +33,6 @@ permissions:
 
 concurrency:
   group: static-scan
-  # Queue rather than cancel an in-flight generation. A cancelled generation cannot publish a fresh signal.
   cancel-in-progress: false
 
 jobs:
@@ -63,26 +61,21 @@ jobs:
             echo "deep=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-
           dow=$(date -u +%u)
           hour=$(date -u +%H)
           minute=$(date -u +%M)
-
           if [ "$dow" -ge 1 ] && [ "$dow" -le 5 ] && [ "$hour" -ge 13 ] && [ "$hour" -le 21 ]; then
             echo "stocks=true" >> "$GITHUB_OUTPUT"
           else
             echo "stocks=false" >> "$GITHUB_OUTPUT"
           fi
-
-          # Expensive historical validation/shadow resolution runs once per hour.
-          # Live stock + crypto scanning and unified-signal publication still run every 10 minutes.
           if [ "$minute" = "03" ]; then
             echo "deep=true" >> "$GITHUB_OUTPUT"
           else
             echo "deep=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Generate fresh stock picks
+      - name: Generate baseline stock picks
         if: ${{ steps.scan_window.outputs.stocks == 'true' }}
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
@@ -90,6 +83,13 @@ jobs:
           ALPACA_OPTIONS_FEED: indicative
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: node scripts/generate-static-picks.mjs
+
+      - name: Expand across all active tradable US operating-company stocks
+        if: ${{ steps.scan_window.outputs.stocks == 'true' }}
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+        run: node scripts/expand-stock-universe.mjs
 
       - name: Scan broader small-account option contracts
         if: ${{ steps.scan_window.outputs.stocks == 'true' }}
