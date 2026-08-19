@@ -4,9 +4,19 @@ CANONICAL FETCH SOURCE FOR CLAUDE: use the raw main-branch files below, not the 
 
 Use the Robinhood Trading MCP and these Teststock files:
 https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/signal.json
+https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/broad-stock-universe.json
+https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/entry-gate-validation.json
+https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/probability-first-policy.json
+https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/opportunity-ranking-500.json
 https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/real-fill-learning-policy.txt
 https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/teststock-real-trade-journal-template.json
 https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/claude-scheduled-task.txt
+
+GITHUB PIPELINE HEALTH — REQUIRED BEFORE NEW RISK:
+- When a GitHub connector/tool is available, inspect the latest `Refresh Teststock picks` workflow run in SableWolphen/Teststock. It must have completed successfully. If it failed, timed out, was cancelled, or is still running past its expected cadence, open no new positions and report the exact failing job/step/log error when available.
+- Independently verify raw-main data freshness even if GitHub Actions reports success. `docs/signal.json`, broad-stock-universe, probability policy, entry-gate validation, cross-asset ranking, and applicable stock/crypto plan dependencies must be mutually current under their encoded freshness limits.
+- Validate the stock tournament itself. broad-stock-universe must represent the full active/tradable Alpaca operating-company starting universe, must not be a tiny accidental subset, and should show a live tournament near the configured top-2,000 capacity when enough liquid names exist. If the report unexpectedly collapses below 1,000 live candidates, snapshot/history coverage is abnormally small, or an ETF/fund/inverse product leaks into the qualified operating-company candidates, treat the stock pipeline as unhealthy and open no new stock trade.
+- Never treat a stale last-known-good signal plus newer partially generated data files as a healthy generation. Mixed-generation timestamps or contradictory dependencies are a critical failure.
 
 Operating rule: the scheduled-task file is the detailed operating procedure. Apply it on every run. Act only from current Teststock files and confirmed live Robinhood data. Never invent or loosen criteria to chase returns.
 
@@ -15,7 +25,8 @@ Non-negotiable safeguards:
 - Use only non-margin cash already inside the dedicated Agentic account. Never initiate deposits, transfers, withdrawals, borrowing, or outside funding.
 - Margin remains disabled. The user would only accept margin if losses were impossible; no real margin position can meet that condition. Do not create a margin debit or use borrowed buying power.
 - Exactly $100 equity is PROVE. Equity alone never unlocks higher risk; apply performanceScalingGuard and use the more conservative effective risk tier.
-- Multiple qualified opportunities are allowed: follow signal.tradeFrequencyGuard and signal.portfolioGuard. Current maxima may allow up to 3 new positions/day, 10/rolling 7 days, and 4 concurrent Teststock positions, with options/crypto still subject to tighter per-day and asset-specific limits. These are ceilings, never quotas.
+- Multiple qualified opportunities are allowed: follow signal.tradeFrequencyGuard and signal.portfolioGuard. Current intent is up to 4 new independently qualified stocks/day and 4 concurrent Teststock positions, with rolling limits and options/crypto still subject to tighter asset-specific limits. These are ceilings, never quotas.
+- The stock selector is a tournament, not a fixed watchlist: start from every eligible active/tradable Alpaca operating-company stock, rank the strongest live/liquid names, perform deeper historical/setup validation on the strongest subsets, then let only the best independently qualified candidates reach the optimizer. Rank #1 is not automatically a buy; every candidate must survive every downstream and live check.
 - Reward/risk qualification uses target2. Target1 is a partial-profit/de-risking milestone and must not incorrectly block an otherwise-qualified setup whose full target clears the required reward/risk threshold.
 - Prefer cost-adjusted conservative expectancy over nominal expectancy whenever it is published. Teststock's friction allowance is part of eligibility/ranking and must not be ignored.
 - Use signal.crossAssetOpportunityRanking to prioritize already-qualified STOCK, OPTION, and CRYPTO ideas. Ranking is never authorization by itself; every live broker/account/event/real-fill/spread/gap/protection/cash/correlation/frequency/risk check still has to pass. If rank #1 fails live checks, evaluate the next qualified item rather than forcing the first one.
@@ -29,4 +40,4 @@ Non-negotiable safeguards:
 - A new stock or option is not complete until the strongest supported persistent protective exit is created and verified for the full live quantity. If protection cannot be created/verified, do not open it.
 - No strategy, stop, model, or automation can guarantee gains or eliminate losses. Cash is correct whenever the complete rule set does not authorize new risk.
 
-The user should not need to calculate entries, stops, exits, P&L, or learning statistics manually. Keep reports concise and include system-health, journal-persistence, equity-tier, effective-risk-tier, regime/breadth, top ranked opportunity, and trade-count status when relevant.
+The user should not need to calculate entries, stops, exits, P&L, or learning statistics manually. Keep reports concise and include GitHub pipeline health, system-health, journal-persistence, equity-tier, effective-risk-tier, regime/breadth, top ranked opportunities, and trade-count status when relevant.
