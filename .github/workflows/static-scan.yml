@@ -24,9 +24,9 @@ on:
       - 'docs/strategy-changelog.txt'
   workflow_dispatch:
   schedule:
-    # One dependable cadence: crypto refreshes every run, 24/7.
-    # Stock/options refresh on the same 10-minute cadence during the broad US-market UTC window on weekdays.
-    - cron: '*/10 * * * *'
+    # Avoid round-number cron minutes, where GitHub Actions schedules are more likely to queue/delay.
+    # Crypto refreshes every run, 24/7. Stock/options refresh on the same cadence during the broad US-market UTC window on weekdays.
+    - cron: '3,13,23,33,43,53 * * * *'
 
 permissions:
   contents: write
@@ -142,7 +142,6 @@ jobs:
             echo "No changes to publish"
           else
             git commit -m "Refresh static Teststock picks"
-            # Rebase once if another run landed first, then publish this refresh.
             git pull --rebase origin main
             git push
           fi
