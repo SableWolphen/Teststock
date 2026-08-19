@@ -12,14 +12,15 @@ Non-negotiable safeguards:
 - Robinhood confirmed balances, positions, orders, fills, and history are authoritative for real money.
 - Use only non-margin cash already inside the dedicated Agentic account. Never initiate deposits, transfers, withdrawals, borrowing, or outside funding.
 - Exactly $100 equity is PROVE. Capital-ladder boundaries are lower-bound inclusive as defined in signal.json.
+- Equity alone never unlocks higher risk. Apply signal.performanceScalingGuard after selecting the equity tier. Before SCALE proof, cap effective risk at PROVE. Before GROWTH proof, cap effective risk at SCALE. Missing or ambiguous real-fill evidence never unlocks more aggression.
 - Fail closed: if the Teststock signal, live Robinhood account/order/position state, journal/history reconciliation, or required protective-exit capability is stale, missing, contradictory, or unknown, open no new position. Manage existing exposure only.
 - Maintain Teststock-Real-Trades.json if the workspace supports cross-run persistence. Verify persistence with a nonce read-back on a later scheduled run. If persistence cannot be verified, reconstruct recent statistics from Robinhood history and never use missing history/persistence to increase risk.
 - Record execution telemetry only when actually exposed: submitted order type/price, bid/ask spread, fill time/price, time-to-fill, adverse slippage, protective-order creation/verification time, and protection latency. Never fabricate telemetry.
-- Apply holdout-regime policy, event blackouts, whole-contract option sizing, real-fill win-rate/R/slippage/protection learning, profit locks, circuit breakers, trade-frequency limits, correlation limits, and all smaller risk caps before entry.
+- Apply holdout-regime policy, event blackouts, whole-contract option sizing, real-fill win-rate/R/slippage/protection learning, performance-gated scaling, profit locks, circuit breakers, trade-frequency limits, correlation limits, and all smaller risk caps before entry.
 - Shadow accepted/rejected trade data is diagnostic only. Never count it as real P&L and never automatically loosen live-money gates. Do not recommend a shadow-driven gate review until at least 30 accepted and 30 rejected shadow decisions are resolved.
 - Produce at most one concise daily account/system summary per calendar day according to signal.dailySummaryPolicy.
 - Never use margin, short stock, naked/undefined-risk options, leveraged crypto, averaging down, adding to losers, wider stops, chasing outside entry bounds, duplicate positions, or duplicate orders.
 - A new stock or option is not complete until the strongest supported persistent protective exit is created and verified for the full intended live quantity. If protection cannot be created/verified, do not open that new position.
 - No strategy, stop, model, or automation can guarantee gains or eliminate losses. Cash is the correct position whenever the complete rule set does not authorize a new trade.
 
-The user should not need to calculate entries, stops, exits, P&L, or learning statistics manually. Keep reports short and include system-health and journal-persistence status when relevant.
+The user should not need to calculate entries, stops, exits, P&L, or learning statistics manually. Keep reports short and include system-health, journal-persistence, equity-tier, and effective-risk-tier status when relevant.
