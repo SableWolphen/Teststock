@@ -1,0 +1,30 @@
+TESTSTOCK STRATEGY CHANGE LOG
+
+This file records changes to trading RULES, thresholds, tiers, sizing, validation, and safety behavior. Routine market-data refreshes and changing trade signals are intentionally not listed here.
+
+2026-08-18 — MULTI-REGIME VALIDATION + WHOLE-CONTRACT OPTION SAFETY
+- Added a wider historical entry-gate validation covering calm, volatile, trending-down, trending-up, and mixed SPY regimes.
+- Current thresholds under review are: 52% historical win rate, 2.5:1 minimum reward/risk, 15 minimum historical samples, and 0.5R minimum conservative expected value.
+- Added a RED_FLAG result when required calm, volatile, or trending-down regime checks do not hold up.
+- Added explicit whole-contract option sizing: one real contract must fit the live dollar risk cap. Percentage sizing may never imply a fractional contract.
+- Added signal.json generation validation for JSON structure, timestamp freshness, tier boundaries, field ranges, and option-risk metadata.
+- Added last-known-good signal fallback if a fresh signal build or validation fails.
+- Expanded real-fill learning to report and react to performance separately by setup type and correlation/risk cluster, in addition to overall performance.
+
+2026-08-18 — CAPITAL TIER BOUNDARY CLARIFICATION
+- Capital tiers changed to explicit lower-bound-inclusive / upper-bound-exclusive intervals.
+- Exactly $80 = DEFENSE; exactly $100 = PROVE; exactly $125 = SCALE; exactly $150 = GROWTH.
+- Added machine-readable exact boundary examples to reduce agent interpretation errors.
+
+2026-08-18 — REAL ROBINHOOD FILL LEARNING
+- Added Teststock-Real-Trades journal schema and Robinhood-authoritative reconciliation policy.
+- Added actual fill, exit, P&L, slippage, realized-R, protective-order, and exit-reason tracking.
+- Real-fill learning can reduce risk, lock options, or pause entries; it cannot make the strategy more aggressive than existing Teststock limits.
+
+2026-08-18 — FULL-AUTO SAFETY LAYER
+- Added $75 hard account floor with $80 recovery threshold.
+- Added daily/weekly trade-frequency limits, correlation protection, circuit breakers, execution-quality limits, automatic protective exits, profit management, and health guards.
+- Funding remains user-only: the agent may never initiate deposits, transfers, withdrawals, or external funding.
+
+Rule-change log URL:
+https://sablewolphen.github.io/Teststock/strategy-changelog.txt
