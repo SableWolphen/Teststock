@@ -24,15 +24,18 @@ on:
       - 'docs/strategy-changelog.txt'
   workflow_dispatch:
   schedule:
-    - cron: '5,35 13-21 * * 1-5'
-    - cron: '*/15 * * * *'
+    # One dependable cadence: crypto refreshes every run, 24/7.
+    # Stock/options refresh on the same 10-minute cadence during the broad US-market UTC window on weekdays.
+    - cron: '*/10 * * * *'
 
 permissions:
   contents: write
 
 concurrency:
   group: static-scan
-  cancel-in-progress: true
+  # Do not cancel an in-flight scan just because the next scheduled tick arrived.
+  # A cancelled run never gets to publish a fresh signal and can make the website look stale.
+  cancel-in-progress: false
 
 jobs:
   refresh:
@@ -42,49 +45,77 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Decide whether stock/options scan is due
+        id: scan_window
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" != "schedule" ]; then
+            echo "stocks=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          dow=$(date -u +%u)
+          hour=$(date -u +%H)
+          if [ "$dow" -ge 1 ] && [ "$dow" -le 5 ] && [ "$hour" -ge 13 ] && [ "$hour" -le 21 ]; then
+            echo "stocks=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "stocks=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Generate free static stock picks
-        if: ${{ github.event_name != 'schedule' || github.event.schedule == '5,35 13-21 * * 1-5' }}
+        if: ${{ steps.scan_window.outputs.stocks == 'true' }}
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
           ALPACA_OPTIONS_FEED: indicative
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: node scripts/generate-static-picks.mjs
+
       - name: Validate regime profiles on development and two untouched holdouts
-        if: ${{ github.event_name != 'schedule' || github.event.schedule == '5,35 13-21 * * 1-5' }}
+        if: ${{ steps.scan_window.outputs.stocks == 'true' }}
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/validate-entry-gates.mjs
+
       - name: Optimize growth plan with target2 reward-risk and cost-adjusted expectancy
-        if: ${{ github.event_name != 'schedule' || github.event.schedule == '5,35 13-21 * * 1-5' }}
+        if: ${{ steps.scan_window.outputs.stocks == 'true' }}
         run: node scripts/optimize-growth-plan.mjs
+
       - name: Apply holdout-regime and event-risk guards
-        if: ${{ github.event_name != 'schedule' || github.event.schedule == '5,35 13-21 * * 1-5' }}
+        if: ${{ steps.scan_window.outputs.stocks == 'true' }}
         run: node scripts/apply-advanced-growth-guards.mjs
+
       - name: Expand across multiple high-quality stock opportunities
-        if: ${{ github.event_name != 'schedule' || github.event.schedule == '5,35 13-21 * * 1-5' }}
+        if: ${{ steps.scan_window.outputs.stocks == 'true' }}
         run: node scripts/apply-opportunity-expansion.mjs
+
       - name: Update accepted/rejected shadow ledger
-        if: ${{ github.event_name != 'schedule' || github.event.schedule == '5,35 13-21 * * 1-5' }}
+        if: ${{ steps.scan_window.outputs.stocks == 'true' }}
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/update-shadow-ledger.mjs
+
       - name: Generate selective crypto plan
-        if: ${{ github.event_name != 'schedule' || github.event.schedule == '*/15 * * * *' }}
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/generate-crypto-picks.mjs
+
       - name: Apply probability-first stock options crypto overlay
         run: node scripts/apply-probability-first-guards.mjs
+
       - name: Rank qualified opportunities across asset classes
         run: node scripts/build-cross-asset-opportunity-ranking.mjs
+
       - name: Build, augment, and validate Claude/Robinhood signal with fallback
         shell: bash
         run: |
@@ -101,6 +132,7 @@ jobs:
               exit 1
             fi
           fi
+
       - name: Publish refreshed JSON
         run: |
           git config user.name "github-actions[bot]"
@@ -110,5 +142,7 @@ jobs:
             echo "No changes to publish"
           else
             git commit -m "Refresh static Teststock picks"
+            # Rebase once if another run landed first, then publish this refresh.
+            git pull --rebase origin main
             git push
           fi
