@@ -6,6 +6,17 @@ const dataDir=path.resolve('docs/data');
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const round=(n,d=2)=>Number(Number(n||0).toFixed(d));
 const read=async(f,x=null)=>{try{return JSON.parse(await fs.readFile(f,'utf8'));}catch{return x;}};
+function findOptionForSymbol(smallAccountOptions,symbol){
+  if(!smallAccountOptions||!symbol)return null;
+  const candidates=Array.isArray(smallAccountOptions.candidates)?smallAccountOptions.candidates:[];
+  const pool=smallAccountOptions.best?[smallAccountOptions.best,...candidates]:candidates;
+  const match=pool.find(c=>c&&c.underlying===symbol);
+  if(!match)return null;
+  const side=String(match.kind||'').includes('PUT')?'PUT':'CALL';
+  return {kind:match.kind||'LONG_CALL',side,structure:'LONG',expiry:match.expiry,dte:match.dte,strike:match.strike,longStrike:match.strike,shortStrike:null,
+    maxRisk:Math.ceil(Number(match.oneContractPremiumDollars||0)),maxProfit:null,spreadPct:Number(match.spreadPct||0),delta:match.delta,iv:match.iv,
+    contract:match.contract,underlyingPrice:match.underlyingPrice,underlyingScore:match.underlyingScore,score:match.score,source:'BROAD_SMALL_ACCOUNT_OPTION_SCAN'};
+}
 const WIN=new Set(['TARGET1','TARGET2','MATURED_WIN']);
 const LOSS=new Set(['STOP','STOP_GAP','MATURED_LOSS']);
 const resolved=x=>WIN.has(x?.status)||LOSS.has(x?.status);
@@ -76,8 +87,8 @@ function researchOutcomeDiagnostics(history){
   const recentWinRate=done.length?round(wins/done.length*100,1):null;
   return {resolvedSample:done.length,recentWins:wins,recentLosses:losses,recentWinRate,consecutiveLosses:streak,source:'MODEL_RESEARCH_ONLY',liveTradingAuthority:false,cooldown:'RUNTIME_REAL_FILLS_ONLY',sizeMultiplier:1,optionsLocked:false,reason:'Scanner/model trade-history is diagnostic only. It must never pause or size live Robinhood trading. Live outcome brakes are computed only from confirmed Robinhood fills/history at runtime.'};
 }
-function optionGate(data,budget,best,guard){
-  const o=data.featured?.option;
+function optionGate(data,budget,best,guard,smallAccountOptions){
+  const o=findOptionForSymbol(smallAccountOptions,best?.symbol)||data.featured?.option;
   const learning=Number(data.featured?.learningScore??data.learning?.score??0);
   const win=Number(best?.validation?.winRate||0),samples=Number(best?.validation?.samples||0),exp=best?.expectancy||{};
   const maxRisk=Number(o?.maxRisk||0),ratio=Number(best?.rewardRisk||0);
@@ -91,6 +102,7 @@ function optionGate(data,budget,best,guard){
 
 const history=await read(path.join(dataDir,'trade-history.json'),[]);
 const guard=researchOutcomeDiagnostics(history);
+const smallAccountOptions=await read(path.join(dataDir,'small-account-options.json'),null);
 for(const budget of budgets){
   const data=await read(path.join(dataDir,`latest-${budget}.json`));
   if(!data||data.error){await fs.writeFile(path.join(dataDir,`growth-plan-${budget}.json`),JSON.stringify({budget,error:data?.error||'No scan'},null,2));continue;}
@@ -120,7 +132,7 @@ for(const budget of budgets){
     if(remainingBudget<=1||remainingRisk<=.25)break;
   }
   const best=allocations[0]||eligible[0]||ranked[0]||null;
-  const option=optionGate(data,budget,best,guard);
+  const option=optionGate(data,budget,best,guard,smallAccountOptions);
   const plan={schemaVersion:8,generatedAt:new Date().toISOString(),asOf:data.asOf,budget,market:data.market,session:data.session,regime:data.regime,dataQuality:data.dataQuality,objective:'Selective compounding using full-target reward/risk, cost-adjusted expectancy, portfolio ranking, adaptive performance, and capital-preservation gates; no return is guaranteed.',policy:{maxPlannedPortfolioStopPct:3,maxOptionPremiumPct:8,maxConcurrentNewPositions:MAX_NEW_STOCKS,noMargin:true,noAverageDown:true,noNakedOptions:true,noChasingPct:2,optionsRequireEliteGate:true,minRewardRisk:2.5,rewardRiskQualificationTarget:'TARGET2',target1Purpose:'Partial-profit / de-risking milestone; not the 2.5R qualification target',minHistoricalSamples:15,minHistoricalWinRate:52,minConservativeExpectedR:.5,minCostAdjustedConservativeExpectedR:.5,assumedStockRoundTripFrictionPct:ASSUMED_STOCK_ROUND_TRIP_FRICTION_PCT,liveOutcomeBrakeSource:'CONFIRMED_ROBINHOOD_FILLS_ONLY'},outcomeGuard:guard,action:data.action,confidence:allocations.length&&allocations[0].growthQuality>=96?'A_PLUS':allocations.length?'A':'CASH',ranked:ranked.slice(0,8),allocations,keepCashDollars:round(remainingBudget),estimatedPortfolioStopLoss:round(allocations.reduce((s,x)=>s+x.estimatedLossAtStop,0)),eliteOption:option,reasons:allocations.length?['Reward/risk qualification uses target2, while target1 remains a partial-profit/de-risking milestone.','Historical expectancy is reduced by a conservative stock execution-friction allowance before eligibility and ranking.','Up to four independently qualified stocks can be selected; portfolio opportunity score prioritizes quality, cost-adjusted expectancy, reward/risk, validation depth, liquidity, and volatility.','Scanner/model trade history is diagnostic only and cannot pause live trading; only confirmed Robinhood fills may trigger live outcome brakes.','Options remain exceptional and require stricter evidence plus live whole-contract/risk checks.']:['No setup cleared the cost-adjusted expectancy, adaptive-performance, reward/risk, and protection gates; cash is selected.']};
   await fs.writeFile(path.join(dataDir,`growth-plan-${budget}.json`),JSON.stringify(plan,null,2));
   console.log(`Growth $${budget}: ${allocations.map(x=>`${x.symbol} $${x.allocationDollars} costAdjR ${x.expectancy?.costAdjustedConservativeExpectedR}`).join(', ')||'CASH'} | option ${option.label} | live outcome brake Robinhood-only`);
