@@ -2,25 +2,20 @@ TESTSTOCK AUTOPILOT — SCHEDULED CLAUDE TASK
 
 Run this task once per hour.
 
-1. Read https://sablewolphen.github.io/Teststock/signal.json
-2. FUNDING LOCK: use only cash and proceeds already inside the dedicated Robinhood Agentic account. Never initiate a deposit, ACH transfer, debit-card transfer, wire, bank transfer, internal transfer, or any other movement of money into that account. Only the user may manually add more money. If the user initially funds it with $100, that is the only outside principal available until the user personally adds more. Trading profits may remain in the Agentic account and be reused under the normal risk rules.
-3. Never withdraw from, charge, borrow against, or otherwise access Chase, Crew, Citi, Capital One, any linked bank, debit card, credit line, retirement account, or any external financial account.
-4. Read the connected Robinhood Agentic account and treat its current NON-MARGIN CASH BUYING POWER, positions, and open orders as the only source of truth for money available to trade.
-5. Keep asset classes separate at all times:
-   - STOCK: use only stockPlan.stockOrders.
-   - OPTION: use only stockPlan.eliteOption.
-   - CRYPTO: use only cryptoPlan.cryptoOrders.
-   Never reinterpret a crypto signal as a stock, a stock as an option, or any other cross-asset substitute.
-6. Convert allocationPctOfRobinhoodBuyingPower or maxRiskPctOfRobinhoodBuyingPower into live dollars immediately before any order.
-7. If a signal for an asset class is stale, expired, WAIT, WAIT_FOR_TRIGGER, WAIT_FOR_MARKET_OPEN, DO_NOT_TRADE, DO_NOT_CHASE, or otherwise non-actionable, do nothing for that asset class.
-8. STOCK: buy only a stockOrder marked AUTO_BUY_ELIGIBLE, only while its live price remains between minimumEntry and maximumEntry, and only after verifying market status, buying power, positions, open orders, and executable price.
-9. OPTION: stocks remain the default. Buy an option only when stockPlan.eliteOption exists and is AUTO_BUY_ELIGIBLE, every elite check is true, the exact contract is available, live spread/liquidity is acceptable, and risk stays within maxRiskPctOfRobinhoodBuyingPower. Never substitute a different contract just to force a trade.
-10. CRYPTO: use only cryptoPlan.cryptoOrders. A crypto signal must be SIGNAL_ONLY_BUY_ZONE, unexpired, inside its allowed entry range, and still valid on live data. Place a crypto order only if the connected Robinhood tools explicitly expose crypto order-placement support at runtime. If not supported, keep crypto signal-only and never fabricate execution.
-11. Never use margin, borrowed money, naked options, short stock, undefined-risk options, leveraged crypto, averaging down, or wider stops.
-12. Never duplicate an existing position or open order. Re-read Robinhood buying power after a fill before sizing another trade.
-13. Manage existing Teststock positions using their saved invalidation and targets. If invalidation is breached, exit using supported Robinhood tools. At target1, protect gains or take partial profit according to policy. At target2, prioritize profit capture. Never move a stop farther away to avoid realizing a loss.
-14. Obey all outcome/drawdown locks. If Teststock and Robinhood materially disagree, do not trade.
-15. Do not increase risk because of a profit target, losing streak, or desire to grow the account faster. Unused buying power stays cash.
-16. If no action is required, report only a short status. If a trade or exit occurs, report ASSET CLASS, symbol/contract, action, live Robinhood dollar amount or risk used, execution price if available, stop/invalidation, targets, and remaining buying power.
+1. Read https://sablewolphen.github.io/Teststock/signal.json and follow its current hardRules, capitalLadder, outcomeGuard, assetClassRouting, entries, stops, and targets exactly.
+2. FUNDING LOCK: use only cash and trading proceeds already inside the dedicated Robinhood Agentic account. Never initiate a deposit, ACH transfer, debit-card transfer, wire, bank transfer, internal transfer, withdrawal, or any other movement of money. Only the user may manually add more money.
+3. Read live Robinhood Agentic-account equity, NON-MARGIN CASH BUYING POWER, positions, and open orders before any action.
+4. Select exactly one capitalLadder tier from live Agentic-account equity. Apply that tier before sizing every new trade. If the tier disables options, do not open an option. Never exceed the tier stop-risk limit.
+5. Keep asset classes separate: STOCK=stockPlan.stockOrders only; OPTION=stockPlan.eliteOption only; CRYPTO=cryptoPlan.cryptoOrders only. Never substitute across asset classes.
+6. If a signal is stale, expired, WAIT, WAIT_FOR_TRIGGER, WAIT_FOR_MARKET_OPEN, DO_NOT_TRADE, DO_NOT_CHASE, or otherwise non-actionable, do nothing for that asset class.
+7. STOCK: buy only AUTO_BUY_ELIGIBLE orders that still pass the live entry range. Size with the SMALLER of (a) Teststock allocationPctOfRobinhoodBuyingPower multiplied by the active capital-ladder stockAllocationMultiplier and (b) the amount permitted by the active tier planned-stop-risk cap. Teststock's expectancy, historical sample, reward/risk, market, sector, intraday, freshness, and entry gates must remain satisfied. Never loosen a failed gate.
+8. OPTION: stocks/cash are the default. Buy only when eliteOption is AUTO_BUY_ELIGIBLE, every elite check remains true, the active ladder tier allows options, the exact contract exists, live spread/liquidity is acceptable, and total premium/risk is no more than the SMALLER of eliteOption.maxRiskPctOfRobinhoodBuyingPower and the active tier maxOptionRiskPct. Never substitute a lottery contract.
+9. CRYPTO: use only cryptoPlan.cryptoOrders. Execute only if a crypto order is in its valid buy zone AND the connected Robinhood tools explicitly expose crypto order placement at runtime. Otherwise keep crypto signal-only.
+10. Never use margin, borrowed money, naked options, short stock, undefined-risk options, leveraged crypto, averaging down, adding to losers, wider stops, duplicate positions, or duplicate open orders.
+11. Obey outcomeGuard: two consecutive tracked losses reduce size; three lock options; four pause new trades until the guard clears.
+12. Manage existing Teststock positions from saved invalidation and targets. Exit when invalidation is breached. At target1 protect gains or take partial profit; at target2 prioritize profit capture. Never widen risk.
+13. Re-read buying power/equity after fills before sizing another trade. If Teststock and Robinhood materially disagree, do nothing.
+14. Never increase risk to chase a profit target or recover losses. Unused buying power stays cash.
+15. If no action is required, report only a short status. If a trade or exit occurs, report ASSET CLASS, symbol/contract, action, dollar amount/risk used, execution price if available, active capital-ladder tier, stop/invalidation, targets, and remaining buying power.
 
-This task is hands-off but must always obey live Robinhood permissions and the current Teststock hard rules.
+The account may start with $100 and may use profits or later user-added deposits, but the agent itself must never fund the account. No strategy guarantees profit or prevents loss.
