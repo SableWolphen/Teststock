@@ -11,6 +11,12 @@ on:
       - 'scripts/optimize-growth-plan.mjs'
       - 'scripts/generate-crypto-picks.mjs'
       - 'scripts/build-agent-signal.mjs'
+      - 'scripts/validate-entry-gates.mjs'
+      - 'scripts/augment-signal-safety.mjs'
+      - 'scripts/validate-signal.mjs'
+      - 'docs/real-fill-learning-policy.txt'
+      - 'docs/teststock-real-trade-journal-template.json'
+      - 'docs/strategy-changelog.txt'
   workflow_dispatch:
   schedule:
     # Stocks/options: every 30 minutes on US market weekdays, offset so it does not collide with crypto runs.
@@ -48,6 +54,13 @@ jobs:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: node scripts/generate-static-picks.mjs
 
+      - name: Validate entry gates across market regimes
+        if: ${{ github.event_name != 'schedule' || github.event.schedule == '5,35 13-21 * * 1-5' }}
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+        run: node scripts/validate-entry-gates.mjs
+
       - name: Optimize aggressive growth plan
         if: ${{ github.event_name != 'schedule' || github.event.schedule == '5,35 13-21 * * 1-5' }}
         run: node scripts/optimize-growth-plan.mjs
@@ -59,8 +72,22 @@ jobs:
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/generate-crypto-picks.mjs
 
-      - name: Build Claude/Robinhood signal
-        run: node scripts/build-agent-signal.mjs
+      - name: Build, augment, and validate Claude/Robinhood signal with fallback
+        shell: bash
+        run: |
+          set -u
+          if [ -f docs/signal.json ]; then cp docs/signal.json /tmp/teststock-last-good-signal.json; fi
+          if node scripts/build-agent-signal.mjs && node scripts/augment-signal-safety.mjs && node scripts/validate-signal.mjs docs/signal.json; then
+            echo "Fresh signal passed validation"
+          else
+            echo "Fresh signal failed generation or validation; restoring last known-good signal"
+            if [ -f /tmp/teststock-last-good-signal.json ]; then
+              cp /tmp/teststock-last-good-signal.json docs/signal.json
+            else
+              echo "No prior signal exists to restore" >&2
+              exit 1
+            fi
+          fi
 
       - name: Publish refreshed JSON
         run: |
