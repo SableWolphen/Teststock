@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 13,
+  "schemaVersion": 14,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-08-19T09:38:52.504Z",
+  "generatedAt": "2026-08-19T09:39:22.879Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -259,15 +259,17 @@
     "Manage exits automatically: invalidation means exit/protective stop; target1 means protect gains and consider partial profit; target2 means prioritize profit capture. The user should not need to calculate stops manually.",
     "No model, stop, profit lock, or automation can guarantee profit or prevent losses, gaps, slippage, option decay, crypto volatility, or tool failures.",
     "WHOLE-CONTRACT OPTIONS CHECK: option percentages are not fractional-contract sizing. Before any option order, calculate the live dollar risk cap from current Agentic-account equity and the active tier, then compare it with the actual max dollar risk/premium of one whole contract. If one contract exceeds the cap, skip the option.",
-    "MULTI-REGIME VALIDATION: inspect entryGateRobustness before new risk. If it is RED_FLAG or unavailable, surface that fact and never increase risk because of the historical model; keep other Teststock gates fully intact."
+    "HOLDOUT + REGIME VALIDATION: inspect entryGateRobustness before new risk. Weak holdout regimes may reduce or block new positions. Never loosen the 52% win-rate, 2.5:1 reward/risk, 15-sample, or 0.5R conservative-expected-value gates because a recent slice looks favorable.",
+    "EVENT RISK: obey any stockPlan.policy event blackout and advanced guard. Never bypass an encoded earnings/filing/corporate-action block to force a trade.",
+    "SHADOW DATA: shadowDiagnostics is model-only. Never count it as real P&L or use it to automatically increase live-money risk."
   ],
   "stockPlan": {
     "assetClass": "STOCK",
     "overallAction": "WAIT_FOR_MARKET_OPEN",
     "reason": "Market is closed.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T09:38:48.746Z",
-    "expiresAt": "2026-08-20T21:38:48.746Z",
+    "signalAsOf": "2026-08-19T09:39:19.667Z",
+    "expiresAt": "2026-08-20T21:39:19.667Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 3,
       "maxOptionPremiumPct": 8,
@@ -318,8 +320,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T09:38:52.452Z",
-    "expiresAt": "2026-08-19T10:08:52.452Z",
+    "signalAsOf": "2026-08-19T09:39:22.823Z",
+    "expiresAt": "2026-08-19T10:09:22.823Z",
     "policy": {
       "aPlusMinGrowthQuality": 94,
       "aMinGrowthQuality": 88,
@@ -344,7 +346,8 @@
   "entryGateRobustness": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
     "status": "RED_FLAG",
-    "generatedAt": "2026-08-19T09:38:51.349Z",
+    "generatedAt": "2026-08-19T09:39:21.967Z",
+    "holdoutStart": "2024-01-01",
     "gatesUnderReview": {
       "minHistoricalWinRatePct": 52,
       "minRewardRisk": 2.5,
@@ -361,8 +364,240 @@
       "VOLATILE",
       "TRENDING_DOWN"
     ],
+    "development": {
+      "overall": {
+        "samples": 483,
+        "wins": 259,
+        "winRatePct": 53.6,
+        "averageObservedR": 0.21,
+        "conservativeExpectedR": 0.88,
+        "passesSampleGate": true,
+        "passesWinRateGate": true,
+        "passesExpectedValueGate": true,
+        "positiveObservedR": true
+      },
+      "byRegime": {
+        "CALM": {
+          "samples": 297,
+          "wins": 168,
+          "winRatePct": 56.6,
+          "averageObservedR": 0.27,
+          "conservativeExpectedR": 0.98,
+          "passesSampleGate": true,
+          "passesWinRateGate": true,
+          "passesExpectedValueGate": true,
+          "positiveObservedR": true
+        },
+        "VOLATILE": {
+          "samples": 15,
+          "wins": 12,
+          "winRatePct": 80,
+          "averageObservedR": 0.86,
+          "conservativeExpectedR": 1.27,
+          "passesSampleGate": true,
+          "passesWinRateGate": true,
+          "passesExpectedValueGate": true,
+          "positiveObservedR": true
+        },
+        "TRENDING_DOWN": {
+          "samples": 27,
+          "wins": 15,
+          "winRatePct": 55.6,
+          "averageObservedR": 0.16,
+          "conservativeExpectedR": 0.93,
+          "passesSampleGate": true,
+          "passesWinRateGate": true,
+          "passesExpectedValueGate": true,
+          "positiveObservedR": true
+        },
+        "TRENDING_UP": {
+          "samples": 31,
+          "wins": 8,
+          "winRatePct": 25.8,
+          "averageObservedR": -0.29,
+          "conservativeExpectedR": -0.1,
+          "passesSampleGate": true,
+          "passesWinRateGate": false,
+          "passesExpectedValueGate": false,
+          "positiveObservedR": false
+        },
+        "MIXED": {
+          "samples": 113,
+          "wins": 56,
+          "winRatePct": 49.6,
+          "averageObservedR": 0.09,
+          "conservativeExpectedR": 0.73,
+          "passesSampleGate": true,
+          "passesWinRateGate": false,
+          "passesExpectedValueGate": true,
+          "positiveObservedR": true
+        },
+        "UNKNOWN": {
+          "samples": 0,
+          "wins": 0,
+          "winRatePct": null,
+          "averageObservedR": null,
+          "conservativeExpectedR": null,
+          "passesSampleGate": false,
+          "passesWinRateGate": false,
+          "passesExpectedValueGate": false,
+          "positiveObservedR": false
+        }
+      }
+    },
+    "holdout": {
+      "overall": {
+        "samples": 540,
+        "wins": 289,
+        "winRatePct": 53.5,
+        "averageObservedR": 0.27,
+        "conservativeExpectedR": 0.87,
+        "passesSampleGate": true,
+        "passesWinRateGate": true,
+        "passesExpectedValueGate": true,
+        "positiveObservedR": true
+      },
+      "byRegime": {
+        "CALM": {
+          "samples": 427,
+          "wins": 218,
+          "winRatePct": 51.1,
+          "averageObservedR": 0.22,
+          "conservativeExpectedR": 0.79,
+          "passesSampleGate": true,
+          "passesWinRateGate": false,
+          "passesExpectedValueGate": true,
+          "positiveObservedR": true
+        },
+        "VOLATILE": {
+          "samples": 11,
+          "wins": 7,
+          "winRatePct": 63.6,
+          "averageObservedR": 0.16,
+          "conservativeExpectedR": 0.93,
+          "passesSampleGate": false,
+          "passesWinRateGate": false,
+          "passesExpectedValueGate": false,
+          "positiveObservedR": false
+        },
+        "TRENDING_DOWN": {
+          "samples": 14,
+          "wins": 10,
+          "winRatePct": 71.4,
+          "averageObservedR": 0.2,
+          "conservativeExpectedR": 1.1,
+          "passesSampleGate": false,
+          "passesWinRateGate": false,
+          "passesExpectedValueGate": false,
+          "positiveObservedR": false
+        },
+        "TRENDING_UP": {
+          "samples": 47,
+          "wins": 29,
+          "winRatePct": 61.7,
+          "averageObservedR": 0.6,
+          "conservativeExpectedR": 1.16,
+          "passesSampleGate": true,
+          "passesWinRateGate": true,
+          "passesExpectedValueGate": true,
+          "positiveObservedR": true
+        },
+        "MIXED": {
+          "samples": 41,
+          "wins": 25,
+          "winRatePct": 61,
+          "averageObservedR": 0.43,
+          "conservativeExpectedR": 1.13,
+          "passesSampleGate": true,
+          "passesWinRateGate": true,
+          "passesExpectedValueGate": true,
+          "positiveObservedR": true
+        },
+        "UNKNOWN": {
+          "samples": 0,
+          "wins": 0,
+          "winRatePct": null,
+          "averageObservedR": null,
+          "conservativeExpectedR": null,
+          "passesSampleGate": false,
+          "passesWinRateGate": false,
+          "passesExpectedValueGate": false,
+          "positiveObservedR": false
+        }
+      }
+    },
+    "runtimePolicy": {
+      "CALM": {
+        "samples": 427,
+        "allowNewStocks": false,
+        "allowOptions": false,
+        "stockSizeMultiplier": 0,
+        "status": "BLOCK",
+        "reason": "Holdout regime failed one or more robustness gates."
+      },
+      "VOLATILE": {
+        "samples": 11,
+        "allowNewStocks": true,
+        "allowOptions": false,
+        "stockSizeMultiplier": 0.5,
+        "status": "SPARSE_REDUCE",
+        "reason": "Holdout regime has fewer than 15 resolved samples; reduce risk until evidence improves."
+      },
+      "TRENDING_DOWN": {
+        "samples": 14,
+        "allowNewStocks": true,
+        "allowOptions": false,
+        "stockSizeMultiplier": 0.5,
+        "status": "SPARSE_REDUCE",
+        "reason": "Holdout regime has fewer than 15 resolved samples; reduce risk until evidence improves."
+      },
+      "TRENDING_UP": {
+        "samples": 47,
+        "allowNewStocks": true,
+        "allowOptions": true,
+        "stockSizeMultiplier": 1,
+        "status": "STRONG",
+        "reason": "Holdout regime remained positive after the untouched-period check."
+      },
+      "MIXED": {
+        "samples": 41,
+        "allowNewStocks": true,
+        "allowOptions": true,
+        "stockSizeMultiplier": 1,
+        "status": "STRONG",
+        "reason": "Holdout regime remained positive after the untouched-period check."
+      },
+      "UNKNOWN": {
+        "samples": 0,
+        "allowNewStocks": true,
+        "allowOptions": false,
+        "stockSizeMultiplier": 0.5,
+        "status": "SPARSE_REDUCE",
+        "reason": "Holdout regime has fewer than 15 resolved samples; reduce risk until evidence improves."
+      }
+    },
     "instructions": "Do not loosen gates. Runtime policy blocks or reduces weak/sparse holdout regimes until evidence improves.",
-    "interpretation": "This is a walk-forward-like historical robustness check across calm, volatile, and trending-down regimes. It is evidence, not a guarantee. A RED_FLAG must be surfaced and must never be used to justify increasing risk."
+    "interpretation": "The fixed gates are measured separately on a development period and a chronological untouched holdout beginning 2024-01-01. Runtime regime policy may reduce or block risk; it may never loosen the base gates. This remains historical evidence, not a guarantee."
+  },
+  "shadowDiagnostics": {
+    "reportUrl": "https://sablewolphen.github.io/Teststock/data/shadow-trades.json",
+    "generatedAt": "2026-08-19T09:39:22.281Z",
+    "summary": {
+      "ACCEPTED": {
+        "resolved": 0,
+        "winRatePct": null,
+        "averageR": null
+      },
+      "REJECTED": {
+        "resolved": 0,
+        "winRatePct": null,
+        "averageR": null
+      },
+      "opportunityCostSignal": "NOT_ENOUGH_DATA",
+      "note": "Diagnostic only. Shadow outcomes must never automatically loosen live-money gates."
+    },
+    "modelOnly": true,
+    "instructions": "Accepted/rejected shadow outcomes are diagnostic opportunity-cost data only. Never treat them as Robinhood fills, real P&L, or automatic permission to loosen live-money gates."
   },
   "strategyChangeLogUrl": "https://sablewolphen.github.io/Teststock/strategy-changelog.txt"
 }
