@@ -24,8 +24,8 @@ on:
       - 'docs/strategy-changelog.txt'
   workflow_dispatch:
   schedule:
-    # Avoid round-number cron minutes, where GitHub Actions schedules are more likely to queue/delay.
-    # Crypto refreshes every run, 24/7. Stock/options refresh on the same cadence during the broad US-market UTC window on weekdays.
+    # Offset from round-number cron minutes to reduce scheduler congestion.
+    # Crypto refreshes every run, 24/7. Stocks/options refresh on the same cadence during the broad US-market UTC window.
     - cron: '3,13,23,33,43,53 * * * *'
 
 permissions:
@@ -33,13 +33,13 @@ permissions:
 
 concurrency:
   group: static-scan
-  # Do not cancel an in-flight scan just because the next scheduled tick arrived.
-  # A cancelled run never gets to publish a fresh signal and can make the website look stale.
+  # Queue rather than cancel an in-flight generation. A cancelled generation cannot publish a fresh signal.
   cancel-in-progress: false
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 9
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,7 +51,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Decide whether stock/options scan is due
+      - name: Decide scan depth
         id: scan_window
         shell: bash
         env:
@@ -59,17 +59,29 @@ jobs:
         run: |
           if [ "$EVENT_NAME" != "schedule" ]; then
             echo "stocks=true" >> "$GITHUB_OUTPUT"
+            echo "deep=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+
           dow=$(date -u +%u)
           hour=$(date -u +%H)
+          minute=$(date -u +%M)
+
           if [ "$dow" -ge 1 ] && [ "$dow" -le 5 ] && [ "$hour" -ge 13 ] && [ "$hour" -le 21 ]; then
             echo "stocks=true" >> "$GITHUB_OUTPUT"
           else
             echo "stocks=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Generate free static stock picks
+          # Expensive historical validation/shadow resolution runs once per hour.
+          # Live stock + crypto scanning and unified-signal publication still run every 10 minutes.
+          if [ "$minute" = "03" ]; then
+            echo "deep=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deep=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate fresh stock picks
         if: ${{ steps.scan_window.outputs.stocks == 'true' }}
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
@@ -78,8 +90,8 @@ jobs:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: node scripts/generate-static-picks.mjs
 
-      - name: Validate regime profiles on development and two untouched holdouts
-        if: ${{ steps.scan_window.outputs.stocks == 'true' }}
+      - name: Deep validate regime profiles and two untouched holdouts
+        if: ${{ steps.scan_window.outputs.stocks == 'true' && steps.scan_window.outputs.deep == 'true' }}
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
@@ -98,13 +110,13 @@ jobs:
         run: node scripts/apply-opportunity-expansion.mjs
 
       - name: Update accepted/rejected shadow ledger
-        if: ${{ steps.scan_window.outputs.stocks == 'true' }}
+        if: ${{ steps.scan_window.outputs.stocks == 'true' && steps.scan_window.outputs.deep == 'true' }}
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/update-shadow-ledger.mjs
 
-      - name: Generate selective crypto plan
+      - name: Generate fresh crypto plan
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
@@ -134,7 +146,9 @@ jobs:
           fi
 
       - name: Publish refreshed JSON
+        shell: bash
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/data docs/signal.json
