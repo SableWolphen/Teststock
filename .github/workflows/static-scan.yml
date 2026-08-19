@@ -8,6 +8,7 @@ on:
       - '.github/workflows/static-scan.yml'
       - 'api/picks.js'
       - 'scripts/generate-static-picks.mjs'
+      - 'scripts/scan-small-account-options.mjs'
       - 'scripts/optimize-growth-plan.mjs'
       - 'scripts/generate-crypto-picks.mjs'
       - 'scripts/build-agent-signal.mjs'
@@ -89,6 +90,14 @@ jobs:
           ALPACA_OPTIONS_FEED: indicative
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: node scripts/generate-static-picks.mjs
+
+      - name: Scan broader small-account option contracts
+        if: ${{ steps.scan_window.outputs.stocks == 'true' }}
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          ALPACA_OPTIONS_FEED: indicative
+        run: node scripts/scan-small-account-options.mjs
 
       - name: Deep validate regime profiles and two untouched holdouts
         if: ${{ steps.scan_window.outputs.stocks == 'true' && steps.scan_window.outputs.deep == 'true' }}
