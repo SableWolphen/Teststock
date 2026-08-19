@@ -59,8 +59,8 @@ function outcome(signal,future){
   const rawR=bullish?(last-entry)/risk:(entry-last)/risk;return {resolved:true,win:rawR>0,r:clamp(rawR,-1,signal.rewardRisk)};
 }
 function stats(rows){
-  const n=rows.length,wins=rows.filter(x=>x.win).length,win=n?wins/n:0,shrink=Math.min(1,n/30),conservativeWin=.5+(win-.5)*shrink,conservativeExpectedR=(conservativeWin*GATES.minRewardRisk)-((1-conservativeWin)*1);
-  return {samples:n,wins,winRatePct:n?round(win*100,1):null,averageRealizedR:n?round(avg(rows.map(x=>x.r)),2):null,conservativeExpectedR:n?round(conservativeExpectedR,2):null,passesSampleGate:n>=GATES.minHistoricalSamples,passesWinRateGate:n>=GATES.minHistoricalSamples&&win*100>=GATES.minHistoricalWinRatePct,passesExpectedValueGate:n>=GATES.minHistoricalSamples&&conservativeExpectedR>=GATES.minConservativeExpectedR};
+  const n=rows.length,wins=rows.filter(x=>x.win).length,win=n?wins/n:0,averageRealizedR=n?avg(rows.map(x=>x.r)):null,shrink=Math.min(1,n/30),conservativeWin=.5+(win-.5)*shrink,conservativeExpectedR=(conservativeWin*GATES.minRewardRisk)-((1-conservativeWin)*1);
+  return {samples:n,wins,winRatePct:n?round(win*100,1):null,averageRealizedR:n?round(averageRealizedR,2):null,conservativeExpectedR:n?round(conservativeExpectedR,2):null,passesSampleGate:n>=GATES.minHistoricalSamples,passesWinRateGate:n>=GATES.minHistoricalSamples&&win*100>=GATES.minHistoricalWinRatePct,passesModelExpectedValueGate:n>=GATES.minHistoricalSamples&&conservativeExpectedR>=GATES.minConservativeExpectedR,passesRealizedAverageRGate:n>=GATES.minHistoricalSamples&&averageRealizedR>=GATES.minConservativeExpectedR,passesExpectedValueGate:n>=GATES.minHistoricalSamples&&conservativeExpectedR>=GATES.minConservativeExpectedR&&averageRealizedR>=GATES.minConservativeExpectedR};
 }
 
 const by=await fetchBars();
@@ -76,10 +76,10 @@ for(const symbol of universe){
 const byRegime={};for(const regime of ['CALM','VOLATILE','TRENDING_DOWN','TRENDING_UP','MIXED','UNKNOWN'])byRegime[regime]=stats(rows.filter(x=>x.regime===regime));
 const overall=stats(rows),failedRequiredRegimes=REQUIRED_REGIMES.filter(r=>!(byRegime[r].passesSampleGate&&byRegime[r].passesWinRateGate&&byRegime[r].passesExpectedValueGate));
 const report={
-  schemaVersion:1,generatedAt:new Date().toISOString(),period:{start:'2018-01-01',end:new Date().toISOString().slice(0,10)},universeSize:universe.length,
-  gatesUnderReview:GATES,method:'Walk-forward-like barrier test sampled every 10 trading days. Uses the same core trend score and entry/stop geometry as Teststock and evaluates the 2.6R full target over the next 20 trading days. Regimes are classified from contemporaneous SPY trend and ATR. This is still a research backtest, not a guarantee of live fills.',
+  schemaVersion:2,generatedAt:new Date().toISOString(),period:{start:'2018-01-01',end:new Date().toISOString().slice(0,10)},universeSize:universe.length,
+  gatesUnderReview:GATES,method:'Walk-forward-like barrier test sampled every 10 trading days. Uses the same core trend score and entry/stop geometry as Teststock and evaluates the 2.6R full target over the next 20 trading days. Regimes are classified from contemporaneous SPY trend and ATR. The 0.5R gate is checked both against the model-implied conservative expectancy and the actually observed average realized R in this backtest. This is still a research backtest, not a guarantee of live fills.',
   requiredDiversityRegimes:REQUIRED_REGIMES,overall,byRegime,
   status:failedRequiredRegimes.length?'RED_FLAG':'DIVERSE_HISTORY_PASS',failedRequiredRegimes,
-  instructions:failedRequiredRegimes.length?'Do not assume the current gates are robust across regimes. Treat this as a reason to keep new risk conservative until the weak regime is understood or the test is improved.':'The current thresholds cleared the named regime checks in this historical test, but live performance and out-of-sample results still govern risk.'
+  instructions:failedRequiredRegimes.length?'Do not assume the current gates are robust across regimes. At least one required regime failed the sample, win-rate, or 0.5R realized/model expectancy test. Keep new risk conservative and surface the failed regimes before relying on the thresholds.':'The current thresholds cleared the named regime checks in this historical test, but live performance and out-of-sample results still govern risk.'
 };
 await fs.mkdir(path.dirname(outFile),{recursive:true});await fs.writeFile(outFile,JSON.stringify(report,null,2));console.log(`Entry-gate validation: ${report.status}; samples=${overall.samples}; failed=${failedRequiredRegimes.join(',')||'none'}`);
