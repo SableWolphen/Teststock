@@ -1,251 +1,91 @@
 {
-  "schemaVersion": 5,
+  "schemaVersion": 7,
   "source": "Teststock",
-  "purpose": "Strict growth-autopilot policy for stocks/options plus high-conviction crypto signals.",
-  "generatedAt": "2026-08-19T00:16:15.699Z",
-  "defaultBudget": 50,
+  "purpose": "Account-aware growth autopilot with explicitly separated STOCK, OPTION, and CRYPTO instructions.",
+  "generatedAt": "2026-08-19T00:29:08.709Z",
+  "sizing": {
+    "mode": "ROBINHOOD_LIVE_CASH_BUYING_POWER",
+    "fixedWebsiteBudgets": false,
+    "instructions": "Read the connected Robinhood Agentic account on every run. Use only current non-margin cash buying power. Convert allocation percentages into dollar amounts at execution time. Never infer the account balance from Teststock."
+  },
   "autopilot": {
     "enabled": true,
     "requiresPerOrderApproval": false,
-    "scope": "Dedicated Robinhood Agentic account; current execution support is equities/options only."
+    "scope": "Dedicated Robinhood Agentic account only."
+  },
+  "assetClassRouting": {
+    "STOCK": "Use only stockPlan.stockOrders.",
+    "OPTION": "Use only stockPlan.eliteOption and only when its action is AUTO_BUY_ELIGIBLE.",
+    "CRYPTO": "Use only cryptoPlan.cryptoOrders. Never treat a crypto symbol as a stock or option."
   },
   "hardRules": [
-    "Never use margin, borrowed funds, naked options, short stock, leveraged crypto, or undefined-risk option positions.",
+    "The connected Robinhood Agentic account is the only source of truth for account balance, cash buying power, positions, and open orders.",
+    "Never use a fixed Teststock dollar budget. Re-read Robinhood cash buying power immediately before sizing a new trade.",
+    "Never confuse asset classes: STOCK orders come only from stockPlan.stockOrders, OPTION orders come only from stockPlan.eliteOption, and CRYPTO orders come only from cryptoPlan.cryptoOrders.",
+    "Use only non-margin cash buying power. Never use margin, borrowed funds, naked options, short stock, leveraged crypto, or undefined-risk option positions.",
     "Never add to a losing position and never move a stop farther away from the entry.",
-    "Never exceed allocationDollars for a stock/crypto signal or maxRiskDollars for an option.",
-    "Before every supported trade, verify Robinhood market status, live executable price, spread, buying power, existing position, open orders, and signal expiration.",
+    "For stocks and crypto, allocationPctOfRobinhoodBuyingPower is the maximum allocation. For options, maxRiskPctOfRobinhoodBuyingPower is the maximum premium/risk allocation.",
+    "Before every supported trade, verify Robinhood market status when applicable, live executable price, spread, buying power, existing position, open orders, and signal expiration.",
     "Do not buy below minimumEntry or above maximumEntry. If price is outside the range, wait.",
-    "Options are allowed only when eliteOption exists, every elite check is true, and live Robinhood pricing remains acceptable.",
-    "Crypto is signal-only until the connected trading MCP exposes crypto order-placement tools; do not fabricate unsupported crypto execution.",
+    "Options are allowed only when eliteOption exists, every elite check is true, the exact contract is available, and live Robinhood pricing remains acceptable.",
+    "Crypto may be executed only if the connected Robinhood tools explicitly expose crypto order placement at runtime; otherwise crypto remains signal-only.",
     "If outcomeGuard.optionsLocked is true, do not open a new option position.",
     "If Teststock and Robinhood materially disagree, do not trade.",
     "Unused capital stays in cash; never force a trade to chase a return target.",
-    "For an open supported position, exit when the saved invalidation is breached; never widen risk to avoid realizing a loss.",
+    "For an open position, exit when the saved invalidation is breached; never widen risk to avoid realizing a loss.",
     "At target1, protect gains by reducing risk or taking partial profit; at target2, prioritize profit capture.",
-    "No model or stop can guarantee against loss or slippage."
+    "No model or stop can guarantee against loss, gaps, slippage, or option decay."
   ],
-  "plans": [
-    {
-      "budget": 50,
-      "overallAction": "WAIT_FOR_MARKET_OPEN",
-      "reason": "Market is closed.",
-      "confidence": "CASH",
-      "signalAsOf": "2026-08-19T00:16:10.750Z",
-      "expiresAt": "2026-08-20T12:16:10.750Z",
-      "keepCashDollars": 50,
-      "estimatedPortfolioStopLoss": 0,
-      "policy": {
-        "maxPlannedPortfolioStopPct": 5,
-        "maxOptionPremiumPct": 12,
-        "noMargin": true,
-        "noAverageDown": true,
-        "noNakedOptions": true,
-        "noChasingPct": 2,
-        "optionsRequireEliteGate": true
-      },
-      "outcomeGuard": {
-        "resolvedSample": 0,
-        "recentWins": 0,
-        "recentLosses": 0,
-        "consecutiveLosses": 0,
-        "optionsLocked": false,
-        "sizeMultiplier": 1
-      },
-      "stockOrders": [],
-      "eliteOption": null
+  "stockPlan": {
+    "assetClass": "STOCK",
+    "overallAction": "WAIT_FOR_MARKET_OPEN",
+    "reason": "Market is closed.",
+    "confidence": "CASH",
+    "signalAsOf": "2026-08-19T00:29:04.305Z",
+    "expiresAt": "2026-08-20T12:29:04.305Z",
+    "policy": {
+      "maxPlannedPortfolioStopPct": 5,
+      "maxOptionPremiumPct": 12,
+      "noMargin": true,
+      "noAverageDown": true,
+      "noNakedOptions": true,
+      "noChasingPct": 2,
+      "optionsRequireEliteGate": true,
+      "sizingMode": "ROBINHOOD_LIVE_CASH_BUYING_POWER"
     },
-    {
-      "budget": 100,
-      "overallAction": "WAIT_FOR_MARKET_OPEN",
-      "reason": "Market is closed.",
-      "confidence": "CASH",
-      "signalAsOf": "2026-08-19T00:16:11.492Z",
-      "expiresAt": "2026-08-20T12:16:11.492Z",
-      "keepCashDollars": 100,
-      "estimatedPortfolioStopLoss": 0,
-      "policy": {
-        "maxPlannedPortfolioStopPct": 5,
-        "maxOptionPremiumPct": 12,
-        "noMargin": true,
-        "noAverageDown": true,
-        "noNakedOptions": true,
-        "noChasingPct": 2,
-        "optionsRequireEliteGate": true
-      },
-      "outcomeGuard": {
-        "resolvedSample": 0,
-        "recentWins": 0,
-        "recentLosses": 0,
-        "consecutiveLosses": 0,
-        "optionsLocked": false,
-        "sizeMultiplier": 1
-      },
-      "stockOrders": [],
-      "eliteOption": null
+    "outcomeGuard": {
+      "resolvedSample": 0,
+      "recentWins": 0,
+      "recentLosses": 0,
+      "consecutiveLosses": 0,
+      "optionsLocked": false,
+      "sizeMultiplier": 1
     },
-    {
-      "budget": 200,
-      "overallAction": "WAIT_FOR_MARKET_OPEN",
-      "reason": "Market is closed.",
-      "confidence": "CASH",
-      "signalAsOf": "2026-08-19T00:16:12.089Z",
-      "expiresAt": "2026-08-20T12:16:12.089Z",
-      "keepCashDollars": 200,
-      "estimatedPortfolioStopLoss": 0,
-      "policy": {
-        "maxPlannedPortfolioStopPct": 5,
-        "maxOptionPremiumPct": 12,
-        "noMargin": true,
-        "noAverageDown": true,
-        "noNakedOptions": true,
-        "noChasingPct": 2,
-        "optionsRequireEliteGate": true
-      },
-      "outcomeGuard": {
-        "resolvedSample": 0,
-        "recentWins": 0,
-        "recentLosses": 0,
-        "consecutiveLosses": 0,
-        "optionsLocked": false,
-        "sizeMultiplier": 1
-      },
-      "stockOrders": [],
-      "eliteOption": null
+    "stockOrders": [],
+    "eliteOption": null
+  },
+  "cryptoPlan": {
+    "assetClass": "CRYPTO",
+    "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
+    "reason": "No high-conviction crypto is currently in its allowed buy zone.",
+    "confidence": "CASH",
+    "signalAsOf": "2026-08-19T00:29:08.663Z",
+    "expiresAt": "2026-08-19T00:59:08.663Z",
+    "policy": {
+      "maxPlannedPortfolioStopPct": 4,
+      "minGrowthQuality": 92,
+      "minRewardRisk": 3,
+      "maxPositions": 2,
+      "noLeverage": true,
+      "noAverageDown": true,
+      "noChasingPct": 2,
+      "cryptoIs24x7": true,
+      "sizingMode": "ROBINHOOD_LIVE_CASH_BUYING_POWER"
     },
-    {
-      "budget": 500,
-      "overallAction": "WAIT_FOR_MARKET_OPEN",
-      "reason": "Market is closed.",
-      "confidence": "CASH",
-      "signalAsOf": "2026-08-19T00:16:12.703Z",
-      "expiresAt": "2026-08-20T12:16:12.703Z",
-      "keepCashDollars": 500,
-      "estimatedPortfolioStopLoss": 0,
-      "policy": {
-        "maxPlannedPortfolioStopPct": 5,
-        "maxOptionPremiumPct": 12,
-        "noMargin": true,
-        "noAverageDown": true,
-        "noNakedOptions": true,
-        "noChasingPct": 2,
-        "optionsRequireEliteGate": true
-      },
-      "outcomeGuard": {
-        "resolvedSample": 0,
-        "recentWins": 0,
-        "recentLosses": 0,
-        "consecutiveLosses": 0,
-        "optionsLocked": false,
-        "sizeMultiplier": 1
-      },
-      "stockOrders": [],
-      "eliteOption": null
-    }
-  ],
-  "cryptoPlans": [
-    {
-      "budget": 50,
-      "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
-      "reason": "No high-conviction crypto is currently in its allowed buy zone.",
-      "confidence": "CASH",
-      "signalAsOf": "2026-08-19T00:16:15.647Z",
-      "expiresAt": "2026-08-19T02:46:15.647Z",
-      "keepCashDollars": 50,
-      "estimatedPortfolioStopLoss": 0,
-      "policy": {
-        "maxPlannedPortfolioStopPct": 4,
-        "minGrowthQuality": 92,
-        "minRewardRisk": 3,
-        "maxPositions": 2,
-        "noLeverage": true,
-        "noAverageDown": true,
-        "noChasingPct": 2,
-        "cryptoIs24x7": true
-      },
-      "execution": {
-        "agenticTradingSupported": false,
-        "mode": "SIGNAL_ONLY",
-        "note": "Current Robinhood Agentic Trading supports long equities and options, not crypto order placement."
-      },
-      "cryptoOrders": []
+    "execution": {
+      "mode": "USE_ONLY_IF_CONNECTED_ROBINHOOD_TOOLS_SUPPORT_CRYPTO",
+      "note": "At runtime, use crypto order tools only if the connected Robinhood MCP actually exposes them."
     },
-    {
-      "budget": 100,
-      "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
-      "reason": "No high-conviction crypto is currently in its allowed buy zone.",
-      "confidence": "CASH",
-      "signalAsOf": "2026-08-19T00:16:15.648Z",
-      "expiresAt": "2026-08-19T02:46:15.648Z",
-      "keepCashDollars": 100,
-      "estimatedPortfolioStopLoss": 0,
-      "policy": {
-        "maxPlannedPortfolioStopPct": 4,
-        "minGrowthQuality": 92,
-        "minRewardRisk": 3,
-        "maxPositions": 2,
-        "noLeverage": true,
-        "noAverageDown": true,
-        "noChasingPct": 2,
-        "cryptoIs24x7": true
-      },
-      "execution": {
-        "agenticTradingSupported": false,
-        "mode": "SIGNAL_ONLY",
-        "note": "Current Robinhood Agentic Trading supports long equities and options, not crypto order placement."
-      },
-      "cryptoOrders": []
-    },
-    {
-      "budget": 200,
-      "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
-      "reason": "No high-conviction crypto is currently in its allowed buy zone.",
-      "confidence": "CASH",
-      "signalAsOf": "2026-08-19T00:16:15.649Z",
-      "expiresAt": "2026-08-19T02:46:15.649Z",
-      "keepCashDollars": 200,
-      "estimatedPortfolioStopLoss": 0,
-      "policy": {
-        "maxPlannedPortfolioStopPct": 4,
-        "minGrowthQuality": 92,
-        "minRewardRisk": 3,
-        "maxPositions": 2,
-        "noLeverage": true,
-        "noAverageDown": true,
-        "noChasingPct": 2,
-        "cryptoIs24x7": true
-      },
-      "execution": {
-        "agenticTradingSupported": false,
-        "mode": "SIGNAL_ONLY",
-        "note": "Current Robinhood Agentic Trading supports long equities and options, not crypto order placement."
-      },
-      "cryptoOrders": []
-    },
-    {
-      "budget": 500,
-      "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
-      "reason": "No high-conviction crypto is currently in its allowed buy zone.",
-      "confidence": "CASH",
-      "signalAsOf": "2026-08-19T00:16:15.649Z",
-      "expiresAt": "2026-08-19T02:46:15.649Z",
-      "keepCashDollars": 500,
-      "estimatedPortfolioStopLoss": 0,
-      "policy": {
-        "maxPlannedPortfolioStopPct": 4,
-        "minGrowthQuality": 92,
-        "minRewardRisk": 3,
-        "maxPositions": 2,
-        "noLeverage": true,
-        "noAverageDown": true,
-        "noChasingPct": 2,
-        "cryptoIs24x7": true
-      },
-      "execution": {
-        "agenticTradingSupported": false,
-        "mode": "SIGNAL_ONLY",
-        "note": "Current Robinhood Agentic Trading supports long equities and options, not crypto order placement."
-      },
-      "cryptoOrders": []
-    }
-  ]
+    "cryptoOrders": []
+  }
 }
