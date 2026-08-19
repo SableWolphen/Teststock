@@ -9,6 +9,7 @@ on:
       - 'api/picks.js'
       - 'scripts/generate-static-picks.mjs'
       - 'scripts/expand-stock-universe.mjs'
+      - 'scripts/validate-universe-health.mjs'
       - 'scripts/scan-small-account-options.mjs'
       - 'scripts/optimize-growth-plan.mjs'
       - 'scripts/generate-crypto-picks.mjs'
@@ -38,7 +39,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 9
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -91,6 +92,10 @@ jobs:
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/expand-stock-universe.mjs
 
+      - name: Validate full-universe tournament health
+        if: ${{ steps.scan_window.outputs.stocks == 'true' }}
+        run: node scripts/validate-universe-health.mjs
+
       - name: Scan broader small-account option contracts
         if: ${{ steps.scan_window.outputs.stocks == 'true' }}
         env:
@@ -137,21 +142,17 @@ jobs:
       - name: Rank qualified opportunities across asset classes
         run: node scripts/build-cross-asset-opportunity-ranking.mjs
 
-      - name: Build, augment, and validate Claude/Robinhood signal with fallback
+      - name: Build, augment, and validate Claude/Robinhood signal
         shell: bash
         run: |
-          set -u
+          set -euo pipefail
           if [ -f docs/signal.json ]; then cp docs/signal.json /tmp/teststock-last-good-signal.json; fi
           if node scripts/build-agent-signal.mjs && node scripts/augment-signal-safety.mjs && node scripts/validate-signal.mjs docs/signal.json; then
             echo "Fresh signal passed validation"
           else
-            echo "Fresh signal failed generation or validation; restoring last known-good signal"
-            if [ -f /tmp/teststock-last-good-signal.json ]; then
-              cp /tmp/teststock-last-good-signal.json docs/signal.json
-            else
-              echo "No prior signal exists to restore" >&2
-              exit 1
-            fi
+            echo "Fresh signal failed generation or validation. Refusing to publish mixed-generation data." >&2
+            if [ -f /tmp/teststock-last-good-signal.json ]; then cp /tmp/teststock-last-good-signal.json docs/signal.json; fi
+            exit 1
           fi
 
       - name: Publish refreshed JSON
