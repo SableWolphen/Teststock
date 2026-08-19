@@ -49,8 +49,8 @@ function buildStock(plan){
   if(f.stale){reason='Signal is stale.';}
   else if(!f.marketOpen){overallAction='WAIT_FOR_MARKET_OPEN';reason='Market is closed.';}
   else if(plan.outcomeGuard?.cooldown==='PAUSE_NEW_TRADES'){overallAction='DO_NOT_TRADE';reason='Tracked loss/performance guard paused new trades.';}
-  else if(option?.action==='AUTO_BUY_ELIGIBLE'){overallAction='AUTO_BUY_OPTION_ELIGIBLE';reason='An elite defined-risk option passed every A+ gate; live-account profit locks, circuit breakers, and pricing must also pass.';}
-  else if(ready.length){overallAction='AUTO_BUY_STOCK_ELIGIBLE';reason='One or more high-quality stock allocations passed expectancy and entry gates; live-account profit locks and circuit breakers must also pass.';}
+  else if(option?.action==='AUTO_BUY_ELIGIBLE'){overallAction='AUTO_BUY_OPTION_ELIGIBLE';reason='An elite defined-risk option passed every A+ gate; live-account protection, profit locks, circuit breakers, and pricing must also pass.';}
+  else if(ready.length){overallAction='AUTO_BUY_STOCK_ELIGIBLE';reason='One or more high-quality stock allocations passed expectancy and entry gates; live-account protection, profit locks, and circuit breakers must also pass.';}
   else if(stocks.length){overallAction='WAIT_FOR_TRIGGER';reason='Qualified stock ideas exist but are not inside the valid entry range.';}
   return {
     assetClass:'STOCK',overallAction,reason,confidence:plan.confidence,signalAsOf:plan.asOf,
@@ -75,9 +75,15 @@ try{stockPlan=buildStock(await read(path.join(dataDir,`growth-plan-${REFERENCE_B
 try{cryptoPlan=buildCrypto(await read(path.join(dataDir,`crypto-plan-${REFERENCE_BUDGET}.json`)));}catch(error){cryptoPlan={assetClass:'CRYPTO',overallAction:'DO_NOT_TRADE',reason:`Crypto plan unavailable: ${error.message}`};}
 
 const signal={
-  schemaVersion:10,source:'Teststock',purpose:'Selective $100-first growth autopilot with expectancy scoring, adaptive sizing, loss brakes, profit locks, explicit asset routing, and user-only funding.',generatedAt:new Date().toISOString(),
+  schemaVersion:11,source:'Teststock',purpose:'Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.',generatedAt:new Date().toISOString(),
   funding:{mode:'USER_DEPOSITS_ONLY',initialUserFundingIntentDollars:100,agentMayInitiateDeposits:false,agentMayInitiateWithdrawals:false,agentMayInitiateBankTransfers:false,instructions:'Use only cash and trading proceeds already inside the dedicated Robinhood Agentic account. Never pull money from any external account. Only the user may manually add more money.'},
-  sizing:{mode:'ROBINHOOD_EXISTING_CASH_ONLY_WITH_CAPITAL_LADDER',fixedWebsiteBudgets:false,instructions:'Read current non-margin cash buying power and total Agentic-account equity on every run. Apply capital ladder, portfolio guard, circuit breakers, and profit lock before the smaller Teststock allocation/risk limit. Never initiate funding.'},
+  sizing:{mode:'ROBINHOOD_EXISTING_CASH_ONLY_WITH_CAPITAL_LADDER',fixedWebsiteBudgets:false,instructions:'Read current non-margin cash buying power and total Agentic-account equity on every run. Apply hard floor, capital ladder, portfolio guard, circuit breakers, profit lock, trade-frequency guard, and correlation guard before the smaller Teststock allocation/risk limit. Never initiate funding.'},
+  hardAccountFloor:{
+    noNewTradesBelowEquity:75,
+    automaticResumeAtOrAboveEquity:80,
+    actionBelowFloor:'MANAGE_EXITS_ONLY',
+    instructions:'If live Agentic-account equity is below $75, do not open any new position. Manage and close existing positions only. Do not add money automatically. Normal new-trade eligibility may resume only after live equity is at least $80 and every other guard passes.'
+  },
   capitalLadder:{
     basis:'Current dedicated Robinhood Agentic-account equity. Manual user deposits are allowed; the agent may never initiate them.',
     tiers:[
@@ -107,12 +113,46 @@ const signal={
     action:'NO_NEW_TRADES',
     instructions:'If live Robinhood account history exposes reliable day P&L and 7-day high-water/equity data, open no new positions when current-day loss is 3% or more or 7-day drawdown is 6% or more. Continue managing exits. If the needed history is unavailable, do not invent it; fall back to capitalLadder and outcomeGuard.'
   },
+  tradeFrequencyGuard:{
+    maxNewPositionsPerDay:2,
+    maxNewPositionsPerSevenDays:6,
+    maxNewOptionsPerDay:1,
+    instructions:'When reliable Robinhood order history is available, count filled Teststock entries before placing another one. Never exceed two new Teststock positions in a calendar day, six in rolling seven days, or one new option position in a calendar day. Protective exits never count toward these limits. If history is ambiguous, choose the safer interpretation and do not overtrade.'
+  },
+  correlationGuard:{
+    maxNewPositionsPerRiskCluster:1,
+    clusters:{
+      technology:['AAPL','MSFT','AMZN','GOOGL','META','NVDA','AVGO','AMD','PLTR','PANW','CRWD','ORCL','CRM','SMH','XLK'],
+      financial:['JPM','GS','V','MA','XLF'],
+      energy:['XOM','CVX','XLE'],
+      healthcare:['LLY','UNH','XLV'],
+      consumer:['COST','WMT','UBER','TSLA','XLY','XLP'],
+      industrialUtilities:['CAT','GE','NEE','XLI','XLU'],
+      crypto:['BTC/USD','ETH/USD','SOL/USD','AVAX/USD','LINK/USD','DOGE/USD']
+    },
+    instructions:'Avoid stacking highly correlated bets. Do not open more than one new position from the same listed risk cluster at a time. If live sector/correlation information shows two unlisted positions are effectively the same bet, treat them as one cluster. Existing exposure should make new correlated entries smaller or ineligible.'
+  },
   executionQuality:{
     preferLimitOrders:true,
     maxStockSpreadPct:.5,
     maxOptionSpreadPct:10,
     maxCryptoSpreadPct:.75,
     instructions:'Prefer limit orders when supported. Never pay above maximumEntry. Skip a new entry when the live bid/ask spread exceeds the applicable cap or when executable pricing is materially worse than the signal. A missed trade is better than a bad fill.'
+  },
+  exitAutomation:{
+    fullyAutomatic:true,
+    protectiveExitRequiredBeforeConsideringEntryComplete:true,
+    stockProtection:'After a stock buy fills, immediately place a persistent protective sell stop or stop-limit order at the Teststock stop when the connected Robinhood tool supports that order type. Prefer GTC when supported. Verify the protective order is accepted and covers the full intended quantity.',
+    optionProtection:'After an option buy fills, immediately place a persistent sell-to-close protective stop-market or stop-limit order when the connected Robinhood option tool supports that order type. Verify the protective order is accepted and covers the full intended contract quantity.',
+    cryptoProtection:'If crypto execution becomes supported by the connected Robinhood tools, place the strongest supported persistent protective exit at or near the Teststock invalidation immediately after entry.',
+    noProtectionNoEntry:'If the connected tool cannot create or verify a persistent protective exit for a new stock or option position, do not open that new position. Existing positions still must be managed and reduced/closed according to the saved invalidation.',
+    target1:'When target1 is reached, protect gains automatically. Before any partial sell or protective-order replacement, inspect and cancel/replace conflicting open sell orders as needed so total sell quantity never exceeds the live position. Take partial profit when practical, then move the remaining protection no farther from market than breakeven/original risk and never widen it.',
+    target2:'When target2 is reached, prioritize taking profit on most or all of the remaining position unless the current signal explicitly provides a tighter trailing plan. Never let a profit target increase risk.',
+    bracketCaution:'Do not assume bracket/OCO support. If the broker/tool does not support linked bracket orders, sequence protective-order changes and profit-taking carefully and verify quantities after every fill.'
+  },
+  healthGuard:{
+    actionOnFailure:'NO_NEW_TRADES_MANAGE_EXITS_IF_POSSIBLE',
+    instructions:'If Teststock is stale, Robinhood tools are unavailable, order status is unknown, a protective order cannot be verified, account equity/buying power is missing, or an unexpected partial fill/duplicate appears, open no new positions. Resolve or safely manage existing exposure first. Never guess an order filled or a stop exists.'
   },
   portfolioGuard:{
     maxNewPositions:2,
@@ -126,27 +166,29 @@ const signal={
     'FUNDING LOCK: never initiate a deposit, ACH transfer, debit-card transfer, bank transfer, wire, internal transfer, or any other movement of money into the Robinhood Agentic account.',
     'Only the user may manually add capital. Trading profits may remain and be reused inside the Agentic account.',
     'Never access, withdraw from, charge, or borrow against any external bank, card, credit line, retirement account, or other financial account.',
-    'Apply capitalLadder, profitLock, circuitBreakers, executionQuality, portfolioGuard, and outcomeGuard before every new position.',
+    'HARD ACCOUNT FLOOR: below $75 live Agentic-account equity, manage exits only and open no new trades. Do not auto-fund. Resume new-trade eligibility only at $80 or more and only if all other guards pass.',
+    'Apply capitalLadder, profitLock, circuitBreakers, tradeFrequencyGuard, correlationGuard, executionQuality, exitAutomation, healthGuard, portfolioGuard, and outcomeGuard before every new position.',
     'Use only existing non-margin cash buying power. Never use margin, borrowed funds, naked options, short stock, leveraged crypto, or undefined-risk option positions.',
     'Never confuse asset classes: STOCK orders come only from stockPlan.stockOrders, OPTION orders come only from stockPlan.eliteOption, and CRYPTO orders come only from cryptoPlan.cryptoOrders.',
     'A stock must pass Teststock expectancy, adaptive-performance, historical sample, reward/risk, market/sector/intraday, freshness, and entry gates. Never loosen a failed gate to force a trade.',
-    'For stocks use the smaller of the ladder-adjusted Teststock allocation, the amount allowed by the tier planned-stop-risk cap, the tier max-deployed cap, and the profit-lock floor.',
-    'Options are exceptional, not default. They require every eliteOption check, exact contract verification, acceptable live spread/liquidity, the active ladder tier to allow options, and the smaller option-risk cap.',
-    'Never add to a losing position and never move a stop farther away from the entry.',
-    'Before every trade verify live executable price, spread, current Agentic-account buying power/equity, existing positions, open orders, and signal expiration.',
+    'For stocks use the smallest amount allowed by the ladder-adjusted Teststock allocation, tier planned-stop-risk cap, tier max-deployed cap, profit-lock floor, trade-frequency guard, correlation guard, and available non-margin cash.',
+    'Options are exceptional, not default. They require every eliteOption check, exact contract verification, acceptable live spread/liquidity, the active ladder tier to allow options, the smaller option-risk cap, and a verified protective exit capability.',
+    'After every supported new stock or option fill, immediately create and verify the strongest supported persistent protective exit at the saved Teststock invalidation. If a persistent protective exit cannot be created or verified, do not open that new position.',
+    'Never add to a losing position and never move a protective exit farther away from the entry.',
+    'Before every trade verify live executable price, spread, current Agentic-account buying power/equity, existing positions, open orders, signal expiration, daily/weekly trade counts when available, and correlation with existing exposure.',
     'Prefer limit orders when supported; never pay above maximumEntry and skip entries with excessive spread/slippage.',
     'Do not buy below minimumEntry or above maximumEntry. If price is outside the range, wait.',
     'Crypto may be executed only if the connected Robinhood tools explicitly expose crypto order placement at runtime; otherwise crypto remains signal-only.',
     'Obey outcomeGuard. Weak recent resolved performance or multiple consecutive losses reduce size, lock options, or pause new trades.',
     'Obey circuit breakers when reliable account-history data is available; circuit breakers stop new entries but do not prevent protective exits.',
-    'If Teststock and Robinhood materially disagree, do not trade.',
+    'If Teststock, Robinhood, order status, or protective-order status materially disagree or cannot be verified, do not open a new trade.',
     'Unused capital stays in cash. Never increase risk to chase a return target or recover losses.',
-    'For an open position, exit when saved invalidation is breached; at target1 protect gains/take partial profit; at target2 prioritize profit capture.',
-    'No model, stop, profit lock, or automation can guarantee profit or prevent losses, gaps, slippage, option decay, or crypto volatility.'
+    'Manage exits automatically: invalidation means exit/protective stop; target1 means protect gains and consider partial profit; target2 means prioritize profit capture. The user should not need to calculate stops manually.',
+    'No model, stop, profit lock, or automation can guarantee profit or prevent losses, gaps, slippage, option decay, crypto volatility, or tool failures.'
   ],
   stockPlan,cryptoPlan
 };
 await fs.writeFile(path.join(outDir,'signal.json'),JSON.stringify(signal,null,2));
 await fs.writeFile(path.join(dataDir,'claude-signal.json'),JSON.stringify(signal,null,2));
-await fs.writeFile(path.join(dataDir,'crypto-signal.json'),JSON.stringify({schemaVersion:6,generatedAt:signal.generatedAt,funding:signal.funding,sizing:signal.sizing,capitalLadder:signal.capitalLadder,profitLock:signal.profitLock,circuitBreakers:signal.circuitBreakers,executionQuality:signal.executionQuality,portfolioGuard:signal.portfolioGuard,cryptoPlan},null,2));
-console.log('Generated Teststock agent signal schema v10 with profit locks and circuit breakers');
+await fs.writeFile(path.join(dataDir,'crypto-signal.json'),JSON.stringify({schemaVersion:7,generatedAt:signal.generatedAt,funding:signal.funding,sizing:signal.sizing,hardAccountFloor:signal.hardAccountFloor,capitalLadder:signal.capitalLadder,profitLock:signal.profitLock,circuitBreakers:signal.circuitBreakers,tradeFrequencyGuard:signal.tradeFrequencyGuard,correlationGuard:signal.correlationGuard,executionQuality:signal.executionQuality,exitAutomation:signal.exitAutomation,healthGuard:signal.healthGuard,portfolioGuard:signal.portfolioGuard,cryptoPlan},null,2));
+console.log('Generated Teststock agent signal schema v11 with hands-off protective exits and advanced guards');
