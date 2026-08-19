@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 1,
-  "generatedAt": "2026-08-19T02:04:22.666Z",
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-19T02:05:28.187Z",
   "period": {
     "start": "2018-01-01",
     "end": "2026-08-19"
@@ -12,7 +12,7 @@
     "minHistoricalSamples": 15,
     "minConservativeExpectedR": 0.5
   },
-  "method": "Walk-forward-like barrier test sampled every 10 trading days. Uses the same core trend score and entry/stop geometry as Teststock and evaluates the 2.6R full target over the next 20 trading days. Regimes are classified from contemporaneous SPY trend and ATR. This is still a research backtest, not a guarantee of live fills.",
+  "method": "Walk-forward-like barrier test sampled every 10 trading days. Uses the same core trend score and entry/stop geometry as Teststock and evaluates the 2.6R full target over the next 20 trading days. Regimes are classified from contemporaneous SPY trend and ATR. The 0.5R gate is checked both against the model-implied conservative expectancy and the actually observed average realized R in this backtest. This is still a research backtest, not a guarantee of live fills.",
   "requiredDiversityRegimes": [
     "CALM",
     "VOLATILE",
@@ -26,7 +26,9 @@
     "conservativeExpectedR": 0.87,
     "passesSampleGate": true,
     "passesWinRateGate": true,
-    "passesExpectedValueGate": true
+    "passesModelExpectedValueGate": true,
+    "passesRealizedAverageRGate": false,
+    "passesExpectedValueGate": false
   },
   "byRegime": {
     "CALM": {
@@ -37,7 +39,9 @@
       "conservativeExpectedR": 0.87,
       "passesSampleGate": true,
       "passesWinRateGate": true,
-      "passesExpectedValueGate": true
+      "passesModelExpectedValueGate": true,
+      "passesRealizedAverageRGate": false,
+      "passesExpectedValueGate": false
     },
     "VOLATILE": {
       "samples": 26,
@@ -47,6 +51,8 @@
       "conservativeExpectedR": 1.45,
       "passesSampleGate": true,
       "passesWinRateGate": true,
+      "passesModelExpectedValueGate": true,
+      "passesRealizedAverageRGate": true,
       "passesExpectedValueGate": true
     },
     "TRENDING_DOWN": {
@@ -57,7 +63,9 @@
       "conservativeExpectedR": 1.13,
       "passesSampleGate": true,
       "passesWinRateGate": true,
-      "passesExpectedValueGate": true
+      "passesModelExpectedValueGate": true,
+      "passesRealizedAverageRGate": false,
+      "passesExpectedValueGate": false
     },
     "TRENDING_UP": {
       "samples": 78,
@@ -67,7 +75,9 @@
       "conservativeExpectedR": 0.66,
       "passesSampleGate": true,
       "passesWinRateGate": false,
-      "passesExpectedValueGate": true
+      "passesModelExpectedValueGate": true,
+      "passesRealizedAverageRGate": false,
+      "passesExpectedValueGate": false
     },
     "MIXED": {
       "samples": 154,
@@ -77,7 +87,9 @@
       "conservativeExpectedR": 0.84,
       "passesSampleGate": true,
       "passesWinRateGate": true,
-      "passesExpectedValueGate": true
+      "passesModelExpectedValueGate": true,
+      "passesRealizedAverageRGate": false,
+      "passesExpectedValueGate": false
     },
     "UNKNOWN": {
       "samples": 0,
@@ -87,10 +99,15 @@
       "conservativeExpectedR": null,
       "passesSampleGate": false,
       "passesWinRateGate": false,
+      "passesModelExpectedValueGate": false,
+      "passesRealizedAverageRGate": false,
       "passesExpectedValueGate": false
     }
   },
-  "status": "DIVERSE_HISTORY_PASS",
-  "failedRequiredRegimes": [],
-  "instructions": "The current thresholds cleared the named regime checks in this historical test, but live performance and out-of-sample results still govern risk."
+  "status": "RED_FLAG",
+  "failedRequiredRegimes": [
+    "CALM",
+    "TRENDING_DOWN"
+  ],
+  "instructions": "Do not assume the current gates are robust across regimes. At least one required regime failed the sample, win-rate, or 0.5R realized/model expectancy test. Keep new risk conservative and surface the failed regimes before relying on the thresholds."
 }
