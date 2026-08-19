@@ -2,6 +2,17 @@ TESTSTOCK STRATEGY CHANGE LOG
 
 This file records changes to trading RULES, thresholds, tiers, sizing, validation, and safety behavior. Routine market-data refreshes and changing trade signals are intentionally not listed here.
 
+2026-08-19 — MULTI-OPPORTUNITY + SECOND HOLDOUT + GAP/LIQUIDITY GUARDS
+- Added stricter regime-specific entry profiles for trending-up, calm, volatile, trending-down, mixed, and unknown markets.
+- Validation now separates development history, a 2024-2025 untouched holdout, and a second untouched confirmation holdout beginning 2026-01-01. Weak untouched-regime evidence blocks or reduces that regime; sparse second-holdout evidence reduces size instead of increasing risk.
+- Added breadth confirmation so a bullish setup is less trusted when participation across the stock universe is weak.
+- Added symbol probation. Lightly tested symbols start smaller and require deeper historical/real-fill evidence before normal sizing.
+- Added runtime opening-gap guard. A gap above 4% absolute or consuming over 50% of planned entry-to-stop distance requires skipping or revalidation after the open; stops may never be widened to make the trade fit.
+- Added liquidity preference and tightened the stock spread hard cap to 0.35%. When otherwise comparable candidates exist, tighter spreads, higher reliable dollar volume, and cleaner real fills are preferred.
+- Expanded opportunity capacity: up to 4 concurrent Teststock positions, up to 3 new positions per day, and up to 10 new positions in rolling 7 days. Options remain capped at 1 new option/day and crypto at 1 new crypto/day. These are maxima, not trade quotas; all total-risk, cash, correlation, event, execution, protection, and circuit-breaker rules still apply.
+- Margin remains DISABLED. The user would accept margin only if it cannot lose money; no real margin position can satisfy that condition. Teststock therefore continues to use only non-margin cash buying power and may not create a margin debit or borrow funds.
+- Signal schema advances to v18 after the next successful scan/build.
+
 2026-08-19 — PROBABILITY-FIRST STOCKS + EVIDENCE-GATED OPTIONS/CRYPTO
 - Added a probability-first overlay that runs after the existing Teststock stock/options/crypto plans and may only make them stricter.
 - Stocks are now the default growth engine. New stock allocations must meet at least 20 historical samples, 55% historical win rate, 0.60 conservative expected R, 2.5:1 reward/risk, growthQuality >= 92, and controlled volatility. Higher volatility automatically cuts size. A single new stock is capped near 1.5% planned stop risk of the reference sleeve and combined new-stock planned stop risk near 2.5%, before smaller live-account limits.
