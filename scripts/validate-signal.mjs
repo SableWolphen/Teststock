@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 const file=process.argv[2]||'docs/signal.json',raw=await fs.readFile(file,'utf8');let s;try{s=JSON.parse(raw);}catch{throw new Error('signal.json is not valid JSON');}
 const fail=[],finite=n=>Number.isFinite(Number(n));
-if(!Number.isInteger(s.schemaVersion)||s.schemaVersion<19)fail.push('schemaVersion');if(s.source!=='Teststock')fail.push('source');
+if(!Number.isInteger(s.schemaVersion)||s.schemaVersion<20)fail.push('schemaVersion');if(s.source!=='Teststock')fail.push('source');
 const generated=new Date(s.generatedAt).getTime(),age=Date.now()-generated;if(!Number.isFinite(generated)||age< -5*60_000||age>10*60_000)fail.push('generatedAt freshness');
 if(s.funding?.agentMayInitiateDeposits!==false||s.funding?.agentMayInitiateBankTransfers!==false)fail.push('funding lock');
 const tiers=s.capitalLadder?.tiers;if(!Array.isArray(tiers)||tiers.length<5)fail.push('capital tiers');else{let last=-Infinity;for(const t of tiers){if(!finite(t.minEquity)||Number(t.minEquity)<last)fail.push('tier ordering');last=Number(t.minEquity);}if(tiers.find(t=>Number(t.minEquity)===100)?.label!=='PROVE')fail.push('$100 PROVE boundary');}
@@ -29,4 +29,12 @@ if(!s.crossAssetOpportunityRanking||s.crossAssetOpportunityRanking.status==='UNA
 if(s.systemHealth?.crossAssetRanking?.required!==true)fail.push('cross-asset ranking health dependency');
 if(s.shadowEvidencePolicy?.automaticLooseningAllowed!==false)fail.push('shadow automatic loosening lock');
 if(s.executionTelemetryPolicy?.sourceOfTruth!=='ROBINHOOD_CONFIRMED_FILLS_AND_ORDERS')fail.push('execution telemetry source');if(!s.dailySummaryPolicy?.enabled)fail.push('daily summary policy');
+if(s.dataFreshness?.status!=='GENERATED_THIS_RUN')fail.push('data freshness status');
+const lastSuccess=new Date(s.dataFreshness?.lastSuccessfulGeneration||0).getTime();if(!Number.isFinite(lastSuccess)||Math.abs(Date.now()-lastSuccess)>10*60_000)fail.push('last successful generation freshness');
+if(Number(s.dataFreshness?.expectedRefreshCadenceMinutes||0)!==10)fail.push('refresh cadence metadata');
+if(s.dataFreshness?.failClosed!==true)fail.push('freshness fail-closed');
+if(Number(s.dataFreshness?.cryptoAgeMinutes??999)>25)fail.push('crypto data stale at generation');
+if(Number(s.dataFreshness?.entryGateValidationAgeMinutes??999)>120)fail.push('entry-gate validation stale');
+if(!s.generatorIntegrity?.lastKnownGoodFallback)fail.push('last-known-good fallback metadata');
+for(const k of ['dualUntouchedHoldouts','regimeSpecificEntryProfiles','wholeContractOptionSizing','setupClusterAndSymbolRealFillLearning','staleDataFailClosed','costAdjustedExpectancy','target2RewardRiskQualification','crossAssetOpportunityRanking'])if(s.generatorIntegrity?.traceableFeatures?.[k]!==true)fail.push(`integrity feature ${k}`);
 if(fail.length)throw new Error(`signal validation failed: ${[...new Set(fail)].join(', ')}`);console.log(`signal validation passed: schema v${s.schemaVersion}, generated ${s.generatedAt}`);
