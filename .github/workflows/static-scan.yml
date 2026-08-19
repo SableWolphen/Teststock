@@ -12,6 +12,8 @@ on:
       - 'scripts/generate-crypto-picks.mjs'
       - 'scripts/build-agent-signal.mjs'
       - 'scripts/validate-entry-gates.mjs'
+      - 'scripts/apply-advanced-growth-guards.mjs'
+      - 'scripts/update-shadow-ledger.mjs'
       - 'scripts/augment-signal-safety.mjs'
       - 'scripts/validate-signal.mjs'
       - 'docs/real-fill-learning-policy.txt'
@@ -54,7 +56,7 @@ jobs:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: node scripts/generate-static-picks.mjs
 
-      - name: Validate entry gates across market regimes
+      - name: Validate fixed entry gates on development and untouched holdout regimes
         if: ${{ github.event_name != 'schedule' || github.event.schedule == '5,35 13-21 * * 1-5' }}
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
@@ -64,6 +66,17 @@ jobs:
       - name: Optimize aggressive growth plan
         if: ${{ github.event_name != 'schedule' || github.event.schedule == '5,35 13-21 * * 1-5' }}
         run: node scripts/optimize-growth-plan.mjs
+
+      - name: Apply holdout-regime and event-risk guards
+        if: ${{ github.event_name != 'schedule' || github.event.schedule == '5,35 13-21 * * 1-5' }}
+        run: node scripts/apply-advanced-growth-guards.mjs
+
+      - name: Update accepted/rejected shadow ledger
+        if: ${{ github.event_name != 'schedule' || github.event.schedule == '5,35 13-21 * * 1-5' }}
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+        run: node scripts/update-shadow-ledger.mjs
 
       - name: Generate selective crypto plan
         if: ${{ github.event_name != 'schedule' || github.event.schedule == '*/15 * * * *' }}
