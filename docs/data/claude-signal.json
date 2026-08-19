@@ -2,7 +2,7 @@
   "schemaVersion": 20,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-08-19T22:00:22.941Z",
+  "generatedAt": "2026-08-19T22:04:15.899Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -128,11 +128,11 @@
     "instructions": "If live Robinhood account history exposes reliable day P&L and 7-day high-water/equity data, open no new positions when current-day loss is 3% or more or 7-day drawdown is 6% or more. Continue managing exits. If the needed history is unavailable, do not invent it; fall back to capitalLadder and outcomeGuard."
   },
   "tradeFrequencyGuard": {
-    "maxNewPositionsPerDay": 3,
-    "maxNewPositionsPerSevenDays": 10,
+    "maxNewPositionsPerDay": 4,
+    "maxNewPositionsPerSevenDays": 12,
     "maxNewOptionsPerDay": 1,
     "maxNewCryptoPerDay": 1,
-    "instructions": "Multiple qualified positions are allowed. Never force frequency: count confirmed Teststock entries and stay within 3 new positions/day, 10/rolling 7 days, 1 new option/day, and 1 new crypto/day. Risk, cash, correlation, event, execution, and protection limits still override these maxima."
+    "instructions": "The stock optimizer may select up to the top four independently qualified stock opportunities. Count confirmed Teststock entries and stay within 4 new positions/day, 12/rolling 7 days, 1 new option/day, and 1 new crypto/day. These are ceilings, not quotas: never add a weak fourth trade merely to fill the portfolio. Risk, cash, correlation, event, execution, and protection limits override these maxima."
   },
   "correlationGuard": {
     "maxNewPositionsPerRiskCluster": 1,
@@ -235,7 +235,7 @@
     "maxNewPositions": 4,
     "maxCryptoPositions": 1,
     "noDuplicateExposure": true,
-    "instructions": "Up to four concurrent Teststock positions may be held only when independently qualified and total deployed cash/planned stop risk remain within every smaller cap. Do not duplicate symbols/contracts or stack the same risk cluster. At $100, sizing/risk limits may make fewer than four practical.",
+    "instructions": "Target up to four concurrent independently qualified Teststock stock positions, ranked best-first. Each must independently pass every gate and the combined portfolio must stay within the smallest deployed-cash, planned-stop-risk, correlation, event, execution, and protection caps. If fewer than four qualify, hold the remainder in cash rather than forcing a weaker trade.",
     "maxConcurrentTeststockPositions": 4
   },
   "autopilot": {
@@ -274,7 +274,7 @@
     "No model, stop, profit lock, or automation can guarantee profit or prevent losses, gaps, slippage, option decay, crypto volatility, or tool failures.",
     "DUAL HOLDOUT: use separate 2024-2025 and 2026+ untouched validation. A failure blocks/reduces the affected regime; sparse second-holdout evidence reduces risk.",
     "REGIME-SPECIFIC ENTRIES: use stricter regime profiles for calm, volatile, trending-down, trending-up, mixed, and unknown environments; never loosen base probability gates.",
-    "MULTIPLE QUALIFIED POSITIONS: up to 4 concurrent Teststock positions and up to 3 new positions/day / 10 per rolling 7 days may be used only when each independently qualifies and all total-risk, cash, cluster, event, spread, protection, and circuit-breaker limits pass.",
+    "TOP FOUR STOCK PORTFOLIO: rank stocks best-first and target up to four independently qualified stock positions. Never force a fourth position if it fails any gate; unused capacity stays cash. Up to 4 new positions/day and 12 per rolling 7 days are ceilings only, and all total-risk, cash, cluster, event, spread, protection, and circuit-breaker limits still apply.",
     "TARGET2 QUALIFICATION: use target2 for the minimum reward/risk entry gate. Target1 is a partial-profit/de-risking milestone and must not incorrectly disqualify a setup whose full target satisfies the required asymmetry.",
     "COST-ADJUSTED EXPECTANCY: subtract the encoded conservative execution-friction allowance before stock eligibility/ranking. Never rank a nominal edge above a stronger after-cost edge merely because costs were ignored.",
     "CROSS-ASSET PRIORITY: rank already-qualified stocks, options, and crypto by risk-adjusted opportunity, but ranking never overrides live eligibility or safety gates and never creates a quota.",
@@ -288,8 +288,8 @@
     "overallAction": "WAIT_FOR_MARKET_OPEN",
     "reason": "Market is closed.",
     "confidence": "A_PLUS",
-    "signalAsOf": "2026-08-19T22:00:01.377Z",
-    "expiresAt": "2026-08-21T10:00:01.377Z",
+    "signalAsOf": "2026-08-19T22:04:02.072Z",
+    "expiresAt": "2026-08-21T10:04:02.072Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 3,
       "maxOptionPremiumPct": 8,
@@ -342,6 +342,7 @@
         "minimumReliableDollarVolume": "Prefer highly liquid names; when reliable average dollar-volume is exposed, reject clearly illiquid candidates and rank otherwise-equal candidates by tighter spread and higher dollar volume."
       },
       "sizingMode": "ROBINHOOD_EXISTING_CASH_ONLY_WITH_CAPITAL_LADDER",
+      "preferredQualifiedStockCount": 4,
       "costAdjustedExpectancyRequired": true
     },
     "outcomeGuard": {
@@ -438,8 +439,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T22:00:22.772Z",
-    "expiresAt": "2026-08-19T22:30:22.772Z",
+    "signalAsOf": "2026-08-19T22:04:15.736Z",
+    "expiresAt": "2026-08-19T22:34:15.736Z",
     "policy": {
       "aPlusMinGrowthQuality": 94,
       "aMinGrowthQuality": 88,
@@ -464,7 +465,7 @@
   "entryGateRobustness": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
     "status": "RED_FLAG",
-    "generatedAt": "2026-08-19T22:00:16.022Z",
+    "generatedAt": "2026-08-19T22:04:11.615Z",
     "holdoutStart": "2024-01-01",
     "holdoutEnd": "2025-12-31",
     "secondHoldoutStart": "2026-01-01",
@@ -824,7 +825,7 @@
   },
   "shadowDiagnostics": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/shadow-trades.json",
-    "generatedAt": "2026-08-19T22:00:17.930Z",
+    "generatedAt": "2026-08-19T22:04:13.357Z",
     "summary": {
       "ACCEPTED": {
         "resolved": 0,
@@ -848,7 +849,7 @@
   },
   "probabilityFirstPolicy": {
     "schemaVersion": 2,
-    "generatedAt": "2026-08-19T22:00:22.827Z",
+    "generatedAt": "2026-08-19T22:04:15.788Z",
     "objective": "Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto selective, and cash acceptable. This policy cannot eliminate market loss risk.",
     "stocks": {
       "minGrowthQuality": 92,
@@ -908,7 +909,7 @@
   },
   "crossAssetOpportunityRanking": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/opportunity-ranking-500.json",
-    "generatedAt": "2026-08-19T22:00:22.890Z",
+    "generatedAt": "2026-08-19T22:04:15.851Z",
     "rankingPolicy": {
       "stocksPrimaryOnTies": true,
       "noForcedDiversification": true,
@@ -991,12 +992,12 @@
   },
   "dataFreshness": {
     "status": "GENERATED_THIS_RUN",
-    "lastSuccessfulGeneration": "2026-08-19T22:00:22.980Z",
+    "lastSuccessfulGeneration": "2026-08-19T22:04:15.933Z",
     "expectedRefreshCadenceMinutes": 10,
     "stockExpectedRefreshMinutesDuringMarket": 10,
     "cryptoExpectedRefreshMinutes": 10,
-    "stockSignalAsOf": "2026-08-19T22:00:01.377Z",
-    "cryptoSignalAsOf": "2026-08-19T22:00:22.772Z",
+    "stockSignalAsOf": "2026-08-19T22:04:02.072Z",
+    "cryptoSignalAsOf": "2026-08-19T22:04:15.736Z",
     "stockAgeMinutes": 0,
     "cryptoAgeMinutes": 0,
     "entryGateValidationAgeMinutes": 0,
@@ -1034,7 +1035,7 @@
     }
   },
   "systemHealth": {
-    "generatedAt": "2026-08-19T22:00:22.980Z",
+    "generatedAt": "2026-08-19T22:04:15.933Z",
     "signalAgeMinutes": 0,
     "dataFreshnessStatus": "GENERATED_THIS_RUN",
     "entryGateValidation": {
