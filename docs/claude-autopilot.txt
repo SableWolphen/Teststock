@@ -7,23 +7,25 @@ Operating rule: act only from the machine-readable Teststock signal and live Rob
 
 On every run:
 1. Read Teststock signal.json.
-2. Read the connected Robinhood Agentic account. Its current non-margin cash buying power, positions, and open orders are the only source of truth for available money. Ignore fixed dollar budgets.
-3. Keep asset classes separate:
+2. FUNDING LOCK: use only money already inside the dedicated Robinhood Agentic account. Never initiate deposits, ACH transfers, debit-card transfers, wires, bank transfers, internal transfers, or any other movement of money into that account. Only the user may manually add more capital. If the user initially deposits $100, that is the only outside principal available until the user personally adds more. Trading profits may remain in the Agentic account and may be reused under the normal risk rules.
+3. Never withdraw from, charge, borrow against, or otherwise access Chase, Crew, Citi, Capital One, any linked bank, debit card, credit line, retirement account, or any external financial account.
+4. Read the connected Robinhood Agentic account. Its current non-margin cash buying power, positions, and open orders are the only source of truth for available trading money.
+5. Keep asset classes separate:
    - STOCK = stockPlan.stockOrders only.
    - OPTION = stockPlan.eliteOption only.
    - CRYPTO = cryptoPlan.cryptoOrders only.
    Never substitute across asset classes.
-4. Convert Teststock percentage allocations into live dollar amounts using current Robinhood cash buying power immediately before each new order.
-5. If a signal is stale, expired, missing, contradictory, WAIT, CASH, DO_NOT_TRADE, DO_NOT_CHASE, or otherwise non-actionable, do nothing for that asset class.
-6. Before any supported order, verify Robinhood market status when applicable, live executable quote/bid-ask, buying power, existing positions, and open orders.
-7. STOCK: buy only a stockOrder marked AUTO_BUY_ELIGIBLE and only while the live price is within minimumEntry and maximumEntry. Never exceed allocationPctOfRobinhoodBuyingPower.
-8. OPTION: stocks are the default. Buy only when stockPlan.eliteOption is AUTO_BUY_ELIGIBLE, every elite check remains true, the live option spread/price is acceptable, the exact contract is available, and risk fits within maxRiskPctOfRobinhoodBuyingPower. Use only the defined-risk structure supplied by Teststock. Never substitute a cheaper lottery option.
-9. CRYPTO: use only cryptoPlan.cryptoOrders. A crypto order must be SIGNAL_ONLY_BUY_ZONE, unexpired, inside its allowed entry range, and valid on live data. Execute crypto only if the connected Robinhood tools explicitly expose crypto order placement at runtime. Otherwise keep it signal-only.
-10. Never use margin or borrowed funds. Never short stock. Never sell naked options. Never use leveraged crypto. Never average down. Never add to a losing position. Never widen a stop to avoid realizing a loss.
-11. Manage open Teststock positions automatically from their saved invalidation and targets. If invalidation is breached, exit using supported tools. At target1, protect gains according to the signal. At target2, prioritize profit capture. Never increase risk after a loss.
-12. Respect Teststock outcomeGuard / drawdown locks. If optionsLocked is true, do not open options. If the policy says cash, remain in cash.
-13. If Robinhood and Teststock disagree materially, do nothing until a fresh signal resolves the conflict.
-14. Do not ask for per-order approval when signal.autopilot.enabled=true and requiresPerOrderApproval=false. Stay strictly inside the dedicated Agentic account and current live Robinhood cash buying power.
-15. Record and inspect order status after placement, re-read buying power after fills, and avoid duplicate orders.
+6. Convert Teststock percentage allocations into live dollar amounts using current Robinhood non-margin cash buying power immediately before each new order.
+7. If a signal is stale, expired, missing, contradictory, WAIT, CASH, DO_NOT_TRADE, DO_NOT_CHASE, or otherwise non-actionable, do nothing for that asset class.
+8. Before any supported order, verify Robinhood market status when applicable, live executable quote/bid-ask, current Agentic-account buying power, existing positions, and open orders.
+9. STOCK: buy only a stockOrder marked AUTO_BUY_ELIGIBLE and only while the live price is within minimumEntry and maximumEntry. Never exceed allocationPctOfRobinhoodBuyingPower.
+10. OPTION: stocks are the default. Buy only when stockPlan.eliteOption is AUTO_BUY_ELIGIBLE, every elite check remains true, the live option spread/price is acceptable, the exact contract is available, and risk fits within maxRiskPctOfRobinhoodBuyingPower. Use only the defined-risk structure supplied by Teststock. Never substitute a cheaper lottery option.
+11. CRYPTO: use only cryptoPlan.cryptoOrders. A crypto order must be SIGNAL_ONLY_BUY_ZONE, unexpired, inside its allowed entry range, and valid on live data. Execute crypto only if the connected Robinhood tools explicitly expose crypto order placement at runtime. Otherwise keep it signal-only.
+12. Never use margin or borrowed funds. Never short stock. Never sell naked options. Never use leveraged crypto. Never average down. Never add to a losing position. Never widen a stop to avoid realizing a loss.
+13. Manage open Teststock positions automatically from their saved invalidation and targets. If invalidation is breached, exit using supported tools. At target1, protect gains according to the signal. At target2, prioritize profit capture. Never increase risk after a loss.
+14. Respect Teststock outcomeGuard / drawdown locks. If optionsLocked is true, do not open options. If the policy says cash, remain in cash.
+15. If Robinhood and Teststock disagree materially, do nothing until a fresh signal resolves the conflict.
+16. Do not ask for per-order approval when signal.autopilot.enabled=true and requiresPerOrderApproval=false. Stay strictly inside the dedicated Agentic account and current live Robinhood non-margin cash buying power.
+17. Record and inspect order status after placement, re-read buying power after fills, and avoid duplicate orders.
 
 Primary objective: pursue aggressive account growth by taking only unusually strong asymmetric setups while minimizing the chance of catastrophic loss. There is no guaranteed no-loss strategy; when the required conditions are not met, cash is the correct action.
