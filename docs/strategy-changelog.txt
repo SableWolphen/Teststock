@@ -2,6 +2,14 @@ TESTSTOCK STRATEGY CHANGE LOG
 
 This file records changes to trading RULES, thresholds, tiers, sizing, validation, and safety behavior. Routine market-data refreshes and changing trade signals are intentionally not listed here.
 
+2026-08-19 — PERFORMANCE-GATED RISK SCALING
+- Added performanceScalingGuard so account equity alone can never unlock more aggressive trading risk.
+- The normal capital ladder still selects the equity tier, but Claude must also compute an effective risk tier from confirmed real-money performance and use the more conservative settings.
+- Before SCALE risk can be used, Teststock requires at least 20 resolved real trades, average realized R >= 0.20, win rate >= 45%, reliable observed drawdown below 6% when available, and no active real-fill, slippage, protection, health, persistence, or circuit-breaker block.
+- Before GROWTH risk can be used, Teststock requires at least 30 resolved real trades, average realized R >= 0.30, win rate >= 48%, reliable observed drawdown below 6% when available, and all other guards passing.
+- Manual deposits or account profits may raise the equity tier but cannot by themselves unlock higher risk. Missing or ambiguous performance evidence never unlocks more aggression.
+- Signal schema advanced to v16.
+
 2026-08-19 — SYSTEM HEALTH + PERSISTENCE + EXECUTION TELEMETRY
 - Added machine-readable systemHealth policy to signal.json. Critical dependencies now fail closed: stale/missing/contradictory Teststock data, unknown Robinhood balances/orders/positions, failed journal/history reconciliation, or unavailable required protective-exit capability means no new position.
 - Added a visible System Health dashboard to the public Teststock page. GitHub-side signal/validation status is shown directly; Robinhood, protective-exit, and journal-persistence checks are clearly marked as runtime checks rather than guessed.
