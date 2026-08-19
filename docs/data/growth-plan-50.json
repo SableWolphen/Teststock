@@ -1,12 +1,12 @@
 {
-  "schemaVersion": 4,
-  "generatedAt": "2026-08-19T11:05:16.750Z",
-  "asOf": "2026-08-19T11:05:08.155Z",
+  "schemaVersion": 6,
+  "generatedAt": "2026-08-19T11:05:36.285Z",
+  "asOf": "2026-08-19T11:05:30.746Z",
   "budget": 50,
   "market": "CLOSED",
   "session": {
     "isOpen": false,
-    "timestamp": "2026-08-19T07:05:06.887350266-04:00",
+    "timestamp": "2026-08-19T07:05:29.806671146-04:00",
     "nextOpen": "2026-08-19T09:30:00-04:00",
     "nextClose": "2026-08-19T16:00:00-04:00",
     "label": "CLOSED"
@@ -28,7 +28,7 @@
   "policy": {
     "maxPlannedPortfolioStopPct": 3,
     "maxOptionPremiumPct": 8,
-    "maxConcurrentNewPositions": 2,
+    "maxConcurrentNewPositions": 4,
     "noMargin": true,
     "noAverageDown": true,
     "noNakedOptions": true,
@@ -54,6 +54,21 @@
       "stockSizeMultiplier": 0.85,
       "status": "DUAL_HOLDOUT_CONFIRMED",
       "reason": "Both untouched holdouts remained positive under the regime-specific entry profile."
+    },
+    "regimeSpecificEntries": true,
+    "breadthConfirmationRequired": true,
+    "symbolProbationEnabled": true,
+    "runtimeGapGuard": {
+      "enabled": true,
+      "maxAbsoluteOpeningGapPct": 4,
+      "maxGapPctOfPlannedRiskDistance": 50,
+      "rule": "At runtime compare the current session open with the prior regular-session close when reliable. Skip a new entry after an absolute opening gap above 4%, or when the gap consumes more than 50% of the planned entry-to-stop distance, unless the signal explicitly revalidates after the open. Never widen the stop to accommodate a gap."
+    },
+    "runtimeLiquidityRanking": {
+      "enabled": true,
+      "preferTighterSpread": true,
+      "stockHardSpreadCapPct": 0.35,
+      "minimumReliableDollarVolume": "Prefer highly liquid names; when reliable average dollar-volume is exposed, reject clearly illiquid candidates and rank otherwise-equal candidates by tighter spread and higher dollar volume."
     }
   },
   "outcomeGuard": {
@@ -312,6 +327,62 @@
     ],
     "automaticLooseningAllowed": false,
     "note": "Holdout/regime and event-risk guards may only reduce or block risk. They never loosen the base Teststock gates."
+  },
+  "opportunityExpansion": {
+    "regime": "TRENDING_UP",
+    "profile": {
+      "minScore": 86,
+      "minGrowthQuality": 90,
+      "minWinRate": 55,
+      "minExpectedR": 0.6,
+      "minSamples": 20,
+      "maxAtrPct": 7,
+      "breadthFloor": 50,
+      "sizeMultiplier": 1,
+      "label": "TREND_FOLLOW"
+    },
+    "breadth": {
+      "symbols": 28,
+      "above20": 68,
+      "above50": 64,
+      "above200": 75,
+      "bullishSignals": 61
+    },
+    "maxConcurrentQualifiedStocks": 4,
+    "qualifiedSymbols": [],
+    "rejectedByProfile": [
+      {
+        "symbol": "PANW",
+        "ok": false,
+        "reasons": [
+          "not bullish",
+          "samples < 20",
+          "conservative expected R < 0.6",
+          "reward/risk < 2.5"
+        ],
+        "probation": {
+          "status": "PROBATION",
+          "sizeMultiplier": 0.5,
+          "reason": "Fewer than 20 historical validation samples"
+        }
+      },
+      {
+        "symbol": "CVX",
+        "ok": false,
+        "reasons": [
+          "not bullish",
+          "samples < 20",
+          "conservative expected R < 0.6",
+          "reward/risk < 2.5"
+        ],
+        "probation": {
+          "status": "PROBATION",
+          "sizeMultiplier": 0.5,
+          "reason": "Fewer than 20 historical validation samples"
+        }
+      }
+    ],
+    "note": "More than two qualified stocks may be selected, but total deployed capital, planned stop risk, correlation, execution quality, circuit breakers, and live Robinhood cash still cap actual entries."
   },
   "probabilityFirstGuard": {
     "applied": true,
