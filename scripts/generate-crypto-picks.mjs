@@ -20,16 +20,40 @@ let score=50;score+=clamp(m20,-20,35)*.7+clamp(m60,-35,80)*.35;score+=price>ma20
 function fourHourConfirm(symbol,daily,intra){const d=metrics(symbol,daily[symbol]);const xs=intra[symbol]||[];if(!d||xs.length<20)return false;const c=xs.map(x=>x.c),last=c.at(-1),ma20=sma(c,20),mom=pct(last,c.at(-7));return last>=ma20&&mom>0;}
 function calibration(symbol,xs){let n=0,w=0,moves=[];for(let i=100;i<xs.length-21;i+=7){const m=metrics(symbol,xs.slice(0,i+1));if(!m||m.score<82)continue;const move=pct(xs[i+20].c,xs[i].c);n++;if(move>0)w++;moves.push(move);}return{samples:n,winRate:n?Math.round(w/n*100):null,avg20dMove:n?round(avg(moves),1):null};}
 function candidate(m,cal,confirm){const stop=Math.max(m.ma20,m.price-m.atr*2.1),risk=m.price-stop;if(risk<=0)return null;const entry=m.price*1.002,target1=entry+risk*3,target2=entry+risk*5;let q=m.score;if(confirm)q+=5;else q-=8;if(cal.samples>=12&&cal.winRate>=58)q+=5;if(cal.samples>=12&&cal.winRate<50)q-=8;if(m.m20>25)q-=5;if(m.atrPct>10)q-=6;q=Math.round(clamp(q,0,100));return{...m,growthQuality:q,confirm4h:confirm,validation:cal,entry:round(entry,6),stop:round(stop,6),target1:round(target1,6),target2:round(target2,6),rewardRisk1:3,rewardRisk2:5};}
+function grade(x){
+  const samples=Number(x.validation?.samples||0),win=Number(x.validation?.winRate||0);
+  const historyAPlus=samples<12||win>=58;
+  const historyA=samples<8||win>=52;
+  if(x.growthQuality>=94&&x.score>=88&&x.confirm4h&&x.rsi<=74&&historyAPlus&&x.atrPct<=10)return'A+';
+  if(x.growthQuality>=88&&x.score>=82&&x.confirm4h&&x.rsi<=74&&historyA&&x.atrPct<=11)return'A';
+  return'NO_TRADE';
+}
 
 const dailyStart=new Date(Date.now()-900*86400000).toISOString().slice(0,10),intraStart=new Date(Date.now()-30*86400000).toISOString();
 console.log('Loading Alpaca crypto history…');
 const [daily,intra]=await Promise.all([bars('1Day',dailyStart,8),bars('4Hour',intraStart,5)]);
-const ranked=symbols.map(s=>{const m=metrics(s,daily[s]);if(!m)return null;return candidate(m,calibration(s,daily[s]||[]),fourHourConfirm(s,daily,intra));}).filter(Boolean).sort((a,b)=>b.growthQuality-a.growthQuality||b.score-a.score);
+const ranked=symbols.map(s=>{const m=metrics(s,daily[s]);if(!m)return null;const x=candidate(m,calibration(s,daily[s]||[]),fourHourConfirm(s,daily,intra));return x?{...x,setupGrade:grade(x)}:null;}).filter(Boolean).sort((a,b)=>b.growthQuality-a.growthQuality||b.score-a.score);
 for(const budget of budgets){
-  const eligible=ranked.filter(x=>x.growthQuality>=92&&x.score>=86&&x.confirm4h&&x.rsi<=76&&(x.validation.samples<12||x.validation.winRate>=55)).slice(0,2);
-  const maxPortfolioRisk=budget*.04;let remaining=budget,remainingRisk=maxPortfolioRisk;const allocations=[];
-  for(const x of eligible){const riskPct=(x.entry-x.stop)/x.entry;if(riskPct<=0||riskPct>.16)continue;const desired=eligible.length===1?budget:budget*(x.growthQuality>=96?.65:.5),byRisk=remainingRisk/riskPct,amount=round(Math.min(remaining,desired,byRisk));if(amount<Math.min(5,budget*.05))continue;const loss=round(amount*riskPct);allocations.push({...x,allocationDollars:amount,estimatedUnitsAtEntry:round(amount/x.entry,8),estimatedLossAtStop:loss});remaining=round(remaining-amount);remainingRisk=round(remainingRisk-loss);}
-  const plan={schemaVersion:1,generatedAt:new Date().toISOString(),asOf:new Date().toISOString(),assetClass:'CRYPTO',market:'OPEN_24_7',budget,objective:'Only unusually strong crypto momentum/trend setups with asymmetric upside.',policy:{maxPlannedPortfolioStopPct:4,minGrowthQuality:92,minRewardRisk:3,maxPositions:2,noLeverage:true,noAverageDown:true,noChasingPct:2,cryptoIs24x7:true},confidence:allocations.length&&allocations[0].growthQuality>=96?'ELITE':allocations.length?'STRONG':'CASH',ranked:ranked.slice(0,5),allocations,keepCashDollars:round(remaining),estimatedPortfolioStopLoss:round(allocations.reduce((s,x)=>s+x.estimatedLossAtStop,0)),action:allocations.length?'QUALIFIED_CRYPTO':'CASH',reasons:allocations.length?['Crypto capital is used only when daily trend, 4-hour momentum, score and reward/risk gates align.','Planned stop risk is capped at 4% of the selected crypto budget.','No leverage and no averaging down.']:['No crypto cleared the big-winner gates; stay in cash.']};
+  const aPlus=ranked.filter(x=>x.setupGrade==='A+');
+  const a=ranked.filter(x=>x.setupGrade==='A');
+  const chosen=(aPlus.length?aPlus.slice(0,1):a.slice(0,1));
+  const selectedGrade=chosen[0]?.setupGrade||'NO_TRADE';
+  const maxPortfolioRisk=budget*(selectedGrade==='A+'?.04:selectedGrade==='A'?.02:0);
+  let remaining=budget,remainingRisk=maxPortfolioRisk;const allocations=[];
+  for(const x of chosen){
+    const riskPct=(x.entry-x.stop)/x.entry;if(riskPct<=0||riskPct>.14)continue;
+    const desired=budget*(x.setupGrade==='A+'?.65:.35),byRisk=remainingRisk/riskPct,amount=round(Math.min(remaining,desired,byRisk));
+    if(amount<Math.min(5,budget*.05))continue;
+    const loss=round(amount*riskPct);
+    allocations.push({...x,allocationDollars:amount,estimatedUnitsAtEntry:round(amount/x.entry,8),estimatedLossAtStop:loss});remaining=round(remaining-amount);remainingRisk=round(remainingRisk-loss);
+  }
+  const plan={
+    schemaVersion:2,generatedAt:new Date().toISOString(),asOf:new Date().toISOString(),assetClass:'CRYPTO',market:'OPEN_24_7',budget,
+    objective:'Take only A or A+ crypto trend/momentum setups with 3:1 first-target asymmetry; protect small-account capital first.',
+    policy:{aPlusMinGrowthQuality:94,aMinGrowthQuality:88,minRewardRisk:3,maxPositions:1,aPlusMaxPlannedPortfolioStopPct:4,aMaxPlannedPortfolioStopPct:2,aPlusMaxAllocationPct:65,aMaxAllocationPct:35,noLeverage:true,noAverageDown:true,noChasingPct:2,cryptoIs24x7:true},
+    selectedGrade:allocations[0]?.setupGrade||'NO_TRADE',confidence:allocations[0]?.setupGrade==='A+'?'ELITE':allocations.length?'STRONG':'CASH',ranked:ranked.slice(0,5),allocations,keepCashDollars:round(remaining),estimatedPortfolioStopLoss:round(allocations.reduce((s,x)=>s+x.estimatedLossAtStop,0)),action:allocations.length?'QUALIFIED_CRYPTO':'CASH',
+    reasons:allocations.length?[`${allocations[0].setupGrade} crypto setup passed daily trend, 4-hour confirmation, history, volatility, and 3:1 reward/risk gates.`,allocations[0].setupGrade==='A+'?'A+ may use up to 65% allocation subject to a 4% planned stop-risk cap.':'A is deliberately half-strength: up to 35% allocation subject to a 2% planned stop-risk cap.','Only one crypto position at a time; no leverage, no averaging down, and no chasing.']:['No A or A+ crypto setup is available; stay in cash.']
+  };
   await fs.writeFile(path.join(outDir,`crypto-plan-${budget}.json`),JSON.stringify(plan,null,2));
-  console.log(`Crypto $${budget}: ${allocations.map(x=>`${x.symbol} $${x.allocationDollars}`).join(', ')||'CASH'}`);
+  console.log(`Crypto $${budget}: ${allocations.map(x=>`${x.setupGrade} ${x.symbol} $${x.allocationDollars}`).join(', ')||'CASH'}`);
 }
