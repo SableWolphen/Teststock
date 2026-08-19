@@ -2,8 +2,17 @@ TESTSTOCK AUTOPILOT — SCHEDULED CLAUDE TASK
 
 Run this task once per hour.
 
-1. Read https://sablewolphen.github.io/Teststock/signal.json and follow its current hardRules, hardAccountFloor, capitalLadder, performanceScalingGuard, probabilityFirstPolicy, crossAssetOpportunityRanking, profitLock, circuitBreakers, tradeFrequencyGuard, correlationGuard, executionQuality, symbolProbationPolicy, exitAutomation, healthGuard, portfolioGuard, outcomeGuard, assetClassRouting, entries, stops, and targets exactly.
-2. Read https://sablewolphen.github.io/Teststock/real-fill-learning-policy.txt and apply it before any new entry. Maintain a persistent file named Teststock-Real-Trades.json in this Cowork project/task workspace using https://sablewolphen.github.io/Teststock/teststock-real-trade-journal-template.json as its schema. Robinhood history is authoritative.
+FETCH INTEGRITY — CRITICAL:
+- Use raw main-branch GitHub files as the canonical Teststock data source for Claude. Do not use GitHub Pages as the canonical machine-readable source because Pages/CDN deployment can lag.
+- Canonical signal: https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/signal.json
+- Canonical real-fill policy: https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/real-fill-learning-policy.txt
+- Canonical journal template: https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/teststock-real-trade-journal-template.json
+- When supported, append a unique cache-buster such as ?cb=<current-UTC-unix-ms> to each raw fetch.
+- If a GitHub Pages copy disagrees with raw main, trust raw main for Teststock research/signal data. If raw main itself is stale beyond the encoded freshness rules, fail closed and open no new trade.
+- Before claiming the generator is frozen, compare the fetched raw signal generatedAt against the current UTC time and re-fetch once with a new cache-buster.
+
+1. Read the canonical raw signal.json above and follow its current hardRules, hardAccountFloor, capitalLadder, performanceScalingGuard, probabilityFirstPolicy, crossAssetOpportunityRanking, profitLock, circuitBreakers, tradeFrequencyGuard, correlationGuard, executionQuality, symbolProbationPolicy, exitAutomation, healthGuard, portfolioGuard, outcomeGuard, assetClassRouting, entries, stops, and targets exactly.
+2. Read the canonical raw real-fill-learning-policy.txt above and apply it before any new entry. Maintain a persistent file named Teststock-Real-Trades.json in this Cowork project/task workspace using the canonical raw journal template above as its schema. Robinhood history is authoritative.
 3. Reconcile the journal against Robinhood orders, fills, positions, closed positions, and available history before any new risk. Never infer fills. Unknown/partial records stay UNKNOWN/OPEN and can never justify more risk.
 4. Verify journal persistence across runs with persistence.testNonce. If persistence fails, reconstruct relevant recent statistics from Robinhood history and never use missing persistence to increase risk.
 5. Recompute real-fill performance overall and by setupType, riskCluster, and symbol. Weak realized R, win rate, slippage, or protection reliability may reduce size or block a bucket. Learning may only make risk more conservative.
