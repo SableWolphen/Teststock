@@ -5,7 +5,7 @@ const raw=await fs.readFile(file,'utf8');
 let s;try{s=JSON.parse(raw);}catch{throw new Error('signal.json is not valid JSON');}
 const fail=[];
 const finite=n=>Number.isFinite(Number(n));
-if(!Number.isInteger(s.schemaVersion)||s.schemaVersion<12)fail.push('schemaVersion');
+if(!Number.isInteger(s.schemaVersion)||s.schemaVersion<15)fail.push('schemaVersion');
 if(s.source!=='Teststock')fail.push('source');
 const generated=new Date(s.generatedAt).getTime(),age=Date.now()-generated;
 if(!Number.isFinite(generated)||age< -5*60_000||age>10*60_000)fail.push('generatedAt freshness');
@@ -22,5 +22,12 @@ for(const plan of [s.stockPlan,s.cryptoPlan])if(!plan||typeof plan!=='object')fa
 for(const order of s.stockPlan?.stockOrders||[]){for(const k of ['minimumEntry','maximumEntry','stop','target1','target2'])if(!finite(order[k])||Number(order[k])<=0)fail.push(`stock ${k}`);if(Number(order.maximumEntry)<Number(order.minimumEntry))fail.push('stock entry range');if(Number(order.plannedStopRiskPctOfRobinhoodBuyingPower)<0||Number(order.plannedStopRiskPctOfRobinhoodBuyingPower)>100)fail.push('stock risk pct');}
 for(const order of s.cryptoPlan?.cryptoOrders||[]){for(const k of ['minimumEntry','maximumEntry','stop','target1','target2'])if(!finite(order[k])||Number(order[k])<=0)fail.push(`crypto ${k}`);if(Number(order.maximumEntry)<Number(order.minimumEntry))fail.push('crypto entry range');}
 const o=s.stockPlan?.eliteOption;if(o){if(!finite(o.contractReferenceMaxRiskDollars)||Number(o.contractReferenceMaxRiskDollars)<=0)fail.push('option contract risk');if(!o.wholeContractSizing?.runtimeCheckRequired)fail.push('option whole-contract runtime check');}
+if(!s.systemHealth||s.systemHealth.actionOnCriticalFailure!=='NO_NEW_TRADES_MANAGE_EXITS_IF_POSSIBLE')fail.push('system health fail-closed policy');
+if(!Array.isArray(s.systemHealth?.criticalDependencies)||s.systemHealth.criticalDependencies.length<4)fail.push('critical dependency list');
+if(s.shadowEvidencePolicy?.automaticLooseningAllowed!==false)fail.push('shadow automatic loosening lock');
+if(!finite(s.shadowEvidencePolicy?.minimumResolvedAcceptedBeforeRuleReview)||Number(s.shadowEvidencePolicy.minimumResolvedAcceptedBeforeRuleReview)<30)fail.push('shadow accepted sample floor');
+if(!finite(s.shadowEvidencePolicy?.minimumResolvedRejectedBeforeRuleReview)||Number(s.shadowEvidencePolicy.minimumResolvedRejectedBeforeRuleReview)<30)fail.push('shadow rejected sample floor');
+if(s.executionTelemetryPolicy?.sourceOfTruth!=='ROBINHOOD_CONFIRMED_FILLS_AND_ORDERS')fail.push('execution telemetry source');
+if(!s.dailySummaryPolicy?.enabled)fail.push('daily summary policy');
 if(fail.length)throw new Error(`signal validation failed: ${[...new Set(fail)].join(', ')}`);
 console.log(`signal validation passed: schema v${s.schemaVersion}, generated ${s.generatedAt}`);
