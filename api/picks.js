@@ -367,7 +367,7 @@ export default async function handler(req,res){
     const directionConflict=conflicts(best),historyOkay=best.validation.samples>=6&&best.validation.winRate>=52;
     const pennyLiquid=segment!=='penny'||(best.avgVolume>=1000000&&best.dollarVolume>=3000000&&best.atrPct<=15);
     const financialEvidence=best.fundamentals?.coverage>=4&&best.fundamentals?.score>=58;
-    const hardNo=best.score<76||best.news.risk==='HIGH'||directionConflict||!pennyLiquid||(best.fundamentals?.coverage>=4&&best.fundamentals?.score<42);
+    const hardNo=best.score<76||best.news.risk==='HIGH'||best.corporateActions?.risk==='HIGH'||directionConflict||!pennyLiquid||(best.fundamentals?.coverage>=4&&best.fundamentals?.score<42);
     const stockQualified=qualifies(best);
     const action=hardNo?'WAIT':stockQualified?'TRADE CANDIDATE':'WATCH';
     const stopRisk=x=>Math.max(.01,Math.abs(x.entry-x.stop)/Math.max(x.entry,.01)),riskWeights=qualified.map(x=>1/stopRisk(x)),weightTotal=riskWeights.reduce((s,n)=>s+n,0)||1;
