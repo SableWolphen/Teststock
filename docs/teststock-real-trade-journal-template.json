@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "sourceOfTruth": "ROBINHOOD_AGENTIC_ACCOUNT",
   "purpose": "Persistent real-fill journal for Teststock. Reconcile this file from Robinhood order/position/history data before using it for learning.",
   "lastReconciledAt": null,
@@ -17,12 +17,24 @@
     "averageWinnerDollars": null,
     "averageLoserDollars": null,
     "averageRealizedR": null,
-    "maxObservedDrawdownPct": null
+    "maxObservedDrawdownPct": null,
+    "bySetupType": {},
+    "byRiskCluster": {}
+  },
+  "bucketSummarySchema": {
+    "resolvedTrades": 0,
+    "wins": 0,
+    "losses": 0,
+    "winRatePct": null,
+    "averageRealizedR": null,
+    "realizedPnlDollars": 0
   },
   "tradeRecordSchema": {
     "journalId": "stable unique id derived from Robinhood order ids when possible",
     "assetClass": "STOCK | OPTION | CRYPTO",
     "symbol": "ticker or crypto pair",
+    "setupType": "STOCK_TREND | OPTION_ELITE_CALL | OPTION_ELITE_PUT | CRYPTO_A | CRYPTO_A_PLUS | OTHER | UNKNOWN",
+    "riskCluster": "Teststock correlationGuard cluster name or UNKNOWN",
     "optionContract": null,
     "teststockSignalGeneratedAt": null,
     "setupGrade": null,
@@ -56,6 +68,8 @@
     "Update an existing trade by stable order identifiers instead of creating duplicates.",
     "A trade is resolved only after the live position is closed and Robinhood history confirms the exit.",
     "Use actual average fill prices for realized P&L and realized-R calculations.",
+    "Compute performance overall, by setupType, and by riskCluster from resolved real trades.",
+    "Never let strong aggregate performance hide a weak setupType or riskCluster bucket.",
     "Keep modeled Teststock history separate from real-money Robinhood results.",
     "If Robinhood history is incomplete or contradictory, mark fields UNKNOWN and do not use that trade to increase risk."
   ]
