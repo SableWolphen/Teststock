@@ -1,5 +1,5 @@
 name: Refresh Teststock picks
-# Scanner refreshes use private Alpaca credentials and the SEC contact identity.
+# GitHub + Alpaca do the background scanning. No chat model is called by this workflow.
 
 on:
   push:
@@ -13,8 +13,10 @@ on:
       - 'scripts/build-agent-signal.mjs'
   workflow_dispatch:
   schedule:
-    - cron: '*/30 13-21 * * 1-5'
-    - cron: '15 */2 * * *'
+    # Stocks/options: every 30 minutes on US market weekdays, offset so it does not collide with crypto runs.
+    - cron: '5,35 13-21 * * 1-5'
+    # Crypto: every 15 minutes, 24/7.
+    - cron: '*/15 * * * *'
 
 permissions:
   contents: write
@@ -31,26 +33,35 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
       - name: Generate free static stock picks
+        if: ${{ github.event_name != 'schedule' || github.event.schedule == '5,35 13-21 * * 1-5' }}
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
           ALPACA_OPTIONS_FEED: indicative
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: node scripts/generate-static-picks.mjs
+
       - name: Optimize aggressive growth plan
+        if: ${{ github.event_name != 'schedule' || github.event.schedule == '5,35 13-21 * * 1-5' }}
         run: node scripts/optimize-growth-plan.mjs
+
       - name: Generate selective crypto plan
+        if: ${{ github.event_name != 'schedule' || github.event.schedule == '*/15 * * * *' }}
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/generate-crypto-picks.mjs
+
       - name: Build Claude/Robinhood signal
         run: node scripts/build-agent-signal.mjs
+
       - name: Publish refreshed JSON
         run: |
           git config user.name "github-actions[bot]"
