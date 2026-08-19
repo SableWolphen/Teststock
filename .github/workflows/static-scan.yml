@@ -15,6 +15,7 @@ on:
       - 'scripts/apply-advanced-growth-guards.mjs'
       - 'scripts/apply-opportunity-expansion.mjs'
       - 'scripts/apply-probability-first-guards.mjs'
+      - 'scripts/build-cross-asset-opportunity-ranking.mjs'
       - 'scripts/update-shadow-ledger.mjs'
       - 'scripts/augment-signal-safety.mjs'
       - 'scripts/validate-signal.mjs'
@@ -59,7 +60,7 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/validate-entry-gates.mjs
-      - name: Optimize aggressive growth plan
+      - name: Optimize growth plan with target2 reward-risk and cost-adjusted expectancy
         if: ${{ github.event_name != 'schedule' || github.event.schedule == '5,35 13-21 * * 1-5' }}
         run: node scripts/optimize-growth-plan.mjs
       - name: Apply holdout-regime and event-risk guards
@@ -82,6 +83,8 @@ jobs:
         run: node scripts/generate-crypto-picks.mjs
       - name: Apply probability-first stock options crypto overlay
         run: node scripts/apply-probability-first-guards.mjs
+      - name: Rank qualified opportunities across asset classes
+        run: node scripts/build-cross-asset-opportunity-ranking.mjs
       - name: Build, augment, and validate Claude/Robinhood signal with fallback
         shell: bash
         run: |
