@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "sourceOfTruth": "ROBINHOOD_AGENTIC_ACCOUNT",
+  "purpose": "Persistent real-fill journal for Teststock. Reconcile this file from Robinhood order/position/history data before using it for learning.",
+  "lastReconciledAt": null,
+  "account": {
+    "equity": null,
+    "cashBuyingPower": null
+  },
+  "trades": [],
+  "summary": {
+    "resolvedTrades": 0,
+    "wins": 0,
+    "losses": 0,
+    "winRatePct": null,
+    "realizedPnlDollars": 0,
+    "averageWinnerDollars": null,
+    "averageLoserDollars": null,
+    "averageRealizedR": null,
+    "maxObservedDrawdownPct": null
+  },
+  "tradeRecordSchema": {
+    "journalId": "stable unique id derived from Robinhood order ids when possible",
+    "assetClass": "STOCK | OPTION | CRYPTO",
+    "symbol": "ticker or crypto pair",
+    "optionContract": null,
+    "teststockSignalGeneratedAt": null,
+    "setupGrade": null,
+    "entryOrderId": null,
+    "entrySubmittedAt": null,
+    "entryFilledAt": null,
+    "entryQuantity": null,
+    "plannedEntry": null,
+    "actualAverageEntry": null,
+    "entrySlippagePct": null,
+    "plannedStop": null,
+    "initialRiskDollars": null,
+    "protectiveOrderIds": [],
+    "protectiveExitVerified": false,
+    "target1": null,
+    "target2": null,
+    "exitOrders": [],
+    "finalExitAt": null,
+    "actualAverageExit": null,
+    "realizedPnlDollars": null,
+    "realizedPnlPct": null,
+    "realizedR": null,
+    "outcome": "OPEN | WIN | LOSS | FLAT | UNKNOWN",
+    "exitReason": "STOP | TARGET1 | TARGET2 | TRAILING_PROTECTION | MANUAL | OTHER | UNKNOWN",
+    "feesAndCreditsDollars": null,
+    "notes": null,
+    "reconciledFromRobinhood": false
+  },
+  "rules": [
+    "Robinhood order, fill, position, and account history is authoritative. Never invent missing fills or prices.",
+    "Update an existing trade by stable order identifiers instead of creating duplicates.",
+    "A trade is resolved only after the live position is closed and Robinhood history confirms the exit.",
+    "Use actual average fill prices for realized P&L and realized-R calculations.",
+    "Keep modeled Teststock history separate from real-money Robinhood results.",
+    "If Robinhood history is incomplete or contradictory, mark fields UNKNOWN and do not use that trade to increase risk."
+  ]
+}
