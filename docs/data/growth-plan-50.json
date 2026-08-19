@@ -1,12 +1,12 @@
 {
-  "schemaVersion": 3,
-  "generatedAt": "2026-08-19T09:36:19.147Z",
-  "asOf": "2026-08-19T09:36:13.873Z",
+  "schemaVersion": 4,
+  "generatedAt": "2026-08-19T09:38:01.154Z",
+  "asOf": "2026-08-19T09:37:57.311Z",
   "budget": 50,
   "market": "CLOSED",
   "session": {
     "isOpen": false,
-    "timestamp": "2026-08-19T05:36:12.901545382-04:00",
+    "timestamp": "2026-08-19T05:37:56.736663623-04:00",
     "nextOpen": "2026-08-19T09:30:00-04:00",
     "nextClose": "2026-08-19T16:00:00-04:00",
     "label": "CLOSED"
@@ -37,7 +37,23 @@
     "minRewardRisk": 2.5,
     "minHistoricalSamples": 15,
     "minHistoricalWinRate": 52,
-    "minConservativeExpectedR": 0.5
+    "minConservativeExpectedR": 0.5,
+    "holdoutValidationRequired": true,
+    "eventRiskPolicy": {
+      "stockBlackoutDaysBeforeEstimatedReport": 3,
+      "optionBlackoutDaysBeforeEstimatedReport": 7,
+      "blackoutThroughOneDayAfter": true,
+      "highCorporateActionRiskBlocksEntry": true
+    },
+    "runtimeRegimePolicy": {
+      "regime": "TRENDING_UP",
+      "samples": 47,
+      "allowNewStocks": true,
+      "allowOptions": true,
+      "stockSizeMultiplier": 1,
+      "status": "STRONG",
+      "reason": "Holdout regime remained positive after the untouched-period check."
+    }
   },
   "outcomeGuard": {
     "resolvedSample": 0,
@@ -224,5 +240,62 @@
   },
   "reasons": [
     "No setup cleared the stricter expectancy, adaptive-performance, and risk gates; cash is the selected position."
-  ]
+  ],
+  "advancedGuards": {
+    "entryGateValidationStatus": "RED_FLAG",
+    "runtimeRegime": "TRENDING_UP",
+    "regimePolicy": {
+      "samples": 47,
+      "allowNewStocks": true,
+      "allowOptions": true,
+      "stockSizeMultiplier": 1,
+      "status": "STRONG",
+      "reason": "Holdout regime remained positive after the untouched-period check."
+    },
+    "eventBySymbol": {
+      "PANW": {
+        "stockBlocked": false,
+        "optionBlocked": false,
+        "daysToEstimatedReport": 15,
+        "corporateActionRisk": "NONE",
+        "reasons": []
+      },
+      "CVX": {
+        "stockBlocked": false,
+        "optionBlocked": false,
+        "daysToEstimatedReport": 79,
+        "corporateActionRisk": "LOW",
+        "reasons": []
+      }
+    },
+    "blockedSymbols": [],
+    "rejectedCandidates": [
+      {
+        "symbol": "PANW",
+        "entry": 397.72,
+        "stop": 353.91,
+        "target1": 463.44,
+        "target2": 511.63,
+        "rewardRisk": 1.5,
+        "growthQuality": 98,
+        "reasons": [
+          "Did not clear one or more stock eligibility/position-sizing gates"
+        ]
+      },
+      {
+        "symbol": "CVX",
+        "entry": 203.92,
+        "stop": 192.39,
+        "target1": 221.21,
+        "target2": 233.9,
+        "rewardRisk": 1.5,
+        "growthQuality": 97,
+        "reasons": [
+          "Did not clear one or more stock eligibility/position-sizing gates"
+        ]
+      }
+    ],
+    "automaticLooseningAllowed": false,
+    "note": "Holdout/regime and event-risk guards may only reduce or block risk. They never loosen the base Teststock gates."
+  }
 }
