@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 12,
+  "schemaVersion": 13,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-08-19T01:33:27.934Z",
+  "generatedAt": "2026-08-19T02:04:23.364Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -257,15 +257,17 @@
     "If Teststock, Robinhood, order status, or protective-order status materially disagree or cannot be verified, do not open a new trade.",
     "Unused capital stays in cash. Never increase risk to chase a return target or recover losses.",
     "Manage exits automatically: invalidation means exit/protective stop; target1 means protect gains and consider partial profit; target2 means prioritize profit capture. The user should not need to calculate stops manually.",
-    "No model, stop, profit lock, or automation can guarantee profit or prevent losses, gaps, slippage, option decay, crypto volatility, or tool failures."
+    "No model, stop, profit lock, or automation can guarantee profit or prevent losses, gaps, slippage, option decay, crypto volatility, or tool failures.",
+    "WHOLE-CONTRACT OPTIONS CHECK: option percentages are not fractional-contract sizing. Before any option order, calculate the live dollar risk cap from current Agentic-account equity and the active tier, then compare it with the actual max dollar risk/premium of one whole contract. If one contract exceeds the cap, skip the option.",
+    "MULTI-REGIME VALIDATION: inspect entryGateRobustness before new risk. If it is RED_FLAG or unavailable, surface that fact and never increase risk because of the historical model; keep other Teststock gates fully intact."
   ],
   "stockPlan": {
     "assetClass": "STOCK",
     "overallAction": "WAIT_FOR_MARKET_OPEN",
     "reason": "Market is closed.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T01:33:23.121Z",
-    "expiresAt": "2026-08-20T13:33:23.121Z",
+    "signalAsOf": "2026-08-19T02:04:19.354Z",
+    "expiresAt": "2026-08-20T14:04:19.354Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 3,
       "maxOptionPremiumPct": 8,
@@ -300,8 +302,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T01:33:27.884Z",
-    "expiresAt": "2026-08-19T02:03:27.884Z",
+    "signalAsOf": "2026-08-19T02:04:23.317Z",
+    "expiresAt": "2026-08-19T02:34:23.317Z",
     "policy": {
       "aPlusMinGrowthQuality": 94,
       "aMinGrowthQuality": 88,
@@ -322,5 +324,25 @@
       "note": "At runtime, use crypto order tools only if the connected Robinhood MCP actually exposes them."
     },
     "cryptoOrders": []
-  }
+  },
+  "entryGateRobustness": {
+    "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
+    "status": "DIVERSE_HISTORY_PASS",
+    "generatedAt": "2026-08-19T02:04:22.666Z",
+    "gatesUnderReview": {
+      "minHistoricalWinRatePct": 52,
+      "minRewardRisk": 2.5,
+      "minHistoricalSamples": 15,
+      "minConservativeExpectedR": 0.5
+    },
+    "requiredDiversityRegimes": [
+      "CALM",
+      "VOLATILE",
+      "TRENDING_DOWN"
+    ],
+    "failedRequiredRegimes": [],
+    "instructions": "The current thresholds cleared the named regime checks in this historical test, but live performance and out-of-sample results still govern risk.",
+    "interpretation": "This is a walk-forward-like historical robustness check across calm, volatile, and trending-down regimes. It is evidence, not a guarantee. A RED_FLAG must be surfaced and must never be used to justify increasing risk."
+  },
+  "strategyChangeLogUrl": "https://sablewolphen.github.io/Teststock/strategy-changelog.txt"
 }
