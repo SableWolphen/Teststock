@@ -6,6 +6,7 @@ const symbols=[...universe,'SPY'];
 const outFile=path.resolve('docs/data/entry-gate-validation.json');
 const GATES={minHistoricalWinRatePct:52,minRewardRisk:2.5,minHistoricalSamples:15,minConservativeExpectedR:0.5};
 const REQUIRED_REGIMES=['CALM','VOLATILE','TRENDING_DOWN'];
+const HOLDOUT_START='2024-01-01';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const avg=a=>a.length?a.reduce((s,n)=>s+n,0)/a.length:0;
 const pct=(a,b)=>a&&b?((a/b)-1)*100:0;
@@ -36,7 +37,7 @@ async function fetchBars(){
   }
   return out;
 }
-function day(b){return String(b?.t||'').slice(0,10);}
+const day=b=>String(b?.t||'').slice(0,10);
 function regimeAt(spyByDate,date){
   const slice=spyByDate.get(date);if(!slice)return 'UNKNOWN';const m=metrics('SPY',slice);if(!m)return 'UNKNOWN';
   if(m.last<m.ma200&&m.m60<=-5)return 'TRENDING_DOWN';
@@ -48,7 +49,7 @@ function regimeAt(spyByDate,date){
 function outcome(signal,future){
   const bullish=signal.direction==='BULLISH',entry=signal.entry,stop=signal.stop,target=signal.target2,risk=Math.max(.01,Math.abs(entry-stop));let entered=false;
   for(const b of future){
-    if(!entered){const touched=b.l<=entry&&b.h>=entry;if(!touched)continue;entered=true;}
+    if(!entered){if(!(b.l<=entry&&b.h>=entry))continue;entered=true;}
     const stopHit=bullish?b.l<=stop:b.h>=stop,targetHit=bullish?b.h>=target:b.l<=target;
     if(stopHit&&targetHit)return {resolved:false,reason:'AMBIGUOUS_SAME_BAR'};
     if(stopHit)return {resolved:true,win:false,r:-1};
@@ -59,8 +60,21 @@ function outcome(signal,future){
   const rawR=bullish?(last-entry)/risk:(entry-last)/risk;return {resolved:true,win:rawR>0,r:clamp(rawR,-1,signal.rewardRisk)};
 }
 function stats(rows){
-  const n=rows.length,wins=rows.filter(x=>x.win).length,win=n?wins/n:0,averageRealizedR=n?avg(rows.map(x=>x.r)):null,shrink=Math.min(1,n/30),conservativeWin=.5+(win-.5)*shrink,conservativeExpectedR=(conservativeWin*GATES.minRewardRisk)-((1-conservativeWin)*1);
-  return {samples:n,wins,winRatePct:n?round(win*100,1):null,averageRealizedR:n?round(averageRealizedR,2):null,conservativeExpectedR:n?round(conservativeExpectedR,2):null,passesSampleGate:n>=GATES.minHistoricalSamples,passesWinRateGate:n>=GATES.minHistoricalSamples&&win*100>=GATES.minHistoricalWinRatePct,passesModelExpectedValueGate:n>=GATES.minHistoricalSamples&&conservativeExpectedR>=GATES.minConservativeExpectedR,passesRealizedAverageRGate:n>=GATES.minHistoricalSamples&&averageRealizedR>=GATES.minConservativeExpectedR,passesExpectedValueGate:n>=GATES.minHistoricalSamples&&conservativeExpectedR>=GATES.minConservativeExpectedR&&averageRealizedR>=GATES.minConservativeExpectedR};
+  const n=rows.length,wins=rows.filter(x=>x.win).length,win=n?wins/n:0,shrink=Math.min(1,n/30),conservativeWin=.5+(win-.5)*shrink,conservativeExpectedR=(conservativeWin*GATES.minRewardRisk)-((1-conservativeWin)*1),observedR=n?avg(rows.map(x=>x.r)):null;
+  return {samples:n,wins,winRatePct:n?round(win*100,1):null,averageObservedR:n?round(observedR,2):null,conservativeExpectedR:n?round(conservativeExpectedR,2):null,passesSampleGate:n>=GATES.minHistoricalSamples,passesWinRateGate:n>=GATES.minHistoricalSamples&&win*100>=GATES.minHistoricalWinRatePct,passesExpectedValueGate:n>=GATES.minHistoricalSamples&&conservativeExpectedR>=GATES.minConservativeExpectedR,positiveObservedR:n>=GATES.minHistoricalSamples&&observedR>0};
+}
+function splitStats(rows){
+  const regimes=['CALM','VOLATILE','TRENDING_DOWN','TRENDING_UP','MIXED','UNKNOWN'];
+  return {overall:stats(rows),byRegime:Object.fromEntries(regimes.map(r=>[r,stats(rows.filter(x=>x.regime===r))]))};
+}
+function runtimePolicy(holdout){
+  const out={};
+  for(const [regime,s] of Object.entries(holdout.byRegime)){
+    const sparse=s.samples<GATES.minHistoricalSamples;
+    const weak=!sparse&&(!s.passesWinRateGate||!s.passesExpectedValueGate||!s.positiveObservedR);
+    out[regime]={samples:s.samples,allowNewStocks:!weak,allowOptions:!weak&&!sparse&&s.winRatePct>=58&&Number(s.averageObservedR||0)>=0.15,stockSizeMultiplier:weak?0:sparse?0.5:s.winRatePct>=58&&Number(s.averageObservedR||0)>=0.15?1:0.75,status:weak?'BLOCK':sparse?'SPARSE_REDUCE':s.winRatePct>=58&&Number(s.averageObservedR||0)>=0.15?'STRONG':'NORMAL',reason:weak?'Holdout regime failed one or more robustness gates.':sparse?'Holdout regime has fewer than 15 resolved samples; reduce risk until evidence improves.':'Holdout regime remained positive after the untouched-period check.'};
+  }
+  return out;
 }
 
 const by=await fetchBars();
@@ -73,13 +87,8 @@ for(const symbol of universe){
     const o=outcome(s,bars.slice(i+1,i+21));if(!o.resolved)continue;rows.push({symbol,date:day(bars[i]),regime:regimeAt(spyByDate,day(bars[i])),win:o.win,r:o.r,rewardRisk:round(s.rewardRisk,2)});
   }
 }
-const byRegime={};for(const regime of ['CALM','VOLATILE','TRENDING_DOWN','TRENDING_UP','MIXED','UNKNOWN'])byRegime[regime]=stats(rows.filter(x=>x.regime===regime));
-const overall=stats(rows),failedRequiredRegimes=REQUIRED_REGIMES.filter(r=>!(byRegime[r].passesSampleGate&&byRegime[r].passesWinRateGate&&byRegime[r].passesExpectedValueGate));
-const report={
-  schemaVersion:2,generatedAt:new Date().toISOString(),period:{start:'2018-01-01',end:new Date().toISOString().slice(0,10)},universeSize:universe.length,
-  gatesUnderReview:GATES,method:'Walk-forward-like barrier test sampled every 10 trading days. Uses the same core trend score and entry/stop geometry as Teststock and evaluates the 2.6R full target over the next 20 trading days. Regimes are classified from contemporaneous SPY trend and ATR. The 0.5R gate is checked both against the model-implied conservative expectancy and the actually observed average realized R in this backtest. This is still a research backtest, not a guarantee of live fills.',
-  requiredDiversityRegimes:REQUIRED_REGIMES,overall,byRegime,
-  status:failedRequiredRegimes.length?'RED_FLAG':'DIVERSE_HISTORY_PASS',failedRequiredRegimes,
-  instructions:failedRequiredRegimes.length?'Do not assume the current gates are robust across regimes. At least one required regime failed the sample, win-rate, or 0.5R realized/model expectancy test. Keep new risk conservative and surface the failed regimes before relying on the thresholds.':'The current thresholds cleared the named regime checks in this historical test, but live performance and out-of-sample results still govern risk.'
-};
-await fs.mkdir(path.dirname(outFile),{recursive:true});await fs.writeFile(outFile,JSON.stringify(report,null,2));console.log(`Entry-gate validation: ${report.status}; samples=${overall.samples}; failed=${failedRequiredRegimes.join(',')||'none'}`);
+const developmentRows=rows.filter(x=>x.date<HOLDOUT_START),holdoutRows=rows.filter(x=>x.date>=HOLDOUT_START);
+const development=splitStats(developmentRows),holdout=splitStats(holdoutRows),allHistory=splitStats(rows);
+const failedRequiredRegimes=REQUIRED_REGIMES.filter(r=>{const s=holdout.byRegime[r];return !(s.passesSampleGate&&s.passesWinRateGate&&s.passesExpectedValueGate&&s.positiveObservedR);});
+const report={schemaVersion:3,generatedAt:new Date().toISOString(),period:{start:'2018-01-01',end:new Date().toISOString().slice(0,10)},holdoutStart:HOLDOUT_START,universeSize:universe.length,gatesUnderReview:GATES,method:'Chronological walk-forward-like barrier study sampled every 10 trading days. Development period ends before 2024-01-01; 2024 onward is treated as an untouched holdout for validation only. The same core trend score and entry/stop geometry are used, with a 20-trading-day 2.6R target horizon. Regimes are classified from contemporaneous SPY trend and ATR. No threshold is tuned on the holdout in this script.',requiredDiversityRegimes:REQUIRED_REGIMES,development,holdout,allHistory,runtimePolicy:runtimePolicy(holdout),status:failedRequiredRegimes.length?'RED_FLAG':'HOLDOUT_DIVERSE_HISTORY_PASS',failedRequiredRegimes,instructions:failedRequiredRegimes.length?'Do not loosen gates. Runtime policy blocks or reduces weak/sparse holdout regimes until evidence improves.':'The fixed gates remained positive in the named holdout regimes, but live fills and real-money results still govern risk.'};
+await fs.mkdir(path.dirname(outFile),{recursive:true});await fs.writeFile(outFile,JSON.stringify(report,null,2));console.log(`Entry-gate holdout validation: ${report.status}; holdout=${holdout.overall.samples}; failed=${failedRequiredRegimes.join(',')||'none'}`);
