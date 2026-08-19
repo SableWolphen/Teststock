@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 17,
+  "schemaVersion": 18,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-08-19T11:05:37.629Z",
+  "generatedAt": "2026-08-19T11:06:10.660Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -128,10 +128,11 @@
     "instructions": "If live Robinhood account history exposes reliable day P&L and 7-day high-water/equity data, open no new positions when current-day loss is 3% or more or 7-day drawdown is 6% or more. Continue managing exits. If the needed history is unavailable, do not invent it; fall back to capitalLadder and outcomeGuard."
   },
   "tradeFrequencyGuard": {
-    "maxNewPositionsPerDay": 2,
-    "maxNewPositionsPerSevenDays": 6,
+    "maxNewPositionsPerDay": 3,
+    "maxNewPositionsPerSevenDays": 10,
     "maxNewOptionsPerDay": 1,
-    "instructions": "When reliable Robinhood order history is available, count filled Teststock entries before placing another one. Never exceed two new Teststock positions in a calendar day, six in rolling seven days, or one new option position in a calendar day. Protective exits never count toward these limits. If history is ambiguous, choose the safer interpretation and do not overtrade."
+    "maxNewCryptoPerDay": 1,
+    "instructions": "Multiple qualified positions are allowed. Never force frequency: count confirmed Teststock entries and stay within 3 new positions/day, 10/rolling 7 days, 1 new option/day, and 1 new crypto/day. Risk, cash, correlation, event, execution, and protection limits still override these maxima."
   },
   "correlationGuard": {
     "maxNewPositionsPerRiskCluster": 1,
@@ -198,10 +199,22 @@
   },
   "executionQuality": {
     "preferLimitOrders": true,
-    "maxStockSpreadPct": 0.5,
+    "maxStockSpreadPct": 0.35,
     "maxOptionSpreadPct": 10,
     "maxCryptoSpreadPct": 0.75,
-    "instructions": "Prefer limit orders when supported. Never pay above maximumEntry. Skip a new entry when the live bid/ask spread exceeds the applicable cap or when executable pricing is materially worse than the signal. A missed trade is better than a bad fill."
+    "instructions": "Prefer limit orders when supported. Never pay above maximumEntry. Skip a new entry when the live bid/ask spread exceeds the applicable cap or when executable pricing is materially worse than the signal. A missed trade is better than a bad fill.",
+    "preferTighterSpreadAndHigherDollarVolume": true,
+    "gapRiskGuard": {
+      "enabled": true,
+      "maxAbsoluteOpeningGapPct": 4,
+      "maxGapPctOfPlannedRiskDistance": 50,
+      "action": "SKIP_OR_REVALIDATE_AFTER_OPEN",
+      "instructions": "Use reliable prior close and current regular-session open when available. Skip or wait for revalidation if the absolute opening gap exceeds 4% or consumes more than 50% of planned entry-to-stop distance. Never widen a stop for a gap."
+    },
+    "liquidityRanking": {
+      "enabled": true,
+      "instructions": "When multiple otherwise-qualified candidates exist, prefer tighter live spread, higher reliable dollar volume, and cleaner historical fills. A missed trade is better than poor liquidity."
+    }
   },
   "exitAutomation": {
     "fullyAutomatic": true,
@@ -219,10 +232,11 @@
     "instructions": "If Teststock is stale, Robinhood tools are unavailable, order status is unknown, a protective order cannot be verified, account equity/buying power is missing, or an unexpected partial fill/duplicate appears, open no new positions. Resolve or safely manage existing exposure first. Never guess an order filled or a stop exists."
   },
   "portfolioGuard": {
-    "maxNewPositions": 2,
+    "maxNewPositions": 4,
     "maxCryptoPositions": 1,
     "noDuplicateExposure": true,
-    "instructions": "Count existing positions and open orders before any new entry. Do not open more than two new Teststock positions in one run, do not hold more than one Teststock crypto position, and do not duplicate the same ticker/contract. Existing planned risk counts against every new trade."
+    "instructions": "Up to four concurrent Teststock positions may be held only when independently qualified and total deployed cash/planned stop risk remain within every smaller cap. Do not duplicate symbols/contracts or stack the same risk cluster. At $100, sizing/risk limits may make fewer than four practical.",
+    "maxConcurrentTeststockPositions": 4
   },
   "autopilot": {
     "enabled": true,
@@ -258,23 +272,20 @@
     "Unused capital stays in cash. Never increase risk to chase a return target or recover losses.",
     "Manage exits automatically: invalidation means exit/protective stop; target1 means protect gains and consider partial profit; target2 means prioritize profit capture. The user should not need to calculate stops manually.",
     "No model, stop, profit lock, or automation can guarantee profit or prevent losses, gaps, slippage, option decay, crypto volatility, or tool failures.",
-    "WHOLE-CONTRACT OPTIONS CHECK: option percentages are not fractional-contract sizing. Before any option order, calculate the live dollar risk cap from current Agentic-account equity and the active tier, then compare it with the actual max dollar risk/premium of one whole contract. If one contract exceeds the cap, skip the option.",
-    "HOLDOUT + REGIME VALIDATION: inspect entryGateRobustness before new risk. Weak holdout regimes may reduce or block new positions. Never loosen the 52% win-rate, 2.5:1 reward/risk, 15-sample, or 0.5R conservative-expected-value gates because a recent slice looks favorable.",
-    "EVENT RISK: obey any stockPlan.policy event blackout and advanced guard. Never bypass an encoded earnings/filing/corporate-action block to force a trade.",
-    "SHADOW DATA: shadowDiagnostics is model-only. Never count it as real P&L or use it to automatically increase live-money risk.",
-    "CRITICAL DEPENDENCY FAIL-CLOSED: if the Teststock signal, probability-first overlay, Robinhood account/order/position state, protective-exit capability, or journal/history reconciliation is stale, missing, contradictory, or unknown, open no new position. Manage existing exposure only.",
-    "EXECUTION TELEMETRY: record confirmed order/fill/spread/slippage/protection timing when available. Missing telemetry may never be guessed, and bad observed execution may only make sizing more conservative.",
-    "PERFORMANCE-GATED SCALING: live equity determines the normal capital tier, but real-money evidence caps the effective risk tier. Do not use SCALE risk before at least 20 resolved real trades with average realized R >= 0.20 and win rate >= 45%. Do not use GROWTH risk before at least 30 resolved real trades with average realized R >= 0.30 and win rate >= 48%. Reliable drawdown must remain below 6% and all other guards must pass. Missing or ambiguous evidence cannot unlock higher risk.",
-    "PROBABILITY-FIRST STOCKS: stocks are the primary growth engine. The probability-first overlay tightens stock evidence to at least 20 historical samples, 55% historical win rate, 0.60 conservative expected R, 2.5:1 reward/risk, and controlled volatility. It may reduce allocation and planned stop risk but may never loosen a failed base gate.",
-    "OPTIONS + CRYPTO EVIDENCE UNLOCK: before a new option or crypto position, Claude must confirm at least 10 resolved real Teststock trades, average realized R >= 0.25, and win rate >= 50%, in addition to every research, tier, broker, whole-contract, event, spread, and protection rule. If the real-fill evidence is weaker or unavailable, use stocks/cash instead."
+    "DUAL HOLDOUT: use separate 2024-2025 and 2026+ untouched validation. A failure blocks/reduces the affected regime; sparse second-holdout evidence reduces risk.",
+    "REGIME-SPECIFIC ENTRIES: use stricter regime profiles for calm, volatile, trending-down, trending-up, mixed, and unknown environments; never loosen base probability gates.",
+    "MULTIPLE QUALIFIED POSITIONS: up to 4 concurrent Teststock positions and up to 3 new positions/day / 10 per rolling 7 days may be used only when each independently qualifies and all total-risk, cash, cluster, event, spread, protection, and circuit-breaker limits pass.",
+    "SYMBOL PROBATION: lightly tested symbols start at reduced size until historical and real-fill evidence improves.",
+    "GAP + LIQUIDITY: avoid large opening gaps, never widen stops for gaps, and prefer tighter spreads/higher reliable dollar volume among otherwise-equal candidates.",
+    "OPTIONS + CRYPTO REMAIN SELECTIVE: they may participate when all dedicated research, real-fill, broker, whole-contract/liquidity/protection and frequency gates pass; frequency permission is never a reason to force a trade."
   ],
   "stockPlan": {
     "assetClass": "STOCK",
     "overallAction": "WAIT_FOR_MARKET_OPEN",
     "reason": "Market is closed.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T11:05:32.703Z",
-    "expiresAt": "2026-08-20T23:05:32.703Z",
+    "signalAsOf": "2026-08-19T11:06:05.998Z",
+    "expiresAt": "2026-08-20T23:06:05.998Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 3,
       "maxOptionPremiumPct": 8,
@@ -341,8 +352,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T11:05:37.553Z",
-    "expiresAt": "2026-08-19T11:35:37.553Z",
+    "signalAsOf": "2026-08-19T11:06:10.556Z",
+    "expiresAt": "2026-08-19T11:36:10.556Z",
     "policy": {
       "aPlusMinGrowthQuality": 94,
       "aMinGrowthQuality": 88,
@@ -367,13 +378,53 @@
   "entryGateRobustness": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
     "status": "RED_FLAG",
-    "generatedAt": "2026-08-19T11:05:36.231Z",
+    "generatedAt": "2026-08-19T11:06:09.471Z",
     "holdoutStart": "2024-01-01",
+    "holdoutEnd": "2025-12-31",
+    "secondHoldoutStart": "2026-01-01",
     "gatesUnderReview": {
       "minHistoricalWinRatePct": 52,
       "minRewardRisk": 2.5,
       "minHistoricalSamples": 15,
       "minConservativeExpectedR": 0.5
+    },
+    "regimeEntryProfiles": {
+      "TRENDING_UP": {
+        "minScore": 86,
+        "maxAtrPct": 7,
+        "minM20": -99,
+        "minM60": -99
+      },
+      "CALM": {
+        "minScore": 88,
+        "maxAtrPct": 4.5,
+        "minM20": -2,
+        "minM60": -5
+      },
+      "VOLATILE": {
+        "minScore": 92,
+        "maxAtrPct": 7,
+        "minM20": 2,
+        "minM60": -2
+      },
+      "TRENDING_DOWN": {
+        "minScore": 94,
+        "maxAtrPct": 6,
+        "minM20": 6,
+        "minM60": 0
+      },
+      "MIXED": {
+        "minScore": 90,
+        "maxAtrPct": 6,
+        "minM20": 0,
+        "minM60": -2
+      },
+      "UNKNOWN": {
+        "minScore": 96,
+        "maxAtrPct": 5,
+        "minM20": 4,
+        "minM60": 0
+      }
     },
     "requiredDiversityRegimes": [
       "CALM",
@@ -545,6 +596,87 @@
         }
       }
     },
+    "secondHoldout": {
+      "overall": {
+        "samples": 63,
+        "wins": 35,
+        "winRatePct": 55.6,
+        "averageObservedR": 0.29,
+        "conservativeExpectedR": 0.94,
+        "passesSampleGate": true,
+        "passesWinRateGate": true,
+        "passesExpectedValueGate": true,
+        "positiveObservedR": true
+      },
+      "byRegime": {
+        "CALM": {
+          "samples": 32,
+          "wins": 19,
+          "winRatePct": 59.4,
+          "averageObservedR": 0.31,
+          "conservativeExpectedR": 1.08,
+          "passesSampleGate": true,
+          "passesWinRateGate": true,
+          "passesExpectedValueGate": true,
+          "positiveObservedR": true
+        },
+        "VOLATILE": {
+          "samples": 3,
+          "wins": 1,
+          "winRatePct": 33.3,
+          "averageObservedR": -0.46,
+          "conservativeExpectedR": 0.69,
+          "passesSampleGate": false,
+          "passesWinRateGate": false,
+          "passesExpectedValueGate": false,
+          "positiveObservedR": false
+        },
+        "TRENDING_DOWN": {
+          "samples": 2,
+          "wins": 0,
+          "winRatePct": 0,
+          "averageObservedR": -1,
+          "conservativeExpectedR": 0.63,
+          "passesSampleGate": false,
+          "passesWinRateGate": false,
+          "passesExpectedValueGate": false,
+          "positiveObservedR": false
+        },
+        "TRENDING_UP": {
+          "samples": 19,
+          "wins": 10,
+          "winRatePct": 52.6,
+          "averageObservedR": 0.41,
+          "conservativeExpectedR": 0.81,
+          "passesSampleGate": true,
+          "passesWinRateGate": true,
+          "passesExpectedValueGate": true,
+          "positiveObservedR": true
+        },
+        "MIXED": {
+          "samples": 7,
+          "wins": 5,
+          "winRatePct": 71.4,
+          "averageObservedR": 0.56,
+          "conservativeExpectedR": 0.93,
+          "passesSampleGate": false,
+          "passesWinRateGate": false,
+          "passesExpectedValueGate": false,
+          "positiveObservedR": false
+        },
+        "UNKNOWN": {
+          "samples": 0,
+          "wins": 0,
+          "winRatePct": null,
+          "averageObservedR": null,
+          "conservativeExpectedR": null,
+          "passesSampleGate": false,
+          "passesWinRateGate": false,
+          "passesExpectedValueGate": false,
+          "positiveObservedR": false
+        }
+      }
+    },
     "runtimePolicy": {
       "CALM": {
         "samplesPrimary": 345,
@@ -602,11 +734,11 @@
       }
     },
     "instructions": "Do not loosen gates automatically. A failed untouched regime blocks new risk; sparse second-holdout evidence reduces size. Real Robinhood fills remain the final performance evidence.",
-    "interpretation": "The fixed gates are measured separately on a development period and a chronological untouched holdout beginning 2024-01-01. Runtime regime policy may reduce or block risk; it may never loosen the base gates. This remains historical evidence, not a guarantee."
+    "interpretation": "Development, first untouched holdout, and second untouched confirmation holdout are kept separate. Regime-specific profiles are stricter-or-equal overlays and may never loosen base gates."
   },
   "shadowDiagnostics": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/shadow-trades.json",
-    "generatedAt": "2026-08-19T11:05:36.889Z",
+    "generatedAt": "2026-08-19T11:06:09.917Z",
     "summary": {
       "ACCEPTED": {
         "resolved": 0,
@@ -621,18 +753,16 @@
       "opportunityCostSignal": "NOT_ENOUGH_DATA",
       "note": "Diagnostic only. Shadow outcomes must never automatically loosen live-money gates."
     },
-    "modelOnly": true,
-    "instructions": "Accepted/rejected shadow outcomes are diagnostic opportunity-cost data only. Never treat them as Robinhood fills, real P&L, or automatic permission to loosen live-money gates."
+    "modelOnly": true
   },
   "shadowEvidencePolicy": {
     "minimumResolvedAcceptedBeforeRuleReview": 30,
     "minimumResolvedRejectedBeforeRuleReview": 30,
-    "automaticLooseningAllowed": false,
-    "instructions": "Do not change or loosen live-money gates from shadow results until at least 30 ACCEPTED and 30 REJECTED shadow decisions are resolved. Even after that threshold, shadow data may justify a review only; it may never automatically increase live risk."
+    "automaticLooseningAllowed": false
   },
   "probabilityFirstPolicy": {
     "schemaVersion": 1,
-    "generatedAt": "2026-08-19T11:05:37.586Z",
+    "generatedAt": "2026-08-19T11:06:10.604Z",
     "objective": "Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto selective, and cash acceptable. This policy cannot eliminate market loss risk.",
     "stocks": {
       "minGrowthQuality": 92,
@@ -686,8 +816,17 @@
       "riskCanOnlyBeReducedByThisOverlay": true
     }
   },
+  "symbolProbationPolicy": {
+    "enabled": true,
+    "historicalProbationBelowSamples": 20,
+    "historicalLimitedBelowSamples": 30,
+    "probationSizeMultiplier": 0.5,
+    "limitedSizeMultiplier": 0.75,
+    "realFillPromotionRequired": true,
+    "instructions": "New or lightly tested symbols start smaller. Historical sample depth and real Robinhood fills can promote a symbol; weak symbol-level real-fill performance can reduce or block it. Probation never increases risk."
+  },
   "systemHealth": {
-    "generatedAt": "2026-08-19T11:05:37.656Z",
+    "generatedAt": "2026-08-19T11:06:10.695Z",
     "signalAgeMinutes": 0,
     "entryGateValidation": {
       "status": "RED_FLAG",
@@ -719,13 +858,14 @@
     "actionOnCriticalFailure": "NO_NEW_TRADES_MANAGE_EXITS_IF_POSSIBLE",
     "criticalDependencies": [
       "fresh Teststock signal",
+      "dual-holdout/regime validation",
       "probability-first overlay",
       "live Robinhood equity/cash",
       "known order/position state",
       "verified protective-exit capability for a new stock/option",
       "journal reconciliation or reliable Robinhood-history reconstruction"
     ],
-    "instructions": "At runtime, any missing, stale, contradictory, or unknown CRITICAL dependency means no new position. Cash is preferred to guessing. Existing exposure should still be protected or exited when possible."
+    "instructions": "Any missing, stale, contradictory, or unknown critical dependency means no new position."
   },
   "performanceScalingGuard": {
     "mode": "REAL_FILL_PROOF_BEFORE_HIGHER_RISK",
@@ -735,17 +875,15 @@
       "minimumResolvedRealTrades": 20,
       "minimumAverageRealizedR": 0.2,
       "minimumWinRatePct": 45,
-      "maximumReliableObservedDrawdownPct": 6,
-      "requirements": "SCALE risk may be used only when all available reliable real-fill metrics meet these minimums and no real-fill, slippage, protection, circuit-breaker, health, or persistence guard is blocking risk."
+      "maximumReliableObservedDrawdownPct": 6
     },
     "growthUnlock": {
       "minimumResolvedRealTrades": 30,
       "minimumAverageRealizedR": 0.3,
       "minimumWinRatePct": 48,
-      "maximumReliableObservedDrawdownPct": 6,
-      "requirements": "GROWTH risk may be used only when all available reliable real-fill metrics meet these stronger minimums and no real-fill, slippage, protection, circuit-breaker, health, or persistence guard is blocking risk."
+      "maximumReliableObservedDrawdownPct": 6
     },
-    "instructions": "Account equity alone must never unlock more aggressive risk. First select the normal capitalLadder tier from live equity, then cap the EFFECTIVE RISK TIER by proven real-money performance. Before SCALE proof, never use risk settings above PROVE even if the user manually deposits more or profits lift equity. Before GROWTH proof, never use risk settings above SCALE. Missing, ambiguous, or non-persistent performance evidence cannot unlock a higher risk tier. This guard can only reduce risk, never increase it above the equity-based capital tier."
+    "instructions": "Equity alone never unlocks higher risk; confirmed real-fill evidence caps the effective risk tier."
   },
   "dailySummaryPolicy": {
     "enabled": true,
@@ -758,14 +896,15 @@
       "open planned risk",
       "realized P&L",
       "trades today",
+      "rolling 7-day trades",
       "current regime",
+      "breadth",
       "blocked setups",
       "system health",
       "journal persistence",
       "equity tier",
       "effective risk tier"
-    ],
-    "instructions": "Claude should emit one concise daily health/performance summary on the first scheduled run at or after 08:00 local time when local time is available; otherwise use the first run of each UTC calendar day. Do not spam repeated daily summaries."
+    ]
   },
   "executionTelemetryPolicy": {
     "enabled": true,
@@ -773,17 +912,17 @@
     "track": [
       "submitted order type",
       "submitted limit/stop price",
-      "bid/ask spread at submission when available",
+      "bid/ask spread at submission",
+      "dollar volume when available",
+      "regular-session opening gap",
       "actual average fill",
       "time to fill",
       "adverse entry slippage",
       "protective-order creation latency",
       "protective-order verification status",
-      "exit reference",
       "actual exit fill",
       "adverse exit slippage"
-    ],
-    "instructions": "Record only observed values from Robinhood/runtime tools. Never invent unavailable telemetry. Repeated bad execution may only reduce or block risk under the real-fill learning policy."
+    ]
   },
   "strategyChangeLogUrl": "https://sablewolphen.github.io/Teststock/strategy-changelog.txt"
 }
