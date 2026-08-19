@@ -13,6 +13,7 @@ on:
       - 'scripts/build-agent-signal.mjs'
       - 'scripts/validate-entry-gates.mjs'
       - 'scripts/apply-advanced-growth-guards.mjs'
+      - 'scripts/apply-probability-first-guards.mjs'
       - 'scripts/update-shadow-ledger.mjs'
       - 'scripts/augment-signal-safety.mjs'
       - 'scripts/validate-signal.mjs'
@@ -84,6 +85,9 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/generate-crypto-picks.mjs
+
+      - name: Apply probability-first stock options crypto overlay
+        run: node scripts/apply-probability-first-guards.mjs
 
       - name: Build, augment, and validate Claude/Robinhood signal with fallback
         shell: bash
