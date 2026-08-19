@@ -1,12 +1,12 @@
 {
   "schemaVersion": 6,
-  "generatedAt": "2026-08-19T11:08:07.731Z",
-  "asOf": "2026-08-19T11:08:03.791Z",
+  "generatedAt": "2026-08-19T11:12:25.475Z",
+  "asOf": "2026-08-19T11:12:18.004Z",
   "budget": 50,
   "market": "CLOSED",
   "session": {
     "isOpen": false,
-    "timestamp": "2026-08-19T07:08:03.304138054-04:00",
+    "timestamp": "2026-08-19T07:12:17.272766924-04:00",
     "nextOpen": "2026-08-19T09:30:00-04:00",
     "nextClose": "2026-08-19T16:00:00-04:00",
     "label": "CLOSED"
@@ -24,7 +24,7 @@
     "fundamentals": "SEC EDGAR XBRL",
     "history": "Alpaca bars + Teststock outcomes"
   },
-  "objective": "Aggressive selective compounding with conservative expectancy, adaptive performance, and capital-preservation gates; no return is guaranteed.",
+  "objective": "Selective compounding using full-target reward/risk, cost-adjusted expectancy, portfolio ranking, adaptive performance, and capital-preservation gates; no return is guaranteed.",
   "policy": {
     "maxPlannedPortfolioStopPct": 3,
     "maxOptionPremiumPct": 8,
@@ -35,9 +35,13 @@
     "noChasingPct": 2,
     "optionsRequireEliteGate": true,
     "minRewardRisk": 2.5,
+    "rewardRiskQualificationTarget": "TARGET2",
+    "target1Purpose": "Partial-profit / de-risking milestone; not the 2.5R qualification target",
     "minHistoricalSamples": 15,
     "minHistoricalWinRate": 52,
     "minConservativeExpectedR": 0.5,
+    "minCostAdjustedConservativeExpectedR": 0.5,
+    "assumedStockRoundTripFrictionPct": 0.3,
     "holdoutValidationRequired": true,
     "eventRiskPolicy": {
       "stockBlackoutDaysBeforeEstimatedReport": 3,
@@ -129,10 +133,16 @@
       },
       "holdingStyle": "Position trade: several weeks to several months",
       "reviewCadence": "Weekly",
-      "rewardRisk": 1.5,
+      "rewardRiskTarget1": 1.5,
+      "rewardRiskTarget2": 2.6,
+      "rewardRisk": 2.6,
+      "rewardRiskQualificationTarget": "TARGET2",
       "expectancy": {
-        "expectedR": 0.8,
-        "conservativeExpectedR": 0.58
+        "expectedR": 1.59,
+        "conservativeExpectedR": 1.28,
+        "costAdjustedConservativeExpectedR": 1.25,
+        "assumedRoundTripFrictionPct": 0.3,
+        "frictionR": 0.027
       },
       "adaptivePerformance": {
         "samples": 0,
@@ -143,7 +153,8 @@
         "qualityAdjustment": 0,
         "label": "UNPROVEN"
       },
-      "growthQuality": 98
+      "growthQuality": 100,
+      "portfolioOpportunityScore": 122.8
     },
     {
       "rank": 2,
@@ -210,10 +221,16 @@
       },
       "holdingStyle": "Position trade: several weeks to several months",
       "reviewCadence": "Weekly",
-      "rewardRisk": 1.5,
+      "rewardRiskTarget1": 1.5,
+      "rewardRiskTarget2": 2.6,
+      "rewardRisk": 2.6,
+      "rewardRiskQualificationTarget": "TARGET2",
       "expectancy": {
-        "expectedR": 0.52,
-        "conservativeExpectedR": 0.41
+        "expectedR": 1.2,
+        "conservativeExpectedR": 1.04,
+        "costAdjustedConservativeExpectedR": 0.98,
+        "assumedRoundTripFrictionPct": 0.3,
+        "frictionR": 0.053
       },
       "adaptivePerformance": {
         "samples": 0,
@@ -224,7 +241,8 @@
         "qualityAdjustment": 0,
         "label": "UNPROVEN"
       },
-      "growthQuality": 97
+      "growthQuality": 100,
+      "portfolioOpportunityScore": 118.45
     }
   ],
   "allocations": [],
@@ -242,7 +260,7 @@
       "quality": true,
       "learning": true,
       "historical": false,
-      "expectancy": false,
+      "expectancy": true,
       "rewardRisk": false,
       "market": true,
       "sector": true,
@@ -257,7 +275,7 @@
       "underlyingGrowthQuality": true,
       "samples": false,
       "winRate": true,
-      "expectancy": false,
+      "expectancy": true,
       "rewardRisk": false
     },
     "liveEvidenceGate": {
@@ -268,7 +286,7 @@
     }
   },
   "reasons": [
-    "No setup cleared the stricter expectancy, adaptive-performance, and risk gates; cash is the selected position."
+    "No setup cleared the cost-adjusted expectancy, adaptive-performance, reward/risk, and protection gates; cash is selected."
   ],
   "advancedGuards": {
     "entryGateValidationStatus": "RED_FLAG",
@@ -306,8 +324,8 @@
         "stop": 353.91,
         "target1": 463.44,
         "target2": 511.63,
-        "rewardRisk": 1.5,
-        "growthQuality": 98,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
         "reasons": [
           "Did not clear one or more stock eligibility/position-sizing gates"
         ]
@@ -318,8 +336,8 @@
         "stop": 192.39,
         "target1": 221.21,
         "target2": 233.9,
-        "rewardRisk": 1.5,
-        "growthQuality": 97,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
         "reasons": [
           "Did not clear one or more stock eligibility/position-sizing gates"
         ]
@@ -356,9 +374,7 @@
         "ok": false,
         "reasons": [
           "not bullish",
-          "samples < 20",
-          "conservative expected R < 0.6",
-          "reward/risk < 2.5"
+          "samples < 20"
         ],
         "probation": {
           "status": "PROBATION",
@@ -371,9 +387,7 @@
         "ok": false,
         "reasons": [
           "not bullish",
-          "samples < 20",
-          "conservative expected R < 0.6",
-          "reward/risk < 2.5"
+          "samples < 20"
         ],
         "probation": {
           "status": "PROBATION",
