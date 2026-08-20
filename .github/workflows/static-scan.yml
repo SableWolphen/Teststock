@@ -11,7 +11,9 @@ on:
       - 'scripts/expand-stock-universe.mjs'
       - 'scripts/validate-universe-health.mjs'
       - 'scripts/enrich-stock-finalists.mjs'
+      - 'scripts/validate-portfolio-correlation.mjs'
       - 'scripts/validate-exit-policy.mjs'
+      - 'scripts/build-champion-challenger.mjs'
       - 'scripts/scan-small-account-options.mjs'
       - 'scripts/optimize-growth-plan.mjs'
       - 'scripts/enforce-model-sizing-lock.mjs'
@@ -26,6 +28,7 @@ on:
       - 'scripts/augment-signal-safety.mjs'
       - 'scripts/apply-fractional-protection-policy.mjs'
       - 'scripts/apply-exit-policy-validation.mjs'
+      - 'scripts/apply-strategy-intelligence.mjs'
       - 'scripts/validate-signal.mjs'
       - 'docs/real-fill-learning-policy.txt'
       - 'docs/teststock-real-trade-journal-template.json'
@@ -109,6 +112,13 @@ jobs:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: node scripts/enrich-stock-finalists.mjs
 
+      - name: Build portfolio correlation and concentration guard
+        if: ${{ steps.scan_window.outputs.stocks == 'true' }}
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+        run: node scripts/validate-portfolio-correlation.mjs
+
       - name: Scan broader small-account option contracts
         if: ${{ steps.scan_window.outputs.stocks == 'true' }}
         env:
@@ -130,6 +140,10 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/validate-exit-policy.mjs
+
+      - name: Build champion challenger governance
+        if: ${{ steps.scan_window.outputs.stocks == 'true' }}
+        run: node scripts/build-champion-challenger.mjs
 
       - name: Optimize growth plan with target2 reward-risk and cost-adjusted expectancy
         if: ${{ steps.scan_window.outputs.stocks == 'true' }}
@@ -166,12 +180,12 @@ jobs:
       - name: Rank qualified opportunities across asset classes
         run: node scripts/build-cross-asset-opportunity-ranking.mjs
 
-      - name: Build, augment, apply protection and validated exits, then validate signal
+      - name: Build, protect, govern and validate signal
         shell: bash
         run: |
           set -euo pipefail
           if [ -f docs/signal.json ]; then cp docs/signal.json /tmp/teststock-last-good-signal.json; fi
-          if node scripts/build-agent-signal.mjs && node scripts/augment-signal-safety.mjs && node scripts/apply-fractional-protection-policy.mjs && node scripts/apply-exit-policy-validation.mjs && node scripts/validate-signal.mjs docs/signal.json; then
+          if node scripts/build-agent-signal.mjs && node scripts/augment-signal-safety.mjs && node scripts/apply-fractional-protection-policy.mjs && node scripts/apply-exit-policy-validation.mjs && node scripts/apply-strategy-intelligence.mjs && node scripts/validate-signal.mjs docs/signal.json; then
             echo "Fresh signal passed validation"
           else
             echo "Fresh signal failed generation or validation. Refusing to publish mixed-generation data." >&2
