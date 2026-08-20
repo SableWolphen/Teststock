@@ -1,6 +1,6 @@
 TESTSTOCK LOW-CREDIT TRIGGER EXECUTOR
 
-Purpose: avoid using Claude for continuous market-price monitoring. GitHub + Alpaca maintain the trigger board. Claude should spend meaningful tokens only when a buy proposal or sell/exit action is actually pending.
+Purpose: avoid using Claude for continuous market-price monitoring. GitHub + Alpaca maintain the trigger board. Claude should spend meaningful tokens only when a real buy/sell execution event is pending.
 
 FIRST AND CHEAPEST STEP ON EVERY RUN
 1. Fetch only this small raw-main file first:
@@ -9,16 +9,15 @@ FIRST AND CHEAPEST STEP ON EVERY RUN
 3. If executionNeeded is true, inspect only the listed events. Fetch the newest raw-main execution-dispatch.json, signal.json, relevant tournament file, execution-watchlist.json, and only the minimum Robinhood data necessary for the event.
 4. Before any order, confirm the trigger/dispatch matches the current ACTIVE signal generation. If timestamps/generation identifiers conflict, re-fetch. Do not submit new risk from mismatched generations.
 
-BUY_TRIGGER — PROPOSAL ONLY UNTIL APPROVED
-- A BUY_TRIGGER is only a wake-up/proposal signal, never automatic authorization to place new risk.
-- Verify the latest full Teststock signal, GitHub pipeline health, live Robinhood cash/equity/positions/orders, spread, price drift, event/correlation/risk/frequency/protection gates and current entry tier.
-- Stock priority is A/ELITE before B/BEST_ACCEPTABLE. B uses its encoded reduced size and still must pass every hard live guard.
-- If a candidate survives every current live guard, present the exact proposed trade for user approval. Do not submit the buy automatically.
-- A buy may be submitted only after explicit approval for that exact current trade, unless the journal already contains a still-valid explicit pre-approval matching asset class, ticker, entry/maximumEntry, planned dollar amount or risk, stop and current signal generation.
-- If the approved/pre-approved numbers materially differ from the current candidate, do not treat the old approval as valid.
-- If the top candidate fails before submission, Claude may evaluate the next already-qualified fallback in the same run, but the actual fallback still needs its own valid approval unless it is already exactly pre-approved.
-- After a confirmed approved stock/crypto buy fill, arm docs/data/execution-watchlist.json with the SAVED stop, target1, target2, exit policy, runner allowance and a stable id. Never write quantity, account number, cash balance or other private data to the public repository.
-- If a fractional position cannot be successfully armed in the watchlist or the five-minute monitor is unhealthy, do not treat synthetic protection as active.
+BUY_TRIGGER — AUTOMATIC IF EVERY HARD GUARD PASSES
+- A BUY_TRIGGER is a wake signal, not proof that an order is safe. Re-verify the latest full Teststock signal, GitHub pipeline health, live Robinhood cash/equity/positions/orders, spread, price drift, event/correlation/risk/frequency/protection gates and current entry tier.
+- No per-trade user reply is required when the current-generation candidate survives every required Teststock and live Robinhood guard.
+- Stock priority is A/ELITE before B/BEST_ACCEPTABLE. B uses only its encoded reduced size and still must pass every hard live guard.
+- If the highest-ranked candidate survives all live checks, submit the permitted buy automatically, then re-read Robinhood to verify the order/fill state. Never infer a fill.
+- If the top candidate fails before submission, evaluate the next already-qualified fallback in the same run. Do not lower a gate to create a trade.
+- Crypto or options may auto-buy only when their current Teststock eligibility, capital-tier, live evidence, spread/liquidity, sizing and protection rules all pass and the connected Robinhood tools support the required order safely.
+- After a confirmed stock/crypto buy fill, arm docs/data/execution-watchlist.json with the SAVED stop, target1, target2, exit policy, runner allowance and a stable id. Never write quantity, account number, cash balance or other private data to the public repository.
+- If a fractional position cannot be successfully armed in the watchlist or the five-minute monitor is unhealthy, do not treat synthetic protection as active and do not open a new fractional-only position that depends on it.
 
 TRIGGER_1_STOP — AUTOMATIC RISK REDUCTION
 - Read the live Robinhood position and open sell orders for that ticker.
