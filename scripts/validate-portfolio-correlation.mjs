@@ -1,0 +1,18 @@
+import fs from 'node:fs/promises';
+const key=process.env.ALPACA_API_KEY||process.env.APCA_API_KEY_ID;
+const secret=process.env.ALPACA_API_SECRET||process.env.APCA_API_SECRET_KEY;
+if(!key||!secret)throw new Error('Missing Alpaca secrets');
+const headers={'APCA-API-KEY-ID':key,'APCA-API-SECRET-KEY':secret};
+const read=async(f,x={})=>{try{return JSON.parse(await fs.readFile(f,'utf8'));}catch{return x;}};
+const get=async u=>{const r=await fetch(u,{headers});if(!r.ok)throw new Error(`Alpaca ${r.status}: ${await r.text()}`);return r.json();};
+const latest=await read('docs/data/latest-500.json');
+const broad=await read('docs/data/broad-stock-universe.json');
+const symbols=[...new Set([...(latest.recommendations||[]).map(x=>x.symbol),...(broad.topCandidates||[]).map(x=>x.symbol)])].filter(Boolean).slice(0,12);
+if(symbols.length<2){await fs.writeFile('docs/data/portfolio-correlation.json',JSON.stringify({schemaVersion:1,generatedAt:new Date().toISOString(),status:'INSUFFICIENT_CANDIDATES',symbols},null,2));process.exit(0);}
+const start=new Date(Date.now()-140*86400000).toISOString().slice(0,10),q=new URLSearchParams({symbols:symbols.join(','),timeframe:'1Day',start,limit:'10000',adjustment:'all',feed:'iex'}),raw=await get(`https://data.alpaca.markets/v2/stocks/bars?${q}`),by=raw.bars||{};
+const returns={};for(const s of symbols){const b=by[s]||[],r=[];for(let i=1;i<b.length;i++)if(b[i-1].c>0)r.push({d:String(b[i].t).slice(0,10),v:b[i].c/b[i-1].c-1});returns[s]=r.slice(-90);}
+function corr(a,b){const bm=new Map(b.map(x=>[x.d,x.v])),x=[];for(const r of a)if(bm.has(r.d))x.push([r.v,bm.get(r.d)]);if(x.length<30)return null;const ax=x.reduce((s,z)=>s+z[0],0)/x.length,bx=x.reduce((s,z)=>s+z[1],0)/x.length;let num=0,da=0,db=0;for(const [u,v] of x){const du=u-ax,dv=v-bx;num+=du*dv;da+=du*du;db+=dv*dv;}return da&&db?Number((num/Math.sqrt(da*db)).toFixed(3)):null;}
+const pairs=[];for(let i=0;i<symbols.length;i++)for(let j=i+1;j<symbols.length;j++){const c=corr(returns[symbols[i]],returns[symbols[j]]);if(c!=null)pairs.push({a:symbols[i],b:symbols[j],correlation:c,high:c>=.75,veryHigh:c>=.88});}
+const clusters=[];const seen=new Set();for(const p of pairs.filter(x=>x.high).sort((a,b)=>b.correlation-a.correlation)){if(seen.has(`${p.a}:${p.b}`))continue;const set=new Set([p.a,p.b]);let changed=true;while(changed){changed=false;for(const x of pairs.filter(z=>z.high)){if(set.has(x.a)||set.has(x.b)){const n=set.size;set.add(x.a);set.add(x.b);if(set.size>n)changed=true;}}}const members=[...set].sort();const keyc=members.join('|');if(!clusters.some(c=>c.key===keyc))clusters.push({key:keyc,members,maxPairCorrelation:Math.max(...pairs.filter(x=>members.includes(x.a)&&members.includes(x.b)).map(x=>x.correlation))});}
+const out={schemaVersion:1,generatedAt:new Date().toISOString(),status:'AVAILABLE',lookbackTradingDays:90,minimumOverlapDays:30,highCorrelationThreshold:.75,veryHighCorrelationThreshold:.88,symbols,pairs,clusters,policy:{maxFullSizeNamesPerHighCorrelationCluster:1,maxNamesPerHighCorrelationCluster:2,secondNameSizeMultiplier:.5,thirdNameAllowed:false,instructions:'Among otherwise-qualified stocks, prefer lower-correlation combinations. One name per >=0.75 cluster may use normal eligible size; a second must be no more than half its otherwise-allowed size; a third from the same cluster is blocked. Never use correlation to increase size.'}};
+await fs.writeFile('docs/data/portfolio-correlation.json',JSON.stringify(out,null,2));console.log(`Correlation guard: ${symbols.length} candidates, ${clusters.length} high-correlation clusters.`);
