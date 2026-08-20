@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 22,
+  "schemaVersion": 23,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-08-20T11:03:51.293Z",
+  "generatedAt": "2026-08-20T11:23:47.407Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -129,10 +129,10 @@
   },
   "tradeFrequencyGuard": {
     "maxNewPositionsPerDay": 4,
-    "maxNewPositionsPerSevenDays": 12,
+    "maxNewPositionsPerSevenDays": 10,
     "maxNewOptionsPerDay": 1,
     "maxNewCryptoPerDay": 1,
-    "instructions": "The stock optimizer may select up to the top four independently qualified stock opportunities. Count confirmed Teststock entries and stay within 4 new positions/day, 12/rolling 7 days, 1 new option/day, and 1 new crypto/day. These are ceilings, not quotas: never add a weak fourth trade merely to fill the portfolio. Risk, cash, correlation, event, execution, and protection limits override these maxima."
+    "instructions": "Up to four independently qualified new positions per day and 10 per rolling 7 days. These are ceilings, never quotas; all smaller cash, risk, event, correlation, execution, protection, and real-fill limits override them."
   },
   "correlationGuard": {
     "maxNewPositionsPerRiskCluster": 1,
@@ -294,8 +294,8 @@
     "overallAction": "WAIT_FOR_MARKET_OPEN",
     "reason": "Market is closed.",
     "confidence": "A_PLUS",
-    "signalAsOf": "2026-08-20T11:01:20.255Z",
-    "expiresAt": "2026-08-21T23:01:20.255Z",
+    "signalAsOf": "2026-08-20T11:23:18.880Z",
+    "expiresAt": "2026-08-21T23:23:18.880Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 3,
       "maxOptionPremiumPct": 8,
@@ -314,6 +314,8 @@
       "minCostAdjustedConservativeExpectedR": 0.5,
       "assumedStockRoundTripFrictionPct": 0.3,
       "liveOutcomeBrakeSource": "CONFIRMED_ROBINHOOD_FILLS_ONLY",
+      "modelHistoryCanIncreaseLiveSize": false,
+      "liveSizeIncreaseAuthority": "CONFIRMED_ROBINHOOD_REAL_FILLS_ONLY",
       "holdoutValidationRequired": true,
       "eventRiskPolicy": {
         "stockBlackoutDaysBeforeEstimatedReport": 3,
@@ -397,17 +399,25 @@
           "sizeMultiplier": 1,
           "qualityAdjustment": 0,
           "label": "UNPROVEN",
-          "source": "MODEL_RESEARCH_ONLY"
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
         },
         "historicalWinRate": 82,
         "historicalSamples": 34,
         "exitPlan": {
           "target1SellPctOfOriginal": 25,
           "target2Action": "DYNAMIC_TO_RUNNER_SIGNAL",
-          "maxRunnerPctOfOriginal": 25,
+          "maxRunnerPctOfOriginal": 0,
           "moderateRunnerPctOfOriginal": 15,
           "noRunnerPctOfOriginal": 0,
-          "runnerPolicyRef": "signal.runnerContinuationPolicy"
+          "runnerPolicyRef": "signal.runnerContinuationPolicy",
+          "validatedPolicy": "T1_25_T2_75",
+          "target2BaseSellPctOfOriginal": 75,
+          "runnerSignal": "NONE",
+          "runnerPctOfOriginal": 0,
+          "runnerAction": "EXIT_REMAINDER_AT_TARGET2"
         },
         "protectionPlan": {
           "determineFromLiveQuantity": true,
@@ -449,17 +459,25 @@
           "sizeMultiplier": 1,
           "qualityAdjustment": 0,
           "label": "UNPROVEN",
-          "source": "MODEL_RESEARCH_ONLY"
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
         },
         "historicalWinRate": 82,
         "historicalSamples": 39,
         "exitPlan": {
           "target1SellPctOfOriginal": 25,
           "target2Action": "DYNAMIC_TO_RUNNER_SIGNAL",
-          "maxRunnerPctOfOriginal": 25,
+          "maxRunnerPctOfOriginal": 0,
           "moderateRunnerPctOfOriginal": 15,
           "noRunnerPctOfOriginal": 0,
-          "runnerPolicyRef": "signal.runnerContinuationPolicy"
+          "runnerPolicyRef": "signal.runnerContinuationPolicy",
+          "validatedPolicy": "T1_25_T2_75",
+          "target2BaseSellPctOfOriginal": 75,
+          "runnerSignal": "NONE",
+          "runnerPctOfOriginal": 0,
+          "runnerAction": "EXIT_REMAINDER_AT_TARGET2"
         },
         "protectionPlan": {
           "determineFromLiveQuantity": true,
@@ -501,17 +519,25 @@
           "sizeMultiplier": 1,
           "qualityAdjustment": 0,
           "label": "UNPROVEN",
-          "source": "MODEL_RESEARCH_ONLY"
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
         },
         "historicalWinRate": 85,
         "historicalSamples": 27,
         "exitPlan": {
           "target1SellPctOfOriginal": 25,
           "target2Action": "DYNAMIC_TO_RUNNER_SIGNAL",
-          "maxRunnerPctOfOriginal": 25,
+          "maxRunnerPctOfOriginal": 0,
           "moderateRunnerPctOfOriginal": 15,
           "noRunnerPctOfOriginal": 0,
-          "runnerPolicyRef": "signal.runnerContinuationPolicy"
+          "runnerPolicyRef": "signal.runnerContinuationPolicy",
+          "validatedPolicy": "T1_25_T2_75",
+          "target2BaseSellPctOfOriginal": 75,
+          "runnerSignal": "NONE",
+          "runnerPctOfOriginal": 0,
+          "runnerAction": "EXIT_REMAINDER_AT_TARGET2"
         },
         "protectionPlan": {
           "determineFromLiveQuantity": true,
@@ -530,8 +556,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-20T11:03:51.134Z",
-    "expiresAt": "2026-08-20T11:33:51.134Z",
+    "signalAsOf": "2026-08-20T11:23:47.266Z",
+    "expiresAt": "2026-08-20T11:53:47.266Z",
     "policy": {
       "aPlusMinGrowthQuality": 94,
       "aMinGrowthQuality": 88,
@@ -556,7 +582,7 @@
   "entryGateRobustness": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
     "status": "RED_FLAG",
-    "generatedAt": "2026-08-20T11:03:49.577Z",
+    "generatedAt": "2026-08-20T11:23:43.009Z",
     "holdoutStart": "2024-01-01",
     "holdoutEnd": "2025-12-31",
     "secondHoldoutStart": "2026-01-01",
@@ -916,7 +942,7 @@
   },
   "shadowDiagnostics": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/shadow-trades.json",
-    "generatedAt": "2026-08-20T11:01:47.936Z",
+    "generatedAt": "2026-08-20T11:23:45.883Z",
     "summary": {
       "ACCEPTED": {
         "resolved": 0,
@@ -940,7 +966,7 @@
   },
   "probabilityFirstPolicy": {
     "schemaVersion": 2,
-    "generatedAt": "2026-08-20T11:03:51.184Z",
+    "generatedAt": "2026-08-20T11:23:47.310Z",
     "objective": "Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto selective, and cash acceptable. This policy cannot eliminate market loss risk.",
     "stocks": {
       "minGrowthQuality": 92,
@@ -1000,7 +1026,7 @@
   },
   "crossAssetOpportunityRanking": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/opportunity-ranking-500.json",
-    "generatedAt": "2026-08-20T11:03:51.247Z",
+    "generatedAt": "2026-08-20T11:23:47.368Z",
     "rankingPolicy": {
       "stocksPrimaryOnTies": true,
       "noForcedDiversification": true,
@@ -1103,13 +1129,13 @@
   },
   "dataFreshness": {
     "status": "GENERATED_THIS_RUN",
-    "lastSuccessfulGeneration": "2026-08-20T11:03:51.329Z",
+    "lastSuccessfulGeneration": "2026-08-20T11:23:47.443Z",
     "expectedRefreshCadenceMinutes": 10,
     "stockExpectedRefreshMinutesDuringMarket": 10,
     "cryptoExpectedRefreshMinutes": 10,
-    "stockSignalAsOf": "2026-08-20T11:01:20.255Z",
-    "cryptoSignalAsOf": "2026-08-20T11:03:51.134Z",
-    "stockAgeMinutes": 3,
+    "stockSignalAsOf": "2026-08-20T11:23:18.880Z",
+    "cryptoSignalAsOf": "2026-08-20T11:23:47.266Z",
+    "stockAgeMinutes": 0,
     "cryptoAgeMinutes": 0,
     "entryGateValidationAgeMinutes": 0,
     "staleAfterMinutes": {
@@ -1139,7 +1165,9 @@
       "target2RewardRiskQualification": true,
       "crossAssetOpportunityRanking": true,
       "conditionalRunnerExit": true,
-      "fractionalSyntheticProtection": true
+      "fractionalSyntheticProtection": true,
+      "exitPolicyHoldoutValidation": true,
+      "modelSizingLock": true
     },
     "evidence": {
       "entryGateReport": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
@@ -1148,7 +1176,7 @@
     }
   },
   "systemHealth": {
-    "generatedAt": "2026-08-20T11:03:51.329Z",
+    "generatedAt": "2026-08-20T11:23:47.443Z",
     "signalAgeMinutes": 0,
     "dataFreshnessStatus": "GENERATED_THIS_RUN",
     "entryGateValidation": {
@@ -1168,7 +1196,7 @@
     },
     "shadowLedger": {
       "status": "AVAILABLE",
-      "ageMinutes": 2,
+      "ageMinutes": 0,
       "requiredForTrading": false
     },
     "runtimeBroker": {
@@ -1268,10 +1296,10 @@
     "enabled": true,
     "appliesTo": "STOCK_POSITIONS",
     "target1SellPctOfOriginal": 25,
-    "maximumRunnerPctOfOriginal": 25,
-    "moderateRunnerPctOfOriginal": 15,
+    "maximumRunnerPctOfOriginal": 0,
+    "moderateRunnerPctOfOriginal": 0,
     "noSignalRunnerPctOfOriginal": 0,
-    "target2BaseSellPctOfOriginal": 50,
+    "target2BaseSellPctOfOriginal": 75,
     "runnerSizingRule": "At target2, sell enough of the ORIGINAL position so only the currently-authorized runner remains. Strong continuation: leave 25% runner (normally sell 50% at target2 after 25% sold at target1). Moderate continuation: leave 15% runner (sell 60% at target2). Weak, missing, stale, contradictory, or blocked continuation: leave 0% runner (sell all 75% remaining at target2).",
     "strongContinuation": {
       "runnerPctOfOriginal": 25,
@@ -1311,7 +1339,8 @@
       "trailingMethod": "Use the strongest supported trailing/tightening mechanism available from the broker/agent. Do not invent an unsupported trailing order.",
       "fractionalRunnerRule": "A fractional runner requires both continuation authorization and healthy active synthetic-stop monitoring under signal.fractionalProtectionPolicy. Without that monitoring, exit the fractional runner instead of leaving it unattended."
     },
-    "instructions": "A runner is optional, never automatic. Re-fetch the current signal at target2 and on every later management run. Keep 25% only for strong continuation, 15% for moderate continuation, and 0% when continuation evidence is weak/unknown or any critical guard fails. The goal is to preserve upside without turning a planned winner into an unprotected bet."
+    "instructions": "Exit shape is constrained by exitPolicyValidation. T1_25_T2_75 is currently authorized. Missing/stale validation falls back to T1_25_T2_75 with no runner. A continuation signal may only REDUCE the authorized runner; it may never exceed the validated maximum.",
+    "validationBackedPolicy": "T1_25_T2_75"
   },
   "strategyChangeLogUrl": "https://sablewolphen.github.io/Teststock/strategy-changelog.txt",
   "fractionalProtectionPolicy": {
@@ -1360,5 +1389,19 @@
       "ifMonitoringNotHealthy": "Mark protection DEGRADED, open no additional fractional risk, and prefer reducing/closing synthetic-only exposure when automatic risk reduction is permitted rather than pretending it is protected."
     },
     "instructions": "Fractional-share protection is a degraded fallback forced by the observed broker limitation, not an upgrade. New fractional entries are allowed only when active monitoring can enforce the saved invalidation at least every 5 minutes during the regular session and planned stop risk is no more than 0.75% of live equity. Otherwise skip the fractional entry. Whole-share broker protection remains preferred."
+  },
+  "exitPolicyValidation": {
+    "status": "AVAILABLE",
+    "generatedAt": "2026-08-20T11:23:44.836Z",
+    "recommendedPolicy": "T1_25_T2_75",
+    "recommendationReason": "The no-runner baseline was the strongest policy in development, so no runner policy is promoted.",
+    "reportUrl": "https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/exit-policy-validation.json",
+    "automaticRiskIncreaseAllowed": false
+  },
+  "modelSizingPolicy": {
+    "modelOrShadowHistoryMayIncreaseLiveSize": false,
+    "maximumModelOnlySizeMultiplier": 1,
+    "liveScalingAuthority": "CONFIRMED_ROBINHOOD_REAL_FILLS_UNDER_PERFORMANCE_SCALING_GUARD",
+    "instructions": "Backtests, scanner history, and shadow data may rank or reduce risk but never increase live allocation."
   }
 }
