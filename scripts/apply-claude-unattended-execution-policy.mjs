@@ -50,11 +50,15 @@ signal.autopilot={
   automaticRiskReducingExits:true,
   scope:'Dedicated Robinhood Agentic account only.'
 };
+delete signal.autopilot.preApprovedExactCandidateException;
 signal.claudeExecutionPolicy=policy;
 signal.schemaVersion=Math.max(33,Number(signal.schemaVersion||0));
+const traceableFeatures={...(signal.generatorIntegrity?.traceableFeatures||{})};
+delete traceableFeatures.claudeHourlyApprovalPolicy;
+traceableFeatures.claudeUnattendedExecutionPolicy=true;
 signal.generatorIntegrity={
   ...(signal.generatorIntegrity||{}),
-  traceableFeatures:{...(signal.generatorIntegrity?.traceableFeatures||{}),claudeUnattendedExecutionPolicy:true}
+  traceableFeatures
 };
 
 await fs.writeFile(SIGNAL,JSON.stringify(signal,null,2));
