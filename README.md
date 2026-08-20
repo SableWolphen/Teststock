@@ -7,9 +7,9 @@ A mobile-first stock + options decision engine for finding small, defined-risk o
 The home screen answers one question first: **what should I do today?**
 
 It returns one of:
-- **TRADE CANDIDATE** — the stock, direction, entry trigger, invalidation, targets, and a qualified option structure passed the filters.
-- **WATCH** — the underlying may be good, but timing/options or learning confirmations are not good enough yet.
-- **WAIT** — keep cash; market regime, catalyst risk, trend quality, historical calibration, sector/intraday confirmation, or option pricing failed the protection rules.
+- **TRADE CANDIDATE** â€” the stock, direction, entry trigger, invalidation, targets, and a qualified option structure passed the filters.
+- **WATCH** â€” the underlying may be good, but timing/options or learning confirmations are not good enough yet.
+- **WAIT** â€” keep cash; market regime, catalyst risk, trend quality, historical calibration, sector/intraday confirmation, or option pricing failed the protection rules.
 
 ## Decision engine
 
@@ -67,7 +67,7 @@ The core API still runs per-symbol historical validation and reports:
 - Positive-catalyst keywords can modestly improve a setup, while event risk is penalized
 
 ### Options engine
-- Aggressive mode searches roughly 28–90 DTE; Balanced mode roughly 42–120 DTE
+- Aggressive mode searches roughly 28â€“90 DTE; Balanced mode roughly 42â€“120 DTE
 - Scans both calls and puts based on the underlying direction
 - Compares long calls/puts with defined-risk debit spreads
 - Evaluates delta, theta, gamma, IV, bid/ask width, break-even, expected move and payoff
@@ -143,3 +143,9 @@ npm run dev
 ## Important
 
 Teststock is a screening, historical-calibration and paper/outcome-tracking tool, not a guarantee of profit. Options can lose the entire amount at risk. Probability estimates, historical hit rates and historical calibration can be wrong, can be affected by survivorship/selection bias, and can change. The design deliberately allows **no trade** to be the best result.
+
+## Claude execution safety and credit use
+
+The trigger monitor publishes a compact execution packet. Invoke Claude only when both `claudeShouldRun` and `pendingAction.isActionable` are true. Unchanged fingerprints, stale boards, expired entries and idle scans are suppressed.
+
+Before any broker submission, the execution runtime must atomically claim `pendingAction.fingerprint` in private state. One fingerprint may create at most one broker order. Ambiguous and partial submissions must be reconciled by client order ID and current broker state rather than retried as new orders. Routine price and order-status polling belongs in deterministic code, not an LLM session.
