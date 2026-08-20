@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "source": "TESTSTOCK_EXECUTION_WATCHLIST",
+  "purpose": "Public non-sensitive trigger levels for positions that the execution agent has actually bought. Do not store account numbers, cash, quantity, PII, or secrets here.",
+  "positions": [],
+  "armingRules": [
+    "After a confirmed Robinhood buy fill, add one ACTIVE record with ticker, assetClass, saved stop, target1, target2, exit policy, runner allowance, and armedAt.",
+    "For a fractional position, the trigger monitor is not considered armed until the ACTIVE record is successfully written and the 5-minute trigger workflow is healthy.",
+    "After a confirmed Target 1 sell, set target1Completed=true. After Target 2 completion or a full exit, set target2Completed=true or status=CLOSED.",
+    "Never infer a fill or close from market price alone. Robinhood confirmation remains authoritative."
+  ],
+  "positionSchema": {
+    "id": "stable execution id",
+    "assetClass": "STOCK | CRYPTO",
+    "ticker": "symbol",
+    "status": "ACTIVE | CLOSED",
+    "stop": null,
+    "target1": null,
+    "target2": null,
+    "target1Completed": false,
+    "target2Completed": false,
+    "runnerPct": 0,
+    "validatedExitPolicy": null,
+    "signalGeneratedAt": null,
+    "armedAt": null
+  }
+}
