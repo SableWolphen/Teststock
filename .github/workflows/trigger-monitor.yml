@@ -1,0 +1,55 @@
+name: Monitor Teststock triggers
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/update-trigger-board.mjs'
+      - 'docs/data/execution-watchlist.json'
+      - '.github/workflows/trigger-monitor.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trigger-monitor
+  cancel-in-progress: true
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Detect entry stop and profit triggers without an LLM
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+        run: node scripts/update-trigger-board.mjs
+
+      - name: Publish trigger-state transitions
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data/trigger-board.json
+          if git diff --cached --quiet; then
+            echo "No trigger-state change to publish"
+          else
+            git commit -m "Update Teststock trigger board"
+            git pull --rebase origin main
+            git push
+          fi
