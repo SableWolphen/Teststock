@@ -3,7 +3,9 @@ name: Monitor Teststock triggers
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/5 * * * *'
+    # Offset the five-minute monitor so an hourly Claude check observed around :05
+    # normally sees a trigger board refreshed around :02, while preserving <=5-minute monitoring.
+    - cron: '2,7,12,17,22,27,32,37,42,47,52,57 * * * *'
   push:
     branches: [main]
     paths:
