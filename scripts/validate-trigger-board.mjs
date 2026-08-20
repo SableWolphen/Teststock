@@ -1,0 +1,15 @@
+import fs from 'node:fs/promises';
+const board=JSON.parse(await fs.readFile('docs/data/trigger-board.json','utf8'));
+const fail=[];
+if(board.schemaVersion!==1)fail.push('schemaVersion');
+if(board.source!=='TESTSTOCK_NON_LLM_TRIGGER_MONITOR')fail.push('source');
+if(board.monitorCadenceMinutes!==5)fail.push('monitor cadence');
+if(board.claudeMarketPollingRequired!==false)fail.push('Claude polling lock');
+if(!Array.isArray(board.items)||!Array.isArray(board.events))fail.push('arrays');
+const allowed=new Set(['BUY_TRIGGER','TRIGGER_1_STOP','TRIGGER_2_TARGET1','TRIGGER_3_TARGET2']);
+for(const e of board.events||[])if(!allowed.has(e.trigger))fail.push(`unknown trigger ${e.trigger}`);
+if(Boolean(board.executionNeeded)!==Boolean((board.events||[]).length))fail.push('executionNeeded mismatch');
+const text=JSON.stringify(board).toLowerCase();
+for(const banned of ['account_number','accountnumber','routing_number','routingnumber','ssn','social security','api_secret','api key','password'])if(text.includes(banned))fail.push(`possible secret/private field: ${banned}`);
+if(fail.length)throw new Error(`trigger-board validation failed: ${[...new Set(fail)].join(', ')}`);
+console.log(`trigger-board validation passed: ${board.events.length} actionable event(s)`);
