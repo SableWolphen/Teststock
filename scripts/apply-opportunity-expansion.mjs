@@ -34,10 +34,23 @@ function symbolProbation(row){
   const samples=Number(row?.validation?.samples||0),win=Number(row?.validation?.winRate||0);
   if(samples<20)return {status:'PROBATION',sizeMultiplier:.5,reason:'Fewer than 20 historical validation samples'};
   if(samples<30)return {status:'LIMITED',sizeMultiplier:.75,reason:'20-29 historical samples; use reduced size until evidence deepens'};
-  if(win<55)return {status:'WEAK',sizeMultiplier:0,reason:'Historical win rate below probability-first floor'};
+  if(win<53)return {status:'WEAK',sizeMultiplier:0,reason:'Historical win rate below best-acceptable floor'};
   return {status:'ESTABLISHED',sizeMultiplier:1,reason:'Historical sample is established'};
 }
-function pass(row,profile,b){
+function acceptableProfile(profile){
+  return {
+    minScore:Math.max(82,profile.minScore-4),
+    minGrowthQuality:Math.max(88,profile.minGrowthQuality-3),
+    minWinRate:Math.max(53,profile.minWinRate-2),
+    minExpectedR:Math.max(.45,round(profile.minExpectedR-.15,2)),
+    minSamples:Math.max(20,profile.minSamples),
+    maxAtrPct:profile.maxAtrPct,
+    breadthFloor:Math.max(45,profile.breadthFloor-5),
+    sizeMultiplier:.5,
+    label:`${profile.label}_BEST_ACCEPTABLE`
+  };
+}
+function pass(row,profile,b,minRewardRisk=2.5){
   const reasons=[],costAdjusted=Number(row?.expectancy?.costAdjustedConservativeExpectedR??row?.expectancy?.conservativeExpectedR??0);
   if(row?.direction!=='BULLISH')reasons.push('not bullish');
   if(Number(row?.score||0)<profile.minScore)reasons.push(`score < ${profile.minScore}`);
@@ -45,7 +58,7 @@ function pass(row,profile,b){
   if(Number(row?.validation?.samples||0)<profile.minSamples)reasons.push(`samples < ${profile.minSamples}`);
   if(Number(row?.validation?.winRate||0)<profile.minWinRate)reasons.push(`win rate < ${profile.minWinRate}%`);
   if(costAdjusted<profile.minExpectedR)reasons.push(`cost-adjusted conservative expected R < ${profile.minExpectedR}`);
-  if(Number(row?.rewardRisk||0)<2.5)reasons.push('target2 reward/risk < 2.5');
+  if(Number(row?.rewardRisk||0)<minRewardRisk)reasons.push(`target2 reward/risk < ${minRewardRisk}`);
   if(Number(row?.atrPct||0)>profile.maxAtrPct)reasons.push(`ATR% > ${profile.maxAtrPct}`);
   if(Number(b?.above50||0)<profile.breadthFloor)reasons.push(`breadth above 50-day MA < ${profile.breadthFloor}%`);
   return {ok:!reasons.length,reasons};
@@ -59,14 +72,17 @@ function rankScore(row){
 for(const budget of budgets){
   const planFile=path.join(dataDir,`growth-plan-${budget}.json`),latestFile=path.join(dataDir,`latest-${budget}.json`);
   const plan=await read(planFile),latest=await read(latestFile);if(!plan||plan.error||!latest)continue;
-  const regime=inferRegime(plan,latest),profile=REGIME_PROFILES[regime]||REGIME_PROFILES.UNKNOWN,b=breadth(latest);
+  const regime=inferRegime(plan,latest),profile=REGIME_PROFILES[regime]||REGIME_PROFILES.UNKNOWN,bProfile=acceptableProfile(profile),b=breadth(latest);
   const ranked=[...(plan.ranked||[])].sort((a,b)=>rankScore(b)-rankScore(a));
   const existingBySymbol=new Map((plan.allocations||[]).map(x=>[x.symbol,x]));
   const candidates=[];
   for(const row of ranked){
-    const g=pass(row,profile,b),probation=symbolProbation(row);if(!g.ok||probation.sizeMultiplier<=0)continue;
-    candidates.push({...row,portfolioOpportunityScore:round(rankScore(row),2),opportunityGuard:{regime,regimeProfile:profile.label,breadth:b,probation,gates:g}});
+    const elite=pass(row,profile,b,2.5),acceptable=elite.ok?elite:pass(row,bProfile,b,2.25),probation=symbolProbation(row);
+    if(!acceptable.ok||probation.sizeMultiplier<=0)continue;
+    const entryTier=elite.ok?'A':'B';
+    candidates.push({...row,entryTier,entryTierLabel:entryTier==='A'?'ELITE':'BEST_ACCEPTABLE',entryTierSizeMultiplier:entryTier==='A'?1:.5,portfolioOpportunityScore:round(rankScore(row),2),opportunityGuard:{regime,regimeProfile:entryTier==='A'?profile.label:bProfile.label,breadth:b,probation,gates:acceptable,eliteGates:elite,bestAcceptableGates:entryTier==='B'?acceptable:null}});
   }
+  candidates.sort((a,b)=>(a.entryTier==='A'?0:1)-(b.entryTier==='A'?0:1)||rankScore(b)-rankScore(a));
   const maxPositions=4,maxPortfolioStop=budget*.03;
   let remainingBudget=budget,remainingRisk=maxPortfolioStop;const allocations=[];
   for(const row of candidates){
@@ -75,7 +91,8 @@ for(const budget of budgets){
     const existing=existingBySymbol.get(row.symbol);
     const baseDesired=existing?Number(existing.allocationDollars||0):budget*(allocations.length===0?.35:.22);
     const probation=Number(row.opportunityGuard?.probation?.sizeMultiplier||1);
-    const desired=baseDesired*profile.sizeMultiplier*probation;
+    const tierMultiplier=Number(row.entryTierSizeMultiplier||1);
+    const desired=baseDesired*profile.sizeMultiplier*probation*tierMultiplier;
     const byRisk=remainingRisk/riskPct,amount=round(Math.max(0,Math.min(remainingBudget,desired,byRisk)));
     if(amount<Math.min(5,budget*.05))continue;
     const loss=round(amount*riskPct);
@@ -84,7 +101,7 @@ for(const budget of budgets){
   }
   const primarySymbols=new Set(allocations.map(x=>x.symbol));
   const qualifiedCandidateQueue=candidates.slice(0,15).map((row,index)=>({...row,queueRank:index+1,queueRole:primarySymbols.has(row.symbol)?'PRIMARY':'RESERVE'}));
-  const next={...plan,schemaVersion:Math.max(9,Number(plan.schemaVersion||0)),ranked,allocations,qualifiedCandidateQueue,keepCashDollars:Math.max(0,round(remainingBudget)),estimatedPortfolioStopLoss:round(allocations.reduce((s,x)=>s+Number(x.estimatedLossAtStop||0),0)),policy:{...(plan.policy||{}),maxConcurrentNewPositions:4,minimumVisibleCandidateTarget:4,maxQualifiedCandidateQueue:15,regimeSpecificEntries:true,breadthConfirmationRequired:true,symbolProbationEnabled:true,costAdjustedRankingRequired:true,runtimeGapGuard:{enabled:true,maxAbsoluteOpeningGapPct:4,maxGapPctOfPlannedRiskDistance:50,rule:'At runtime compare the current session open with the prior regular-session close when reliable. Skip a new entry after an absolute opening gap above 4%, or when the gap consumes more than 50% of planned entry-to-stop distance, unless the signal explicitly revalidates after the open. Never widen the stop to accommodate a gap.'},runtimeLiquidityRanking:{enabled:true,preferTighterSpread:true,stockHardSpreadCapPct:.35,minimumReliableDollarVolume:'Prefer highly liquid names; when reliable average dollar-volume is exposed, reject clearly illiquid candidates and rank otherwise-equal candidates by tighter spread and higher dollar volume.'}},opportunityExpansion:{regime,profile,breadth:b,maxConcurrentQualifiedStocks:4,minimumVisibleCandidateTarget:4,maxQualifiedCandidateQueue:15,rankingBasis:'portfolioOpportunityScore using quality + cost-adjusted expectancy + target2 reward/risk + validation depth + liquidity, with volatility/probation penalties',qualifiedSymbols:candidates.map(x=>x.symbol),primarySymbols:allocations.map(x=>x.symbol),reserveSymbols:qualifiedCandidateQueue.filter(x=>x.queueRole==='RESERVE').map(x=>x.symbol),rejectedByProfile:ranked.filter(r=>!candidates.some(c=>c.symbol===r.symbol)).slice(0,8).map(r=>({symbol:r.symbol,...pass(r,profile,b),probation:symbolProbation(r)})),note:'Publish up to 15 independently qualified candidates in ranked order. Up to four may be primary allocations; reserves are re-sized and revalidated live. If fewer than four qualify, hold cash rather than weakening a gate.'}};
+  const next={...plan,schemaVersion:Math.max(10,Number(plan.schemaVersion||0)),ranked,allocations,qualifiedCandidateQueue,keepCashDollars:Math.max(0,round(remainingBudget)),estimatedPortfolioStopLoss:round(allocations.reduce((s,x)=>s+Number(x.estimatedLossAtStop||0),0)),policy:{...(plan.policy||{}),maxConcurrentNewPositions:4,minimumVisibleCandidateTarget:4,maxQualifiedCandidateQueue:15,regimeSpecificEntries:true,breadthConfirmationRequired:true,symbolProbationEnabled:true,costAdjustedRankingRequired:true,bestAcceptableEntryPolicy:{enabled:true,priority:['A','B'],aTier:'Existing elite regime profile; normal size.',bTier:'Positive-expectancy best-acceptable fallback used only when no A-tier candidate outranks it. B keeps all hard execution/protection/account guards and uses 50% candidate-size multiplier.',bTierFloors:{minScore:bProfile.minScore,minGrowthQuality:bProfile.minGrowthQuality,minWinRate:bProfile.minWinRate,minExpectedR:bProfile.minExpectedR,minSamples:bProfile.minSamples,minRewardRisk:2.25,breadthFloor:bProfile.breadthFloor,maxAtrPct:bProfile.maxAtrPct},neverRelax:['bullish direction','positive cost-adjusted expectancy floor','minimum historical samples','reward/risk floor','ATR cap','live spread','live price/entry zone','gap/chase guard','account loss brakes','correlation','protection','funding lock'],rule:'Buy the highest-ranked A candidate when one is live and valid. If no A survives, the highest-ranked B candidate may be bought at reduced size. Hold cash only when neither tier survives every live hard guard.'},runtimeGapGuard:{enabled:true,maxAbsoluteOpeningGapPct:4,maxGapPctOfPlannedRiskDistance:50,rule:'At runtime compare the current session open with the prior regular-session close when reliable. Skip a new entry after an absolute opening gap above 4%, or when the gap consumes more than 50% of planned entry-to-stop distance, unless the signal explicitly revalidates after the open. Never widen the stop to accommodate a gap.'},runtimeLiquidityRanking:{enabled:true,preferTighterSpread:true,stockHardSpreadCapPct:.35,minimumReliableDollarVolume:'Prefer highly liquid names; when reliable average dollar-volume is exposed, reject clearly illiquid candidates and rank otherwise-equal candidates by tighter spread and higher dollar volume.'}},opportunityExpansion:{regime,profile,bestAcceptableProfile:bProfile,breadth:b,maxConcurrentQualifiedStocks:4,minimumVisibleCandidateTarget:4,maxQualifiedCandidateQueue:15,rankingBasis:'A tier first, then B tier; within each tier use portfolioOpportunityScore from quality + cost-adjusted expectancy + target2 reward/risk + validation depth + liquidity, with volatility/probation penalties',qualifiedSymbols:candidates.map(x=>x.symbol),aTierSymbols:candidates.filter(x=>x.entryTier==='A').map(x=>x.symbol),bTierSymbols:candidates.filter(x=>x.entryTier==='B').map(x=>x.symbol),primarySymbols:allocations.map(x=>x.symbol),reserveSymbols:qualifiedCandidateQueue.filter(x=>x.queueRole==='RESERVE').map(x=>x.symbol),rejectedByProfile:ranked.filter(r=>!candidates.some(c=>c.symbol===r.symbol)).slice(0,8).map(r=>({symbol:r.symbol,elite:pass(r,profile,b,2.5),acceptable:pass(r,bProfile,b,2.25),probation:symbolProbation(r)})),note:'Use A first. If no A candidate survives live execution, a B best-acceptable candidate may be bought at half candidate size. Never weaken the hard safety, pricing, protection or account guards.'}};
   await fs.writeFile(planFile,JSON.stringify(next,null,2));
-  console.log(`Opportunity expansion $${budget}: ${regime} breadth50=${b.above50} positions=${allocations.length}`);
+  console.log(`Opportunity expansion $${budget}: ${regime} breadth50=${b.above50} positions=${allocations.length} A=${candidates.filter(x=>x.entryTier==='A').length} B=${candidates.filter(x=>x.entryTier==='B').length}`);
 }
