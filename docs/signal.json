@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 32,
+  "schemaVersion": 33,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
   "generatedAt": "2026-08-20T19:11:42.015Z",
@@ -241,10 +241,11 @@
   },
   "autopilot": {
     "enabled": true,
-    "requiresPerOrderApproval": true,
+    "requiresPerOrderApproval": false,
     "scope": "Dedicated Robinhood Agentic account only.",
     "automaticRiskReducingExits": true,
-    "preApprovedExactCandidateException": true
+    "preApprovedExactCandidateException": true,
+    "automaticQualifiedBuys": true
   },
   "assetClassRouting": {
     "STOCK": "Use only stockPlan.stockOrders.",
@@ -1596,7 +1597,8 @@
       "stockKnockoutTournament": true,
       "bestAcceptableStockTier": true,
       "cryptoKnockoutTournament": true,
-      "claudeHourlyApprovalPolicy": true
+      "claudeHourlyApprovalPolicy": true,
+      "claudeUnattendedExecutionPolicy": true
     },
     "evidence": {
       "entryGateReport": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
@@ -2281,7 +2283,7 @@
         "21:05"
       ],
       "easternDaylightApprox": "09:05-17:05 ET",
-      "note": "The Claude scheduled task is expected to check roughly hourly. Actual platform scheduling can drift; never assume an exact second/minute."
+      "note": "Claude performs low-credit hourly check-ins. Platform scheduling may drift; never assume an exact second or minute."
     },
     "checkIsNotTrade": true,
     "triggerBoardFirst": true,
@@ -2289,7 +2291,7 @@
     "dispatchPath": "docs/data/execution-dispatch.json",
     "sourceOfTruth": "LATEST_RAW_MAIN",
     "generationMatchRequired": true,
-    "generationRule": "Before acting, fetch the newest raw-main trigger/dispatch and signal. A BUY may proceed only when the event belongs to the current active signal generation. If generation ids/timestamps conflict, do not submit new risk and re-fetch.",
+    "generationRule": "Before acting, fetch the newest raw-main trigger/dispatch and signal. Any order may proceed only when the event belongs to the current active signal generation. If generation ids/timestamps conflict, re-fetch and do not submit new risk until they match.",
     "exits": {
       "explicitApprovalRequired": false,
       "automaticWhenDetectedAndBrokerPermits": true,
@@ -2298,28 +2300,41 @@
         "TRIGGER_2_TARGET1",
         "TRIGGER_3_TARGET2"
       ],
-      "rule": "Risk-reducing exits and validated profit-taking may execute without a new user approval when the live Robinhood position, trigger, quantity, order state and current exit policy are verified."
+      "rule": "Risk-reducing exits and validated profit-taking execute without a new user approval when the live Robinhood position, trigger, quantity, order state and current exit policy are verified."
     },
     "buys": {
-      "explicitApprovalRequired": true,
+      "explicitApprovalRequired": false,
+      "automaticWhenFullyQualifiedAndBrokerPermits": true,
       "appliesTo": [
         "STOCK_A",
         "STOCK_B",
         "CRYPTO",
         "OPTION"
       ],
-      "preApprovedExactCandidateException": true,
-      "approvalMustMatch": [
-        "assetClass",
-        "ticker",
-        "entryOrMaximumEntry",
-        "plannedDollarAmountOrRisk",
-        "stop",
-        "signalGeneration"
+      "stockPriority": [
+        "A",
+        "B"
       ],
-      "proposalOnlyUntilApproved": true,
-      "rule": "A qualifying new buy is proposed at the hourly check. Do not submit it until the user explicitly approves that specific current trade, unless the journal already contains a still-valid explicit pre-approval matching the exact candidate numbers and current generation."
+      "bTierUsesReducedEncodedSize": true,
+      "manualApprovalStepRemoved": true,
+      "rule": "A current-generation BUY trigger may execute automatically without asking the user again when every Teststock hard guard and every required live Robinhood check passes. Use A/ELITE before B/BEST_ACCEPTABLE. B uses only its reduced encoded size. If the top candidate fails before order submission, try the next already-qualified fallback in the same run. Never create a trade by weakening a hard gate."
     },
+    "hardGuardsRemainMandatory": [
+      "funding lock",
+      "account floor",
+      "loss brakes",
+      "freshness/generation match",
+      "maximumEntry/no chase",
+      "spread/liquidity",
+      "gap guard",
+      "correlation/portfolio heat",
+      "trade frequency",
+      "protective-exit capability",
+      "fractional-monitor health",
+      "no margin/leverage",
+      "no average down",
+      "no wider stops"
+    ],
     "idle": {
       "rule": "If no actionable dispatch exists, stop immediately without Robinhood market work or full market analysis."
     }
