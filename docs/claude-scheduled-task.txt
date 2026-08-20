@@ -1,71 +1,29 @@
-TESTSTOCK AUTOPILOT — SCHEDULED CLAUDE TASK
+TESTSTOCK AUTOPILOT — LOW-CREDIT SCHEDULED TASK
 
-Run this task once per hour.
+Goal: do not spend Claude tokens polling prices or re-analyzing markets when nothing needs brokerage action.
 
-FETCH INTEGRITY — CRITICAL:
-- Use raw main-branch GitHub files as the canonical Teststock data source for Claude. Do not use GitHub Pages as the canonical machine-readable source because Pages/CDN deployment can lag.
-- Canonical signal: https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/signal.json
-- Canonical real-fill policy: https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/real-fill-learning-policy.txt
-- Canonical journal template: https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/teststock-real-trade-journal-template.json
-- When supported, append a unique cache-buster such as ?cb=<current-UTC-unix-ms> to each raw fetch.
-- If a GitHub Pages copy disagrees with raw main, trust raw main for Teststock research/signal data. If raw main itself is stale beyond the encoded freshness rules, fail closed and open no new trade.
-- Before claiming the generator is frozen, compare the fetched raw signal generatedAt against the current UTC time and re-fetch once with a new cache-buster.
+CHEAP FIRST STEP — ALWAYS:
+1. Fetch only:
+   https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/trigger-board.json?cb=<current-utc-ms>
+2. If monitorHealth is not OK, open no new risk. If executionNeeded=false, STOP immediately. Do not fetch the full signal. Do not query Robinhood. Do not analyze stocks/crypto. Do not produce a long report.
+3. Only when executionNeeded=true, follow:
+   https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/claude-trigger-task.txt
 
-1. Read the canonical raw signal.json above and follow all current hard rules and machine-readable policies exactly, including capital/risk, probability, exit, fractional protection, portfolio correlation, champion/challenger, execution learning, post-trade attribution, and setup-specific-exit research blocks.
-2. Read the canonical raw real-fill-learning-policy.txt above and apply it before any new entry. Maintain a persistent file named Teststock-Real-Trades.json in this Cowork project/task workspace using the canonical raw journal template above as its schema. Robinhood history is authoritative.
-3. Reconcile the journal against Robinhood orders, fills, positions, closed positions, and available history before any new risk. Never infer fills. Unknown/partial records stay UNKNOWN/OPEN and can never justify more risk.
-4. Verify journal persistence across runs with persistence.testNonce. If persistence fails, reconstruct relevant recent statistics from Robinhood history and never use missing persistence to increase risk.
-5. Recompute real-fill performance overall and by setupType, riskCluster, symbol, protectionMode, entrySessionBucket, and gap bucket when sufficient observations exist. Weak realized R, win rate, slippage, fill speed, protection reliability, or synthetic-stop reliability may reduce size, demote priority, or block a bucket. Learning may not increase live entry size.
-6. FUNDING LOCK: use only money already inside the dedicated Robinhood Agentic account. Never initiate deposits, ACH, card transfers, wires, bank transfers, internal transfers, withdrawals, or any other money movement. Profits may be reused and later user-added money may be used, but only the user may fund it.
-7. Read live Agentic-account equity, NON-MARGIN CASH BUYING POWER, positions, open orders, status, and reliable history.
-8. MARGIN / BORROWED MONEY: DO NOT USE IT. Never borrow, create a margin debit, use cash advances, or increase buying power with debt.
-9. HARD FLOOR: below $75 equity, manage exits only. New-entry eligibility may resume at $80+ only if every other guard passes.
-10. Select the exact equity tier: >=0/<80 RECOVERY; >=80/<100 DEFENSE; >=100/<125 PROVE; >=125/<150 SCALE; >=150 GROWTH. Exactly $100 is PROVE.
-11. Apply performanceScalingGuard after the equity tier. Equity alone cannot unlock higher risk; missing or weak real-fill evidence caps the effective risk tier.
-12. Apply profitLock and count total planned stop-loss across all open positions plus the proposed trade. Never intentionally size below the protected-equity floor.
-13. Apply circuit breakers using CONFIRMED ROBINHOOD HISTORY ONLY: if reliable Robinhood history shows daily loss >=3% or rolling 7-day drawdown >=6%, open no new positions and continue protective management. Never use scanner/model history to trigger a live pause.
-14. TRADE FREQUENCY: target up to the top four independently qualified stock opportunities, ranked best-first. Do not exceed 4 new Teststock positions in one calendar day, 10 new Teststock positions in rolling 7 days, 1 new option position per day, or 1 new crypto position per day. These are maxima, not targets.
-15. PORTFOLIO CAP: target up to 4 concurrent independently qualified stock positions. Every one must pass all gates on its own, and total deployed cash, planned stop risk, correlation, event, execution, and protection limits must all pass. If fewer than four qualify, keep unused money in cash.
-16. PORTFOLIO CORRELATION: follow signal.portfolioCorrelationIntelligence. For a high-correlation cluster at or above the encoded threshold, only one name may use normal otherwise-allowed size; a second is capped at the encoded reduced multiplier; a third is blocked. If correlation intelligence is missing or stale, do not assume the names are diversified.
-17. ENTRY-GATE ROBUSTNESS: inspect signal.entryGateRobustness. Use separate development, 2024-2025 untouched holdout, and 2026+ second untouched holdout evidence. A failed untouched regime blocks/reduces the affected regime.
-18. REGIME-SPECIFIC ENTRIES: apply the encoded stricter profile for TRENDING_UP, CALM, VOLATILE, TRENDING_DOWN, MIXED, or UNKNOWN.
-19. BREADTH: require the encoded breadth confirmation.
-20. SYMBOL PROBATION: lightly tested symbols start reduced. Historical sample depth and real Robinhood fills may promote them only under explicit real-fill rules; no model-only multiplier above 1.0 is allowed.
-21. GAP RISK: skip or wait for revalidation if the opening gap is >4% absolute or consumes >50% of the planned entry-to-stop distance. Never widen a stop. Record the observed openingGapPct and gap-risk bucket in the journal when reliable.
-22. LIQUIDITY: stock live spread above 0.35%, option above 10%, or crypto above 0.75% blocks a new entry.
-23. TARGET2 REWARD/RISK: use target2 for the minimum reward/risk qualification gate. Target1 is a partial-profit/de-risking milestone.
-24. COST-ADJUSTED EXPECTANCY: use costAdjustedConservativeExpectedR when available.
-25. CROSS-ASSET PRIORITY: use signal.crossAssetOpportunityRanking only to prioritize already-qualified opportunities. Ranking never overrides live safety checks.
-26. EXECUTION-AWARE PRIORITY: among otherwise-qualified candidates, use confirmed Robinhood execution evidence only when there are at least 5 comparable observations. Prefer cleaner fills, lower adverse slippage, faster reliable execution, and stronger protection reliability. This evidence may demote/reduce/block a candidate but cannot make a failed research setup eligible or increase entry size.
-27. CHAMPION / CHALLENGER: follow signal.championChallenger. Only the champion policy is live. Challengers remain shadow-only unless Teststock itself promotes one after development-only selection and untouched holdout confirmation. Never manually promote a challenger because it looks better on a recent sample.
-28. SETUP-SPECIFIC EXITS: signal.setupSpecificExitResearch is research-only unless a future signal explicitly marks a setup-specific exit policy live. Until then use the global validated exit policy for BREAKOUT, PULLBACK, and TREND.
-29. MODEL-SIZE LOCK: scanner history, backtests, and shadow data may rank research candidates or reduce risk, but may never increase live allocation above the base Teststock amount. Do not honor any model-only size multiplier above 1.0.
-30. Apply probabilityFirstPolicy after all base gates. Stocks are primary.
-31. EVENT BLACKOUT: obey encoded earnings/filing/corporate-action windows. If earnings timing is UNKNOWN, do not invent a safe date; obey the signal's fail-closed treatment.
-32. CRITICAL DEPENDENCY FAIL-CLOSED: before every entry verify signal freshness, validation, probability overlay, ranking, portfolio-correlation intelligence, live Robinhood balances/positions/orders, journal reconciliation, and the applicable protection capability. Missing/stale/contradictory/unknown critical data means no new position.
-33. Keep STOCK, OPTION, and CRYPTO routing separate.
-34. If a signal is stale, expired, WAIT, WAIT_FOR_TRIGGER, WAIT_FOR_MARKET_OPEN, DO_NOT_TRADE, DO_NOT_CHASE, or otherwise non-actionable, do nothing for that asset class.
-35. ENTRY PERMISSION: if the current Claude/Robinhood environment allows unattended order placement, automatically submit independently AUTO_BUY_ELIGIBLE entries that pass every live check. If the environment requires user confirmation for a buy, ask only for that specific qualified entry.
-36. STOCK: evaluate stockPlan.stockOrders in rank order and attempt to establish up to four independently AUTO_BUY_ELIGIBLE stock positions when all live checks pass. Use the smaller live risk/cash/correlation caps. If rank #1 fails, evaluate the next qualified stock.
-37. FRACTIONAL-SHARE PLATFORM LIMITATION: the connected Robinhood Agentic runtime has rejected stop-market and stop-limit trigger orders on fractional share quantities with `Invalid trigger for fractional order`. Do not repeatedly retry unsupported fractional trigger orders and do not claim one exists when it does not.
-38. FRACTIONAL PROTECTION: determine live quantity after a fill. For whole-share quantity, place and verify a broker-resident persistent stop when supported. For a mixed position, protect whole shares with the broker stop and treat only the fractional remainder synthetically. For a position below one full share, protection is synthetic only.
-39. SYNTHETIC STOP REQUIREMENTS: a NEW fractional stock entry is allowed only when an active market-session monitoring mechanism can be verified to check the position at intervals of 5 minutes or less, and planned stop risk is no more than 0.75% of current live equity. The once-per-hour scheduled task by itself does NOT satisfy this requirement. If no such active monitoring exists, skip the new fractional entry.
-40. SYNTHETIC STOP EXECUTION: when a reliable live Robinhood price at or below the saved Teststock stop/invalidation is observed, immediately submit the supported fractional MARKET SELL for the protected fractional quantity when permissions allow. Then re-read orders/positions and verify the actual fill. Never infer a fill from submission.
-41. SYNTHETIC MONITORING FAILURE: if active <=5-minute monitoring becomes unavailable during the regular session, do not open or add fractional exposure. Existing synthetic-only fractional exposure is DEGRADED/UNPROTECTED. If automatic risk reduction is permitted, prefer reducing/closing that synthetic-only quantity rather than knowingly leaving it unattended. Never pretend an hourly check is equivalent to a resting broker stop.
-42. OPTION: stocks/cash remain default. Before any option require all elite gates, whole-contract fit, and persistent protective-exit capability.
-43. CRYPTO: crypto is optional. Require all encoded A/A+ gates and runtime broker support.
-44. Prefer limit orders where supported for entries. Never pay above maximumEntry. Record actual execution telemetry only when exposed.
-45. AUTOMATIC EXIT MANAGEMENT: whole-share stock and supported option protection should use verified persistent broker orders. Fractional stock exits use the synthetic policy above. Reconcile sell quantities so broker stop orders plus fractional market sells can never exceed the live position.
-46. Do not assume bracket/OCO support. Verify remaining quantity and conflicting sell orders before partial profits or protective-order replacements.
-47. VALIDATED EXIT POLICY: follow signal.exitPolicyValidation and the specific stock order's exitPlan. Do not hard-code 25/50/25. The dashboard/signal may authorize ALL_T2, T1_25_T2_75, T1_25_T2_60_RUN15, or T1_25_T2_50_RUN25 based on development selection and untouched holdout confirmation. If exit-policy evidence is missing/stale, use the no-runner failsafe baseline. A continuation signal may reduce the runner below the validated maximum but may never increase it.
-48. RUNNER MANAGEMENT AFTER TARGET2: re-check the current stock order exitPlan.runnerSignal on every later management run. A fractional runner additionally requires healthy <=5-minute synthetic monitoring. Protection may only tighten; never widen it to keep a runner alive.
-49. POST-TRADE ATTRIBUTION: after a real position is fully resolved, use signal.postTradeAttributionPolicy and journal observable evidence to record any supported categories such as SELECTION, ENTRY_TIMING, GAP, SPREAD_SLIPPAGE, STOP_PLACEMENT, EXIT_POLICY, RUNNER, REGIME, or PROTECTION_FAILURE. Prefer UNKNOWN over guessing. Use attribution to find problems, not to increase risk.
-50. ENTRY-TIME LEARNING: record entrySessionBucket for real fills. Only after enough comparable resolved real trades may a weak time window be demoted or blocked. Do not create a preferred time window from tiny samples and never increase size because a time bucket looks good.
-51. Never use margin, borrowed money, naked/undefined-risk options, short stock, leveraged crypto, averaging down, adding to losers, wider stops, duplicate positions, or duplicate open orders.
-52. LIVE OUTCOME GUARD SOURCE: only confirmed Robinhood fills, realized P&L, and reliable Robinhood history may reduce size, lock options/crypto, or pause live entries.
-53. SHADOW DATA is diagnostic only.
-54. Re-read buying power/equity/positions after every fill and reconcile the journal after every confirmed entry/exit/cancel/protection change. Material Teststock/Robinhood disagreement means no new risk.
-55. DAILY SUMMARY: once per day report account value, cash, positions, planned risk, realized P&L, trades today, rolling 7-day trades, regime/breadth, top opportunity, blocked setups, health, journal persistence, equity tier, effective risk tier, exit-policy champion, correlation-cluster exposure, and protection mode for each open stock.
-56. Never increase risk merely to make money faster or recover losses. Cash is valid.
+WHEN AN EVENT EXISTS:
+- Fetch the fresh raw signal.json and execution-watchlist.json.
+- Verify the latest main Teststock workflow is healthy and all signal dependencies are fresh.
+- Query only the minimum live Robinhood data needed for the listed ticker/event.
+- Robinhood is authoritative for cash, equity, positions, orders and fills.
+- Use only non-margin cash already inside the dedicated account. Never initiate deposits, transfers, withdrawals or borrowing.
+- BUY_TRIGGER is a wake signal only. Buy only if the current signal still says the setup is eligible and every live cash/risk/correlation/spread/gap/event/frequency/protection/drift guard passes.
+- After a confirmed buy, arm docs/data/execution-watchlist.json with only non-sensitive saved trigger levels. Fractional synthetic monitoring is not active until that write succeeds and the trigger-monitor workflow is healthy.
+- TRIGGER_1_STOP: verify the live position, then use the strongest supported sell path immediately when permitted; fractional quantities use the supported market sell path when fractional triggers are unsupported. Verify the fill.
+- TRIGGER_2_TARGET1: verify position/exit policy, execute the authorized partial sale, verify fill, mark target1Completed=true.
+- TRIGGER_3_TARGET2: verify position/fresh runner authorization, execute the validated Target 2 sale, keep only an allowed protected runner, verify fill and update watchlist state.
+- Never infer fills, widen stops, average down, chase, use margin, use external funding, or retry unsupported fractional trigger orders.
 
-No strategy, stop, synthetic trigger, model, or automation can guarantee profit or prevent loss. Fractional synthetic stops are materially less reliable than broker-resident stops because detection can be delayed and market sells can slip. Follow the platform's actual trading-confirmation requirements; never attempt to bypass them.
+CREDIT RULE:
+GitHub + Alpaca do the continuous price monitoring. Claude is for broker verification and order execution when the trigger board says action is needed.
+
+LIMITATION:
+The public repository cannot wake Claude by itself and cannot place Robinhood orders. If no authorized Claude run is active when a trigger appears, execution waits until the next Claude run. Do not describe this as instant or guaranteed protection. Fractional full-autopilot entries require a response path fast enough to satisfy the signal's current execution-latency rule.
