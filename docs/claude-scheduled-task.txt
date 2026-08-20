@@ -24,22 +24,21 @@ GENERATION MATCH — REQUIRED BEFORE ANY ORDER
 - Confirm the trigger/dispatch belongs to the current ACTIVE signal generation. If generatedAt/generation identifiers conflict, re-fetch and do not submit new risk until they match.
 - Verify the latest Teststock workflow/monitor state is healthy enough for the requested action.
 
-EXITS / STOPS — NO NEW USER APPROVAL NEEDED
+EXITS / STOPS — AUTOMATIC WHEN VERIFIED
 - Existing-position risk-reducing actions may execute automatically when a scheduled firing sees a valid trigger and live Robinhood confirms the position/order/quantity.
 - TRIGGER_1_STOP: verify the live position, then execute the strongest supported sell path immediately when permitted. Fractional quantities use a supported market sell when fractional triggers are unsupported. Verify the result from Robinhood.
 - TRIGGER_2_TARGET1: verify the live position and validated exit policy, execute the authorized partial sale, verify the fill, then update target1Completed=true.
 - TRIGGER_3_TARGET2: verify the live position and fresh runner authorization, execute the validated Target 2 sale, keep only an authorized protected runner, verify the fill and update watchlist state.
 - Protective exits and profit-taking manage existing exposure; do not wait for a fresh manual approval when the current policy and live broker state authorize the exit.
 
-NEW BUYS — PROPOSE, DO NOT AUTO-SUBMIT
-- A BUY_TRIGGER is a proposal/wake signal, not automatic permission to place a new-risk order.
-- This applies to A-tier stocks, B-tier stocks, crypto and options.
+NEW BUYS — AUTOMATIC WHEN FULLY QUALIFIED
+- A BUY_TRIGGER is a wake signal. It may become an automatic order only after the current-generation signal and every required live Robinhood guard pass.
+- No per-trade user reply is required for a fully qualified current-generation buy under this policy.
 - STOCK BUY PRIORITY: try A/ELITE first. If no A survives all current live checks, try the highest-ranked B/BEST_ACCEPTABLE candidate at its reduced encoded size.
-- At the hourly firing, when a buy candidate survives every Teststock and live Robinhood guard, present the exact proposed trade for approval instead of submitting it automatically.
-- Actual buy submission requires the user's explicit approval for that specific current trade unless the journal already contains a still-valid explicit pre-approval matching that exact candidate and current signal generation.
-- The approval/pre-approval must match asset class, ticker, entry or maximum entry, planned dollar amount/risk, stop, and current signal generation. Materially changed numbers require a new approval.
-- If the top candidate fails before submission, Claude may evaluate the next already-qualified fallback in the same run, but approval is required for the actual candidate that would be submitted unless that exact candidate is already pre-approved.
-- B-tier is not permission to weaken hard safety. Never relax funding lock, account floor, loss brakes, freshness, maximumEntry, spread, gap/chase, correlation/portfolio heat, protective-exit requirements, fractional-monitor requirements, margin/leverage restrictions, no-average-down, or no-widen-stop rules.
+- If the top candidate fails before order submission, continue through already-qualified fallbacks in the same run.
+- Crypto or options may auto-buy only when their own current Teststock eligibility, capital-tier, live evidence, spread/liquidity, sizing and protection rules all pass and the connected Robinhood tools support the required order safely.
+- Never turn automatic execution into forced execution. If no candidate survives every hard guard, stay in cash and keep scanning.
+- B-tier is not permission to weaken hard safety. Never relax funding lock, account floor, loss brakes, freshness/generation match, maximumEntry, spread, gap/chase, correlation/portfolio heat, trade-frequency limits, protective-exit requirements, fractional-monitor requirements, margin/leverage restrictions, no-average-down, or no-widen-stop rules.
 
 BROKER / FUNDING RULES
 - Robinhood is authoritative for cash, equity, positions, quantities, orders and fills.
@@ -48,7 +47,7 @@ BROKER / FUNDING RULES
 - After a confirmed buy, arm docs/data/execution-watchlist.json with only non-sensitive saved trigger levels. Fractional synthetic monitoring is not active until that write succeeds and the trigger-monitor workflow is healthy.
 
 CREDIT RULE
-GitHub + Alpaca do continuous market monitoring. Claude performs a cheap hourly dispatch check. Meaningful Claude work is reserved for a real exit/stop or a buy proposal/approved execution.
+GitHub + Alpaca do continuous market monitoring. Claude performs a cheap hourly dispatch check. Meaningful Claude work is reserved for a real buy or sell execution event.
 
 LIMITATION
 The public repository cannot wake Claude instantly and cannot place Robinhood orders. If a trigger appears between hourly Claude firings, it waits until the next authorized Claude run unless another approved execution bridge exists. Do not describe hourly fractional-stop execution as instant or guaranteed protection.
