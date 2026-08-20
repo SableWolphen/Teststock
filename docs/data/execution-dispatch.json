@@ -1,10 +1,14 @@
 {
   "schemaVersion": 1,
   "source": "TESTSTOCK_EVENT_DISPATCH",
-  "generatedAt": "2026-08-20T12:06:23.189Z",
-  "boardPublishedAt": "2026-08-20T11:59:08.536Z",
+  "generatedAt": "2026-08-20T12:35:56.044Z",
+  "boardPublishedAt": "2026-08-20T12:35:54.983Z",
+  "boardAgeMs": 1061,
+  "maximumBoardAgeMs": 900000,
   "monitorHealth": "OK",
-  "claudeShouldRun": true,
+  "dispatchHealth": "OK",
+  "claudeShouldRun": false,
+  "executionNeeded": false,
   "claudeShouldPollMarket": false,
   "priorityOrder": [
     "TRIGGER_1_STOP",
@@ -12,22 +16,17 @@
     "TRIGGER_2_TARGET1",
     "BUY_TRIGGER"
   ],
-  "pendingAction": {
-    "fingerprint": "ENTRY:STOCK:VRDN|BUY_TRIGGER|2026-08-20T11:59:08.536Z",
-    "isNew": true,
-    "priority": 50,
-    "assetClass": "STOCK",
-    "ticker": "VRDN",
-    "trigger": "BUY_TRIGGER",
-    "requestedAction": "VERIFY_LIVE_GUARDS_AND_BUY_IF_STILL_ELIGIBLE",
-    "observedPrice": 24.805,
-    "triggerStateChangedAt": "2026-08-20T11:59:08.536Z",
-    "reason": "Current price is inside the qualified Teststock entry zone. Claude/Robinhood must still pass all live guards before buying.",
-    "packet": "VRDN | BUY_TRIGGER | observed 24.805 | VERIFY_LIVE_GUARDS_AND_BUY_IF_STILL_ELIGIBLE"
-  },
+  "pendingAction": null,
   "queuedActions": [],
   "noActionInstruction": "If claudeShouldRun is false, stop immediately. Do not call Robinhood, fetch the full signal, research markets, or produce a long report.",
-  "actionInstruction": "If claudeShouldRun is true, use only this trigger as the wake reason. Then fetch the fresh Teststock signal and live Robinhood state, verify every applicable safety guard, execute only the requested brokerage action when permitted, verify the resulting order/fill/position state, update the private real-trade journal, and arm/update the public non-sensitive execution watchlist only after confirmed fills.",
+  "actionInstruction": "If claudeShouldRun is true, atomically claim pendingAction.fingerprint in private execution state before any broker action. If it was already claimed, submitted, filled, rejected, or cancelled, stop without submitting another order. Fetch only the fresh Teststock signal and minimal live Robinhood account, position, open-order and quote state. Reject expired entries or entries outside their saved price range. Execute only the requested action when every guard passes. Reconcile ambiguous or partial results by client order ID; never retry an uncertain submission as a new order. Verify the final order/fill/position state, update the private real-trade journal, and arm/update the public non-sensitive execution watchlist only after confirmed fills.",
+  "consumerContract": {
+    "invokeOnlyWhen": "claudeShouldRun === true AND pendingAction.isActionable === true",
+    "atomicClaimKey": "pendingAction.fingerprint",
+    "duplicateRule": "One fingerprint may create at most one broker order. Persist the claim outside this public repository before submission.",
+    "retryRule": "After an ambiguous response, reconcile by client order ID and broker state. Never create a replacement order until the original is conclusively cancelled or rejected.",
+    "creditRule": "Do not invoke Claude for unchanged fingerprints, unhealthy/stale boards, expired entries, order-status polling, or no-action reports."
+  },
   "stopPriorityRule": "A stop event outranks profit targets and buys. Never delay a stop event to process a lower-priority action first.",
   "wakeBridge": {
     "status": "DISPATCH_PACKET_READY_NO_DIRECT_CLAUDE_WEBHOOK",
