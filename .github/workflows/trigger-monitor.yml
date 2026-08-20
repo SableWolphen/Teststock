@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/update-trigger-board.mjs'
+      - 'scripts/validate-trigger-board.mjs'
       - 'docs/data/execution-watchlist.json'
       - '.github/workflows/trigger-monitor.yml'
 
@@ -38,6 +39,9 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/update-trigger-board.mjs
+
+      - name: Validate trigger board fail closed
+        run: node scripts/validate-trigger-board.mjs
 
       - name: Publish trigger-state transitions
         shell: bash
