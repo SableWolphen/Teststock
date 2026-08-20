@@ -50,13 +50,30 @@ signal.automationKillSwitch={
   instructions:'Kill switch never liquidates blindly. Manage existing exits using the safest supported path, but open no new positions until the fault is resolved.'
 };
 
+signal.smallAccountAccessPolicy={
+  enabled:true,
+  objective:'PRESERVE_ACCESS_TO_THE_BEST_QUALIFIED_SETUP_WITHOUT_FORCING_CHEAP_STOCKS',
+  fractionalSharesAllowed:true,
+  wholeShareIsTieBreakerOnly:true,
+  rankingPrecedence:['eligibility','probability/expectancy','growthQuality','rewardRisk','executionQuality','correlation/portfolio fit','whole-share protectability tie-breaker'],
+  tieDefinition:{
+    maxPortfolioOpportunityScoreDifference:3,
+    maxCostAdjustedConservativeExpectedRDifference:0.10,
+    bothMustAlreadyPassAllEntryGates:true
+  },
+  instructions:'A cheaper whole-share stock may not replace a materially stronger fractional candidate merely because it is cheaper. Whole-share protectability is only a late tie-breaker between already-qualified, genuinely comparable candidates. Fractional access remains important for small accounts.'
+};
+
 signal.fractionalProtectionPolicy={...(signal.fractionalProtectionPolicy||{}),
-  preferredArchitecture:'WHOLE_SHARE_FIRST_WHEN_EQUALLY_QUALIFIED',
-  wholeShareFirst:{
+  preferredArchitecture:'WHOLE_SHARE_TIE_BREAKER_WHEN_GENUINELY_COMPARABLE',
+  wholeShareTieBreaker:{
     enabled:true,
-    rule:'Among independently qualified stocks with comparable opportunity quality, prefer a candidate whose live allowed allocation can purchase at least 1 whole share so a broker-resident stop can be used.',
+    rule:'Only after eligibility and opportunity quality are effectively tied, prefer the candidate whose live allowed allocation can purchase at least 1 whole share so broker-resident protection may be available.',
+    maxPortfolioOpportunityScoreDifference:3,
+    maxCostAdjustedConservativeExpectedRDifference:0.10,
     qualityMayNotBeSacrificed:true,
     mayNotLoosenEntryGates:true,
+    mayNotOverrideHigherExpectedEdge:true,
     runtimeCheckRequired:true
   },
   fractionalOnlyFallback:{
@@ -75,6 +92,8 @@ signal.fractionalProtectionPolicy={...(signal.fractionalProtectionPolicy||{}),
   }
 };
 
+delete signal.fractionalProtectionPolicy.wholeShareFirst;
+
 for(const order of stockOrders){
   const entry=Number(order.minimumEntry||order.entry||0),stop=Number(order.stop||0);
   const riskDistancePct=entry>stop?((entry-stop)/entry)*100:null;
@@ -82,7 +101,8 @@ for(const order of stockOrders){
     signalReferencePrice:entry||null,
     entryToStopDistancePct:riskDistancePct==null?null:Number(riskDistancePct.toFixed(3)),
     wholeShareRuntimeCheckRequired:true,
-    preferWholeShareProtectionWhenOtherwiseEquivalent:true,
+    wholeShareProtectabilityIsTieBreakerOnly:true,
+    smallAccountAccessPolicyRef:'signal.smallAccountAccessPolicy',
     signalDriftPolicyRef:'signal.signalDriftPolicy',
     portfolioHeatPolicyRef:'signal.portfolioHeatPolicy',
     killSwitchRef:'signal.automationKillSwitch'
@@ -90,8 +110,8 @@ for(const order of stockOrders){
 }
 
 signal.systemHealth={...(signal.systemHealth||{}),runtimeLiveTradeState:{status:'RUNTIME_CHECK_REQUIRED',required:true},runtimePortfolioHeat:{status:'RUNTIME_CHECK_REQUIRED',required:true},runtimeKillSwitch:{status:'RUNTIME_CHECK_REQUIRED',required:true}};
-signal.generatorIntegrity={...(signal.generatorIntegrity||{}),traceableFeatures:{...(signal.generatorIntegrity?.traceableFeatures||{}),liveTradeStatePolicy:true,portfolioHeatPolicy:true,signalDriftPolicy:true,automationKillSwitch:true,wholeShareFirstProtection:true}};
-signal.schemaVersion=Math.max(25,Number(signal.schemaVersion||0));
+signal.generatorIntegrity={...(signal.generatorIntegrity||{}),traceableFeatures:{...(signal.generatorIntegrity?.traceableFeatures||{}),liveTradeStatePolicy:true,portfolioHeatPolicy:true,signalDriftPolicy:true,automationKillSwitch:true,wholeShareTieBreaker:true,smallAccountAccessPolicy:true}};
+signal.schemaVersion=Math.max(26,Number(signal.schemaVersion||0));
 await fs.writeFile(signalFile,JSON.stringify(signal,null,2));
 await fs.writeFile('docs/data/claude-signal.json',JSON.stringify(signal,null,2));
-console.log('Applied operational safety: live-state, portfolio heat, signal drift, kill switch, whole-share-first protection.');
+console.log('Applied operational safety: live-state, portfolio heat, signal drift, kill switch, small-account access, whole-share tie-breaker protection.');
