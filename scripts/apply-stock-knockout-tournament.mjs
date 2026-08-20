@@ -42,10 +42,10 @@ const rounds=[
   {round:'TOP_2000',input:broad.historyPoolRequested||2000,output:broad.validationPoolSize||800,rule:'Require sufficient history, verified 20-day dollar liquidity, trend/setup structure and bounded volatility.'},
   {round:'TOP_800',input:broad.validationPoolSize||800,output:broad.qualifiedForOptimizer||100,rule:'Run setup-specific historical validation and eliminate weak win-rate, sample-depth, direction, liquidity and volatility profiles.'},
   {round:'TOP_100',input:broad.qualifiedForOptimizer||100,output:liveQueue.length,rule:'Apply Teststock expectancy, probability, event, correlation, execution, sizing and safety gates. Only fully qualified names reach the live queue.'},
-  {round:'LIVE_FINAL',input:liveQueue.length,output:champion?1:0,rule:'Among names currently inside a valid live buy zone, choose the highest-ranked candidate. If it fails a Robinhood guard before submission, try the next live fallback. Never force a failed setup.'}
+  {round:'LIVE_FINAL',input:liveQueue.length,output:champion?1:0,rule:'Among names currently inside a valid live buy zone, choose the highest-ranked candidate. When one remains fully qualified after live Robinhood checks, execution intent is BUY. If it fails before submission, try the next live fallback. Never force a failed setup.'}
 ];
 const tournament={
-  schemaVersion:2,source:'TESTSTOCK_UP_TO_20000_STOCK_KNOCKOUT',generatedAt:new Date().toISOString(),
+  schemaVersion:3,source:'TESTSTOCK_UP_TO_20000_STOCK_KNOCKOUT',generatedAt:new Date().toISOString(),
   objective:'Continuously eliminate weaker candidates from every legitimate active/tradable U.S. operating-company stock available, capped at 20,000 symbols, until the strongest fully qualified live candidate remains.',
   policy:{
     targetTournamentSize:20000,
@@ -54,22 +54,25 @@ const tournament={
     alwaysProduceResearchChampion:true,
     alwaysBuySomething:false,
     buyWhenAtLeastOneFullyQualifiedLiveCandidateExists:true,
+    executionIntentWhenFullyQualified:'BUY',
+    discretionaryCashOverrideWhenFullyQualified:false,
     noEligibleCandidateAction:'HOLD_CASH_AND_KEEP_SCANNING',
     winnerSelection:'BEST_FIRST_BY_EXISTING_TESTSTOCK_RESEARCH_RANK_THEN_LIVE_ROBINHOOD_GATES',
     fallbackSelection:'IF_WINNER_FAILS_BEFORE_ORDER_SUBMISSION_TRY_NEXT_LIVE_ELIGIBLE_CANDIDATE_IN_SAME_EXECUTION_RUN',
-    safetyNote:'The tournament always names the best research candidate, but a brokerage buy occurs only when at least one candidate passes every research and live execution gate. A forced trade is prohibited.'
+    safetyNote:'If at least one candidate survives every research and live execution gate, the execution intent is to buy the highest-ranked survivor rather than choose cash by preference. Cash remains mandatory when none survive, execution is unavailable, or a hard safety/broker guard blocks trading.'
   },
   rounds,researchChampion,liveBuyChampion:champion,liveFallbacks:champion?buyable.slice(1):[],liveQueue,researchFinalists
 };
 signal.stockTournament={
   enabled:true,sourceRef:'docs/data/stock-tournament.json',targetTournamentSize:20000,actualAvailableUniverse:availableUniverse,scanAllAvailableUpToTarget:true,rounds,
   alwaysProduceResearchChampion:true,alwaysBuySomething:false,buyWhenAtLeastOneFullyQualifiedLiveCandidateExists:true,
+  executionIntentWhenFullyQualified:'BUY',discretionaryCashOverrideWhenFullyQualified:false,
   noEligibleCandidateAction:'HOLD_CASH_AND_KEEP_SCANNING',researchChampion,liveBuyChampion:champion,
   liveFallbackTickers:champion?buyable.slice(1).map(x=>x.ticker):[],
-  instructions:'Use every legitimate active/tradable operating-company stock available from the connected U.S. equity universe, up to 20,000 symbols. Knock the pool down through broad ranking, history, setup validation, probability/expectancy and live execution gates. Buy the best currently live-eligible candidate only after all Robinhood checks pass; if it fails before submission, try the next eligible fallback in the same run. Never lower a gate merely to ensure a trade.'
+  instructions:'Use every legitimate active/tradable operating-company stock available from the connected U.S. equity universe, up to 20,000 symbols. Knock the pool down through broad ranking, history, setup validation, probability/expectancy and live execution gates. If one candidate remains fully qualified after all Robinhood checks, buy the highest-ranked survivor rather than choosing cash by preference. If it fails before submission, try the next eligible fallback in the same run. Never lower a gate merely to ensure a trade.'
 };
 signal.generatorIntegrity={...(signal.generatorIntegrity||{}),traceableFeatures:{...(signal.generatorIntegrity?.traceableFeatures||{}),stockKnockoutTournament:true}};
-signal.schemaVersion=Math.max(29,Number(signal.schemaVersion||0));
+signal.schemaVersion=Math.max(30,Number(signal.schemaVersion||0));
 await fs.writeFile(OUT,JSON.stringify(tournament,null,2));
 await fs.writeFile(SIGNAL,JSON.stringify(signal,null,2));
 await fs.writeFile('docs/data/claude-signal.json',JSON.stringify(signal,null,2));
