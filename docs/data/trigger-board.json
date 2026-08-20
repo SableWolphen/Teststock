@@ -1,14 +1,14 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "source": "TESTSTOCK_NON_LLM_TRIGGER_MONITOR",
-  "publishedAt": "2026-08-20T18:02:46.727Z",
+  "publishedAt": "2026-08-20T18:51:52.795Z",
   "monitorHealth": "OK",
   "monitorCadenceMinutes": 5,
   "priceSource": "ALPACA_MARKET_DATA",
   "claudeMarketPollingRequired": false,
   "siteAvailability": "24_7_PUBLIC_DASHBOARD",
   "researchState": "REFRESHING",
-  "researchAgeMinutes": 40.5,
+  "researchAgeMinutes": 89.6,
   "displayPolicy": "Never present aged research as an active trading signal. During refresh, keep the latest candidate visible as display-only and block new buy triggers until a fresh generation arrives.",
   "stockSessionRule": "Stock entry eligibility can close with the market; the site and monitoring health remain independently visible.",
   "executionWakeBridge": {
@@ -24,7 +24,11 @@
     "eligibleNow": 0,
     "best": null,
     "fallbacks": [],
-    "rule": "Every qualified live BUY_TRIGGER competes. Highest ranked valid candidate goes first; if it fails a live guard before submission, Claude tries the next fallback in the same run. Never force a trade when none pass."
+    "tierPriority": [
+      "A",
+      "B"
+    ],
+    "rule": "A/ELITE live stock triggers go first. If no A survives the live broker guards, B/BEST_ACCEPTABLE may be executed at its reduced encoded size. Failed candidates fall through to the next eligible candidate in the same run. Never force a trade when all hard guards fail."
   },
   "events": [],
   "items": [
@@ -33,6 +37,9 @@
       "kind": "ENTRY",
       "assetClass": "STOCK",
       "ticker": "ROIV",
+      "entryTier": "A",
+      "entryTierLabel": "ELITE",
+      "entryTierSizeMultiplier": 1,
       "queueRank": 1,
       "opportunityScore": 100,
       "growthQuality": 100,
@@ -45,7 +52,7 @@
       "signalGeneratedAt": "2026-08-20T17:22:16.435Z",
       "status": "REFRESHING_SIGNAL",
       "reason": "Current research generation is being refreshed. This candidate is display-only until a fresh generation arrives; no buy trigger may fire from aged research.",
-      "observedPrice": 37,
+      "observedPrice": 36.88,
       "stateChangedAt": "2026-08-20T18:02:46.727Z"
     },
     {
@@ -53,6 +60,9 @@
       "kind": "ENTRY",
       "assetClass": "STOCK",
       "ticker": "HAL",
+      "entryTier": "A",
+      "entryTierLabel": "ELITE",
+      "entryTierSizeMultiplier": 1,
       "queueRank": 2,
       "opportunityScore": 100,
       "growthQuality": 100,
@@ -65,7 +75,7 @@
       "signalGeneratedAt": "2026-08-20T17:22:16.435Z",
       "status": "REFRESHING_SIGNAL",
       "reason": "Current research generation is being refreshed. This candidate is display-only until a fresh generation arrives; no buy trigger may fire from aged research.",
-      "observedPrice": 35.415,
+      "observedPrice": 35.545,
       "stateChangedAt": "2026-08-20T18:02:46.727Z"
     },
     {
@@ -83,7 +93,7 @@
       "armedAt": "2026-08-20T14:39:59.052Z",
       "status": "HOLD",
       "reason": "No saved sell trigger reached.",
-      "observedPrice": 60.91,
+      "observedPrice": 60.78,
       "stateChangedAt": "2026-08-20T14:40:44.649Z"
     }
   ],
