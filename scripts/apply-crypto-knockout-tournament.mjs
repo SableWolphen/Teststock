@@ -18,3 +18,8 @@ await fs.writeFile(OUT,JSON.stringify(tournament,null,2));
 await fs.writeFile(SIGNAL,JSON.stringify(signal,null,2));
 await fs.writeFile('docs/data/claude-signal.json',JSON.stringify(signal,null,2));
 console.log(`Crypto knockout: ${tournament.supportedUsdPairs} supported pairs, ${qualified.length} A/A+ candidate(s), champion ${champion?.ticker||'none'}.`);
+
+// Final execution-policy layer: the Claude task checks hourly, verified exits may execute automatically,
+// and all new buys require explicit approval unless an exact current-generation candidate is pre-approved.
+await import('./apply-claude-hourly-approval-policy.mjs');
+await import('./validate-claude-hourly-approval-policy.mjs');
