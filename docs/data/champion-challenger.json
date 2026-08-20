@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-20T11:40:15.577Z",
+  "mode": "CHAMPION_CHALLENGER",
+  "champion": {
+    "exitPolicy": "T1_25_T2_75",
+    "status": "LIVE_POLICY_ONLY_IF_ALL_RUNTIME_GUARDS_PASS",
+    "evidence": {
+      "exitValidationGeneratedAt": "2026-08-20T11:40:15.493Z",
+      "entryValidationGeneratedAt": "2026-08-20T11:40:12.600Z",
+      "probabilityPolicyGeneratedAt": "2026-08-20T11:23:47.310Z"
+    }
+  },
+  "challengers": [
+    {
+      "id": "ALL_T2",
+      "label": "100% at target2",
+      "development": {
+        "samples": 1068,
+        "winRatePct": 31.5,
+        "avgR": -0.105,
+        "medianR": -1,
+        "maxDrawdownR": 154.8
+      },
+      "holdout2024_2025": {
+        "samples": 1151,
+        "winRatePct": 41.5,
+        "avgR": 0.221,
+        "medianR": -1,
+        "maxDrawdownR": 46.24
+      },
+      "confirmation2026Plus": {
+        "samples": 352,
+        "winRatePct": 48.6,
+        "avgR": 0.398,
+        "medianR": -0.108,
+        "maxDrawdownR": 17.06
+      },
+      "status": "SHADOW_ONLY"
+    },
+    {
+      "id": "T1_25_T2_60_RUN15",
+      "label": "25% at target1, 60% at target2, 15% runner",
+      "development": {
+        "samples": 1068,
+        "winRatePct": 32.1,
+        "avgR": -0.111,
+        "medianR": -1,
+        "maxDrawdownR": 157.87
+      },
+      "holdout2024_2025": {
+        "samples": 1151,
+        "winRatePct": 42.4,
+        "avgR": 0.192,
+        "medianR": -0.562,
+        "maxDrawdownR": 43.35
+      },
+      "confirmation2026Plus": {
+        "samples": 352,
+        "winRatePct": 49.1,
+        "avgR": 0.365,
+        "medianR": -0.108,
+        "maxDrawdownR": 17.12
+      },
+      "status": "SHADOW_ONLY"
+    },
+    {
+      "id": "T1_25_T2_50_RUN25",
+      "label": "25% at target1, 50% at target2, 25% runner",
+      "development": {
+        "samples": 1068,
+        "winRatePct": 32.1,
+        "avgR": -0.115,
+        "medianR": -1,
+        "maxDrawdownR": 163.01
+      },
+      "holdout2024_2025": {
+        "samples": 1151,
+        "winRatePct": 42.4,
+        "avgR": 0.192,
+        "medianR": -0.562,
+        "maxDrawdownR": 43.85
+      },
+      "confirmation2026Plus": {
+        "samples": 352,
+        "winRatePct": 49.1,
+        "avgR": 0.367,
+        "medianR": -0.108,
+        "maxDrawdownR": 17.56
+      },
+      "status": "SHADOW_ONLY"
+    }
+  ],
+  "promotionPolicy": {
+    "automaticPromotionAllowed": true,
+    "entryRiskIncreaseAllowed": false,
+    "requirements": [
+      "challenger selected on development data only",
+      "challenger passes untouched 2024-2025 holdout",
+      "challenger passes or has explicitly sparse 2026+ confirmation under existing conservative rule",
+      "challenger does not materially worsen drawdown",
+      "all entry/probability/risk rules remain unchanged"
+    ],
+    "instructions": "A challenger may replace the exit shape only after the existing validation script authorizes it. It may never increase entry size, loosen a stop, bypass a safety gate, or force a trade."
+  },
+  "rollbackPolicy": {
+    "enabled": true,
+    "triggers": [
+      "fresh holdout evidence no longer supports champion",
+      "signal/validation contradiction",
+      "real-fill execution degrades materially",
+      "protection reliability degrades materially"
+    ],
+    "action": "FALL_BACK_TO_CONSERVATIVE_NO_RUNNER_OR_CASH"
+  },
+  "notes": "This governance prevents frequent strategy changes from being promoted directly into real-money execution without evidence."
+}
