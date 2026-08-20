@@ -1,5 +1,10 @@
 TESTSTOCK STRATEGY CHANGE LOG
 
+2026-08-20 — FULL LIVE CANDIDATE QUEUE MONITORING
+- Fixed the non-LLM trigger monitor so it watches the complete qualified stockCandidateQueue as well as stockOrders. Reserve/fallback candidates can now generate BUY_TRIGGER events when they are fresh and inside their encoded buy zones.
+- Candidate rows are de-duplicated by ticker, ranked by queueRank, and still preserve A-before-B priority. This fixes the case where a live tournament champion existed in the reserve queue but the trigger board ignored it.
+- No safety gates were loosened: stale research still cannot trigger a buy, maximumEntry/no-chase still applies, and Claude must still pass live Robinhood cash, account-floor, spread, gap, correlation, protection and other hard guards.
+
 This file records changes to trading RULES, thresholds, tiers, sizing, validation, and safety behavior. Routine market-data refreshes and changing trade signals are intentionally not listed here.
 
 2026-08-19 — TARGET2 REWARD/RISK + COST-ADJUSTED CROSS-ASSET RANKING
