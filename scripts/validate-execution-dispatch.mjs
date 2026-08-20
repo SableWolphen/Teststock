@@ -17,4 +17,9 @@ if(dispatch.claudeShouldRun){
   }
 }
 if(dispatch.pendingAction?.isNew===false&&dispatch.claudeShouldRun) fail('duplicate fingerprint would invoke Claude');
+if((dispatch.fallbackActions||[]).some(action=>action.trigger!=='BUY_TRIGGER')) fail('fallback sequence may contain only buy actions');
+if(dispatch.pendingAction?.trigger!=='BUY_TRIGGER'&&(dispatch.fallbackActions||[]).length) fail('exit dispatch cannot contain buy fallbacks');
+const fingerprints=[dispatch.pendingAction,...(dispatch.fallbackActions||[])].filter(Boolean).map(x=>x.fingerprint);
+if(new Set(fingerprints).size!==fingerprints.length) fail('candidate fingerprints must be unique');
+if(dispatch.consumerContract?.maximumNewBuysPerDispatch!==1) fail('dispatch must cap new buys at one');
 console.log(`Execution dispatch valid: ${dispatch.claudeShouldRun?'one new Claude action':'no Claude action'}.`);

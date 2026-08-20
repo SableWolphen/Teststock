@@ -149,3 +149,5 @@ Teststock is a screening, historical-calibration and paper/outcome-tracking tool
 The trigger monitor publishes a compact execution packet. Invoke Claude only when both `claudeShouldRun` and `pendingAction.isActionable` are true. Unchanged fingerprints, stale boards, expired entries and idle scans are suppressed.
 
 Before any broker submission, the execution runtime must atomically claim `pendingAction.fingerprint` in private state. One fingerprint may create at most one broker order. Ambiguous and partial submissions must be reconciled by client order ID and current broker state rather than retried as new orders. Routine price and order-status polling belongs in deterministic code, not an LLM session.
+
+When multiple fresh buy triggers qualify, the execution packet ranks them once and sends them to a single Claude run. If the first candidate fails a live broker or portfolio guard before submission, Claude may evaluate the next fallback. It must stop after one submitted buy and hold cash when every candidate fails. Stops and other position-protection events exclude all new buys until they are resolved.
