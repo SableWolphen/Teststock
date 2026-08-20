@@ -1,0 +1,30 @@
+TESTSTOCK — LOW-CREDIT EXECUTION WAKE TASK
+
+FIRST AND CHEAPEST STEP ONLY:
+Fetch this raw-main file with a cache-buster when supported:
+https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/execution-dispatch.json
+
+If `claudeShouldRun` is false:
+- STOP IMMEDIATELY.
+- Do not call Robinhood.
+- Do not fetch the full Teststock signal.
+- Do not research stocks, crypto, options, news, charts, or prices.
+- Do not write a long report.
+- A one-line `No execution action` result is enough when a visible result is required.
+
+If `claudeShouldRun` is true:
+1. Read only `pendingAction` first. STOP events have priority over targets and buys.
+2. Fetch the fresh raw-main Teststock signal and the detailed `claude-scheduled-task.txt` procedure.
+3. Read live Robinhood state needed for this exact action only: account/cash for a buy; position/open sell orders for a sell; expand history only when reconciliation requires it.
+4. Re-verify every applicable Teststock safety guard. A monitor trigger is a wake-up event, not authorization by itself.
+5. If the action remains valid and unattended execution is allowed, place the requested buy/sell. Otherwise follow the platform's required confirmation flow.
+6. Verify the resulting order, fill, live position and remaining sell quantity. Never infer a fill from submission.
+7. Reconcile the private real-trade journal.
+8. After a CONFIRMED new stock/crypto fill, arm or update the public non-sensitive `docs/data/execution-watchlist.json` with ticker, asset class, stop, target1, target2 and completion flags only. Never put account IDs, balances, quantities, credentials or private brokerage data in the public repository.
+9. After Target 1 or Target 2 fills, update the corresponding completion flag. After the position is confirmed closed, mark/remove the watch item so the non-LLM monitor stops generating sell triggers.
+10. Finish. Do not continue polling the market.
+
+Canonical dispatch priority:
+TRIGGER_1_STOP > TRIGGER_3_TARGET2 > TRIGGER_2_TARGET1 > BUY_TRIGGER.
+
+GitHub/Alpaca performs market-price monitoring without an LLM. Claude is reserved for brokerage judgment, buying, selling, fill verification, and journal/watchlist reconciliation. The repository cannot directly wake Claude by webhook, so the execution runtime must be configured to read this tiny dispatch file on its permitted schedule or via a separately authorized wake bridge.
