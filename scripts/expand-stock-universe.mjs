@@ -9,11 +9,13 @@ const round=(n,d=2)=>Number(Number(n||0).toFixed(d));
 const avg=a=>a.length?a.reduce((s,n)=>s+n,0)/a.length:0;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const pct=(a,b)=>a&&b?((a/b)-1)*100:0;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const key=process.env.ALPACA_API_KEY||process.env.APCA_API_KEY_ID;
 const secret=process.env.ALPACA_API_SECRET||process.env.APCA_API_SECRET_KEY;
 if(!key||!secret)throw new Error('Missing Alpaca secrets');
 const headers={'APCA-API-KEY-ID':key,'APCA-API-SECRET-KEY':secret};
 const get=async u=>{const r=await fetch(u,{headers});if(!r.ok)throw new Error(`Alpaca ${r.status}: ${await r.text()}`);return r.json();};
+const getRetry=async(u,attempts=4)=>{let err;for(let i=0;i<attempts;i++){try{return await get(u);}catch(e){err=e;if(i<attempts-1)await sleep(300*(2**i));}}throw err;};
 const read=async(f,x=null)=>{try{return JSON.parse(await fs.readFile(f,'utf8'));}catch{return x;}};
 const chunks=(a,n)=>Array.from({length:Math.ceil(a.length/n)},(_,i)=>a.slice(i*n,(i+1)*n));
 const sma=(xs,n)=>avg(xs.slice(-n));
@@ -45,12 +47,25 @@ function historicalValidation(bars,type){
   return {samples:moves.length,winRate:moves.length?Math.round(wins/moves.length*100):null,avgMove:moves.length?round(avg(moves),1):null,medianMove:moves.length?round(median,1):null};
 }
 
-const assets=await get('https://paper-api.alpaca.markets/v2/assets?status=active&asset_class=us_equity');
+const assets=await getRetry('https://paper-api.alpaca.markets/v2/assets?status=active&asset_class=us_equity');
 const universe=(assets||[]).filter(a=>a.status==='active'&&a.tradable===true&&a.symbol&&looksLikeOperatingCompany(a));
-const symbols=universe.map(a=>a.symbol),snapshots={};
-for(const batch of chunks(symbols,150)){
-  try{const q=new URLSearchParams({symbols:batch.join(','),feed:'iex'});Object.assign(snapshots,await get(`https://data.alpaca.markets/v2/stocks/snapshots?${q}`));}catch{}
+const symbols=universe.map(a=>a.symbol),snapshots={},snapshotFailures=[];
+for(const batch of chunks(symbols,50)){
+  const q=new URLSearchParams({symbols:batch.join(','),feed:'iex'});
+  try{Object.assign(snapshots,await getRetry(`https://data.alpaca.markets/v2/stocks/snapshots?${q}`));}
+  catch(error){snapshotFailures.push({symbols:batch,error:String(error?.message||error)});}
 }
+// A transient batch failure must not silently shrink a 6k-stock universe to a few dozen names.
+// Retry failed groups in much smaller requests before deciding coverage is unhealthy.
+for(const failed of snapshotFailures){
+  for(const batch of chunks(failed.symbols,10)){
+    const missing=batch.filter(s=>!snapshots[s]);if(!missing.length)continue;
+    const q=new URLSearchParams({symbols:missing.join(','),feed:'iex'});
+    try{Object.assign(snapshots,await getRetry(`https://data.alpaca.markets/v2/stocks/snapshots?${q}`,3));}catch{}
+  }
+}
+const snapshotCoveragePct=universe.length?Object.keys(snapshots).length/universe.length*100:0;
+if(snapshotCoveragePct<80)throw new Error(`Universe snapshot coverage failure: ${Object.keys(snapshots).length}/${universe.length} (${round(snapshotCoveragePct,1)}%) operating-company stocks returned snapshot data; expected >=80%. Refusing to rank an incomplete market.`);
 
 const firstPass=[];
 for(const a of universe){
@@ -58,21 +73,25 @@ for(const a of universe){
   const price=Number(trade.p||day.c||prev.c||0),todayVolume=Number(day.v||0),prevVolume=Number(prev.v||0),prevClose=Number(prev.c||0),bid=Number(quote.bp||quote.bid_price||0),ask=Number(quote.ap||quote.ask_price||0);
   if(!(price>=1&&prevClose>0))continue;
   const todayDollarVolume=price*todayVolume,prevDollarVolume=prevClose*prevVolume,reliableDollarVolume=Math.max(todayDollarVolume,prevDollarVolume);
-  const mid=bid>0&&ask>0?(bid+ask)/2:0,spreadPct=mid>0?(ask-bid)/mid*100:999,dayChange=pct(price,prevClose);
-  if(reliableDollarVolume<1_000_000||spreadPct>1.25)continue;
-  const liquidity=Math.min(38,Math.max(0,Math.log10(Math.max(1,reliableDollarVolume))-5.5)*12),momentum=clamp(dayChange,-10,12)*1.8,spreadBonus=Math.max(0,14-spreadPct*22),priceQuality=price>=5?5:price>=2?2:0;
-  firstPass.push({symbol:a.symbol,name:a.name||null,exchange:a.exchange||null,price:round(price),volume:todayVolume,dollarVolume:Math.round(reliableDollarVolume),todayDollarVolume:Math.round(todayDollarVolume),priorDayDollarVolume:Math.round(prevDollarVolume),spreadPct:round(spreadPct,3),dayChangePct:round(dayChange,2),preScore:round(45+liquidity+momentum+spreadBonus+priceQuality,1)});
+  const quoteAvailable=bid>0&&ask>0&&ask>=bid,mid=quoteAvailable?(bid+ask)/2:0,spreadPct=quoteAvailable?(ask-bid)/mid*100:null,dayChange=pct(price,prevClose);
+  if(reliableDollarVolume<1_000_000)continue;
+  // Before the regular session many IEX snapshots have no usable bid/ask. Do not turn that
+  // absence into a fake 999% spread and collapse the entire tournament. Live execution still
+  // requires a real <=0.35% spread later in Claude/Robinhood.
+  if(spreadPct!=null&&spreadPct>1.25)continue;
+  const liquidity=Math.min(38,Math.max(0,Math.log10(Math.max(1,reliableDollarVolume))-5.5)*12),momentum=clamp(dayChange,-10,12)*1.8,spreadBonus=spreadPct==null?0:Math.max(0,14-spreadPct*22),priceQuality=price>=5?5:price>=2?2:0;
+  firstPass.push({symbol:a.symbol,name:a.name||null,exchange:a.exchange||null,price:round(price),volume:todayVolume,dollarVolume:Math.round(reliableDollarVolume),todayDollarVolume:Math.round(todayDollarVolume),priorDayDollarVolume:Math.round(prevDollarVolume),quoteAvailable,spreadPct:spreadPct==null?null:round(spreadPct,3),dayChangePct:round(dayChange,2),preScore:round(45+liquidity+momentum+spreadBonus+priceQuality,1)});
 }
 firstPass.sort((a,b)=>b.preScore-a.preScore||b.dollarVolume-a.dollarVolume);
 const liveTournament=firstPass.slice(0,TOP_LIVE_POOL),historySymbols=liveTournament.slice(0,HISTORY_POOL).map(x=>x.symbol);
-if(liveTournament.length<1000)throw new Error(`Universe health failure: only ${liveTournament.length} liquid operating-company stocks reached the live tournament; expected >=1000. Refusing to publish a falsely narrow tournament.`);
+if(liveTournament.length<1000)throw new Error(`Universe health failure: only ${liveTournament.length} liquid operating-company stocks reached the tournament from ${Object.keys(snapshots).length} snapshot-covered names; expected >=1000. Refusing to publish a falsely narrow tournament.`);
 
 const start=new Date(Date.now()-540*86400000).toISOString().slice(0,10),by={};
 for(const batch of chunks(historySymbols,80)){
   let token='';
   for(let page=0;page<5;page++){
     const q=new URLSearchParams({symbols:batch.join(','),timeframe:'1Day',start,limit:'10000',adjustment:'all',feed:'iex'});if(token)q.set('page_token',token);
-    const raw=await get(`https://data.alpaca.markets/v2/stocks/bars?${q}`);
+    const raw=await getRetry(`https://data.alpaca.markets/v2/stocks/bars?${q}`);
     for(const [sym,bars] of Object.entries(raw.bars||{}))by[sym]=[...(by[sym]||[]),...bars];
     token=raw.next_page_token||'';if(!token)break;
   }
@@ -85,7 +104,7 @@ for(const base of liveTournament.slice(0,HISTORY_POOL)){
   if(!(price>0&&ma20>0&&ma50>0&&atrPct>0&&atrPct<=12))continue;
   const type=setupType({price,ma20,ma50,high20,rsiValue:rrsi,m20,m60});
   let score=55;score+=clamp(m20,-12,22)*.75+clamp(m60,-25,45)*.32;score+=price>ma20?6:-7;score+=price>ma50?8:-9;score+=price>ma200?5:-5;
-  if(rrsi>=48&&rrsi<=72)score+=6;else if(rrsi>80)score-=7;else if(rrsi<38)score-=7;if(price>=high20*.985)score+=5;if(price>=high60*.97)score+=3;if(type==='BREAKOUT')score+=5;if(type==='PULLBACK')score+=4;if(base.spreadPct<=.35)score+=5;if(base.spreadPct<=.12)score+=2;if(base.dollarVolume>=10_000_000)score+=5;if(base.dollarVolume>=50_000_000)score+=2;score-=Math.max(0,atrPct-6)*2;
+  if(rrsi>=48&&rrsi<=72)score+=6;else if(rrsi>80)score-=7;else if(rrsi<38)score-=7;if(price>=high20*.985)score+=5;if(price>=high60*.97)score+=3;if(type==='BREAKOUT')score+=5;if(type==='PULLBACK')score+=4;if(base.spreadPct!=null&&base.spreadPct<=.35)score+=5;if(base.spreadPct!=null&&base.spreadPct<=.12)score+=2;if(base.dollarVolume>=10_000_000)score+=5;if(base.dollarVolume>=50_000_000)score+=2;score-=Math.max(0,atrPct-6)*2;
   historyScored.push({...base,preValidationScore:Math.round(clamp(score,0,100)),setupType:type,direction:price>ma20&&price>ma50?'BULLISH':'MIXED',ma20:round(ma20),ma50:round(ma50),ma200:round(ma200),m20:round(m20,1),m60:round(m60,1),rsi:round(rrsi,1),atrPct:round(atrPct,1),high20:round(high20),high60:round(high60)});
 }
 historyScored.sort((a,b)=>b.preValidationScore-a.preValidationScore||b.preScore-a.preScore||b.dollarVolume-a.dollarVolume);
@@ -98,15 +117,15 @@ for(const base of validationPool){
   deep.push({...base,score:Math.round(clamp(score,0,100)),entry,stop,target1,target2,validation:v,fundamentals:{label:'UNAVAILABLE',coverage:0},corporateActions:{risk:'UNKNOWN',events:[]},source:'TOP_2000_US_EQUITY_TOURNAMENT'});
 }
 deep.sort((a,b)=>b.score-a.score||Number(b.validation?.winRate||0)-Number(a.validation?.winRate||0)||Number(b.validation?.avgMove||0)-Number(a.validation?.avgMove||0)||b.dollarVolume-a.dollarVolume);
-const broadQualified=deep.filter(x=>x.direction==='BULLISH'&&x.score>=84&&x.validation.samples>=15&&x.validation.winRate>=52&&x.spreadPct<=.35&&x.atrPct<=7).slice(0,FINAL_POOL);
-const report={schemaVersion:3,generatedAt:new Date().toISOString(),method:'Full Alpaca operating-company universe -> live/liquidity tournament using current-or-prior-day reliable dollar volume -> top 2,000 -> top 800 daily-history analysis -> top 300 setup-specific BREAKOUT/PULLBACK/TREND validation -> strongest qualified names into Teststock optimizer.',activeTradableOperatingCompanies:universe.length,snapshotSymbolsRequested:symbols.length,snapshotSymbolsWithData:Object.keys(snapshots).length,liquidLiveCandidates:firstPass.length,liveTournamentSize:liveTournament.length,historyPoolRequested:historySymbols.length,historyCandidatesScored:historyScored.length,validationPoolSize:validationPool.length,deepCandidatesScored:deep.length,qualifiedForOptimizer:broadQualified.length,setupMix:{BREAKOUT:broadQualified.filter(x=>x.setupType==='BREAKOUT').length,PULLBACK:broadQualified.filter(x=>x.setupType==='PULLBACK').length,TREND:broadQualified.filter(x=>x.setupType==='TREND').length},topCandidates:broadQualified.slice(0,30),top2000Preview:liveTournament.slice(0,50)};
+const broadQualified=deep.filter(x=>x.direction==='BULLISH'&&x.score>=84&&x.validation.samples>=15&&x.validation.winRate>=52&&(x.spreadPct==null||x.spreadPct<=.35)&&x.atrPct<=7).slice(0,FINAL_POOL);
+const report={schemaVersion:4,generatedAt:new Date().toISOString(),method:'Full Alpaca operating-company universe -> resilient snapshot coverage -> current-or-prior-day dollar-volume tournament (quote spread used when available, never fabricated before market open) -> top 2,000 -> top 800 daily-history analysis -> top 300 setup-specific BREAKOUT/PULLBACK/TREND validation -> strongest qualified names into Teststock optimizer. Live spread is re-verified at execution.',activeTradableOperatingCompanies:universe.length,snapshotSymbolsRequested:symbols.length,snapshotSymbolsWithData:Object.keys(snapshots).length,snapshotCoveragePct:round(snapshotCoveragePct,1),snapshotBatchFailuresInitial:snapshotFailures.length,liquidLiveCandidates:firstPass.length,liveTournamentSize:liveTournament.length,historyPoolRequested:historySymbols.length,historyCandidatesScored:historyScored.length,validationPoolSize:validationPool.length,deepCandidatesScored:deep.length,qualifiedForOptimizer:broadQualified.length,setupMix:{BREAKOUT:broadQualified.filter(x=>x.setupType==='BREAKOUT').length,PULLBACK:broadQualified.filter(x=>x.setupType==='PULLBACK').length,TREND:broadQualified.filter(x=>x.setupType==='TREND').length},topCandidates:broadQualified.slice(0,30),top2000Preview:liveTournament.slice(0,50)};
 await fs.writeFile('docs/data/broad-stock-universe.json',JSON.stringify(report,null,2));
 for(const budget of budgets){
   const file=`docs/data/latest-${budget}.json`,data=await read(file);if(!data)continue;
   const recMap=new Map((data.recommendations||[]).map(x=>[x.symbol,x]));for(const x of broadQualified){const old=recMap.get(x.symbol);if(!old||Number(x.score)>Number(old.score||0))recMap.set(x.symbol,x);}
   data.recommendations=[...recMap.values()].sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.validation?.winRate||0)-Number(a.validation?.winRate||0)).slice(0,60);
-  const snapMap=new Map((data.marketSnapshot||[]).map(x=>[x.symbol,x]));for(const x of deep.slice(0,120))if(!snapMap.has(x.symbol))snapMap.set(x.symbol,{symbol:x.symbol,price:x.price,direction:x.direction,setupType:x.setupType,ma20:x.ma20,ma50:x.ma50,ma200:x.ma200,entry:x.entry,stop:x.stop,target1:x.target1,target2:x.target2,atrPct:x.atrPct,m20:x.m20,m60:x.m60,dollarVolume:x.dollarVolume,spreadPct:x.spreadPct,source:x.source});data.marketSnapshot=[...snapMap.values()];
-  data.broadUniverse={generatedAt:report.generatedAt,method:'TOP_2000_TOURNAMENT',activeTradableOperatingCompanies:report.activeTradableOperatingCompanies,snapshotSymbolsWithData:report.snapshotSymbolsWithData,liveTournamentSize:report.liveTournamentSize,historyPoolRequested:report.historyPoolRequested,validationPoolSize:report.validationPoolSize,deepCandidatesScored:report.deepCandidatesScored,qualifiedForOptimizer:report.qualifiedForOptimizer,reportUrl:'https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/broad-stock-universe.json'};
+  const snapMap=new Map((data.marketSnapshot||[]).map(x=>[x.symbol,x]));for(const x of deep.slice(0,120))if(!snapMap.has(x.symbol))snapMap.set(x.symbol,{symbol:x.symbol,price:x.price,direction:x.direction,setupType:x.setupType,ma20:x.ma20,ma50:x.ma50,ma200:x.ma200,entry:x.entry,stop:x.stop,target1:x.target1,target2:x.target2,atrPct:x.atrPct,m20:x.m20,m60:x.m60,dollarVolume:x.dollarVolume,spreadPct:x.spreadPct,quoteAvailable:x.quoteAvailable,source:x.source});data.marketSnapshot=[...snapMap.values()];
+  data.broadUniverse={generatedAt:report.generatedAt,method:'TOP_2000_TOURNAMENT',activeTradableOperatingCompanies:report.activeTradableOperatingCompanies,snapshotSymbolsWithData:report.snapshotSymbolsWithData,snapshotCoveragePct:report.snapshotCoveragePct,liveTournamentSize:report.liveTournamentSize,historyPoolRequested:report.historyPoolRequested,validationPoolSize:report.validationPoolSize,deepCandidatesScored:report.deepCandidatesScored,qualifiedForOptimizer:report.qualifiedForOptimizer,reportUrl:'https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/broad-stock-universe.json'};
   await fs.writeFile(file,JSON.stringify(data,null,2));
 }
-console.log(`Stock tournament: ${universe.length} active companies -> ${liveTournament.length} live top pool -> ${historySymbols.length} history -> ${validationPool.length} validated -> ${broadQualified.length} optimizer candidates`);
+console.log(`Stock tournament: ${universe.length} active companies -> ${Object.keys(snapshots).length} snapshots (${round(snapshotCoveragePct,1)}%) -> ${liveTournament.length} tournament -> ${historySymbols.length} history -> ${validationPool.length} validated -> ${broadQualified.length} optimizer candidates`);
