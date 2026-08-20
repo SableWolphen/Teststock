@@ -32,6 +32,8 @@ Non-negotiable safeguards:
 - Reward/risk qualification uses target2. Target1 is a partial-profit/de-risking milestone.
 - VALIDATED EXIT POLICY: follow signal.exitPolicyValidation and each stock order exitPlan. Do not hard-code 25/50/25. A runner may never exceed the validated maximum, and stale/missing exit evidence falls back to the no-runner baseline.
 - SETUP-SPECIFIC EXITS remain research-only until a future signal explicitly marks them live.
+- SMALL-ACCOUNT ACCESS: follow signal.smallAccountAccessPolicy. Fractional shares remain allowed because small accounts need access to stronger higher-priced setups. Whole-share protectability is a late tie-breaker only between already-qualified, genuinely comparable candidates. Never choose a materially weaker cheap stock merely because one whole share fits.
+- WHOLE-SHARE TIE-BREAKER: only use the whole-share preference when the published opportunity-score and cost-adjusted-expectancy differences are inside the encoded tie tolerances. Eligibility, expected edge, quality, reward/risk, execution quality, and portfolio fit all outrank share-price convenience.
 - FRACTIONAL SHARE LIMITATION: the connected Robinhood Agentic runtime has rejected triggered stop orders for fractional quantities. Never claim a fractional broker stop exists when it does not.
 - FRACTIONAL PROTECTION: follow signal.fractionalProtectionPolicy. Whole shares should use verified broker-resident protection when supported; fractional quantities are synthetic-only or hybrid as encoded.
 - NEW FRACTIONAL ENTRY GATE: a new fractional stock entry is allowed only when active regular-session monitoring can be verified at intervals of 5 minutes or less and planned stop risk is no more than 0.75% of current live equity. The hourly scheduled task alone does not satisfy this.
@@ -41,7 +43,7 @@ Non-negotiable safeguards:
 - TIME/GAP LEARNING: record entrySessionBucket and opening gap when reliable. Only sufficiently sampled weak buckets may be reduced or blocked; strong buckets may improve priority but never increase size.
 - POST-TRADE ATTRIBUTION: after a real trade resolves, record supported causes such as selection, entry timing, gap, slippage, stop placement, exit policy, runner, regime, or protection failure. Prefer UNKNOWN over guessing.
 - Backtests, scanner history, shadow trades, and challenger results may rank research or reduce risk but may never increase live allocation above the base Teststock amount.
-- Apply dual untouched holdouts, regime-specific entry profiles, breadth confirmation, symbol probation, event blackouts, gap-risk checks, liquidity ranking, whole-contract option sizing, real-fill learning, profit locks, circuit breakers, correlation limits, and all smaller risk caps before entry.
+- Apply dual untouched holdouts, regime-specific entry profiles, breadth confirmation, symbol probation, event blackouts, gap-risk checks, liquidity ranking, whole-contract option sizing, real-fill learning, profit locks, circuit breakers, correlation limits, signal-drift checks, portfolio heat, automation kill switch, and all smaller risk caps before entry.
 - Fail closed when any critical dependency is stale, missing, contradictory, or unknown.
 - Maintain and reconcile Teststock-Real-Trades.json when persistence works; otherwise reconstruct relevant recent results from Robinhood history before new risk.
 - If unattended order placement is permitted, auto-buy only independently AUTO_BUY_ELIGIBLE entries that pass every live guard. If confirmation is required, ask only for the specific qualified buy.
