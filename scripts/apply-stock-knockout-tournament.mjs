@@ -8,7 +8,7 @@ const signal=await read(SIGNAL);
 const broad=await read(BROAD);
 const orders=signal.stockPlan?.stockOrders||[];
 const queue=signal.stockPlan?.stockCandidateQueue||orders;
-const top=(broad.topCandidates||[]).slice(0,60);
+const top=(broad.topCandidates||[]).slice(0,100);
 const num=x=>Number.isFinite(Number(x))?Number(x):0;
 const score=x=>{
   const opportunity=num(x.opportunityScore||x.score||x.preValidationScore);
@@ -34,19 +34,23 @@ const liveQueue=queue.map((x,i)=>({
 const buyable=liveQueue.filter(x=>x.action==='AUTO_BUY_ELIGIBLE');
 const champion=buyable[0]||null;
 const researchChampion=researchFinalists[0]||null;
+const availableUniverse=num(broad.activeTradableOperatingCompanies);
+const discoverySize=num(broad.liveTournamentSize);
 const rounds=[
-  {round:'UNIVERSE',input:broad.activeTradableOperatingCompanies||null,output:broad.liveTournamentSize||2000,rule:'Remove non-operating-company instruments, untradable names, unusable prices and observed extreme spreads; keep the strongest discovery pool.'},
-  {round:'TOP_2000',input:broad.liveTournamentSize||2000,output:broad.historyPoolRequested||800,rule:'Rank broad live discovery quality, liquidity and momentum; send the best 800 to deeper history.'},
-  {round:'TOP_800',input:broad.historyPoolRequested||800,output:broad.validationPoolSize||300,rule:'Require sufficient daily history, verified 20-day dollar liquidity, trend/setup structure and bounded volatility.'},
-  {round:'TOP_300',input:broad.validationPoolSize||300,output:broad.qualifiedForOptimizer||60,rule:'Run setup-specific historical validation and reject weak win-rate, sample-depth, direction, liquidity and volatility profiles.'},
-  {round:'TOP_60',input:broad.qualifiedForOptimizer||60,output:liveQueue.length,rule:'Apply Teststock expectancy, probability, event, correlation, execution, sizing and safety gates. Only fully qualified names reach the live queue.'},
+  {round:'UNIVERSE',input:availableUniverse||null,output:discoverySize||null,rule:'Scan every legitimate active/tradable operating-company stock available from the connected U.S. equity universe, up to a 20,000-symbol ceiling. Never invent symbols or pad with ETFs/warrants just to hit 20,000.'},
+  {round:'UP_TO_20000',input:discoverySize||availableUniverse||null,output:broad.historyPoolRequested||2000,rule:'Rank the entire available discovery pool by market quality, liquidity and momentum; send the best 2,000 to deeper daily-history analysis.'},
+  {round:'TOP_2000',input:broad.historyPoolRequested||2000,output:broad.validationPoolSize||800,rule:'Require sufficient history, verified 20-day dollar liquidity, trend/setup structure and bounded volatility.'},
+  {round:'TOP_800',input:broad.validationPoolSize||800,output:broad.qualifiedForOptimizer||100,rule:'Run setup-specific historical validation and eliminate weak win-rate, sample-depth, direction, liquidity and volatility profiles.'},
+  {round:'TOP_100',input:broad.qualifiedForOptimizer||100,output:liveQueue.length,rule:'Apply Teststock expectancy, probability, event, correlation, execution, sizing and safety gates. Only fully qualified names reach the live queue.'},
   {round:'LIVE_FINAL',input:liveQueue.length,output:champion?1:0,rule:'Among names currently inside a valid live buy zone, choose the highest-ranked candidate. If it fails a Robinhood guard before submission, try the next live fallback. Never force a failed setup.'}
 ];
 const tournament={
-  schemaVersion:1,source:'TESTSTOCK_2000_STOCK_KNOCKOUT',generatedAt:new Date().toISOString(),
-  objective:'Continuously eliminate weaker candidates from the broad U.S. operating-company universe until the strongest fully qualified live candidate remains.',
+  schemaVersion:2,source:'TESTSTOCK_UP_TO_20000_STOCK_KNOCKOUT',generatedAt:new Date().toISOString(),
+  objective:'Continuously eliminate weaker candidates from every legitimate active/tradable U.S. operating-company stock available, capped at 20,000 symbols, until the strongest fully qualified live candidate remains.',
   policy:{
-    targetTournamentSize:2000,
+    targetTournamentSize:20000,
+    actualAvailableUniverse:availableUniverse,
+    scanAllAvailableUpToTarget:true,
     alwaysProduceResearchChampion:true,
     alwaysBuySomething:false,
     buyWhenAtLeastOneFullyQualifiedLiveCandidateExists:true,
@@ -58,15 +62,15 @@ const tournament={
   rounds,researchChampion,liveBuyChampion:champion,liveFallbacks:champion?buyable.slice(1):[],liveQueue,researchFinalists
 };
 signal.stockTournament={
-  enabled:true,sourceRef:'docs/data/stock-tournament.json',targetTournamentSize:2000,rounds,
+  enabled:true,sourceRef:'docs/data/stock-tournament.json',targetTournamentSize:20000,actualAvailableUniverse:availableUniverse,scanAllAvailableUpToTarget:true,rounds,
   alwaysProduceResearchChampion:true,alwaysBuySomething:false,buyWhenAtLeastOneFullyQualifiedLiveCandidateExists:true,
   noEligibleCandidateAction:'HOLD_CASH_AND_KEEP_SCANNING',researchChampion,liveBuyChampion:champion,
   liveFallbackTickers:champion?buyable.slice(1).map(x=>x.ticker):[],
-  instructions:'Use the broad 2,000-stock knockout to find the strongest research finalists. For execution, buy the best currently live-eligible candidate only after all Robinhood checks pass. If that candidate fails before submission, try the next eligible fallback in the same run. Never lower a gate merely to ensure a trade.'
+  instructions:'Use every legitimate active/tradable operating-company stock available from the connected U.S. equity universe, up to 20,000 symbols. Knock the pool down through broad ranking, history, setup validation, probability/expectancy and live execution gates. Buy the best currently live-eligible candidate only after all Robinhood checks pass; if it fails before submission, try the next eligible fallback in the same run. Never lower a gate merely to ensure a trade.'
 };
 signal.generatorIntegrity={...(signal.generatorIntegrity||{}),traceableFeatures:{...(signal.generatorIntegrity?.traceableFeatures||{}),stockKnockoutTournament:true}};
 signal.schemaVersion=Math.max(29,Number(signal.schemaVersion||0));
 await fs.writeFile(OUT,JSON.stringify(tournament,null,2));
 await fs.writeFile(SIGNAL,JSON.stringify(signal,null,2));
 await fs.writeFile('docs/data/claude-signal.json',JSON.stringify(signal,null,2));
-console.log(`2000-stock knockout applied: ${researchFinalists.length} research finalists, ${liveQueue.length} live-queue candidates, ${champion?.ticker||'no live buy champion'}.`);
+console.log(`Up-to-20000-stock knockout applied: ${availableUniverse} actual operating companies available, ${researchFinalists.length} research finalists, ${liveQueue.length} live-queue candidates, ${champion?.ticker||'no live buy champion'}.`);
