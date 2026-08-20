@@ -29,9 +29,11 @@ on:
       - 'scripts/apply-fractional-protection-policy.mjs'
       - 'scripts/apply-exit-policy-validation.mjs'
       - 'scripts/apply-strategy-intelligence.mjs'
+      - 'scripts/apply-operational-safety.mjs'
       - 'scripts/validate-signal.mjs'
       - 'docs/real-fill-learning-policy.txt'
       - 'docs/teststock-real-trade-journal-template.json'
+      - 'docs/live-trade-state-template.json'
       - 'docs/strategy-changelog.txt'
   workflow_dispatch:
   schedule:
@@ -185,7 +187,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -f docs/signal.json ]; then cp docs/signal.json /tmp/teststock-last-good-signal.json; fi
-          if node scripts/build-agent-signal.mjs && node scripts/augment-signal-safety.mjs && node scripts/apply-fractional-protection-policy.mjs && node scripts/apply-exit-policy-validation.mjs && node scripts/apply-strategy-intelligence.mjs && node scripts/validate-signal.mjs docs/signal.json; then
+          if node scripts/build-agent-signal.mjs && node scripts/augment-signal-safety.mjs && node scripts/apply-fractional-protection-policy.mjs && node scripts/apply-exit-policy-validation.mjs && node scripts/apply-strategy-intelligence.mjs && node scripts/apply-operational-safety.mjs && node scripts/validate-signal.mjs docs/signal.json; then
             echo "Fresh signal passed validation"
           else
             echo "Fresh signal failed generation or validation. Refusing to publish mixed-generation data." >&2
