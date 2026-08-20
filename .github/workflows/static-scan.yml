@@ -21,6 +21,7 @@ on:
       - 'scripts/build-cross-asset-opportunity-ranking.mjs'
       - 'scripts/update-shadow-ledger.mjs'
       - 'scripts/augment-signal-safety.mjs'
+      - 'scripts/apply-fractional-protection-policy.mjs'
       - 'scripts/validate-signal.mjs'
       - 'docs/real-fill-learning-policy.txt'
       - 'docs/teststock-real-trade-journal-template.json'
@@ -142,12 +143,12 @@ jobs:
       - name: Rank qualified opportunities across asset classes
         run: node scripts/build-cross-asset-opportunity-ranking.mjs
 
-      - name: Build, augment, and validate Claude/Robinhood signal
+      - name: Build, augment, apply fractional protection, and validate Claude/Robinhood signal
         shell: bash
         run: |
           set -euo pipefail
           if [ -f docs/signal.json ]; then cp docs/signal.json /tmp/teststock-last-good-signal.json; fi
-          if node scripts/build-agent-signal.mjs && node scripts/augment-signal-safety.mjs && node scripts/validate-signal.mjs docs/signal.json; then
+          if node scripts/build-agent-signal.mjs && node scripts/augment-signal-safety.mjs && node scripts/apply-fractional-protection-policy.mjs && node scripts/validate-signal.mjs docs/signal.json; then
             echo "Fresh signal passed validation"
           else
             echo "Fresh signal failed generation or validation. Refusing to publish mixed-generation data." >&2
