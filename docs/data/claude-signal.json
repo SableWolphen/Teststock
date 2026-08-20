@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 20,
+  "schemaVersion": 22,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-08-19T23:51:55.784Z",
+  "generatedAt": "2026-08-20T11:01:49.565Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -219,13 +219,14 @@
   "exitAutomation": {
     "fullyAutomatic": true,
     "protectiveExitRequiredBeforeConsideringEntryComplete": true,
-    "stockProtection": "After a stock buy fills, immediately place a persistent protective sell stop or stop-limit order at the Teststock stop when the connected Robinhood tool supports that order type. Prefer GTC when supported. Verify the protective order is accepted and covers the full intended quantity.",
+    "stockProtection": "Determine the live stock quantity. For whole-share quantity, create and verify a broker-resident persistent protective stop when Robinhood accepts it. Do not retry unsupported trigger orders for a fractional remainder. Fractional quantity may use only signal.fractionalProtectionPolicy synthetic monitoring, and only while its monitoring/risk requirements pass.",
     "optionProtection": "After an option buy fills, immediately place a persistent sell-to-close protective stop-market or stop-limit order when the connected Robinhood option tool supports that order type. Verify the protective order is accepted and covers the full intended contract quantity.",
     "cryptoProtection": "If crypto execution becomes supported by the connected Robinhood tools, place the strongest supported persistent protective exit at or near the Teststock invalidation immediately after entry.",
-    "noProtectionNoEntry": "If the connected tool cannot create or verify a persistent protective exit for a new stock or option position, do not open that new position. Existing positions still must be managed and reduced/closed according to the saved invalidation.",
-    "target1": "When target1 is reached, protect gains automatically. Before any partial sell or protective-order replacement, inspect and cancel/replace conflicting open sell orders as needed so total sell quantity never exceeds the live position. Take partial profit when practical, then move the remaining protection no farther from market than breakeven/original risk and never widen it.",
-    "target2": "When target2 is reached, prioritize taking profit on most or all of the remaining position unless the current signal explicitly provides a tighter trailing plan. Never let a profit target increase risk.",
-    "bracketCaution": "Do not assume bracket/OCO support. If the broker/tool does not support linked bracket orders, sequence protective-order changes and profit-taking carefully and verify quantities after every fill."
+    "noProtectionNoEntry": "Whole-share stock or option entries still require verified broker-resident protection when supported. A fractional stock entry may proceed only under signal.fractionalProtectionPolicy with active <=5-minute regular-session monitoring and the smaller 0.75%-of-live-equity planned-stop-risk cap. If those synthetic-protection requirements are not verifiably available, do not open the fractional entry.",
+    "target1": "At target1, sell about 25% of the ORIGINAL position when practical, then protect the remaining quantity at breakeven or tighter without widening risk.",
+    "target2": "At target2, use runnerContinuationPolicy. Sell enough of the ORIGINAL position to leave at most the authorized runner: normally 50% at target2 for a strong 25% runner, 60% for a moderate 15% runner, or all remaining 75% if no runner is authorized.",
+    "bracketCaution": "Do not assume bracket/OCO support. If the broker/tool does not support linked bracket orders, sequence protective-order changes and profit-taking carefully and verify quantities after every fill.",
+    "runner": "Never keep a runner solely because the original plan wanted one. It must be re-authorized by a fresh current Teststock continuation signal and remain under verified tightened protection."
   },
   "healthGuard": {
     "actionOnFailure": "NO_NEW_TRADES_MANAGE_EXITS_IF_POSSIBLE",
@@ -276,20 +277,25 @@
     "REGIME-SPECIFIC ENTRIES: use stricter regime profiles for calm, volatile, trending-down, trending-up, mixed, and unknown environments; never loosen base probability gates.",
     "TOP FOUR STOCK PORTFOLIO: rank stocks best-first and target up to four independently qualified stock positions. Never force a fourth position if it fails any gate; unused capacity stays cash. Up to 4 new positions/day and 12 per rolling 7 days are ceilings only, and all total-risk, cash, cluster, event, spread, protection, and circuit-breaker limits still apply.",
     "TARGET2 QUALIFICATION: use target2 for the minimum reward/risk entry gate. Target1 is a partial-profit/de-risking milestone and must not incorrectly disqualify a setup whose full target satisfies the required asymmetry.",
+    "CONDITIONAL RUNNER: at target1 sell about 25% of the original stock position and tighten protection. At target2 leave at most a 25% runner only if a fresh current continuation signal is strong; leave 15% for moderate continuation; otherwise exit the full remainder. Any runner must remain under verified tightened protection and may never be kept on stale/missing/weak evidence.",
     "COST-ADJUSTED EXPECTANCY: subtract the encoded conservative execution-friction allowance before stock eligibility/ranking. Never rank a nominal edge above a stronger after-cost edge merely because costs were ignored.",
     "CROSS-ASSET PRIORITY: rank already-qualified stocks, options, and crypto by risk-adjusted opportunity, but ranking never overrides live eligibility or safety gates and never creates a quota.",
     "SYMBOL PROBATION: lightly tested symbols start at reduced size until historical and real-fill evidence improves.",
     "GAP + LIQUIDITY: avoid large opening gaps, never widen stops for gaps, and prefer tighter spreads/higher reliable dollar volume among otherwise-equal candidates.",
     "OPTIONS + CRYPTO REMAIN SELECTIVE: they may participate when all dedicated research, real-fill, broker, whole-contract/liquidity/protection and frequency gates pass; frequency permission is never a reason to force a trade.",
-    "PIPELINE FRESHNESS: dataFreshness.lastSuccessfulGeneration and per-asset ages are machine-readable. A stale dependency fails closed; never hide a stalled generator by extending validity windows."
+    "PIPELINE FRESHNESS: dataFreshness.lastSuccessfulGeneration and per-asset ages are machine-readable. A stale dependency fails closed; never hide a stalled generator by extending validity windows.",
+    "FRACTIONAL STOP LIMITATION: the connected Robinhood Agentic runtime has rejected triggered stop orders for fractional share quantities with Invalid trigger for fractional order. Do not repeatedly retry unsupported stop-market/stop-limit fractional orders.",
+    "FRACTIONAL SYNTHETIC PROTECTION: a new fractional stock entry is permitted only if active regular-session monitoring can be verified at intervals of 5 minutes or less and planned stop risk is capped at 0.75% of live equity. When the saved invalidation is observed as breached, submit the supported fractional market sell immediately when permitted and verify the result.",
+    "WHOLE/HYBRID PROTECTION: use a verified broker-resident stop for whole-share quantity when supported; for mixed quantities, reconcile the whole-share broker stop with the synthetic fractional remainder so combined sell orders can never exceed the live position.",
+    "SYNTHETIC STOP HONESTY: an agent-managed fractional stop is not persistent broker protection and cannot guarantee the planned exit. If monitoring becomes unavailable, do not add fractional risk and do not keep a fractional runner unattended."
   ],
   "stockPlan": {
     "assetClass": "STOCK",
     "overallAction": "WAIT_FOR_MARKET_OPEN",
     "reason": "Market is closed.",
     "confidence": "A_PLUS",
-    "signalAsOf": "2026-08-19T22:04:02.072Z",
-    "expiresAt": "2026-08-21T10:04:02.072Z",
+    "signalAsOf": "2026-08-20T11:01:20.255Z",
+    "expiresAt": "2026-08-21T23:01:20.255Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 3,
       "maxOptionPremiumPct": 8,
@@ -343,7 +349,8 @@
       },
       "sizingMode": "ROBINHOOD_EXISTING_CASH_ONLY_WITH_CAPITAL_LADDER",
       "preferredQualifiedStockCount": 4,
-      "costAdjustedExpectancyRequired": true
+      "costAdjustedExpectancyRequired": true,
+      "runnerExitPolicy": "25% target1; at target2 leave 25% only on strong continuation, 15% on moderate continuation, otherwise exit all remaining"
     },
     "outcomeGuard": {
       "resolvedSample": 13,
@@ -362,25 +369,25 @@
       {
         "assetClass": "STOCK",
         "rank": 1,
-        "ticker": "USFR",
+        "ticker": "HAL",
         "sector": null,
         "action": "MARKET_CLOSED_RECHECK",
-        "allocationPctOfRobinhoodBuyingPower": 29.75,
-        "scanPrice": 50.48,
-        "minimumEntry": 50.48,
-        "maximumEntry": 51.49,
-        "stop": 50.4,
-        "target1": 50.6,
-        "target2": 50.69,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.05,
-        "rewardRisk": 2.63,
+        "allocationPctOfRobinhoodBuyingPower": 21.3,
+        "scanPrice": 35.03,
+        "minimumEntry": 35.36,
+        "maximumEntry": 36.07,
+        "stop": 32.87,
+        "target1": 39.09,
+        "target2": 41.83,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 1.5,
+        "rewardRisk": 2.6,
         "growthQuality": 100,
         "expectancy": {
-          "expectedR": 2.63,
-          "conservativeExpectedR": 2.63,
-          "costAdjustedConservativeExpectedR": 0.73,
+          "expectedR": 1.95,
+          "conservativeExpectedR": 1.95,
+          "costAdjustedConservativeExpectedR": 1.91,
           "assumedRoundTripFrictionPct": 0.3,
-          "frictionR": 1.893
+          "frictionR": 0.043
         },
         "adaptivePerformance": {
           "samples": 0,
@@ -392,31 +399,47 @@
           "label": "UNPROVEN",
           "source": "MODEL_RESEARCH_ONLY"
         },
-        "historicalWinRate": 100,
-        "historicalSamples": 51
+        "historicalWinRate": 82,
+        "historicalSamples": 34,
+        "exitPlan": {
+          "target1SellPctOfOriginal": 25,
+          "target2Action": "DYNAMIC_TO_RUNNER_SIGNAL",
+          "maxRunnerPctOfOriginal": 25,
+          "moderateRunnerPctOfOriginal": 15,
+          "noRunnerPctOfOriginal": 0,
+          "runnerPolicyRef": "signal.runnerContinuationPolicy"
+        },
+        "protectionPlan": {
+          "determineFromLiveQuantity": true,
+          "wholeShares": "BROKER_PERSISTENT_STOP_WHEN_SUPPORTED",
+          "fractionalRemainder": "SYNTHETIC_STOP_ONLY_IF_ACTIVE_MONITORING_PASSES",
+          "fractionalMaxPlannedStopRiskPctOfLiveEquity": 0.75,
+          "syntheticMonitoringMaxMinutes": 5,
+          "policyRef": "signal.fractionalProtectionPolicy"
+        }
       },
       {
         "assetClass": "STOCK",
         "rank": 2,
-        "ticker": "OGN",
+        "ticker": "ORKA",
         "sector": null,
         "action": "MARKET_CLOSED_RECHECK",
-        "allocationPctOfRobinhoodBuyingPower": 14.03,
-        "scanPrice": 13.73,
-        "minimumEntry": 13.73,
-        "maximumEntry": 14,
-        "stop": 13.59,
-        "target1": 13.94,
-        "target2": 14.09,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.14,
-        "rewardRisk": 2.57,
+        "allocationPctOfRobinhoodBuyingPower": 3.51,
+        "scanPrice": 109.59,
+        "minimumEntry": 115.28,
+        "maximumEntry": 117.59,
+        "stop": 100.3,
+        "target1": 137.75,
+        "target2": 154.23,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.46,
+        "rewardRisk": 2.6,
         "growthQuality": 100,
         "expectancy": {
-          "expectedR": 1.04,
-          "conservativeExpectedR": 0.96,
-          "costAdjustedConservativeExpectedR": 0.67,
+          "expectedR": 1.95,
+          "conservativeExpectedR": 1.95,
+          "costAdjustedConservativeExpectedR": 1.93,
           "assumedRoundTripFrictionPct": 0.3,
-          "frictionR": 0.294
+          "frictionR": 0.023
         },
         "adaptivePerformance": {
           "samples": 0,
@@ -428,8 +451,76 @@
           "label": "UNPROVEN",
           "source": "MODEL_RESEARCH_ONLY"
         },
-        "historicalWinRate": 57,
-        "historicalSamples": 21
+        "historicalWinRate": 82,
+        "historicalSamples": 39,
+        "exitPlan": {
+          "target1SellPctOfOriginal": 25,
+          "target2Action": "DYNAMIC_TO_RUNNER_SIGNAL",
+          "maxRunnerPctOfOriginal": 25,
+          "moderateRunnerPctOfOriginal": 15,
+          "noRunnerPctOfOriginal": 0,
+          "runnerPolicyRef": "signal.runnerContinuationPolicy"
+        },
+        "protectionPlan": {
+          "determineFromLiveQuantity": true,
+          "wholeShares": "BROKER_PERSISTENT_STOP_WHEN_SUPPORTED",
+          "fractionalRemainder": "SYNTHETIC_STOP_ONLY_IF_ACTIVE_MONITORING_PASSES",
+          "fractionalMaxPlannedStopRiskPctOfLiveEquity": 0.75,
+          "syntheticMonitoringMaxMinutes": 5,
+          "policyRef": "signal.fractionalProtectionPolicy"
+        }
+      },
+      {
+        "assetClass": "STOCK",
+        "rank": 3,
+        "ticker": "VRDN",
+        "sector": null,
+        "action": "MARKET_CLOSED_RECHECK",
+        "allocationPctOfRobinhoodBuyingPower": 3.31,
+        "scanPrice": 24.8,
+        "minimumEntry": 24.8,
+        "maximumEntry": 25.3,
+        "stop": 21.43,
+        "target1": 29.86,
+        "target2": 33.56,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.45,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "expectancy": {
+          "expectedR": 2.06,
+          "conservativeExpectedR": 1.93,
+          "costAdjustedConservativeExpectedR": 1.91,
+          "assumedRoundTripFrictionPct": 0.3,
+          "frictionR": 0.022
+        },
+        "adaptivePerformance": {
+          "samples": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "sizeMultiplier": 1,
+          "qualityAdjustment": 0,
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY"
+        },
+        "historicalWinRate": 85,
+        "historicalSamples": 27,
+        "exitPlan": {
+          "target1SellPctOfOriginal": 25,
+          "target2Action": "DYNAMIC_TO_RUNNER_SIGNAL",
+          "maxRunnerPctOfOriginal": 25,
+          "moderateRunnerPctOfOriginal": 15,
+          "noRunnerPctOfOriginal": 0,
+          "runnerPolicyRef": "signal.runnerContinuationPolicy"
+        },
+        "protectionPlan": {
+          "determineFromLiveQuantity": true,
+          "wholeShares": "BROKER_PERSISTENT_STOP_WHEN_SUPPORTED",
+          "fractionalRemainder": "SYNTHETIC_STOP_ONLY_IF_ACTIVE_MONITORING_PASSES",
+          "fractionalMaxPlannedStopRiskPctOfLiveEquity": 0.75,
+          "syntheticMonitoringMaxMinutes": 5,
+          "policyRef": "signal.fractionalProtectionPolicy"
+        }
       }
     ],
     "eliteOption": null
@@ -439,8 +530,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-19T23:51:55.612Z",
-    "expiresAt": "2026-08-20T00:21:55.612Z",
+    "signalAsOf": "2026-08-20T11:01:49.391Z",
+    "expiresAt": "2026-08-20T11:31:49.391Z",
     "policy": {
       "aPlusMinGrowthQuality": 94,
       "aMinGrowthQuality": 88,
@@ -465,7 +556,7 @@
   "entryGateRobustness": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
     "status": "RED_FLAG",
-    "generatedAt": "2026-08-19T22:04:11.615Z",
+    "generatedAt": "2026-08-20T11:01:46.504Z",
     "holdoutStart": "2024-01-01",
     "holdoutEnd": "2025-12-31",
     "secondHoldoutStart": "2026-01-01",
@@ -825,7 +916,7 @@
   },
   "shadowDiagnostics": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/shadow-trades.json",
-    "generatedAt": "2026-08-19T22:04:13.357Z",
+    "generatedAt": "2026-08-20T11:01:47.936Z",
     "summary": {
       "ACCEPTED": {
         "resolved": 0,
@@ -849,7 +940,7 @@
   },
   "probabilityFirstPolicy": {
     "schemaVersion": 2,
-    "generatedAt": "2026-08-19T23:51:55.669Z",
+    "generatedAt": "2026-08-20T11:01:49.449Z",
     "objective": "Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto selective, and cash acceptable. This policy cannot eliminate market loss risk.",
     "stocks": {
       "minGrowthQuality": 92,
@@ -909,7 +1000,7 @@
   },
   "crossAssetOpportunityRanking": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/opportunity-ranking-500.json",
-    "generatedAt": "2026-08-19T23:51:55.733Z",
+    "generatedAt": "2026-08-20T11:01:49.513Z",
     "rankingPolicy": {
       "stocksPrimaryOnTies": true,
       "noForcedDiversification": true,
@@ -920,18 +1011,18 @@
     "opportunities": [
       {
         "assetClass": "STOCK",
-        "symbol": "USFR",
+        "symbol": "HAL",
         "researchEligible": true,
         "liveChecksRequired": true,
-        "score": 125.97,
+        "score": 133.85,
         "growthQuality": 100,
-        "historicalWinRatePct": 100,
-        "historicalSamples": 51,
+        "historicalWinRatePct": 82,
+        "historicalSamples": 34,
         "rewardRiskTarget1": 1.5,
-        "rewardRiskTarget2": 2.63,
-        "costAdjustedConservativeExpectedR": 0.73,
-        "plannedAllocationDollars": 148.75,
-        "plannedStopLossDollars": 0.24,
+        "rewardRiskTarget2": 2.6,
+        "costAdjustedConservativeExpectedR": 1.91,
+        "plannedAllocationDollars": 106.51,
+        "plannedStopLossDollars": 7.5,
         "notes": [
           "Primary asset class.",
           "Must still pass live entry, spread, gap, cash, correlation, protection, frequency, account-floor, and real-fill learning checks."
@@ -940,39 +1031,59 @@
       },
       {
         "assetClass": "STOCK",
-        "symbol": "OGN",
+        "symbol": "ORKA",
         "researchEligible": true,
         "liveChecksRequired": true,
-        "score": 115.28,
+        "score": 133.58,
         "growthQuality": 100,
-        "historicalWinRatePct": 57,
-        "historicalSamples": 21,
+        "historicalWinRatePct": 82,
+        "historicalSamples": 39,
         "rewardRiskTarget1": 1.5,
-        "rewardRiskTarget2": 2.57,
-        "costAdjustedConservativeExpectedR": 0.67,
-        "plannedAllocationDollars": 70.13,
-        "plannedStopLossDollars": 0.72,
+        "rewardRiskTarget2": 2.6,
+        "costAdjustedConservativeExpectedR": 1.93,
+        "plannedAllocationDollars": 17.53,
+        "plannedStopLossDollars": 2.28,
         "notes": [
           "Primary asset class.",
           "Must still pass live entry, spread, gap, cash, correlation, protection, frequency, account-floor, and real-fill learning checks."
         ],
         "rank": 2
+      },
+      {
+        "assetClass": "STOCK",
+        "symbol": "VRDN",
+        "researchEligible": true,
+        "liveChecksRequired": true,
+        "score": 132.59,
+        "growthQuality": 100,
+        "historicalWinRatePct": 85,
+        "historicalSamples": 27,
+        "rewardRiskTarget1": 1.5,
+        "rewardRiskTarget2": 2.6,
+        "costAdjustedConservativeExpectedR": 1.91,
+        "plannedAllocationDollars": 16.56,
+        "plannedStopLossDollars": 2.25,
+        "notes": [
+          "Primary asset class.",
+          "Must still pass live entry, spread, gap, cash, correlation, protection, frequency, account-floor, and real-fill learning checks."
+        ],
+        "rank": 3
       }
     ],
     "preferredResearchOpportunity": {
       "assetClass": "STOCK",
-      "symbol": "USFR",
+      "symbol": "HAL",
       "researchEligible": true,
       "liveChecksRequired": true,
-      "score": 125.97,
+      "score": 133.85,
       "growthQuality": 100,
-      "historicalWinRatePct": 100,
-      "historicalSamples": 51,
+      "historicalWinRatePct": 82,
+      "historicalSamples": 34,
       "rewardRiskTarget1": 1.5,
-      "rewardRiskTarget2": 2.63,
-      "costAdjustedConservativeExpectedR": 0.73,
-      "plannedAllocationDollars": 148.75,
-      "plannedStopLossDollars": 0.24,
+      "rewardRiskTarget2": 2.6,
+      "costAdjustedConservativeExpectedR": 1.91,
+      "plannedAllocationDollars": 106.51,
+      "plannedStopLossDollars": 7.5,
       "notes": [
         "Primary asset class.",
         "Must still pass live entry, spread, gap, cash, correlation, protection, frequency, account-floor, and real-fill learning checks."
@@ -992,15 +1103,15 @@
   },
   "dataFreshness": {
     "status": "GENERATED_THIS_RUN",
-    "lastSuccessfulGeneration": "2026-08-19T23:51:55.819Z",
+    "lastSuccessfulGeneration": "2026-08-20T11:01:49.601Z",
     "expectedRefreshCadenceMinutes": 10,
     "stockExpectedRefreshMinutesDuringMarket": 10,
     "cryptoExpectedRefreshMinutes": 10,
-    "stockSignalAsOf": "2026-08-19T22:04:02.072Z",
-    "cryptoSignalAsOf": "2026-08-19T23:51:55.612Z",
-    "stockAgeMinutes": 108,
+    "stockSignalAsOf": "2026-08-20T11:01:20.255Z",
+    "cryptoSignalAsOf": "2026-08-20T11:01:49.391Z",
+    "stockAgeMinutes": 0,
     "cryptoAgeMinutes": 0,
-    "entryGateValidationAgeMinutes": 108,
+    "entryGateValidationAgeMinutes": 0,
     "staleAfterMinutes": {
       "unified": 20,
       "stockDuringMarket": 25,
@@ -1026,7 +1137,9 @@
       "staleDataFailClosed": true,
       "costAdjustedExpectancy": true,
       "target2RewardRiskQualification": true,
-      "crossAssetOpportunityRanking": true
+      "crossAssetOpportunityRanking": true,
+      "conditionalRunnerExit": true,
+      "fractionalSyntheticProtection": true
     },
     "evidence": {
       "entryGateReport": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
@@ -1035,12 +1148,12 @@
     }
   },
   "systemHealth": {
-    "generatedAt": "2026-08-19T23:51:55.819Z",
+    "generatedAt": "2026-08-20T11:01:49.601Z",
     "signalAgeMinutes": 0,
     "dataFreshnessStatus": "GENERATED_THIS_RUN",
     "entryGateValidation": {
       "status": "RED_FLAG",
-      "ageMinutes": 108,
+      "ageMinutes": 0,
       "required": true
     },
     "probabilityFirstOverlay": {
@@ -1055,7 +1168,7 @@
     },
     "shadowLedger": {
       "status": "AVAILABLE",
-      "ageMinutes": 108,
+      "ageMinutes": 0,
       "requiredForTrading": false
     },
     "runtimeBroker": {
@@ -1079,9 +1192,14 @@
       "live Robinhood equity/cash",
       "known order/position state",
       "verified protective-exit capability for a new stock/option",
-      "journal reconciliation or reliable Robinhood-history reconstruction"
+      "journal reconciliation or reliable Robinhood-history reconstruction",
+      "active <=5-minute monitoring for any new fractional stock exposure"
     ],
-    "instructions": "Any missing, stale, contradictory, or unknown critical dependency means no new position."
+    "instructions": "Any missing, stale, contradictory, or unknown critical dependency means no new position.",
+    "runtimeFractionalProtection": {
+      "status": "RUNTIME_CHECK_REQUIRED",
+      "requiredForNewFractionalStock": true
+    }
   },
   "performanceScalingGuard": {
     "mode": "REAL_FILL_PROOF_BEFORE_HIGHER_RISK",
@@ -1138,8 +1256,109 @@
       "protective-order creation latency",
       "protective-order verification status",
       "actual exit fill",
-      "adverse exit slippage"
+      "adverse exit slippage",
+      "protection mode BROKER/HYBRID/SYNTHETIC/UNPROTECTED",
+      "synthetic-stop observation timestamp",
+      "synthetic-stop trigger price",
+      "synthetic-stop market-sell submission/fill",
+      "synthetic-stop detection-to-submit latency"
     ]
   },
-  "strategyChangeLogUrl": "https://sablewolphen.github.io/Teststock/strategy-changelog.txt"
+  "runnerContinuationPolicy": {
+    "enabled": true,
+    "appliesTo": "STOCK_POSITIONS",
+    "target1SellPctOfOriginal": 25,
+    "maximumRunnerPctOfOriginal": 25,
+    "moderateRunnerPctOfOriginal": 15,
+    "noSignalRunnerPctOfOriginal": 0,
+    "target2BaseSellPctOfOriginal": 50,
+    "runnerSizingRule": "At target2, sell enough of the ORIGINAL position so only the currently-authorized runner remains. Strong continuation: leave 25% runner (normally sell 50% at target2 after 25% sold at target1). Moderate continuation: leave 15% runner (sell 60% at target2). Weak, missing, stale, contradictory, or blocked continuation: leave 0% runner (sell all 75% remaining at target2).",
+    "strongContinuation": {
+      "runnerPctOfOriginal": 25,
+      "requires": [
+        "fresh current Teststock generation",
+        "symbol remains in current qualified stock research output",
+        "bullish direction/trend remains intact",
+        "growthQuality >= 97",
+        "costAdjustedConservativeExpectedR >= 0.90 when available",
+        "current regime allows new stocks",
+        "no event/corporate-action blackout",
+        "no health/protection contradiction",
+        "live price remains above tightened protective exit"
+      ]
+    },
+    "moderateContinuation": {
+      "runnerPctOfOriginal": 15,
+      "requires": [
+        "fresh current Teststock generation",
+        "symbol remains in current qualified stock research output",
+        "bullish direction/trend remains intact",
+        "growthQuality >= 92",
+        "costAdjustedConservativeExpectedR >= 0.50 when available",
+        "current regime allows new stocks",
+        "no event/corporate-action blackout",
+        "no health/protection contradiction",
+        "live price remains above tightened protective exit"
+      ]
+    },
+    "otherwise": {
+      "runnerPctOfOriginal": 0,
+      "action": "EXIT_REMAINDER_AT_OR_AFTER_TARGET2"
+    },
+    "protection": {
+      "afterTarget1": "Protect the remaining position at breakeven or tighter when supported; never widen risk.",
+      "afterTarget2": "Any runner must have a verified tightened persistent protective exit. Tighten only; never move protection farther away. If protection cannot be verified, exit the runner.",
+      "trailingMethod": "Use the strongest supported trailing/tightening mechanism available from the broker/agent. Do not invent an unsupported trailing order.",
+      "fractionalRunnerRule": "A fractional runner requires both continuation authorization and healthy active synthetic-stop monitoring under signal.fractionalProtectionPolicy. Without that monitoring, exit the fractional runner instead of leaving it unattended."
+    },
+    "instructions": "A runner is optional, never automatic. Re-fetch the current signal at target2 and on every later management run. Keep 25% only for strong continuation, 15% for moderate continuation, and 0% when continuation evidence is weak/unknown or any critical guard fails. The goal is to preserve upside without turning a planned winner into an unprotected bet."
+  },
+  "strategyChangeLogUrl": "https://sablewolphen.github.io/Teststock/strategy-changelog.txt",
+  "fractionalProtectionPolicy": {
+    "enabled": true,
+    "schemaVersion": 1,
+    "runtimeEvidenceSource": "ROBINHOOD_AGENTIC_RUNTIME_ERROR",
+    "observedPlatformConstraint": {
+      "fractionalTriggeredSellOrdersSupported": false,
+      "observedError": "Invalid trigger for fractional order",
+      "interpretation": "The connected Robinhood Agentic order path rejected stop-market and stop-limit trigger orders for fractional share quantities. Do not keep retrying unsupported triggered fractional orders."
+    },
+    "protectionHierarchy": [
+      "For whole-share quantity, prefer a verified broker-resident persistent stop/stop-limit when the runtime accepts it.",
+      "For a mixed position, protect the whole-share portion with a broker-resident stop when supported and treat only the fractional remainder as synthetic-stop exposure.",
+      "For a position below one full share, no broker trigger may be assumed. Fractional protection is agent-managed synthetic protection only when active monitoring is healthy.",
+      "Never describe a synthetic stop as broker-resident, guaranteed, or equivalent to a persistent stop."
+    ],
+    "fractionalSyntheticStop": {
+      "allowed": true,
+      "maximumPlannedStopRiskPctOfLiveEquity": 0.75,
+      "requiresActiveMonitoring": true,
+      "maximumMonitoringIntervalMinutesDuringRegularSession": 5,
+      "triggerRule": "When a reliable live Robinhood price at or below the saved Teststock stop/invalidation is observed, submit a fractional market sell for the protected fractional quantity immediately when runtime permissions allow. Re-read position/order status after submission and never infer a fill.",
+      "monitoringFailureRule": "If active monitoring cannot be verified during the regular session, do not open new fractional stock exposure. Existing synthetic-only fractional exposure is DEGRADED/UNPROTECTED; do not add risk. If runtime permissions allow automatic risk reduction, exit the synthetic-only fractional quantity rather than knowingly leaving it unattended.",
+      "marketClosedRule": "Do not pretend an agent-managed stop can execute while monitoring/order routing is unavailable. Re-check immediately when the regular session becomes actionable. Gap/slippage can exceed the planned stop.",
+      "executionType": "FRACTIONAL_MARKET_SELL_ON_OBSERVED_TRIGGER",
+      "slippageWarning": "A synthetic stop is not a resting broker order. Detection latency, outages, usage limits, gaps, fast markets, and market-order slippage can produce losses materially larger than planned."
+    },
+    "wholeShareStop": {
+      "preferred": true,
+      "action": "PLACE_AND_VERIFY_PERSISTENT_BROKER_STOP_WHEN_SUPPORTED"
+    },
+    "mixedQuantity": {
+      "enabled": true,
+      "rule": "Let wholeQty=floor(live share quantity) and fractionalRemainder=live quantity-wholeQty. When supported, protect wholeQty with a broker-resident stop and protect only fractionalRemainder synthetically. Before any sell, reconcile open sell orders so combined sell quantity cannot exceed the live position."
+    },
+    "targetManagement": {
+      "target1": "Fractional partial profit may use the supported fractional sell path. After target1, whole shares should retain/tighten broker protection when supported; any fractional remainder remains subject to synthetic monitoring rules.",
+      "target2": "Apply runnerContinuationPolicy, but a fractional runner is allowed only while active monitoring satisfies this policy. If monitoring is not healthy, leave no synthetic-only fractional runner.",
+      "runner": "A fractional runner may never survive solely because continuation is strong. Both continuation evidence AND active synthetic-stop monitoring must pass."
+    },
+    "existingFractionalPositionResponse": {
+      "firstAction": "Inspect live quantity, open orders, saved Teststock stop/invalidation, current price, and runtime monitoring capability.",
+      "ifStopBreached": "Submit the supported fractional market sell immediately when permitted, then verify the fill/remaining quantity.",
+      "ifStopNotBreachedButMonitoringHealthy": "Keep the saved invalidation as a synthetic trigger, apply the reduced synthetic-risk policy to any future entries, and monitor at the required interval.",
+      "ifMonitoringNotHealthy": "Mark protection DEGRADED, open no additional fractional risk, and prefer reducing/closing synthetic-only exposure when automatic risk reduction is permitted rather than pretending it is protected."
+    },
+    "instructions": "Fractional-share protection is a degraded fallback forced by the observed broker limitation, not an upgrade. New fractional entries are allowed only when active monitoring can enforce the saved invalidation at least every 5 minutes during the regular session and planned stop risk is no more than 0.75% of live equity. Otherwise skip the fractional entry. Whole-share broker protection remains preferred."
+  }
 }
