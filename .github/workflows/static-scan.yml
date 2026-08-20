@@ -19,6 +19,7 @@ on:
       - 'scripts/optimize-growth-plan.mjs'
       - 'scripts/enforce-model-sizing-lock.mjs'
       - 'scripts/generate-crypto-picks.mjs'
+      - 'scripts/apply-crypto-knockout-tournament.mjs'
       - 'scripts/build-agent-signal.mjs'
       - 'scripts/validate-entry-gates.mjs'
       - 'scripts/apply-advanced-growth-guards.mjs'
@@ -191,7 +192,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -f docs/signal.json ]; then cp docs/signal.json /tmp/teststock-last-good-signal.json; fi
-          if node scripts/build-agent-signal.mjs && node scripts/augment-signal-safety.mjs && node scripts/apply-fractional-protection-policy.mjs && node scripts/apply-exit-policy-validation.mjs && node scripts/apply-strategy-intelligence.mjs && node scripts/apply-operational-safety.mjs && node scripts/apply-stock-knockout-tournament.mjs && node scripts/validate-signal.mjs docs/signal.json && node scripts/validate-stock-knockout.mjs; then
+          if node scripts/build-agent-signal.mjs && node scripts/augment-signal-safety.mjs && node scripts/apply-fractional-protection-policy.mjs && node scripts/apply-exit-policy-validation.mjs && node scripts/apply-strategy-intelligence.mjs && node scripts/apply-operational-safety.mjs && node scripts/apply-stock-knockout-tournament.mjs && node scripts/apply-crypto-knockout-tournament.mjs && node scripts/validate-signal.mjs docs/signal.json && node scripts/validate-stock-knockout.mjs; then
             echo "Fresh signal passed validation"
           else
             echo "Fresh signal failed generation or validation. Refusing to publish mixed-generation data." >&2
