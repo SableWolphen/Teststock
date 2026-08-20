@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "source": "TESTSTOCK_EVENT_DISPATCH",
+  "generatedAt": "2026-08-20T12:06:23.189Z",
+  "boardPublishedAt": "2026-08-20T11:59:08.536Z",
+  "monitorHealth": "OK",
+  "claudeShouldRun": true,
+  "claudeShouldPollMarket": false,
+  "priorityOrder": [
+    "TRIGGER_1_STOP",
+    "TRIGGER_3_TARGET2",
+    "TRIGGER_2_TARGET1",
+    "BUY_TRIGGER"
+  ],
+  "pendingAction": {
+    "fingerprint": "ENTRY:STOCK:VRDN|BUY_TRIGGER|2026-08-20T11:59:08.536Z",
+    "isNew": true,
+    "priority": 50,
+    "assetClass": "STOCK",
+    "ticker": "VRDN",
+    "trigger": "BUY_TRIGGER",
+    "requestedAction": "VERIFY_LIVE_GUARDS_AND_BUY_IF_STILL_ELIGIBLE",
+    "observedPrice": 24.805,
+    "triggerStateChangedAt": "2026-08-20T11:59:08.536Z",
+    "reason": "Current price is inside the qualified Teststock entry zone. Claude/Robinhood must still pass all live guards before buying.",
+    "packet": "VRDN | BUY_TRIGGER | observed 24.805 | VERIFY_LIVE_GUARDS_AND_BUY_IF_STILL_ELIGIBLE"
+  },
+  "queuedActions": [],
+  "noActionInstruction": "If claudeShouldRun is false, stop immediately. Do not call Robinhood, fetch the full signal, research markets, or produce a long report.",
+  "actionInstruction": "If claudeShouldRun is true, use only this trigger as the wake reason. Then fetch the fresh Teststock signal and live Robinhood state, verify every applicable safety guard, execute only the requested brokerage action when permitted, verify the resulting order/fill/position state, update the private real-trade journal, and arm/update the public non-sensitive execution watchlist only after confirmed fills.",
+  "stopPriorityRule": "A stop event outranks profit targets and buys. Never delay a stop event to process a lower-priority action first.",
+  "wakeBridge": {
+    "status": "DISPATCH_PACKET_READY_NO_DIRECT_CLAUDE_WEBHOOK",
+    "note": "GitHub generates the event packet without an LLM. This repository still cannot directly invoke the Claude/Robinhood runtime. An authorized execution runtime must fetch this packet or be triggered externally."
+  }
+}
