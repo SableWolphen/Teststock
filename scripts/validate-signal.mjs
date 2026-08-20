@@ -1,12 +1,12 @@
 import fs from 'node:fs/promises';
 const file=process.argv[2]||'docs/signal.json',raw=await fs.readFile(file,'utf8');let s;try{s=JSON.parse(raw);}catch{throw new Error('signal.json is not valid JSON');}
 const fail=[],finite=n=>Number.isFinite(Number(n));
-if(!Number.isInteger(s.schemaVersion)||s.schemaVersion<22)fail.push('schemaVersion');if(s.source!=='Teststock')fail.push('source');
+if(!Number.isInteger(s.schemaVersion)||s.schemaVersion<23)fail.push('schemaVersion');if(s.source!=='Teststock')fail.push('source');
 const generated=new Date(s.generatedAt).getTime(),age=Date.now()-generated;if(!Number.isFinite(generated)||age< -5*60_000||age>10*60_000)fail.push('generatedAt freshness');
 if(s.funding?.agentMayInitiateDeposits!==false||s.funding?.agentMayInitiateBankTransfers!==false)fail.push('funding lock');
 const tiers=s.capitalLadder?.tiers;if(!Array.isArray(tiers)||tiers.length<5)fail.push('capital tiers');else{let last=-Infinity;for(const t of tiers){if(!finite(t.minEquity)||Number(t.minEquity)<last)fail.push('tier ordering');last=Number(t.minEquity);}if(tiers.find(t=>Number(t.minEquity)===100)?.label!=='PROVE')fail.push('$100 PROVE boundary');}
 for(const plan of [s.stockPlan,s.cryptoPlan])if(!plan||typeof plan!=='object')fail.push('asset plan missing');
-for(const order of s.stockPlan?.stockOrders||[]){for(const k of ['minimumEntry','maximumEntry','stop','target1','target2'])if(!finite(order[k])||Number(order[k])<=0)fail.push(`stock ${k}`);if(Number(order.maximumEntry)<Number(order.minimumEntry))fail.push('stock entry range');if(Number(order.rewardRisk||0)>0&&Number(order.rewardRisk)<2.5)fail.push('stock target2 reward-risk gate');if(order.exitPlan?.target1SellPctOfOriginal!==25)fail.push('stock target1 scale-out');if(Number(order.exitPlan?.maxRunnerPctOfOriginal||0)>25)fail.push('stock runner too large');if(order.protectionPlan?.policyRef!=='signal.fractionalProtectionPolicy')fail.push('stock fractional protection plan');}
+for(const order of s.stockPlan?.stockOrders||[]){for(const k of ['minimumEntry','maximumEntry','stop','target1','target2'])if(!finite(order[k])||Number(order[k])<=0)fail.push(`stock ${k}`);if(Number(order.maximumEntry)<Number(order.minimumEntry))fail.push('stock entry range');if(Number(order.rewardRisk||0)>0&&Number(order.rewardRisk)<2.5)fail.push('stock target2 reward-risk gate');if(![0,25].includes(Number(order.exitPlan?.target1SellPctOfOriginal)))fail.push('stock target1 scale-out');if(Number(order.exitPlan?.maxRunnerPctOfOriginal||0)>25)fail.push('stock runner too large');if(Number(order.exitPlan?.runnerPctOfOriginal||0)>Number(order.exitPlan?.maxRunnerPctOfOriginal||0))fail.push('stock runner exceeds validated max');if(order.protectionPlan?.policyRef!=='signal.fractionalProtectionPolicy')fail.push('stock fractional protection plan');}
 for(const order of s.cryptoPlan?.cryptoOrders||[]){for(const k of ['minimumEntry','maximumEntry','stop','target1','target2'])if(!finite(order[k])||Number(order[k])<=0)fail.push(`crypto ${k}`);}
 const o=s.stockPlan?.eliteOption;if(o&&!o.wholeContractSizing?.runtimeCheckRequired)fail.push('option whole-contract runtime check');
 if(s.systemHealth?.actionOnCriticalFailure!=='NO_NEW_TRADES_MANAGE_EXITS_IF_POSSIBLE')fail.push('system health fail-closed policy');
@@ -30,11 +30,12 @@ if(s.systemHealth?.crossAssetRanking?.required!==true)fail.push('cross-asset ran
 if(s.shadowEvidencePolicy?.automaticLooseningAllowed!==false)fail.push('shadow automatic loosening lock');
 if(s.executionTelemetryPolicy?.sourceOfTruth!=='ROBINHOOD_CONFIRMED_FILLS_AND_ORDERS')fail.push('execution telemetry source');if(!s.dailySummaryPolicy?.enabled)fail.push('daily summary policy');
 if(s.runnerContinuationPolicy?.enabled!==true)fail.push('runner policy');
-if(Number(s.runnerContinuationPolicy?.target1SellPctOfOriginal)!==25)fail.push('runner target1 allocation');
-if(Number(s.runnerContinuationPolicy?.maximumRunnerPctOfOriginal)!==25)fail.push('runner max allocation');
-if(Number(s.runnerContinuationPolicy?.moderateRunnerPctOfOriginal)!==15)fail.push('runner moderate allocation');
+if(Number(s.runnerContinuationPolicy?.maximumRunnerPctOfOriginal||0)>25)fail.push('runner max allocation');
+if(Number(s.runnerContinuationPolicy?.moderateRunnerPctOfOriginal||0)>Number(s.runnerContinuationPolicy?.maximumRunnerPctOfOriginal||0))fail.push('runner moderate allocation');
 if(Number(s.runnerContinuationPolicy?.noSignalRunnerPctOfOriginal)!==0)fail.push('runner fail-closed allocation');
 if(s.runnerContinuationPolicy?.otherwise?.action!=='EXIT_REMAINDER_AT_OR_AFTER_TARGET2')fail.push('runner weak-signal exit');
+if(!s.exitPolicyValidation?.recommendedPolicy)fail.push('exit-policy validation');
+if(s.exitPolicyValidation?.automaticRiskIncreaseAllowed!==false)fail.push('exit-policy risk lock');
 if(s.fractionalProtectionPolicy?.enabled!==true)fail.push('fractional protection policy');
 if(s.fractionalProtectionPolicy?.observedPlatformConstraint?.fractionalTriggeredSellOrdersSupported!==false)fail.push('fractional trigger limitation');
 if(Number(s.fractionalProtectionPolicy?.fractionalSyntheticStop?.maximumPlannedStopRiskPctOfLiveEquity)!==0.75)fail.push('fractional synthetic risk cap');
@@ -48,5 +49,5 @@ if(s.dataFreshness?.failClosed!==true)fail.push('freshness fail-closed');
 if(Number(s.dataFreshness?.cryptoAgeMinutes??999)>25)fail.push('crypto data stale at generation');
 if(Number(s.dataFreshness?.entryGateValidationAgeMinutes??999)>120)fail.push('entry-gate validation stale');
 if(!s.generatorIntegrity?.lastKnownGoodFallback)fail.push('last-known-good fallback metadata');
-for(const k of ['dualUntouchedHoldouts','regimeSpecificEntryProfiles','wholeContractOptionSizing','setupClusterAndSymbolRealFillLearning','staleDataFailClosed','costAdjustedExpectancy','target2RewardRiskQualification','crossAssetOpportunityRanking','conditionalRunnerExit','fractionalSyntheticProtection'])if(s.generatorIntegrity?.traceableFeatures?.[k]!==true)fail.push(`integrity feature ${k}`);
+for(const k of ['dualUntouchedHoldouts','regimeSpecificEntryProfiles','wholeContractOptionSizing','setupClusterAndSymbolRealFillLearning','staleDataFailClosed','costAdjustedExpectancy','target2RewardRiskQualification','crossAssetOpportunityRanking','conditionalRunnerExit','fractionalSyntheticProtection','exitPolicyHoldoutValidation'])if(s.generatorIntegrity?.traceableFeatures?.[k]!==true)fail.push(`integrity feature ${k}`);
 if(fail.length)throw new Error(`signal validation failed: ${[...new Set(fail)].join(', ')}`);console.log(`signal validation passed: schema v${s.schemaVersion}, generated ${s.generatedAt}`);
