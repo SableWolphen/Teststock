@@ -1,36 +1,44 @@
 TESTSTOCK LOW-CREDIT TRIGGER EXECUTOR
 
-Purpose: avoid using Claude for continuous market-price monitoring. GitHub + Alpaca maintain the trigger board. Claude should spend meaningful tokens only when a buy/sell action is actually pending.
+Purpose: avoid using Claude for continuous market-price monitoring. GitHub + Alpaca maintain the trigger board. Claude should spend meaningful tokens only when a buy proposal or sell/exit action is actually pending.
 
-FIRST AND CHEAPEST STEP ON EVERY RUN:
-1. Fetch only this small raw file first:
+FIRST AND CHEAPEST STEP ON EVERY RUN
+1. Fetch only this small raw-main file first:
    https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/trigger-board.json?cb=<current-utc-ms>
 2. If monitorHealth is not OK, do not open new risk. If executionNeeded is false, STOP THE RUN immediately. Do not fetch the full Teststock signal, do not query Robinhood, do not analyze markets, and do not produce a long report.
-3. If executionNeeded is true, inspect only the listed events. Then fetch the fresh raw signal, the execution watchlist, and the minimum Robinhood data necessary to verify and execute those events safely.
+3. If executionNeeded is true, inspect only the listed events. Fetch the newest raw-main execution-dispatch.json, signal.json, relevant tournament file, execution-watchlist.json, and only the minimum Robinhood data necessary for the event.
+4. Before any order, confirm the trigger/dispatch matches the current ACTIVE signal generation. If timestamps/generation identifiers conflict, re-fetch. Do not submit new risk from mismatched generations.
 
-BUY_TRIGGER:
-- A BUY_TRIGGER is only a wake-up signal, never automatic authorization by itself.
-- Verify the latest full Teststock signal, GitHub pipeline health, live Robinhood cash/equity/positions/orders, spread, price drift, event/correlation/risk/frequency/protection gates, and unattended-trading permission.
-- Buy only if every current live guard still passes.
-- After a confirmed stock/crypto buy fill, arm docs/data/execution-watchlist.json with the SAVED stop, target1, target2, exit policy, runner allowance and a stable id. Never write quantity, account number, cash balance, or other private data to the public repository.
+BUY_TRIGGER — PROPOSAL ONLY UNTIL APPROVED
+- A BUY_TRIGGER is only a wake-up/proposal signal, never automatic authorization to place new risk.
+- Verify the latest full Teststock signal, GitHub pipeline health, live Robinhood cash/equity/positions/orders, spread, price drift, event/correlation/risk/frequency/protection gates and current entry tier.
+- Stock priority is A/ELITE before B/BEST_ACCEPTABLE. B uses its encoded reduced size and still must pass every hard live guard.
+- If a candidate survives every current live guard, present the exact proposed trade for user approval. Do not submit the buy automatically.
+- A buy may be submitted only after explicit approval for that exact current trade, unless the journal already contains a still-valid explicit pre-approval matching asset class, ticker, entry/maximumEntry, planned dollar amount or risk, stop and current signal generation.
+- If the approved/pre-approved numbers materially differ from the current candidate, do not treat the old approval as valid.
+- If the top candidate fails before submission, Claude may evaluate the next already-qualified fallback in the same run, but the actual fallback still needs its own valid approval unless it is already exactly pre-approved.
+- After a confirmed approved stock/crypto buy fill, arm docs/data/execution-watchlist.json with the SAVED stop, target1, target2, exit policy, runner allowance and a stable id. Never write quantity, account number, cash balance or other private data to the public repository.
 - If a fractional position cannot be successfully armed in the watchlist or the five-minute monitor is unhealthy, do not treat synthetic protection as active.
 
-TRIGGER_1_STOP:
+TRIGGER_1_STOP — AUTOMATIC RISK REDUCTION
 - Read the live Robinhood position and open sell orders for that ticker.
-- If the live protected position still exists and the saved invalidation is reached, execute the strongest supported sell path immediately when permissions allow. Fractional quantities use the supported market sell path when triggered stops are unsupported.
-- Re-read Robinhood and verify the fill. Never infer it.
+- If the live protected position still exists and the saved invalidation is reached, execute the strongest supported sell path immediately when permissions allow. No new user approval is required for this verified risk-reducing exit.
+- Fractional quantities use the supported market sell path when triggered stops are unsupported.
+- Re-read Robinhood and verify the result. Never infer it.
 - Mark the watchlist position CLOSED only after Robinhood confirms the full exit.
 
-TRIGGER_2_TARGET1:
+TRIGGER_2_TARGET1 — AUTOMATIC VALIDATED PROFIT TAKING
 - Verify the live position and current validated exit plan.
-- Execute the authorized Target 1 partial sale, reconcile conflicting protective orders, verify the fill, then set target1Completed=true in execution-watchlist.json.
+- Execute the authorized Target 1 partial sale without waiting for a new approval, reconcile conflicting protective orders, verify the fill, then set target1Completed=true in execution-watchlist.json.
 
-TRIGGER_3_TARGET2:
+TRIGGER_3_TARGET2 — AUTOMATIC VALIDATED PROFIT TAKING
 - Verify the live position and fresh validated runner policy.
-- Execute the authorized Target 2 sale. Keep only the runner currently allowed by the fresh signal and protection health; otherwise exit the remainder.
+- Execute the authorized Target 2 sale without waiting for a new approval. Keep only the runner currently allowed by the fresh signal and protection health; otherwise exit the remainder.
 - Verify the fill and update target2Completed/status in execution-watchlist.json.
 
-SAFETY / CREDIT RULES:
+SCHEDULE / CREDIT RULES
+- Canonical Claude cron: 0 13-21 * * 1-5. Expected observed checks are around :05 past each hour: 13:05 through 21:05 UTC, Monday-Friday.
+- Every firing is a check, not a guaranteed trade.
 - Robinhood remains authoritative for fills, positions, quantities and money.
 - The trigger board is public market-state detection only; it never proves that the user owns a position.
 - Never use margin, borrowed funds, external funding, averaging down, widened stops or unsupported fractional trigger orders.
