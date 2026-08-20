@@ -1,31 +1,54 @@
-TESTSTOCK AUTOPILOT — LOW-CREDIT SCHEDULED TASK
+TESTSTOCK AUTOPILOT — LOW-CREDIT HOURLY SCHEDULED TASK
 
-Goal: do not spend Claude tokens polling prices or re-analyzing markets when nothing needs brokerage action.
+SCHEDULE
+- Canonical cron: 0 13-21 * * 1-5
+- Intended cadence: hourly, Monday-Friday, 13:00-21:00 UTC.
+- The current scheduled-task runtime may anchor to the task's creation minute, so observed firings are expected around :05 past the hour rather than exactly :00.
+- Expected observed times: 13:05, 14:05, 15:05, 16:05, 17:05, 18:05, 19:05, 20:05, 21:05 UTC.
+- During EDT (UTC-4), that is approximately 9:05am-5:05pm ET.
+- Every firing is a check-in, not a guaranteed trade. Platform scheduling may drift.
 
-CHEAP FIRST STEP — ALWAYS:
-1. Fetch only:
+GOAL
+Do not spend Claude tokens polling prices or re-analyzing markets when nothing needs brokerage action. GitHub + Alpaca maintain the market scan, tournaments, trigger board and dispatch state between Claude check-ins.
+
+CHEAP FIRST STEP — ALWAYS
+1. Fetch only the newest raw-main trigger board with a cache buster:
    https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/trigger-board.json?cb=<current-utc-ms>
-2. If monitorHealth is not OK, open no new risk. If executionNeeded=false, STOP immediately. Do not fetch the full signal. Do not query Robinhood. Do not analyze stocks/crypto. Do not produce a long report.
-3. Only when executionNeeded=true, follow:
-   https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/claude-trigger-task.txt
+2. If monitorHealth is not OK, open no new risk.
+3. If executionNeeded=false, STOP immediately. Do not fetch the full signal. Do not query Robinhood. Do not analyze stocks/crypto. Do not produce a long report.
+4. If executionNeeded=true, fetch the newest raw-main execution-dispatch.json and then follow docs/claude-trigger-task.txt.
 
-WHEN AN EVENT EXISTS:
-- Fetch the fresh raw signal.json and execution-watchlist.json.
-- Verify the latest main Teststock workflow is healthy and all signal dependencies are fresh.
-- Query only the minimum live Robinhood data needed for the listed ticker/event.
-- Robinhood is authoritative for cash, equity, positions, orders and fills.
-- Use only non-margin cash already inside the dedicated account. Never initiate deposits, transfers, withdrawals or borrowing.
-- BUY_TRIGGER is a wake signal only. Buy only if the current signal still says the setup is eligible and every live cash/risk/correlation/spread/gap/event/frequency/protection/drift guard passes.
-- STOCK BUY PRIORITY: use signal.stockPlan.bestAcceptableEntryPolicy and the encoded entryTier on candidates. Try A/ELITE candidates first. If no A candidate survives the current live checks, try the highest-ranked B/BEST_ACCEPTABLE candidate at its reduced encoded size. If a candidate fails before order submission, continue through eligible fallbacks in the same execution run. Do not choose cash by preference when an A or B candidate still passes every hard guard.
+GENERATION MATCH — REQUIRED BEFORE ANY ORDER
+- Raw GitHub main is authoritative, not a browser-cached Pages copy.
+- Before acting, fetch the newest raw-main signal.json, relevant stock/crypto tournament state, and execution-watchlist.json.
+- Confirm the trigger/dispatch belongs to the current ACTIVE signal generation. If generatedAt/generation identifiers conflict, re-fetch and do not submit new risk until they match.
+- Verify the latest Teststock workflow/monitor state is healthy enough for the requested action.
+
+EXITS / STOPS — NO NEW USER APPROVAL NEEDED
+- Existing-position risk-reducing actions may execute automatically when a scheduled firing sees a valid trigger and live Robinhood confirms the position/order/quantity.
+- TRIGGER_1_STOP: verify the live position, then execute the strongest supported sell path immediately when permitted. Fractional quantities use a supported market sell when fractional triggers are unsupported. Verify the result from Robinhood.
+- TRIGGER_2_TARGET1: verify the live position and validated exit policy, execute the authorized partial sale, verify the fill, then update target1Completed=true.
+- TRIGGER_3_TARGET2: verify the live position and fresh runner authorization, execute the validated Target 2 sale, keep only an authorized protected runner, verify the fill and update watchlist state.
+- Protective exits and profit-taking manage existing exposure; do not wait for a fresh manual approval when the current policy and live broker state authorize the exit.
+
+NEW BUYS — PROPOSE, DO NOT AUTO-SUBMIT
+- A BUY_TRIGGER is a proposal/wake signal, not automatic permission to place a new-risk order.
+- This applies to A-tier stocks, B-tier stocks, crypto and options.
+- STOCK BUY PRIORITY: try A/ELITE first. If no A survives all current live checks, try the highest-ranked B/BEST_ACCEPTABLE candidate at its reduced encoded size.
+- At the hourly firing, when a buy candidate survives every Teststock and live Robinhood guard, present the exact proposed trade for approval instead of submitting it automatically.
+- Actual buy submission requires the user's explicit approval for that specific current trade unless the journal already contains a still-valid explicit pre-approval matching that exact candidate and current signal generation.
+- The approval/pre-approval must match asset class, ticker, entry or maximum entry, planned dollar amount/risk, stop, and current signal generation. Materially changed numbers require a new approval.
+- If the top candidate fails before submission, Claude may evaluate the next already-qualified fallback in the same run, but approval is required for the actual candidate that would be submitted unless that exact candidate is already pre-approved.
 - B-tier is not permission to weaken hard safety. Never relax funding lock, account floor, loss brakes, freshness, maximumEntry, spread, gap/chase, correlation/portfolio heat, protective-exit requirements, fractional-monitor requirements, margin/leverage restrictions, no-average-down, or no-widen-stop rules.
-- After a confirmed buy, arm docs/data/execution-watchlist.json with only non-sensitive saved trigger levels. Fractional synthetic monitoring is not active until that write succeeds and the trigger-monitor workflow is healthy.
-- TRIGGER_1_STOP: verify the live position, then use the strongest supported sell path immediately when permitted; fractional quantities use the supported market sell path when fractional triggers are unsupported. Verify the fill.
-- TRIGGER_2_TARGET1: verify position/exit policy, execute the authorized partial sale, verify fill, mark target1Completed=true.
-- TRIGGER_3_TARGET2: verify position/fresh runner authorization, execute the validated Target 2 sale, keep only an allowed protected runner, verify fill and update watchlist state.
+
+BROKER / FUNDING RULES
+- Robinhood is authoritative for cash, equity, positions, quantities, orders and fills.
+- Use only non-margin cash already inside the dedicated account. Never initiate deposits, transfers, withdrawals or borrowing.
 - Never infer fills, widen stops, average down, chase, use margin, use external funding, or retry unsupported fractional trigger orders.
+- After a confirmed buy, arm docs/data/execution-watchlist.json with only non-sensitive saved trigger levels. Fractional synthetic monitoring is not active until that write succeeds and the trigger-monitor workflow is healthy.
 
-CREDIT RULE:
-GitHub + Alpaca do the continuous price monitoring. Claude is for broker verification and order execution when the trigger board says action is needed.
+CREDIT RULE
+GitHub + Alpaca do continuous market monitoring. Claude performs a cheap hourly dispatch check. Meaningful Claude work is reserved for a real exit/stop or a buy proposal/approved execution.
 
-LIMITATION:
-The public repository cannot wake Claude by itself and cannot place Robinhood orders. If no authorized Claude run is active when a trigger appears, execution waits until the next Claude run. Do not describe this as instant or guaranteed protection. Fractional full-autopilot entries require a response path fast enough to satisfy the signal's current execution-latency rule.
+LIMITATION
+The public repository cannot wake Claude instantly and cannot place Robinhood orders. If a trigger appears between hourly Claude firings, it waits until the next authorized Claude run unless another approved execution bridge exists. Do not describe hourly fractional-stop execution as instant or guaranteed protection.
