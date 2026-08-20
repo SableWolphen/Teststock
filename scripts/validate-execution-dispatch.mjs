@@ -21,5 +21,7 @@ if((dispatch.fallbackActions||[]).some(action=>action.trigger!=='BUY_TRIGGER')) 
 if(dispatch.pendingAction?.trigger!=='BUY_TRIGGER'&&(dispatch.fallbackActions||[]).length) fail('exit dispatch cannot contain buy fallbacks');
 const fingerprints=[dispatch.pendingAction,...(dispatch.fallbackActions||[])].filter(Boolean).map(x=>x.fingerprint);
 if(new Set(fingerprints).size!==fingerprints.length) fail('candidate fingerprints must be unique');
+const buyQueue=[dispatch.pendingAction,...(dispatch.fallbackActions||[])].filter(x=>x?.trigger==='BUY_TRIGGER');
+for(let i=1;i<buyQueue.length;i++)if(Number(buyQueue[i-1].queueRank||999)>Number(buyQueue[i].queueRank||999))fail('buy fallback queue is not rank ordered');
 if(dispatch.consumerContract?.maximumNewBuysPerDispatch!==1) fail('dispatch must cap new buys at one');
 console.log(`Execution dispatch valid: ${dispatch.claudeShouldRun?'one new Claude action':'no Claude action'}.`);

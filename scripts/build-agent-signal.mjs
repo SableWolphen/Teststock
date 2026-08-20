@@ -36,7 +36,13 @@ function buildStock(plan){
     plannedStopRiskPctOfRobinhoodBuyingPower:pctOfReference(r.estimatedLossAtStop),rewardRisk:r.rewardRisk,growthQuality:r.growthQuality,
     expectancy:r.expectancy||null,adaptivePerformance:r.adaptivePerformance||null,historicalWinRate:r.validation?.winRate??null,historicalSamples:r.validation?.samples??null
   }));
-  const ready=stocks.filter(x=>x.action==='AUTO_BUY_ELIGIBLE');
+  const primaryByTicker=new Map(stocks.map(x=>[x.ticker,x]));
+  const candidateQueue=(plan.qualifiedCandidateQueue||plan.allocations||[]).slice(0,15).map((r,i)=>{
+    const primary=primaryByTicker.get(r.symbol);
+    if(primary)return{...primary,queueRank:i+1,queueRole:'PRIMARY'};
+    return{assetClass:'STOCK',queueRank:i+1,queueRole:'RESERVE',rank:i+1,ticker:r.symbol,sector:r.sector||null,action:stockState(r,f),allocationPctOfRobinhoodBuyingPower:0,requiresLiveSizing:true,scanPrice:round(r.price),minimumEntry:round(r.entry),maximumEntry:round(Number(r.entry||0)*1.02),stop:round(r.stop),target1:round(r.target1),target2:round(r.target2),plannedStopRiskPctOfRobinhoodBuyingPower:null,rewardRisk:r.rewardRisk,growthQuality:r.growthQuality,expectancy:r.expectancy||null,adaptivePerformance:r.adaptivePerformance||null,historicalWinRate:r.validation?.winRate??null,historicalSamples:r.validation?.samples??null};
+  });
+  const ready=candidateQueue.filter(x=>x.action==='AUTO_BUY_ELIGIBLE');
   const elite=plan.eliteOption||{};
   const option=elite.passed?{
     assetClass:'OPTION',action:f.stale?'STALE_DO_NOT_TRADE':!f.marketOpen?'MARKET_CLOSED_RECHECK':ready.length?'AUTO_BUY_ELIGIBLE':'WAIT_FOR_UNDERLYING_TRIGGER',
@@ -55,7 +61,7 @@ function buildStock(plan){
   return {
     assetClass:'STOCK',overallAction,reason,confidence:plan.confidence,signalAsOf:plan.asOf,
     expiresAt:plan.asOf?new Date(new Date(plan.asOf).getTime()+(f.marketOpen?45:2160)*60000).toISOString():null,
-    policy:{...plan.policy,sizingMode:'ROBINHOOD_EXISTING_CASH_ONLY_WITH_CAPITAL_LADDER'},outcomeGuard:plan.outcomeGuard,stockOrders:stocks,eliteOption:option
+    policy:{...plan.policy,sizingMode:'ROBINHOOD_EXISTING_CASH_ONLY_WITH_CAPITAL_LADDER'},outcomeGuard:plan.outcomeGuard,stockOrders:stocks,stockCandidateQueue:candidateQueue,candidateQueuePolicy:{minimumVisibleTarget:4,maximumCandidates:15,maximumBuysPerDispatch:1,rule:'Try candidates in queue order. Every primary or reserve must pass all live gates and live sizing. Never weaken a gate to reach four; hold cash if all fail.'},eliteOption:option
   };
 }
 function buildCrypto(plan){
