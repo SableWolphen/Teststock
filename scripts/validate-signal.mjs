@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 const file=process.argv[2]||'docs/signal.json',raw=await fs.readFile(file,'utf8');let s;try{s=JSON.parse(raw);}catch{throw new Error('signal.json is not valid JSON');}
 const fail=[],finite=n=>Number.isFinite(Number(n));
-if(!Number.isInteger(s.schemaVersion)||s.schemaVersion<23)fail.push('schemaVersion');if(s.source!=='Teststock')fail.push('source');
+if(!Number.isInteger(s.schemaVersion)||s.schemaVersion<24)fail.push('schemaVersion');if(s.source!=='Teststock')fail.push('source');
 const generated=new Date(s.generatedAt).getTime(),age=Date.now()-generated;if(!Number.isFinite(generated)||age< -5*60_000||age>10*60_000)fail.push('generatedAt freshness');
 if(s.funding?.agentMayInitiateDeposits!==false||s.funding?.agentMayInitiateBankTransfers!==false)fail.push('funding lock');
 const tiers=s.capitalLadder?.tiers;if(!Array.isArray(tiers)||tiers.length<5)fail.push('capital tiers');else{let last=-Infinity;for(const t of tiers){if(!finite(t.minEquity)||Number(t.minEquity)<last)fail.push('tier ordering');last=Number(t.minEquity);}if(tiers.find(t=>Number(t.minEquity)===100)?.label!=='PROVE')fail.push('$100 PROVE boundary');}
@@ -42,6 +42,16 @@ if(Number(s.fractionalProtectionPolicy?.fractionalSyntheticStop?.maximumPlannedS
 if(Number(s.fractionalProtectionPolicy?.fractionalSyntheticStop?.maximumMonitoringIntervalMinutesDuringRegularSession)!==5)fail.push('fractional monitoring interval');
 if(s.fractionalProtectionPolicy?.fractionalSyntheticStop?.requiresActiveMonitoring!==true)fail.push('fractional active monitoring requirement');
 if(s.systemHealth?.runtimeFractionalProtection?.requiredForNewFractionalStock!==true)fail.push('fractional runtime health requirement');
+if(!s.portfolioCorrelationIntelligence||s.portfolioCorrelationIntelligence.status==='UNAVAILABLE_FAIL_CLOSED')fail.push('portfolio correlation intelligence');
+if(Number(s.portfolioCorrelationIntelligence?.highCorrelationThreshold||0)!==0.75)fail.push('correlation threshold');
+if(Number(s.portfolioCorrelationIntelligence?.policy?.maxNamesPerHighCorrelationCluster||0)>2)fail.push('correlation cluster cap');
+if(s.portfolioCorrelationIntelligence?.policy?.thirdNameAllowed!==false)fail.push('third correlated name block');
+if(!s.championChallenger?.champion?.exitPolicy)fail.push('champion challenger');
+if(s.championChallenger?.promotionPolicy?.entryRiskIncreaseAllowed!==false)fail.push('challenger risk lock');
+if(s.executionLearningPolicy?.sourceOfTruth!=='ROBINHOOD_CONFIRMED_FILLS_ONLY')fail.push('execution learning source');
+if(s.executionLearningPolicy?.mayIncreaseSize!==false)fail.push('execution learning size lock');
+if(s.postTradeAttributionPolicy?.enabled!==true)fail.push('post-trade attribution');
+if(s.setupSpecificExitResearch?.automaticLivePromotionAllowed!==false)fail.push('setup exit promotion lock');
 if(s.dataFreshness?.status!=='GENERATED_THIS_RUN')fail.push('data freshness status');
 const lastSuccess=new Date(s.dataFreshness?.lastSuccessfulGeneration||0).getTime();if(!Number.isFinite(lastSuccess)||Math.abs(Date.now()-lastSuccess)>10*60_000)fail.push('last successful generation freshness');
 if(Number(s.dataFreshness?.expectedRefreshCadenceMinutes||0)!==10)fail.push('refresh cadence metadata');
@@ -49,5 +59,5 @@ if(s.dataFreshness?.failClosed!==true)fail.push('freshness fail-closed');
 if(Number(s.dataFreshness?.cryptoAgeMinutes??999)>25)fail.push('crypto data stale at generation');
 if(Number(s.dataFreshness?.entryGateValidationAgeMinutes??999)>120)fail.push('entry-gate validation stale');
 if(!s.generatorIntegrity?.lastKnownGoodFallback)fail.push('last-known-good fallback metadata');
-for(const k of ['dualUntouchedHoldouts','regimeSpecificEntryProfiles','wholeContractOptionSizing','setupClusterAndSymbolRealFillLearning','staleDataFailClosed','costAdjustedExpectancy','target2RewardRiskQualification','crossAssetOpportunityRanking','conditionalRunnerExit','fractionalSyntheticProtection','exitPolicyHoldoutValidation'])if(s.generatorIntegrity?.traceableFeatures?.[k]!==true)fail.push(`integrity feature ${k}`);
+for(const k of ['dualUntouchedHoldouts','regimeSpecificEntryProfiles','wholeContractOptionSizing','setupClusterAndSymbolRealFillLearning','staleDataFailClosed','costAdjustedExpectancy','target2RewardRiskQualification','crossAssetOpportunityRanking','conditionalRunnerExit','fractionalSyntheticProtection','exitPolicyHoldoutValidation','portfolioCorrelationIntelligence','championChallengerGovernance','executionLearning','postTradeAttribution','setupSpecificExitResearch'])if(s.generatorIntegrity?.traceableFeatures?.[k]!==true)fail.push(`integrity feature ${k}`);
 if(fail.length)throw new Error(`signal validation failed: ${[...new Set(fail)].join(', ')}`);console.log(`signal validation passed: schema v${s.schemaVersion}, generated ${s.generatedAt}`);
