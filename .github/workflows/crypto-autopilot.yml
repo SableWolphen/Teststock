@@ -23,14 +23,17 @@ jobs:
           ref: main
 
       - name: Setup Python
+        if: ${{ secrets.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - name: Install Robinhood Crypto API dependencies
+        if: ${{ secrets.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
         run: pip install --disable-pip-version-check requests pynacl
 
       - name: Run fail-closed crypto autopilot
+        if: ${{ secrets.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
         env:
           ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED: ${{ secrets.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED }}
           ROBINHOOD_CRYPTO_API_KEY: ${{ secrets.ROBINHOOD_CRYPTO_API_KEY }}
@@ -40,7 +43,7 @@ jobs:
         run: python scripts/robinhood_crypto_autopilot.py
 
       - name: Publish only non-sensitive execution state
-        if: always()
+        if: ${{ always() && secrets.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
