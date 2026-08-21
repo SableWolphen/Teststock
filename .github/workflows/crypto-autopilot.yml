@@ -16,6 +16,8 @@ jobs:
   crypto:
     runs-on: ubuntu-latest
     timeout-minutes: 4
+    env:
+      ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED: ${{ secrets.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED }}
     steps:
       - name: Checkout latest main
         uses: actions/checkout@v4
@@ -23,26 +25,25 @@ jobs:
           ref: main
 
       - name: Setup Python
-        if: ${{ secrets.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
+        if: ${{ env.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - name: Install Robinhood Crypto API dependencies
-        if: ${{ secrets.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
+        if: ${{ env.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
         run: pip install --disable-pip-version-check requests pynacl
 
       - name: Run fail-closed crypto autopilot
-        if: ${{ secrets.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
+        if: ${{ env.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
         env:
-          ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED: ${{ secrets.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED }}
           ROBINHOOD_CRYPTO_API_KEY: ${{ secrets.ROBINHOOD_CRYPTO_API_KEY }}
           ROBINHOOD_CRYPTO_PRIVATE_KEY_B64: ${{ secrets.ROBINHOOD_CRYPTO_PRIVATE_KEY_B64 }}
           ROBINHOOD_CRYPTO_MAX_ORDER_USD: ${{ secrets.ROBINHOOD_CRYPTO_MAX_ORDER_USD }}
         run: python scripts/robinhood_crypto_autopilot.py
 
       - name: Publish only non-sensitive execution state
-        if: ${{ always() && secrets.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
+        if: ${{ always() && env.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
