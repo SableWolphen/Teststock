@@ -18,6 +18,7 @@ WATCH = DATA / 'execution-watchlist.json'
 STATUS = DATA / 'crypto-api-status.json'
 SIGNAL = ROOT / 'docs' / 'signal.json'
 PLAN = DATA / 'crypto-plan-100.json'
+TOURNAMENT = DATA / 'crypto-tournament.json'
 BASE = 'https://trading.robinhood.com'
 
 
@@ -159,12 +160,11 @@ def active_crypto_watch(watch):
     return next((x for x in watch.get('positions', []) if x.get('assetClass') == 'CRYPTO' and x.get('status') == 'ACTIVE'), None)
 
 
-def matching_active_accounts(accounts, account_number):
-    return [
-        a for a in accounts
-        if str(a.get('status', '')).lower() == 'active'
-        and str(a.get('account_number') or '') == account_number
-    ]
+def matching_active_accounts(accounts, account_number=''):
+    active = [a for a in accounts if str(a.get('status', '')).lower() == 'active']
+    if account_number:
+        return [a for a in active if str(a.get('account_number') or '') == account_number]
+    return active
 
 
 def upsert_watch(watch, record):
@@ -222,25 +222,26 @@ def main():
     enabled = os.getenv('ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED', '').lower() == 'true'
     api_key = os.getenv('ROBINHOOD_CRYPTO_API_KEY', '')
     private_key = os.getenv('ROBINHOOD_CRYPTO_PRIVATE_KEY_B64', '')
-    agentic_account_number = os.getenv('ROBINHOOD_CRYPTO_AGENTIC_ACCOUNT_NUMBER', '')
+    account_selector = os.getenv('ROBINHOOD_CRYPTO_ACCOUNT_NUMBER', '') or os.getenv('ROBINHOOD_CRYPTO_AGENTIC_ACCOUNT_NUMBER', '')
     max_order_usd = Decimal(os.getenv('ROBINHOOD_CRYPTO_MAX_ORDER_USD', '25'))
 
     if not enabled:
         set_status('DISABLED', 'Direct Robinhood Crypto API execution is installed but not enabled.')
         return
-    if not (api_key and private_key and agentic_account_number):
+    if not (api_key and private_key):
         set_status('DISABLED_MISSING_SECRETS', 'Enablement is set but required Robinhood Crypto API secrets are missing.')
         return
 
     watch = read_json(WATCH, {'schemaVersion': 1, 'positions': []})
     signal = read_json(SIGNAL, {})
     plan = read_json(PLAN, {})
+    tournament = read_json(TOURNAMENT, {})
     api = RobinhoodCryptoV2(api_key, private_key)
 
     accounts = api.accounts()
-    matching_accounts = matching_active_accounts(accounts, agentic_account_number)
+    matching_accounts = matching_active_accounts(accounts, account_selector)
     if len(matching_accounts) != 1:
-        set_status('BLOCKED_AGENTIC_ACCOUNT_NOT_UNIQUE', 'The private Agentic account selector did not match exactly one active Robinhood crypto trading account. No order sent.')
+        set_status('BLOCKED_CRYPTO_ACCOUNT_NOT_UNIQUE', 'Robinhood did not return exactly one active crypto account. Add the optional ROBINHOOD_CRYPTO_ACCOUNT_NUMBER selector only when more than one active crypto account exists. No order sent.')
         return
     account = matching_accounts[0]
     account_number = str(account.get('account_number') or '')
@@ -339,49 +340,65 @@ def main():
         set_status('BLOCKED_UNTRACKED_HOLDING', 'Crypto exists in the configured account but is not in Teststock execution-watchlist; no new buy sent.')
         return
 
-    if age_minutes(plan.get('generatedAt') or plan.get('asOf')) > 30:
+    if age_minutes(tournament.get('generatedAt')) > 30 or age_minutes(plan.get('generatedAt') or plan.get('asOf')) > 30:
         set_status('WAIT_FRESH_RESEARCH', 'Crypto plan is older than 30 minutes; no new buy sent.')
         return
     allocations = plan.get('allocations') or []
-    if not allocations:
+    allocations_by_symbol = {str(x.get('symbol', '')).replace('-', '/'): x for x in allocations}
+    ordered = [tournament.get('qualifiedChampion'), *(tournament.get('fallbacks') or [])]
+    picks = []
+    for candidate in ordered:
+        if not candidate:
+            continue
+        ticker = str(candidate.get('ticker', '')).replace('-', '/')
+        allocation = allocations_by_symbol.get(ticker)
+        if allocation:
+            picks.append({**allocation, 'tournamentRank': candidate.get('rank'), 'setupGrade': candidate.get('grade') or allocation.get('setupGrade')})
+    if not picks:
         set_status('NO_QUALIFIED_CRYPTO', 'Current Teststock crypto tournament has no qualifying allocation.')
         return
-    pick = allocations[0]
-    grade = pick.get('setupGrade')
-    if grade not in {'A', 'A+'}:
-        set_status('NO_QUALIFIED_CRYPTO', 'Top crypto allocation is not A/A+ qualified.')
-        return
+    selected = None
+    rejection_reasons = []
+    for candidate in picks:
+        grade = candidate.get('setupGrade')
+        symbol = str(candidate['symbol']).replace('/', '-')
+        if grade not in {'A', 'A+'}:
+            rejection_reasons.append(f'{symbol}: grade')
+            continue
+        pair_rows = api.pairs(symbol)
+        pair = pair_rows[0] if pair_rows else None
+        if not pair or not pair.get('is_api_tradable') or pair.get('status') not in {'tradable', 'active'}:
+            rejection_reasons.append(f'{symbol}: not API tradable')
+            continue
+        quote = api.quote(symbol)
+        if not quote:
+            rejection_reasons.append(f'{symbol}: no quote')
+            continue
+        bid = Decimal(str(quote['bid']))
+        ask = Decimal(str(quote['ask']))
+        if bid <= 0 or ask <= 0:
+            rejection_reasons.append(f'{symbol}: invalid quote')
+            continue
+        spread_pct = (ask - bid) / ((ask + bid) / 2) * 100
+        if spread_pct > Decimal('0.75'):
+            rejection_reasons.append(f'{symbol}: spread')
+            continue
+        reference_entry = Decimal(str(candidate.get('entry') or ask))
+        max_entry = reference_entry * Decimal('1.02')
+        if ask > max_entry:
+            rejection_reasons.append(f'{symbol}: do not chase')
+            continue
+        open_orders = [o for o in api.orders(account_number, symbol) if o.get('state') in {'open','pending'}]
+        if open_orders:
+            rejection_reasons.append(f'{symbol}: existing order')
+            continue
+        selected = (candidate, symbol, pair, bid, ask, reference_entry, max_entry, grade)
+        break
 
-    symbol = str(pick['symbol']).replace('/', '-')
-    pair_rows = api.pairs(symbol)
-    pair = pair_rows[0] if pair_rows else None
-    if not pair or not pair.get('is_api_tradable') or pair.get('status') not in {'tradable', 'active'}:
-        set_status('BLOCKED_PAIR_NOT_TRADABLE', f'{symbol} is not currently API-tradable.')
+    if not selected:
+        set_status('NO_EXECUTABLE_CRYPTO_FINALIST', 'No Teststock crypto winner/fallback survived direct Robinhood live checks: ' + '; '.join(rejection_reasons[:6]))
         return
-    quote = api.quote(symbol)
-    if not quote:
-        set_status('BLOCKED_NO_QUOTE', f'No direct Robinhood quote for {symbol}.')
-        return
-    bid = Decimal(str(quote['bid']))
-    ask = Decimal(str(quote['ask']))
-    if bid <= 0 or ask <= 0:
-        set_status('BLOCKED_BAD_QUOTE', f'Invalid direct Robinhood bid/ask for {symbol}.')
-        return
-    spread_pct = (ask - bid) / ((ask + bid) / 2) * 100
-    if spread_pct > Decimal('0.75'):
-        set_status('BLOCKED_WIDE_SPREAD', f'{symbol} Robinhood spread exceeds the 0.75% Teststock cap.')
-        return
-
-    reference_entry = Decimal(str(pick.get('entry') or ask))
-    max_entry = reference_entry * Decimal('1.02')
-    if ask > max_entry:
-        set_status('BLOCKED_DO_NOT_CHASE', f'{symbol} ask is above the Teststock 2% no-chase ceiling.')
-        return
-
-    open_orders = [o for o in api.orders(account_number, symbol) if o.get('state') in {'open','pending'}]
-    if open_orders:
-        set_status('BLOCKED_EXISTING_ORDER', f'{symbol} already has an open/pending crypto order; no duplicate order sent.')
-        return
+    pick, symbol, pair, bid, ask, reference_entry, max_entry, grade = selected
 
     buying_power = Decimal(str(account.get('buying_power') or '0'))
     desired = Decimal(str(pick.get('allocationDollars') or '0'))

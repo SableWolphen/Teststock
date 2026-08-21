@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 36,
+  "schemaVersion": 37,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
   "generatedAt": "2026-08-21T17:48:17.667Z",
@@ -241,9 +241,9 @@
   },
   "autopilot": {
     "enabled": true,
-    "requiresPerOrderApproval": false,
-    "scope": "Dedicated Robinhood Agentic account only.",
-    "automaticQualifiedBuys": true,
+    "requiresPerOrderApproval": true,
+    "scope": "Dedicated Robinhood Agentic account for approved stock orders; direct Robinhood Crypto API lane for crypto.",
+    "automaticQualifiedBuys": false,
     "automaticRiskReducingExits": true
   },
   "assetClassRouting": {
@@ -281,8 +281,12 @@
     "FRACTIONAL SYNTHETIC PROTECTION: a new fractional stock entry is permitted only if active regular-session monitoring can be verified at intervals of 5 minutes or less and planned stop risk is capped at 0.75% of live equity. When the saved invalidation is observed as breached, submit the supported fractional market sell immediately when permitted and verify the result.",
     "WHOLE/HYBRID PROTECTION: use a verified broker-resident stop for whole-share quantity when supported; for mixed quantities, reconcile the whole-share broker stop with the synthetic fractional remainder so combined sell orders can never exceed the live position.",
     "SYNTHETIC STOP HONESTY: an agent-managed fractional stop is not persistent broker protection and cannot guarantee the planned exit. If monitoring becomes unavailable, do not add fractional risk and do not keep a fractional runner unattended.",
+    "TOURNAMENT AUTHORITY: do not invent a symbol outside the current Teststock stock or crypto tournament winner/fallback set. Robinhood live checks may reject a winner but may not substitute an unranked idea.",
+    "TOURNAMENT AUTHORITY: do not invent a symbol outside the current Teststock stock or crypto tournament winner/fallback set. Robinhood live checks may reject a winner but may not substitute an unranked idea.",
+    "STOCK APPROVAL: Claude must ask the user to approve the exact verified Teststock stock winner/fallback before submitting a new stock buy. Risk-reducing exits may remain automatic when verified.",
     "LIVE ASSET SCOPE: only STOCK and CRYPTO are eligible. Options and futures are disabled.",
-    "TOURNAMENT AUTHORITY: do not invent a symbol outside the current Teststock stock or crypto tournament winner/fallback set. Robinhood live checks may reject a winner but may not substitute an unranked idea."
+    "TOURNAMENT AUTHORITY: do not invent a symbol outside the current Teststock stock or crypto tournament winner/fallback set. Robinhood live checks may reject a winner but may not substitute an unranked idea.",
+    "STOCK APPROVAL: Claude must ask the user to approve the exact verified Teststock stock winner/fallback before submitting a new stock buy. Risk-reducing exits may remain automatic when verified."
   ],
   "stockPlan": {
     "assetClass": "STOCK",
@@ -1405,19 +1409,9 @@
       "instructions": "Target2 is the qualification target; target1 is for partial profit/de-risking. Use cost-adjusted conservative expectancy when available so execution friction cannot be ignored. A tier always ranks before B tier."
     },
     "options": {
-      "stocksRemainDefault": true,
-      "minUnderlyingGrowthQuality": 97,
-      "minHistoricalSamples": 25,
-      "minHistoricalWinRatePct": 62,
-      "minConservativeExpectedR": 0.9,
-      "minCostAdjustedConservativeExpectedR": 0.85,
-      "minRewardRisk": 3,
-      "requireWholeContractRuntimeCheck": true,
-      "requireLiveRealFillEvidence": true,
-      "liveEvidenceMinimumResolvedTrades": 10,
-      "liveEvidenceMinimumAverageR": 0.25,
-      "liveEvidenceMinimumWinRatePct": 50,
-      "instructions": "An option may be considered only after the underlying clears these research and cost-adjusted gates AND Claude confirms the live Teststock real-fill evidence gate. One whole contract must still fit the active capital-tier dollar-risk cap."
+      "enabled": false,
+      "liveDecisionPath": false,
+      "reason": "Options are disabled by TWO_TOURNAMENTS_ONLY."
     },
     "crypto": {
       "researchMode": "ACTIVE_24_7_MORE_OPPORTUNITIES",
@@ -1445,100 +1439,6 @@
       "cashIsValid": true,
       "riskCanOnlyBeReducedByThisOverlay": true
     }
-  },
-  "crossAssetOpportunityRanking": {
-    "reportUrl": "https://sablewolphen.github.io/Teststock/data/opportunity-ranking-500.json",
-    "generatedAt": "2026-08-21T17:48:17.614Z",
-    "rankingPolicy": {
-      "stocksPrimaryOnTies": true,
-      "noForcedDiversification": true,
-      "noForcedTrade": true,
-      "liveRiskRulesAlwaysOverride": true,
-      "notes": "A higher score is only priority among already-qualified research candidates. Claude must skip any candidate that fails live execution, broker, event, real-fill, protection, frequency, correlation, cash, or account-risk checks."
-    },
-    "opportunities": [
-      {
-        "assetClass": "STOCK",
-        "symbol": "ROIV",
-        "researchEligible": true,
-        "liveChecksRequired": true,
-        "score": 134.71,
-        "growthQuality": 100,
-        "historicalWinRatePct": 83,
-        "historicalSamples": 40,
-        "rewardRiskTarget1": 1.5,
-        "rewardRiskTarget2": 2.6,
-        "costAdjustedConservativeExpectedR": 1.95,
-        "plannedAllocationDollars": 100.64,
-        "plannedStopLossDollars": 7.5,
-        "notes": [
-          "Primary asset class.",
-          "Must still pass live entry, spread, gap, cash, correlation, protection, frequency, account-floor, and real-fill learning checks."
-        ],
-        "rank": 1
-      },
-      {
-        "assetClass": "STOCK",
-        "symbol": "NUVB",
-        "researchEligible": true,
-        "liveChecksRequired": true,
-        "score": 131.33,
-        "growthQuality": 100,
-        "historicalWinRatePct": 86,
-        "historicalSamples": 28,
-        "rewardRiskTarget1": 1.5,
-        "rewardRiskTarget2": 2.6,
-        "costAdjustedConservativeExpectedR": 1.99,
-        "plannedAllocationDollars": 4.42,
-        "plannedStopLossDollars": 0.63,
-        "notes": [
-          "Primary asset class.",
-          "Must still pass live entry, spread, gap, cash, correlation, protection, frequency, account-floor, and real-fill learning checks."
-        ],
-        "rank": 2
-      },
-      {
-        "assetClass": "STOCK",
-        "symbol": "HP",
-        "researchEligible": true,
-        "liveChecksRequired": true,
-        "score": 130.99,
-        "growthQuality": 100,
-        "historicalWinRatePct": 78,
-        "historicalSamples": 32,
-        "rewardRiskTarget1": 1.5,
-        "rewardRiskTarget2": 2.6,
-        "costAdjustedConservativeExpectedR": 1.79,
-        "plannedAllocationDollars": 20.28,
-        "plannedStopLossDollars": 2.66,
-        "notes": [
-          "Primary asset class.",
-          "Must still pass live entry, spread, gap, cash, correlation, protection, frequency, account-floor, and real-fill learning checks."
-        ],
-        "rank": 3
-      }
-    ],
-    "preferredResearchOpportunity": {
-      "assetClass": "STOCK",
-      "symbol": "ROIV",
-      "researchEligible": true,
-      "liveChecksRequired": true,
-      "score": 134.71,
-      "growthQuality": 100,
-      "historicalWinRatePct": 83,
-      "historicalSamples": 40,
-      "rewardRiskTarget1": 1.5,
-      "rewardRiskTarget2": 2.6,
-      "costAdjustedConservativeExpectedR": 1.95,
-      "plannedAllocationDollars": 100.64,
-      "plannedStopLossDollars": 7.5,
-      "notes": [
-        "Primary asset class.",
-        "Must still pass live entry, spread, gap, cash, correlation, protection, frequency, account-floor, and real-fill learning checks."
-      ],
-      "rank": 1
-    },
-    "instructions": "Use this only to prioritize among research-qualified opportunities. A higher-ranked item must still pass every live account, broker, entry, spread, gap, event, real-fill, protection, cash, correlation, frequency, and risk check. Never force a trade because it ranks first."
   },
   "symbolProbationPolicy": {
     "enabled": true,
@@ -1580,12 +1480,10 @@
     "traceableFeatures": {
       "dualUntouchedHoldouts": true,
       "regimeSpecificEntryProfiles": true,
-      "wholeContractOptionSizing": true,
       "setupClusterAndSymbolRealFillLearning": true,
       "staleDataFailClosed": true,
       "costAdjustedExpectancy": true,
       "target2RewardRiskQualification": true,
-      "crossAssetOpportunityRanking": true,
       "conditionalRunnerExit": true,
       "fractionalSyntheticProtection": true,
       "exitPolicyHoldoutValidation": true,
@@ -1629,11 +1527,6 @@
       "required": true
     },
     "probabilityFirstOverlay": {
-      "status": "AVAILABLE",
-      "ageMinutes": 0,
-      "required": true
-    },
-    "crossAssetRanking": {
       "status": "AVAILABLE",
       "ageMinutes": 0,
       "required": true
@@ -2255,20 +2148,16 @@
     "scanAllSupportedUsdPairs": true,
     "supportedUsdPairs": 68,
     "brokerExecution": {
-      "status": "BROKER_EXECUTION_UNAVAILABLE",
+      "status": "DIRECT_API_ENABLED",
+      "lane": "GITHUB_ACTIONS_ROBINHOOD_CRYPTO_API",
+      "executableByDirectRobinhoodCryptoApi": true,
       "executableByCurrentClaudeRobinhoodConnection": false,
-      "researchOnly": true,
-      "reason": "The current Robinhood MCP connection exposes equity execution but does not expose the crypto quote/position/order tools required for safe live crypto execution.",
-      "requiredBeforeEnable": [
-        "live crypto quote capability",
-        "live crypto position capability",
-        "crypto order placement capability"
-      ],
-      "rule": "Continue 24/7 crypto research and ranking, but never emit an executable crypto BUY trigger or wake Claude solely for a crypto entry until the connected Robinhood runtime explicitly exposes all required crypto execution tools."
+      "researchOnly": false,
+      "reason": "The dedicated GitHub Actions lane uses Robinhood Crypto API credentials for live quote, account, order and protection checks without relying on Claude crypto tools."
     },
     "buyWhenAtLeastOneFullyQualifiedCandidateExists": false,
     "forcedCryptoBuy": false,
-    "researchOnlyUntilBrokerExecutionAvailable": true,
+    "researchOnlyUntilBrokerExecutionAvailable": false,
     "noEligibleCandidateAction": "KEEP_SCANNING_24_7",
     "researchChampion": {
       "rank": 1,
@@ -2358,8 +2247,8 @@
       "rule": "Risk-reducing exits and validated profit-taking execute without a new user approval when the live Robinhood position, trigger, quantity, order state and current exit policy are verified."
     },
     "buys": {
-      "explicitApprovalRequired": false,
-      "automaticWhenFullyQualifiedAndBrokerPermits": true,
+      "explicitApprovalRequired": true,
+      "automaticWhenFullyQualifiedAndBrokerPermits": false,
       "appliesTo": [
         "STOCK_A",
         "STOCK_B"
@@ -2370,7 +2259,7 @@
       ],
       "bTierUsesReducedEncodedSize": true,
       "manualApprovalStepRemoved": true,
-      "rule": "For stocks, start with the current Teststock tournament winner, A before B. If that winner fails a live Robinhood guard, try the next already-qualified Teststock fallback. Do not invent a different stock. Crypto execution is handled by the separate direct Robinhood Crypto API lane."
+      "rule": "For stocks, start with the current Teststock tournament winner, A before B. Use Robinhood only for final live verification, then ask the user to approve that exact stock order. If the winner fails a live guard, try the next already-qualified Teststock fallback and ask approval for that exact fallback. Do not invent a different stock. Crypto execution is handled by the separate direct Robinhood Crypto API lane."
     },
     "hardGuardsRemainMandatory": [
       "funding lock",
@@ -2398,7 +2287,7 @@
     }
   },
   "executionArchitecture": {
-    "version": 1,
+    "version": 2,
     "mode": "TWO_TOURNAMENTS_ONLY",
     "researchAuthority": "TESTSTOCK",
     "tournaments": {
@@ -2417,6 +2306,10 @@
         "selectorRule": "Do not invent a different crypto asset. Use the Teststock qualified crypto champion or an already-qualified fallback only."
       }
     },
+    "liveDecisionPaths": [
+      "STOCK_TOURNAMENT",
+      "CRYPTO_TOURNAMENT"
+    ],
     "disabledAssetClasses": [
       "OPTION",
       "FUTURES"
