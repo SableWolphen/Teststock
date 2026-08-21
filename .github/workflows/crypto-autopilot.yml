@@ -1,0 +1,56 @@
+name: Teststock crypto autopilot
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: teststock-crypto-autopilot
+  cancel-in-progress: false
+
+jobs:
+  crypto:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Robinhood Crypto API dependencies
+        run: pip install --disable-pip-version-check requests pynacl
+
+      - name: Run fail-closed crypto autopilot
+        env:
+          ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED: ${{ secrets.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED }}
+          ROBINHOOD_CRYPTO_API_KEY: ${{ secrets.ROBINHOOD_CRYPTO_API_KEY }}
+          ROBINHOOD_CRYPTO_PRIVATE_KEY_B64: ${{ secrets.ROBINHOOD_CRYPTO_PRIVATE_KEY_B64 }}
+          ROBINHOOD_CRYPTO_ACCOUNT_NUMBER: ${{ secrets.ROBINHOOD_CRYPTO_ACCOUNT_NUMBER }}
+          ROBINHOOD_CRYPTO_MAX_ORDER_USD: ${{ secrets.ROBINHOOD_CRYPTO_MAX_ORDER_USD }}
+        run: python scripts/robinhood_crypto_autopilot.py
+
+      - name: Publish only non-sensitive execution state
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data/execution-watchlist.json docs/data/crypto-api-status.json || true
+          if git diff --cached --quiet; then
+            echo "No public crypto state changes"
+          else
+            git commit -m "Update crypto autopilot state"
+            git pull --rebase origin main
+            git push
+          fi
