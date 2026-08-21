@@ -8,9 +8,9 @@ const read=async(file,fallback=null)=>{try{return JSON.parse(await fs.readFile(f
 const write=async(file,data)=>fs.writeFile(file,JSON.stringify(data,null,2));
 
 const policy={
-  schemaVersion:3,
+  schemaVersion:4,
   generatedAt:new Date().toISOString(),
-  objective:'Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto selective, and cash acceptable. Prefer elite A stocks, but allow a reduced-size B best-acceptable stock when no A survives. This policy cannot eliminate market loss risk.',
+  objective:'Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto active around the clock, and cash acceptable. Prefer elite A stocks, allow a reduced-size B best-acceptable stock when no A survives, and let crypto surface more reasonable 24/7 opportunities without removing hard risk controls. This policy cannot eliminate market loss risk.',
   stocks:{
     minGrowthQuality:92,minHistoricalSamples:20,minHistoricalWinRatePct:55,minConservativeExpectedR:0.6,minCostAdjustedConservativeExpectedR:0.55,minRewardRisk:2.5,rewardRiskQualificationTarget:'TARGET2',maxAtrPct:7,reduceSizeAboveAtrPct:5,highVolatilitySizeMultiplier:0.5,maxSinglePositionPlannedStopPct:1.5,maxCombinedNewStockPlannedStopPct:2.5,
     bestAcceptable:{enabled:true,entryTier:'B',sizeMultiplier:.5,minGrowthQuality:88,minHistoricalSamples:20,minHistoricalWinRatePct:53,minConservativeExpectedR:.45,minCostAdjustedConservativeExpectedR:.45,minRewardRisk:2.25,maxAtrPct:7,rule:'B is a reduced-size fallback, not a waiver. It must still have bullish direction, positive conservative expectancy, adequate history, acceptable R:R, bounded volatility, and every downstream live account/execution/protection guard.'},
@@ -21,8 +21,8 @@ const policy={
     instructions:'An option may be considered only after the underlying clears these research and cost-adjusted gates AND Claude confirms the live Teststock real-fill evidence gate. One whole contract must still fit the active capital-tier dollar-risk cap.'
   },
   crypto:{
-    minimumHistoricalSamples:15,aPlusMinWinRatePct:60,aMinWinRatePct:55,requirePositiveHistoricalAverageMove:true,altcoinsRequirePositiveBitcoinTrend:true,aPlusMaxPlannedStopPct:2,aMaxPlannedStopPct:1,aPlusMaxAllocationPct:40,aMaxAllocationPct:20,requireLiveRealFillEvidence:true,liveEvidenceMinimumResolvedTrades:10,liveEvidenceMinimumAverageR:0.25,liveEvidenceMinimumWinRatePct:50,
-    instructions:'Crypto remains optional. A/A+ research qualification is not enough by itself; live real-fill evidence must also be positive before Claude can execute if broker crypto tools exist.'
+    researchMode:'ACTIVE_24_7_MORE_OPPORTUNITIES',minimumHistoricalSamples:10,aPlusMinWinRatePct:56,aMinWinRatePct:50,requirePositiveHistoricalAverageMove:true,altcoinsRequirePositiveBitcoinTrend:true,aPlusMaxPlannedStopPct:2.5,aMaxPlannedStopPct:1.5,aPlusMaxAllocationPct:45,aMaxAllocationPct:30,requireLiveRealFillEvidence:true,liveEvidenceMinimumResolvedTrades:5,liveEvidenceMinimumAverageR:0.1,liveEvidenceMinimumWinRatePct:45,
+    instructions:'Crypto runs 24/7, so the research gate is intentionally more permissive than before to surface more plausible A/A+ setups. Keep positive historical tendency, 4-hour confirmation, BTC context for altcoins, liquidity, defined stops, no leverage, no averaging down, and one-position-at-a-time controls. Broker execution availability remains a separate hard gate.'
   },
   common:{noMargin:true,noLeverage:true,noAverageDown:true,noWiderStops:true,noChasing:true,cashIsValid:true,riskCanOnlyBeReducedByThisOverlay:true}
 };
@@ -80,4 +80,4 @@ for(const budget of budgets){
 }
 
 await write(path.join(dataDir,'probability-first-policy.json'),policy);
-console.log('Applied probability-first stock/options/crypto overlay with A-first, reduced-size B stock fallback.');
+console.log('Applied probability-first stock/options/crypto overlay with A-first, reduced-size B stock fallback and relaxed 24/7 crypto research gates.');
