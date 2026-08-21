@@ -12,6 +12,11 @@ if(!Array.isArray(a?.disabledAssetClasses)||!a.disabledAssetClasses.includes('OP
 if(s.stockPlan?.eliteOption!=null)fail.push('live elite option still present');
 for(const t of s.capitalLadder?.tiers||[]){if(t.newOptionsAllowed!==false||Number(t.maxOptionRiskPct||0)!==0)fail.push('capital tier option risk');}
 if(Number(s.tradeFrequencyGuard?.maxNewOptionsPerDay||0)!==0)fail.push('option frequency');
+if(s.executionQuality?.maxOptionSpreadPct!=null)fail.push('option execution quality still active');
+if(Object.prototype.hasOwnProperty.call(s.assetClassRouting||{},'OPTION'))fail.push('option asset routing');
+if(s.claudeExecutionPolicy?.buys?.appliesTo?.some(x=>String(x).includes('OPTION')||String(x).includes('CRYPTO')))fail.push('Claude buy scope not stock-only');
+const hard=(s.hardRules||[]).join(' ').toLowerCase();
+if(hard.includes('option orders')||hard.includes('options are exceptional'))fail.push('stale option hard rule');
 if(s.generatorIntegrity?.traceableFeatures?.twoTournamentArchitecture!==true)fail.push('integrity marker');
 if(fail.length)throw new Error(`two-tournament validation failed: ${[...new Set(fail)].join(', ')}`);
-console.log('two-tournament architecture validation passed: stock + crypto only');
+console.log('two-tournament architecture validation passed: Teststock research is stock + crypto only; Claude stock routing only; crypto direct API lane');
