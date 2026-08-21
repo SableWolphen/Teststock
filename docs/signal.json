@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 35,
+  "schemaVersion": 36,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
   "generatedAt": "2026-08-21T15:22:42.935Z",
@@ -57,30 +57,30 @@
         "maxEquityExclusive": 125,
         "label": "PROVE",
         "stockAllocationMultiplier": 0.7,
-        "maxOptionRiskPct": 5,
+        "maxOptionRiskPct": 0,
         "maxPlannedStopRiskPct": 2,
         "maxDeployedPct": 70,
-        "newOptionsAllowed": true
+        "newOptionsAllowed": false
       },
       {
         "minEquity": 125,
         "maxEquityExclusive": 150,
         "label": "SCALE",
         "stockAllocationMultiplier": 0.85,
-        "maxOptionRiskPct": 6,
+        "maxOptionRiskPct": 0,
         "maxPlannedStopRiskPct": 2.25,
         "maxDeployedPct": 75,
-        "newOptionsAllowed": true
+        "newOptionsAllowed": false
       },
       {
         "minEquity": 150,
         "maxEquityExclusive": null,
         "label": "GROWTH",
         "stockAllocationMultiplier": 1,
-        "maxOptionRiskPct": 8,
+        "maxOptionRiskPct": 0,
         "maxPlannedStopRiskPct": 2.5,
         "maxDeployedPct": 80,
-        "newOptionsAllowed": true
+        "newOptionsAllowed": false
       }
     ],
     "instructions": "Select exactly one tier using lower-bound-inclusive, upper-bound-exclusive intervals: >=0 and <80 RECOVERY; >=80 and <100 DEFENSE; >=100 and <125 PROVE; >=125 and <150 SCALE; >=150 GROWTH. Exactly $80 is DEFENSE, exactly $100 is PROVE, exactly $125 is SCALE, and exactly $150 is GROWTH. Never choose the lower tier at an exact boundary. Multiply stock allocation by stockAllocationMultiplier. Never exceed tier maxDeployedPct or planned-stop-risk cap. For options use the smaller of eliteOption.maxRiskPctOfRobinhoodBuyingPower and tier.maxOptionRiskPct. If the tier disables options, do not open one."
@@ -130,7 +130,7 @@
   "tradeFrequencyGuard": {
     "maxNewPositionsPerDay": 4,
     "maxNewPositionsPerSevenDays": 10,
-    "maxNewOptionsPerDay": 1,
+    "maxNewOptionsPerDay": 0,
     "maxNewCryptoPerDay": 1,
     "instructions": "Up to four independently qualified new positions per day and 10 per rolling 7 days. These are ceilings, never quotas; all smaller cash, risk, event, correlation, execution, protection, and real-fill limits override them."
   },
@@ -200,7 +200,7 @@
   "executionQuality": {
     "preferLimitOrders": true,
     "maxStockSpreadPct": 0.35,
-    "maxOptionSpreadPct": 10,
+    "maxOptionSpreadPct": null,
     "maxCryptoSpreadPct": 0.75,
     "instructions": "Prefer limit orders when supported. Never pay above maximumEntry. Skip a new entry when the live bid/ask spread exceeds the applicable cap or when executable pricing is materially worse than the signal. A missed trade is better than a bad fill.",
     "preferTighterSpreadAndHigherDollarVolume": true,
@@ -1698,7 +1698,8 @@
       "cryptoKnockoutTournament": true,
       "cryptoBrokerCapabilityGate": true,
       "claudeUnattendedExecutionPolicy": true,
-      "idleProtectionReconciliation": true
+      "idleProtectionReconciliation": true,
+      "twoTournamentArchitecture": true
     },
     "evidence": {
       "entryGateReport": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
@@ -2449,9 +2450,7 @@
       "automaticWhenFullyQualifiedAndBrokerPermits": true,
       "appliesTo": [
         "STOCK_A",
-        "STOCK_B",
-        "CRYPTO",
-        "OPTION"
+        "STOCK_B"
       ],
       "stockPriority": [
         "A",
@@ -2485,5 +2484,32 @@
       "robinhoodCallsOnNormalIdle": false,
       "rule": "If no actionable dispatch exists and no protection-repair condition exists, stop immediately after the two small raw-main reads without Robinhood market/account work or full market analysis."
     }
+  },
+  "executionArchitecture": {
+    "version": 1,
+    "mode": "TWO_TOURNAMENTS_ONLY",
+    "researchAuthority": "TESTSTOCK",
+    "tournaments": {
+      "stock": {
+        "enabled": true,
+        "source": "docs/data/stock-tournament.json",
+        "purpose": "Research and rank stock contenders until the best currently qualified setup survives, with already-qualified fallbacks retained.",
+        "execution": "Claude uses Robinhood only for final broker-side verification of the Teststock winner/fallback: price, buying power, positions/orders, spread, account/risk/protection guards, then requests the required user approval and executes when permitted.",
+        "selectorRule": "Do not invent a different stock. Start with Teststock liveBuyChampion/current best qualified stock; if it fails a live Robinhood guard, try the next already-qualified Teststock fallback in order."
+      },
+      "crypto": {
+        "enabled": true,
+        "source": "docs/data/crypto-tournament.json",
+        "purpose": "Continuously research and rank supported crypto pairs using trend, confirmation, history, liquidity, BTC context and risk checks until the best qualified setup survives.",
+        "execution": "The direct Robinhood Crypto API lane uses the Teststock crypto winner/fallback and Robinhood live quote/account/order state for final execution checks. Claude is not required for overnight crypto execution.",
+        "selectorRule": "Do not invent a different crypto asset. Use the Teststock qualified crypto champion or an already-qualified fallback only."
+      }
+    },
+    "disabledAssetClasses": [
+      "OPTION",
+      "FUTURES"
+    ],
+    "crossAssetSelection": false,
+    "rule": "Teststock decides what is worth considering through two independent tournaments. Robinhood is the live execution truth. Broker-side checks may reject a tournament winner but may never replace it with an unranked idea or weaken Teststock gates."
   }
 }
