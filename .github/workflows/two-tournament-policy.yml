@@ -1,0 +1,57 @@
+name: Enforce Teststock two-tournament architecture
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/apply-two-tournament-architecture.mjs'
+      - 'scripts/validate-two-tournament-architecture.mjs'
+      - '.github/workflows/two-tournament-policy.yml'
+  workflow_run:
+    workflows: ['Refresh Teststock picks','Apply Teststock unattended execution policy']
+    types: [completed]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: two-tournament-policy
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Apply stock and crypto tournament architecture
+        run: node scripts/apply-two-tournament-architecture.mjs
+
+      - name: Validate stock and crypto tournament architecture
+        run: node scripts/validate-two-tournament-architecture.mjs
+
+      - name: Publish tournament-authoritative signal
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/signal.json docs/data/claude-signal.json
+          if git diff --cached --quiet; then
+            echo "Two-tournament architecture already current"
+          else
+            git commit -m "Apply two-tournament Teststock architecture"
+            git pull --rebase origin main
+            git push
+          fi
