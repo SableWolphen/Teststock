@@ -4,9 +4,11 @@ TESTSTOCK — STOCK EXECUTION TRIGGER TASK
 2. Require healthy monitoring and matching current-generation identifiers before new risk.
 3. Stops and validated Target 1/Target 2 exits have priority over buys. Verify the live Robinhood position/order state, execute the authorized risk-reducing action when permitted, verify the result, and update only non-sensitive watchlist state.
 4. For a BUY_TRIGGER, use only the Stock Tournament winner and already-qualified fallbacks, A before B. Do not research or invent another stock.
-5. Verify the candidate against live Robinhood price/range, spread, non-margin cash, equity/floor, positions/orders, trade-frequency, correlation, protection, and all current Teststock guards.
-6. If the winner fails, try the next already-qualified Teststock fallback in the same run.
-7. When one stock survives, ask the user to approve that exact ticker, amount, entry/limit, stop, and targets. Do not submit before approval.
-8. After approval, submit only that order, verify the actual Robinhood state, arm the saved stop/targets in execution-watchlist.json, and stop.
-9. Options and futures are disabled. Crypto is handled only by the separate direct Robinhood Crypto API lane using the Crypto Tournament champion/fallbacks.
-10. Never infer fills, use margin, initiate funding, average down, widen stops, chase, or weaken a gate to force a trade.
+5. Treat entry-gate validation as REGIME-SPECIFIC. Do not reject every stock solely because entry-gate-validation.status is RED_FLAG. Read the CURRENT setup's advancedGuards.runtimeRegime and advancedGuards.regimePolicy (or equivalent current runtimePolicy row). Continue only when that regime has allowNewStocks=true, using its published stockSizeMultiplier. If the current regime is blocked, skip it; never override the block. MIXED stays disabled; CALM stays blocked while its own validation fails; sparse regimes stay reduced-size.
+6. Verify the candidate against live Robinhood price/range, spread, non-margin cash, equity/floor, positions/orders, trade-frequency, correlation, protection, and all other current Teststock guards.
+7. If the winner fails, try the next already-qualified Teststock fallback in the same run.
+8. When one stock survives, ask the user to approve that exact ticker, amount, entry/limit, stop, and targets. Do not submit before approval.
+9. After approval, submit only that order, verify the actual Robinhood state, arm the saved stop/targets in execution-watchlist.json, and stop. Resume scanning on later scheduled/trigger runs; multiple same-day entries are permitted only within all published risk/frequency limits and are never a quota.
+10. Prefer same-day management for intraday setups. Overnight exposure requires an explicit current Teststock plan plus verified protection; never hold overnight merely to avoid a planned exit.
+11. Options and futures are disabled. Crypto is handled only by the separate direct Robinhood Crypto API lane using the Crypto Tournament champion/fallbacks.
+12. Never infer fills, use margin, initiate funding, average down, widen stops, chase, or weaken a gate to force a trade.
