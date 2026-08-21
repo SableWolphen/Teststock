@@ -24,6 +24,8 @@ on:
       - 'scripts/apply-advanced-growth-guards.mjs'
       - 'scripts/apply-opportunity-expansion.mjs'
       - 'scripts/apply-probability-first-guards.mjs'
+      - 'scripts/build-adaptive-performance.mjs'
+      - 'scripts/apply-adaptive-tournament-ranking.mjs'
       - 'scripts/apply-two-tournament-architecture.mjs'
       - 'scripts/validate-two-tournament-architecture.mjs'
       - 'scripts/update-shadow-ledger.mjs'
@@ -36,6 +38,7 @@ on:
       - 'scripts/validate-stock-knockout.mjs'
       - 'scripts/validate-signal.mjs'
       - 'scripts/validate-execution-dispatch.mjs'
+      - 'docs/data/real-trade-journal.json'
       - 'docs/real-fill-learning-policy.txt'
       - 'docs/teststock-real-trade-journal-template.json'
       - 'docs/live-trade-state-template.json'
@@ -169,6 +172,9 @@ jobs:
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/update-shadow-ledger.mjs
 
+      - name: Build adaptive performance from Robinhood-confirmed real fills
+        run: node scripts/build-adaptive-performance.mjs
+
       - name: Generate fresh crypto plan
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
@@ -183,7 +189,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -f docs/signal.json ]; then cp docs/signal.json /tmp/teststock-last-good-signal.json; fi
-          if node scripts/build-agent-signal.mjs && node scripts/augment-signal-safety.mjs && node scripts/apply-fractional-protection-policy.mjs && node scripts/apply-exit-policy-validation.mjs && node scripts/apply-strategy-intelligence.mjs && node scripts/apply-operational-safety.mjs && node scripts/apply-stock-knockout-tournament.mjs && node scripts/apply-crypto-knockout-tournament.mjs && node scripts/apply-two-tournament-architecture.mjs && node scripts/validate-signal.mjs docs/signal.json && node scripts/validate-stock-knockout.mjs && node scripts/validate-two-tournament-architecture.mjs; then
+          if node scripts/build-agent-signal.mjs && node scripts/augment-signal-safety.mjs && node scripts/apply-fractional-protection-policy.mjs && node scripts/apply-exit-policy-validation.mjs && node scripts/apply-strategy-intelligence.mjs && node scripts/apply-operational-safety.mjs && node scripts/apply-stock-knockout-tournament.mjs && node scripts/apply-adaptive-tournament-ranking.mjs && node scripts/apply-crypto-knockout-tournament.mjs && node scripts/apply-two-tournament-architecture.mjs && node scripts/validate-signal.mjs docs/signal.json && node scripts/validate-stock-knockout.mjs && node scripts/validate-two-tournament-architecture.mjs; then
             echo "Fresh signal passed validation"
           else
             echo "Fresh signal failed generation or validation. Refusing to publish mixed-generation data." >&2
