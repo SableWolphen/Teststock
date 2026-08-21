@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "source": "TESTSTOCK_EVENT_DISPATCH",
-  "generatedAt": "2026-08-21T17:56:15.237Z",
-  "boardPublishedAt": "2026-08-21T17:56:14.860Z",
-  "boardAgeMs": 377,
+  "generatedAt": "2026-08-21T18:02:54.131Z",
+  "boardPublishedAt": "2026-08-21T18:02:53.646Z",
+  "boardAgeMs": 485,
   "maximumBoardAgeMs": 900000,
   "monitorHealth": "OK",
   "dispatchHealth": "OK",
-  "claudeShouldRun": true,
+  "claudeShouldRun": false,
   "claudeShouldPollMarket": false,
   "executionNeeded": true,
   "dispatchFingerprints": [
@@ -19,26 +19,17 @@
     "TRIGGER_2_TARGET1",
     "BUY_TRIGGER"
   ],
-  "pendingAction": {
-    "fingerprint": "ENTRY:STOCK:EQX|BUY_TRIGGER|2026-08-21T17:56:14.860Z",
-    "isNew": true,
-    "isActionable": true,
-    "priority": 50,
-    "assetClass": "STOCK",
-    "ticker": "EQX",
-    "trigger": "BUY_TRIGGER",
-    "queueRank": 5,
-    "queueRole": "CURRENT_BEST_BUY",
-    "requestedAction": "VERIFY_LIVE_GUARDS_AND_BUY_IF_STILL_ELIGIBLE",
-    "observedPrice": 13.41,
-    "triggerStateChangedAt": "2026-08-21T17:56:14.860Z",
-    "triggerAgeMs": 377,
-    "expiresAt": "2026-08-21T18:06:14.860Z",
-    "reason": "A/ELITE stock is inside its buy zone. It has priority over B candidates but must still pass every live guard.",
-    "packet": "EQX | BUY_TRIGGER | observed 13.41 | VERIFY_LIVE_GUARDS_AND_BUY_IF_STILL_ELIGIBLE"
-  },
+  "pendingAction": null,
   "fallbackActions": [],
-  "queuedActions": [],
+  "queuedActions": [
+    {
+      "ticker": "EQX",
+      "trigger": "BUY_TRIGGER",
+      "fingerprint": "ENTRY:STOCK:EQX|BUY_TRIGGER|2026-08-21T17:56:14.860Z",
+      "isNew": false,
+      "isFresh": true
+    }
+  ],
   "noActionInstruction": "If claudeShouldRun is false, stop immediately. Do not call Robinhood, fetch the full signal, research markets, or produce a long report.",
   "actionInstruction": "Atomically claim each candidate fingerprint in private execution state before any broker action. Process pendingAction first. For a BUY_TRIGGER that fails a live guard before order submission, continue through fallbackActions in order during the same Claude run. Stop after the first submitted buy; never force a trade when all candidates fail. Exit and stop events exclude all buy candidates and always take priority. Fetch only minimal live Robinhood account, position, open-order and quote state. Reject expired entries or entries outside their saved price range. Reconcile ambiguous or partial results by client order ID; never retry an uncertain submission as a new order.",
   "consumerContract": {
