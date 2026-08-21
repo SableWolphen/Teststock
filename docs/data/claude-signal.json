@@ -83,7 +83,7 @@
         "newOptionsAllowed": false
       }
     ],
-    "instructions": "Select exactly one tier using lower-bound-inclusive, upper-bound-exclusive intervals: >=0 and <80 RECOVERY; >=80 and <100 DEFENSE; >=100 and <125 PROVE; >=125 and <150 SCALE; >=150 GROWTH. Exactly $80 is DEFENSE, exactly $100 is PROVE, exactly $125 is SCALE, and exactly $150 is GROWTH. Never choose the lower tier at an exact boundary. Multiply stock allocation by stockAllocationMultiplier. Never exceed tier maxDeployedPct or planned-stop-risk cap. For options use the smaller of eliteOption.maxRiskPctOfRobinhoodBuyingPower and tier.maxOptionRiskPct. If the tier disables options, do not open one."
+    "instructions": "Select the current equity tier exactly as published. Apply its stock allocation multiplier, max deployed percentage and planned-stop-risk cap. Options are disabled in the live Teststock architecture; crypto uses its own tournament and direct Robinhood Crypto API risk limits."
   },
   "profitLock": {
     "mode": "TIERED_EQUITY_FLOOR",
@@ -132,7 +132,7 @@
     "maxNewPositionsPerSevenDays": 10,
     "maxNewOptionsPerDay": 0,
     "maxNewCryptoPerDay": 1,
-    "instructions": "Up to four independently qualified new positions per day and 10 per rolling 7 days. These are ceilings, never quotas; all smaller cash, risk, event, correlation, execution, protection, and real-fill limits override them."
+    "instructions": "Apply the published total-position and crypto frequency ceilings as risk limits, never trade quotas. Options are disabled. Protective exits never count as new entries."
   },
   "correlationGuard": {
     "maxNewPositionsPerRiskCluster": 1,
@@ -202,7 +202,7 @@
     "maxStockSpreadPct": 0.35,
     "maxOptionSpreadPct": null,
     "maxCryptoSpreadPct": 0.75,
-    "instructions": "Prefer limit orders when supported. Never pay above maximumEntry. Skip a new entry when the live bid/ask spread exceeds the applicable cap or when executable pricing is materially worse than the signal. A missed trade is better than a bad fill.",
+    "instructions": "Prefer limit orders when supported. Never pay above a saved maximum entry. Stocks must respect the stock spread cap; crypto must respect the crypto spread cap. A missed trade is better than a bad fill.",
     "preferTighterSpreadAndHigherDollarVolume": true,
     "gapRiskGuard": {
       "enabled": true,
@@ -220,9 +220,9 @@
     "fullyAutomatic": true,
     "protectiveExitRequiredBeforeConsideringEntryComplete": true,
     "stockProtection": "Determine the live stock quantity. For whole-share quantity, create and verify a broker-resident persistent protective stop when Robinhood accepts it. Do not retry unsupported trigger orders for a fractional remainder. Fractional quantity may use only signal.fractionalProtectionPolicy synthetic monitoring, and only while its monitoring/risk requirements pass.",
-    "optionProtection": "After an option buy fills, immediately place a persistent sell-to-close protective stop-market or stop-limit order when the connected Robinhood option tool supports that order type. Verify the protective order is accepted and covers the full intended contract quantity.",
+    "optionProtection": null,
     "cryptoProtection": "If crypto execution becomes supported by the connected Robinhood tools, place the strongest supported persistent protective exit at or near the Teststock invalidation immediately after entry.",
-    "noProtectionNoEntry": "Whole-share stock or option entries still require verified broker-resident protection when supported. A fractional stock entry may proceed only under signal.fractionalProtectionPolicy with active <=5-minute regular-session monitoring and the smaller 0.75%-of-live-equity planned-stop-risk cap. If those synthetic-protection requirements are not verifiably available, do not open the fractional entry.",
+    "noProtectionNoEntry": "New stock entries require the strongest supported verified protection under the current stock/fractional policy. Crypto entries use the direct Robinhood Crypto API protection path. Options are disabled.",
     "target1": "At target1, sell about 25% of the ORIGINAL position when practical, then protect the remaining quantity at breakeven or tighter without widening risk.",
     "target2": "At target2, use runnerContinuationPolicy. Sell enough of the ORIGINAL position to leave at most the authorized runner: normally 50% at target2 for a strong 25% runner, 60% for a moderate 15% runner, or all remaining 75% if no runner is authorized.",
     "bracketCaution": "Do not assume bracket/OCO support. If the broker/tool does not support linked bracket orders, sequence protective-order changes and profit-taking carefully and verify quantities after every fill.",
@@ -247,9 +247,8 @@
     "automaticRiskReducingExits": true
   },
   "assetClassRouting": {
-    "STOCK": "Use only stockPlan.stockOrders.",
-    "OPTION": "Use only stockPlan.eliteOption and only when its action is AUTO_BUY_ELIGIBLE.",
-    "CRYPTO": "Use only cryptoPlan.cryptoOrders. Never treat a crypto symbol as a stock or option."
+    "STOCK": "Use only the current Teststock stock tournament winner and already-qualified stock fallbacks. Claude performs final Robinhood verification before an approved stock order.",
+    "CRYPTO": "Use only the current Teststock crypto tournament qualified champion and already-qualified crypto fallbacks. The direct Robinhood Crypto API performs live quote/account/order verification and execution."
   },
   "hardRules": [
     "FUNDING LOCK: never initiate a deposit, ACH transfer, debit-card transfer, bank transfer, wire, internal transfer, or any other movement of money into the Robinhood Agentic account.",
@@ -258,38 +257,32 @@
     "HARD ACCOUNT FLOOR: below $75 live Agentic-account equity, manage exits only and open no new trades. Do not auto-fund. Resume new-trade eligibility only at $80 or more and only if all other guards pass.",
     "CAPITAL TIER BOUNDARIES: >=0/<80 RECOVERY; >=80/<100 DEFENSE; >=100/<125 PROVE; >=125/<150 SCALE; >=150 GROWTH. Exactly $100 is PROVE. Never select the lower tier at an exact boundary.",
     "Apply capitalLadder, profitLock, circuitBreakers, tradeFrequencyGuard, correlationGuard, executionQuality, exitAutomation, healthGuard, portfolioGuard, and outcomeGuard before every new position.",
-    "Use only existing non-margin cash buying power. Never use margin, borrowed funds, naked options, short stock, leveraged crypto, or undefined-risk option positions.",
-    "Never confuse asset classes: STOCK orders come only from stockPlan.stockOrders, OPTION orders come only from stockPlan.eliteOption, and CRYPTO orders come only from cryptoPlan.cryptoOrders.",
     "A stock must pass Teststock expectancy, adaptive-performance, historical sample, reward/risk, market/sector/intraday, freshness, and entry gates. Never loosen a failed gate to force a trade.",
     "For stocks use the smallest amount allowed by the ladder-adjusted Teststock allocation, tier planned-stop-risk cap, tier max-deployed cap, profit-lock floor, trade-frequency guard, correlation guard, and available non-margin cash.",
-    "Options are exceptional, not default. They require every eliteOption check, exact contract verification, acceptable live spread/liquidity, the active ladder tier to allow options, the smaller option-risk cap, and a verified protective exit capability.",
-    "After every supported new stock or option fill, immediately create and verify the strongest supported persistent protective exit at the saved Teststock invalidation. If a persistent protective exit cannot be created or verified, do not open that new position.",
     "Never add to a losing position and never move a protective exit farther away from the entry.",
     "Before every trade verify live executable price, spread, current Agentic-account buying power/equity, existing positions, open orders, signal expiration, daily/weekly trade counts when available, and correlation with existing exposure.",
     "Prefer limit orders when supported; never pay above maximumEntry and skip entries with excessive spread/slippage.",
     "Do not buy below minimumEntry or above maximumEntry. If price is outside the range, wait.",
     "Crypto may be executed only if the connected Robinhood tools explicitly expose crypto order placement at runtime; otherwise crypto remains signal-only.",
-    "Obey outcomeGuard. Weak recent resolved performance or multiple consecutive losses reduce size, lock options, or pause new trades.",
     "Obey circuit breakers when reliable account-history data is available; circuit breakers stop new entries but do not prevent protective exits.",
     "If Teststock, Robinhood, order status, or protective-order status materially disagree or cannot be verified, do not open a new trade.",
     "Unused capital stays in cash. Never increase risk to chase a return target or recover losses.",
     "Manage exits automatically: invalidation means exit/protective stop; target1 means protect gains and consider partial profit; target2 means prioritize profit capture. The user should not need to calculate stops manually.",
-    "No model, stop, profit lock, or automation can guarantee profit or prevent losses, gaps, slippage, option decay, crypto volatility, or tool failures.",
     "DUAL HOLDOUT: use separate 2024-2025 and 2026+ untouched validation. A failure blocks/reduces the affected regime; sparse second-holdout evidence reduces risk.",
     "REGIME-SPECIFIC ENTRIES: use stricter regime profiles for calm, volatile, trending-down, trending-up, mixed, and unknown environments; never loosen base probability gates.",
     "TOP FOUR STOCK PORTFOLIO: rank stocks best-first and target up to four independently qualified stock positions. Never force a fourth position if it fails any gate; unused capacity stays cash. Up to 4 new positions/day and 12 per rolling 7 days are ceilings only, and all total-risk, cash, cluster, event, spread, protection, and circuit-breaker limits still apply.",
     "TARGET2 QUALIFICATION: use target2 for the minimum reward/risk entry gate. Target1 is a partial-profit/de-risking milestone and must not incorrectly disqualify a setup whose full target satisfies the required asymmetry.",
     "CONDITIONAL RUNNER: at target1 sell about 25% of the original stock position and tighten protection. At target2 leave at most a 25% runner only if a fresh current continuation signal is strong; leave 15% for moderate continuation; otherwise exit the full remainder. Any runner must remain under verified tightened protection and may never be kept on stale/missing/weak evidence.",
     "COST-ADJUSTED EXPECTANCY: subtract the encoded conservative execution-friction allowance before stock eligibility/ranking. Never rank a nominal edge above a stronger after-cost edge merely because costs were ignored.",
-    "CROSS-ASSET PRIORITY: rank already-qualified stocks, options, and crypto by risk-adjusted opportunity, but ranking never overrides live eligibility or safety gates and never creates a quota.",
     "SYMBOL PROBATION: lightly tested symbols start at reduced size until historical and real-fill evidence improves.",
     "GAP + LIQUIDITY: avoid large opening gaps, never widen stops for gaps, and prefer tighter spreads/higher reliable dollar volume among otherwise-equal candidates.",
-    "OPTIONS + CRYPTO REMAIN SELECTIVE: they may participate when all dedicated research, real-fill, broker, whole-contract/liquidity/protection and frequency gates pass; frequency permission is never a reason to force a trade.",
     "PIPELINE FRESHNESS: dataFreshness.lastSuccessfulGeneration and per-asset ages are machine-readable. A stale dependency fails closed; never hide a stalled generator by extending validity windows.",
     "FRACTIONAL STOP LIMITATION: the connected Robinhood Agentic runtime has rejected triggered stop orders for fractional share quantities with Invalid trigger for fractional order. Do not repeatedly retry unsupported stop-market/stop-limit fractional orders.",
     "FRACTIONAL SYNTHETIC PROTECTION: a new fractional stock entry is permitted only if active regular-session monitoring can be verified at intervals of 5 minutes or less and planned stop risk is capped at 0.75% of live equity. When the saved invalidation is observed as breached, submit the supported fractional market sell immediately when permitted and verify the result.",
     "WHOLE/HYBRID PROTECTION: use a verified broker-resident stop for whole-share quantity when supported; for mixed quantities, reconcile the whole-share broker stop with the synthetic fractional remainder so combined sell orders can never exceed the live position.",
-    "SYNTHETIC STOP HONESTY: an agent-managed fractional stop is not persistent broker protection and cannot guarantee the planned exit. If monitoring becomes unavailable, do not add fractional risk and do not keep a fractional runner unattended."
+    "SYNTHETIC STOP HONESTY: an agent-managed fractional stop is not persistent broker protection and cannot guarantee the planned exit. If monitoring becomes unavailable, do not add fractional risk and do not keep a fractional runner unattended.",
+    "LIVE ASSET SCOPE: only STOCK and CRYPTO are eligible. Options and futures are disabled.",
+    "TOURNAMENT AUTHORITY: do not invent a symbol outside the current Teststock stock or crypto tournament winner/fallback set. Robinhood live checks may reject a winner but may not substitute an unranked idea."
   ],
   "stockPlan": {
     "assetClass": "STOCK",
@@ -2458,7 +2451,7 @@
       ],
       "bTierUsesReducedEncodedSize": true,
       "manualApprovalStepRemoved": true,
-      "rule": "A current-generation BUY trigger may execute automatically without asking the user again when every Teststock hard guard and every required live Robinhood check passes. Use A/ELITE before B/BEST_ACCEPTABLE. B uses only its reduced encoded size. If the top candidate fails before order submission, try the next already-qualified fallback in the same run. Never create a trade by weakening a hard gate."
+      "rule": "For stocks, start with the current Teststock tournament winner, A before B. If that winner fails a live Robinhood guard, try the next already-qualified Teststock fallback. Do not invent a different stock. Crypto execution is handled by the separate direct Robinhood Crypto API lane."
     },
     "hardGuardsRemainMandatory": [
       "funding lock",
