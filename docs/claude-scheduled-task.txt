@@ -1,69 +1,35 @@
-TESTSTOCK AUTOPILOT — LOW-CREDIT HOURLY SCHEDULED TASK
+TESTSTOCK — LOW-CREDIT STOCK EXECUTION TASK
 
 SCHEDULE
-- Canonical cron: 0 13-21 * * 1-5
-- Intended cadence: hourly, Monday-Friday, 13:00-21:00 UTC.
-- The current scheduled-task runtime may anchor to the task's creation minute, so observed firings are expected around :05 past the hour rather than exactly :00.
-- Expected observed times: 13:05, 14:05, 15:05, 16:05, 17:05, 18:05, 19:05, 20:05, 21:05 UTC.
-- During EDT (UTC-4), that is approximately 9:05am-5:05pm ET.
-- Every firing is a check-in, not a guaranteed trade. Platform scheduling may drift.
+- Canonical cron metadata: 0 13-21 * * 1-5.
+- Every firing is a check-in, not a guaranteed trade.
 
-GOAL
-Do not spend Claude tokens polling prices or re-analyzing markets when nothing needs brokerage action. GitHub + Alpaca maintain the market scan, tournaments, trigger board, execution watchlist and dispatch state between Claude check-ins.
+CHEAP FIRST STEP
+1. Fetch fresh raw-main docs/data/trigger-board.json and docs/data/execution-watchlist.json with cache busters.
+2. If monitor health is not OK, open no new risk.
+3. If executionNeeded=false and no protection-repair condition exists, stop without Robinhood calls, full signal analysis, or market research.
+4. If executionNeeded=true, fetch fresh raw-main docs/data/execution-dispatch.json, docs/signal.json, docs/data/stock-tournament.json, and docs/claude-trigger-task.txt.
 
-CHEAP FIRST STEP — ALWAYS
-1. Fetch the newest raw-main trigger board with a cache buster:
-   https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/trigger-board.json?cb=<current-utc-ms>
-2. Also fetch the small raw-main execution watchlist so existing saved protection can be recognized without Projects/Drive:
-   https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/execution-watchlist.json?cb=<current-utc-ms>
-3. If monitorHealth is not OK, open no new risk.
-4. If executionNeeded=false, normally STOP immediately after those two cheap GitHub reads. Do not fetch the full signal, do not query Robinhood merely for a heartbeat, do not analyze stocks/crypto, and do not produce a long report.
-5. The only idle exception is PROTECTION REPAIR: if an ACTIVE watchlist position is missing required saved stop/targets, the watchlist contradicts a previously reported live holding, or a prior run explicitly reported UNPROTECTED/UNRECONCILED state, perform only the minimum Robinhood position/open-order checks needed to reconcile protection. Do not do general market research or account analysis.
-6. If executionNeeded=true, fetch the newest raw-main execution-dispatch.json and then follow docs/claude-trigger-task.txt.
+TWO-TOURNAMENT AUTHORITY
+- Teststock has exactly two live decision paths: Stock Tournament and Crypto Tournament.
+- Options, futures, and cross-asset selection are disabled.
+- Claude handles stocks only. The direct Robinhood Crypto API lane handles crypto 24/7 without Claude.
+- Never invent a symbol outside Teststock's current winner/fallback list.
 
-PROTECTION REPAIR — FAIL CLOSED, NEVER INVENT LEVELS
-- The raw-main execution-watchlist.json is the authoritative public record of saved Teststock trigger levels. Projects/Drive availability is not required to read it.
-- If a live position exists and a matching ACTIVE watchlist record contains stop/target levels, treat the GitHub trigger plan as ARMED when the 5-minute trigger monitor is healthy. For fractional stock, this means synthetic monitoring is armed; it is not a broker-resident stop.
-- If the live position exists but the matching watchlist record is missing or incomplete, search only existing Teststock/GitHub history for the original saved plan. Never invent a stop, target, quantity, or fill.
-- If no trustworthy saved invalidation can be recovered, open no new risk. Report the protection gap and use only risk-reducing broker actions that are actually authorized by current policy and supported by Robinhood.
-- If GitHub write capability is unavailable, do not falsely claim the watchlist was updated. Existing raw-main data may still prove it was already armed.
+STOCK BUY
+- Start with the current Stock Tournament winner, A before B. If it fails a live Robinhood guard, evaluate already-qualified Teststock fallbacks in order.
+- Use Robinhood only for final verification: live price/range, spread, non-margin cash, equity/floor, positions, orders, frequency, correlation, protection, and current signal generation.
+- After the first stock survives every current Teststock and Robinhood check, ask the user to approve that exact ticker, amount, entry/limit, stop, and targets.
+- Do not submit a new stock buy before the user's approval.
+- After approval, submit only the approved order, verify Robinhood's order/fill state, and arm the non-sensitive execution watchlist from the saved Teststock plan.
 
-ACCOUNT GUARDRAIL SOURCE — NO LEGACY THRESHOLDS
-- Never use a remembered or hard-coded $90 pause threshold.
-- On an idle no-action run, do not query Robinhood merely to calculate an account-floor threshold.
-- On any run that actually needs a broker action or protection repair, fetch the current raw-main signal.json first and use signal.hardAccountFloor and the current capital ladder exactly as published.
-- Current Teststock semantics are encoded in the signal: below noNewTradesBelowEquity means manage exits only; new-trade eligibility resumes only at automaticResumeAtOrAboveEquity when every other guard passes. If those numbers change in a future signal, the fresh signal wins.
+STOCK EXITS
+- Verified stops, Target 1, and Target 2 are risk-reducing position management and may execute without a new approval when the current policy and Robinhood permissions allow.
+- Never infer a fill, widen a stop, average down, chase, use margin, or initiate funding/transfers.
 
-GENERATION MATCH — REQUIRED BEFORE ANY NEW-RISK ORDER
-- Raw GitHub main is authoritative, not a browser-cached Pages copy.
-- Before a new buy, fetch the newest raw-main signal.json, relevant stock/crypto tournament state, and execution-watchlist.json.
-- Confirm the trigger/dispatch belongs to the current ACTIVE signal generation. If generatedAt/generation identifiers conflict, re-fetch and do not submit new risk until they match.
-- Verify the latest Teststock workflow/monitor state is healthy enough for the requested action.
+PROTECTION REPAIR
+- The raw-main execution watchlist is the saved trigger source. A healthy non-LLM monitor may synthetically monitor fractional shares; it is not a broker-resident stop.
+- If a live position is missing a trustworthy saved plan, open no new risk and never invent levels.
 
-EXITS / STOPS — AUTOMATIC WHEN VERIFIED
-- Existing-position risk-reducing actions may execute automatically when a scheduled firing sees a valid trigger and live Robinhood confirms the position/order/quantity.
-- TRIGGER_1_STOP: verify the live position, then execute the strongest supported sell path immediately when permitted. Fractional quantities use a supported market sell when fractional triggers are unsupported. Verify the result from Robinhood.
-- TRIGGER_2_TARGET1: verify the live position and validated exit policy, execute the authorized partial sale, verify the fill, then update target1Completed=true.
-- TRIGGER_3_TARGET2: verify the live position and fresh runner authorization, execute the validated Target 2 sale, keep only an authorized protected runner, verify the fill and update watchlist state.
-- Protective exits and profit-taking manage existing exposure; do not wait for a fresh manual approval when the current policy and live broker state authorize the exit.
-
-NEW BUYS — AUTOMATIC WHEN FULLY QUALIFIED
-- A BUY_TRIGGER is a wake signal. It may become an automatic order only after the current-generation signal and every required live Robinhood guard pass.
-- No per-trade user reply is required for a fully qualified current-generation buy under this policy.
-- STOCK BUY PRIORITY: try A/ELITE first. If no A survives all current live checks, try the highest-ranked B/BEST_ACCEPTABLE candidate at its reduced encoded size.
-- If the top candidate fails before order submission, continue through already-qualified fallbacks in the same run.
-- Crypto or options may auto-buy only when their own current Teststock eligibility, capital-tier, live evidence, spread/liquidity, sizing and protection rules all pass and the connected Robinhood tools support the required order safely.
-- Never turn automatic execution into forced execution. If no candidate survives every hard guard, stay in cash and keep scanning.
-- B-tier is not permission to weaken hard safety. Never relax funding lock, account floor, loss brakes, freshness/generation match, maximumEntry, spread, gap/chase, correlation/portfolio heat, trade-frequency limits, protective-exit requirements, fractional-monitor requirements, margin/leverage restrictions, no-average-down, or no-widen-stop rules.
-
-BROKER / FUNDING RULES
-- Robinhood is authoritative for cash, equity, positions, quantities, orders and fills.
-- Use only non-margin cash already inside the dedicated account. Never initiate deposits, transfers, withdrawals or borrowing.
-- Never infer fills, widen stops, average down, chase, use margin, use external funding, or retry unsupported fractional trigger orders.
-- After a confirmed buy, arm docs/data/execution-watchlist.json with only non-sensitive saved trigger levels. Fractional synthetic monitoring is not active until that write succeeds and the trigger-monitor workflow is healthy.
-
-CREDIT RULE
-GitHub + Alpaca do continuous market monitoring. Claude performs two tiny GitHub reads on idle heartbeats and otherwise stops. Robinhood calls are reserved for a real dispatch or a narrowly scoped protection-repair condition.
-
-LIMITATION
-The public repository cannot wake Claude instantly and cannot place Robinhood orders. If a trigger appears between hourly Claude firings, it waits until the next authorized Claude run unless another approved execution bridge exists. Do not describe hourly fractional-stop execution as instant or guaranteed protection.
+SOURCE OF TRUTH
+- Re-fetch raw main on every run. Teststock selects; Robinhood verifies balances, positions, orders, and fills.

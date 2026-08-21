@@ -15,7 +15,6 @@ on:
       - 'scripts/validate-portfolio-correlation.mjs'
       - 'scripts/validate-exit-policy.mjs'
       - 'scripts/build-champion-challenger.mjs'
-      - 'scripts/scan-small-account-options.mjs'
       - 'scripts/optimize-growth-plan.mjs'
       - 'scripts/enforce-model-sizing-lock.mjs'
       - 'scripts/generate-crypto-picks.mjs'
@@ -25,7 +24,8 @@ on:
       - 'scripts/apply-advanced-growth-guards.mjs'
       - 'scripts/apply-opportunity-expansion.mjs'
       - 'scripts/apply-probability-first-guards.mjs'
-      - 'scripts/build-cross-asset-opportunity-ranking.mjs'
+      - 'scripts/apply-two-tournament-architecture.mjs'
+      - 'scripts/validate-two-tournament-architecture.mjs'
       - 'scripts/update-shadow-ledger.mjs'
       - 'scripts/augment-signal-safety.mjs'
       - 'scripts/apply-fractional-protection-policy.mjs'
@@ -99,7 +99,6 @@ jobs:
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
-          ALPACA_OPTIONS_FEED: indicative
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: node scripts/generate-static-picks.mjs
 
@@ -128,14 +127,6 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/validate-portfolio-correlation.mjs
-
-      - name: Scan broader small-account option contracts
-        if: ${{ steps.scan_window.outputs.stocks == 'true' }}
-        env:
-          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
-          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
-          ALPACA_OPTIONS_FEED: indicative
-        run: node scripts/scan-small-account-options.mjs
 
       - name: Deep validate regime profiles and two untouched holdouts
         if: ${{ steps.scan_window.outputs.deep == 'true' }}
@@ -184,18 +175,15 @@ jobs:
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/generate-crypto-picks.mjs
 
-      - name: Apply probability-first stock options crypto overlay
+      - name: Apply probability-first stock and crypto overlay
         run: node scripts/apply-probability-first-guards.mjs
-
-      - name: Rank qualified opportunities across asset classes
-        run: node scripts/build-cross-asset-opportunity-ranking.mjs
 
       - name: Build, protect, govern and validate signal
         shell: bash
         run: |
           set -euo pipefail
           if [ -f docs/signal.json ]; then cp docs/signal.json /tmp/teststock-last-good-signal.json; fi
-          if node scripts/build-agent-signal.mjs && node scripts/augment-signal-safety.mjs && node scripts/apply-fractional-protection-policy.mjs && node scripts/apply-exit-policy-validation.mjs && node scripts/apply-strategy-intelligence.mjs && node scripts/apply-operational-safety.mjs && node scripts/apply-stock-knockout-tournament.mjs && node scripts/apply-crypto-knockout-tournament.mjs && node scripts/validate-signal.mjs docs/signal.json && node scripts/validate-stock-knockout.mjs; then
+          if node scripts/build-agent-signal.mjs && node scripts/augment-signal-safety.mjs && node scripts/apply-fractional-protection-policy.mjs && node scripts/apply-exit-policy-validation.mjs && node scripts/apply-strategy-intelligence.mjs && node scripts/apply-operational-safety.mjs && node scripts/apply-stock-knockout-tournament.mjs && node scripts/apply-crypto-knockout-tournament.mjs && node scripts/apply-two-tournament-architecture.mjs && node scripts/validate-signal.mjs docs/signal.json && node scripts/validate-stock-knockout.mjs && node scripts/validate-two-tournament-architecture.mjs; then
             echo "Fresh signal passed validation"
           else
             echo "Fresh signal failed generation or validation. Refusing to publish mixed-generation data." >&2

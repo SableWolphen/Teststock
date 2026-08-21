@@ -5,7 +5,7 @@ const CLAUDE_SIGNAL='docs/data/claude-signal.json';
 const signal=JSON.parse(await fs.readFile(SIGNAL,'utf8'));
 
 signal.executionArchitecture={
-  version:1,
+  version:2,
   mode:'TWO_TOURNAMENTS_ONLY',
   researchAuthority:'TESTSTOCK',
   tournaments:{
@@ -24,9 +24,19 @@ signal.executionArchitecture={
       selectorRule:'Do not invent a different crypto asset. Use the Teststock qualified crypto champion or an already-qualified fallback only.'
     }
   },
+  liveDecisionPaths:['STOCK_TOURNAMENT','CRYPTO_TOURNAMENT'],
   disabledAssetClasses:['OPTION','FUTURES'],
   crossAssetSelection:false,
   rule:'Teststock decides what is worth considering through two independent tournaments. Robinhood is the live execution truth. Broker-side checks may reject a tournament winner but may never replace it with an unranked idea or weaken Teststock gates.'
+};
+
+signal.autopilot={
+  ...(signal.autopilot||{}),
+  enabled:true,
+  requiresPerOrderApproval:true,
+  automaticQualifiedBuys:false,
+  automaticRiskReducingExits:true,
+  scope:'Dedicated Robinhood Agentic account for approved stock orders; direct Robinhood Crypto API lane for crypto.'
 };
 
 if(signal.stockPlan){
@@ -49,6 +59,11 @@ if(signal.executionQuality){
   signal.executionQuality.maxOptionSpreadPct=null;
   signal.executionQuality.instructions='Prefer limit orders when supported. Never pay above a saved maximum entry. Stocks must respect the stock spread cap; crypto must respect the crypto spread cap. A missed trade is better than a bad fill.';
 }
+if(signal.probabilityFirstPolicy?.options){
+  signal.probabilityFirstPolicy.options={enabled:false,liveDecisionPath:false,reason:'Options are disabled by TWO_TOURNAMENTS_ONLY.'};
+}
+delete signal.crossAssetOpportunityRanking;
+if(signal.systemHealth)delete signal.systemHealth.crossAssetRanking;
 if(signal.exitAutomation){
   signal.exitAutomation.optionProtection=null;
   signal.exitAutomation.noProtectionNoEntry='New stock entries require the strongest supported verified protection under the current stock/fractional policy. Crypto entries use the direct Robinhood Crypto API protection path. Options are disabled.';
@@ -61,16 +76,22 @@ if(Array.isArray(signal.hardRules)){
   signal.hardRules=signal.hardRules.filter(x=>!String(x).toLowerCase().includes('option'));
   signal.hardRules.push('LIVE ASSET SCOPE: only STOCK and CRYPTO are eligible. Options and futures are disabled.');
   signal.hardRules.push('TOURNAMENT AUTHORITY: do not invent a symbol outside the current Teststock stock or crypto tournament winner/fallback set. Robinhood live checks may reject a winner but may not substitute an unranked idea.');
+  signal.hardRules.push('STOCK APPROVAL: Claude must ask the user to approve the exact verified Teststock stock winner/fallback before submitting a new stock buy. Risk-reducing exits may remain automatic when verified.');
 }
 if(signal.claudeExecutionPolicy?.buys){
   signal.claudeExecutionPolicy.buys.appliesTo=['STOCK_A','STOCK_B'];
-  signal.claudeExecutionPolicy.buys.rule='For stocks, start with the current Teststock tournament winner, A before B. If that winner fails a live Robinhood guard, try the next already-qualified Teststock fallback. Do not invent a different stock. Crypto execution is handled by the separate direct Robinhood Crypto API lane.';
+  signal.claudeExecutionPolicy.buys.explicitApprovalRequired=true;
+  signal.claudeExecutionPolicy.buys.automaticWhenFullyQualifiedAndBrokerPermits=false;
+  signal.claudeExecutionPolicy.buys.rule='For stocks, start with the current Teststock tournament winner, A before B. Use Robinhood only for final live verification, then ask the user to approve that exact stock order. If the winner fails a live guard, try the next already-qualified Teststock fallback and ask approval for that exact fallback. Do not invent a different stock. Crypto execution is handled by the separate direct Robinhood Crypto API lane.';
 }
 
-signal.schemaVersion=Math.max(36,Number(signal.schemaVersion||0));
+signal.schemaVersion=Math.max(37,Number(signal.schemaVersion||0));
+const traceableFeatures={...(signal.generatorIntegrity?.traceableFeatures||{})};
+delete traceableFeatures.crossAssetOpportunityRanking;
+delete traceableFeatures.wholeContractOptionSizing;
 signal.generatorIntegrity={
   ...(signal.generatorIntegrity||{}),
-  traceableFeatures:{...(signal.generatorIntegrity?.traceableFeatures||{}),twoTournamentArchitecture:true}
+  traceableFeatures:{...traceableFeatures,twoTournamentArchitecture:true}
 };
 
 await fs.writeFile(SIGNAL,JSON.stringify(signal,null,2));

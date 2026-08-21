@@ -1,28 +1,24 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "source": "TESTSTOCK_CRYPTO_KNOCKOUT",
-  "generatedAt": "2026-08-21T15:22:43.192Z",
+  "generatedAt": "2026-08-21T15:48:20.827Z",
   "market": "24_7",
   "supportedUsdPairs": 68,
-  "objective": "Scan every active tradable Alpaca USD crypto pair, eliminate weak setups, and surface the strongest A/A+ crypto candidate while preserving all crypto safety gates.",
+  "objective": "Scan every active tradable Alpaca USD crypto pair, eliminate weak setups, and select the strongest qualified crypto winner plus qualified fallbacks for direct Robinhood Crypto API verification.",
   "brokerExecution": {
-    "status": "BROKER_EXECUTION_UNAVAILABLE",
+    "status": "DIRECT_ROBINHOOD_CRYPTO_API",
+    "lane": "GITHUB_ACTIONS_ROBINHOOD_CRYPTO_API",
     "executableByCurrentClaudeRobinhoodConnection": false,
-    "researchOnly": true,
-    "reason": "The current Robinhood MCP connection exposes equity execution but does not expose the crypto quote/position/order tools required for safe live crypto execution.",
-    "requiredBeforeEnable": [
-      "live crypto quote capability",
-      "live crypto position capability",
-      "crypto order placement capability"
-    ],
-    "rule": "Continue 24/7 crypto research and ranking, but never emit an executable crypto BUY trigger or wake Claude solely for a crypto entry until the connected Robinhood runtime explicitly exposes all required crypto execution tools."
+    "executableByDirectRobinhoodCryptoApi": true,
+    "researchOnly": false,
+    "requiresClaude": false,
+    "rule": "Use the Teststock qualified crypto champion first, then already-qualified fallbacks in tournament order. The direct Robinhood Crypto API must independently verify the live quote, account, holdings, open orders, sizing and protection before execution."
   },
   "policy": {
     "scanAllSupportedUsdPairs": true,
     "alwaysProduceResearchChampion": true,
-    "buyWhenAtLeastOneFullyQualifiedCandidateExists": false,
+    "buyWhenAtLeastOneFullyQualifiedCandidateExists": true,
     "forcedCryptoBuy": false,
-    "researchContinuesWhileExecutionUnavailable": true,
     "noEligibleCandidateAction": "KEEP_SCANNING_24_7",
     "winnerSelection": "A_PLUS_BEFORE_A_THEN_GROWTH_QUALITY_SCORE_LIQUIDITY",
     "btcContextRequiredForAltcoins": true,

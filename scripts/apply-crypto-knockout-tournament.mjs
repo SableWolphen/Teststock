@@ -11,19 +11,20 @@ const candidates=ranked.map((x,i)=>({rank:i+1,ticker:x.symbol,grade:x.setupGrade
 const qualified=candidates.filter(x=>x.grade==='A+'||x.grade==='A');
 const champion=qualified[0]||null;
 const brokerExecution={
-  status:'BROKER_EXECUTION_UNAVAILABLE',
+  status:'DIRECT_ROBINHOOD_CRYPTO_API',
+  lane:'GITHUB_ACTIONS_ROBINHOOD_CRYPTO_API',
   executableByCurrentClaudeRobinhoodConnection:false,
-  researchOnly:true,
-  reason:'The current Robinhood MCP connection exposes equity execution but does not expose the crypto quote/position/order tools required for safe live crypto execution.',
-  requiredBeforeEnable:['live crypto quote capability','live crypto position capability','crypto order placement capability'],
-  rule:'Continue 24/7 crypto research and ranking, but never emit an executable crypto BUY trigger or wake Claude solely for a crypto entry until the connected Robinhood runtime explicitly exposes all required crypto execution tools.'
+  executableByDirectRobinhoodCryptoApi:true,
+  researchOnly:false,
+  requiresClaude:false,
+  rule:'Use the Teststock qualified crypto champion first, then already-qualified fallbacks in tournament order. The direct Robinhood Crypto API must independently verify the live quote, account, holdings, open orders, sizing and protection before execution.'
 };
-const tournament={schemaVersion:2,source:'TESTSTOCK_CRYPTO_KNOCKOUT',generatedAt:new Date().toISOString(),market:'24_7',supportedUsdPairs:Number(universe.supportedUsdPairs||0),objective:'Scan every active tradable Alpaca USD crypto pair, eliminate weak setups, and surface the strongest A/A+ crypto candidate while preserving all crypto safety gates.',brokerExecution,policy:{scanAllSupportedUsdPairs:true,alwaysProduceResearchChampion:Boolean(candidates.length),buyWhenAtLeastOneFullyQualifiedCandidateExists:false,forcedCryptoBuy:false,researchContinuesWhileExecutionUnavailable:true,noEligibleCandidateAction:'KEEP_SCANNING_24_7',winnerSelection:'A_PLUS_BEFORE_A_THEN_GROWTH_QUALITY_SCORE_LIQUIDITY',btcContextRequiredForAltcoins:true,noLeverage:true,noAverageDown:true},researchChampion:candidates[0]||null,qualifiedChampion:champion,fallbacks:qualified.slice(1,6),ranked:candidates};
-signal.cryptoTournament={enabled:true,sourceRef:'docs/data/crypto-tournament.json',market:'24_7',scanAllSupportedUsdPairs:true,supportedUsdPairs:Number(universe.supportedUsdPairs||0),brokerExecution,buyWhenAtLeastOneFullyQualifiedCandidateExists:false,forcedCryptoBuy:false,researchOnlyUntilBrokerExecutionAvailable:true,noEligibleCandidateAction:'KEEP_SCANNING_24_7',researchChampion:candidates[0]||null,qualifiedChampion:champion,fallbackTickers:qualified.slice(1,6).map(x=>x.ticker),instructions:'Crypto continues to run its 24/7 research tournament, but the current Claude/Robinhood connection cannot safely execute crypto. Do not emit an executable crypto buy or wake Claude solely for a crypto entry until live quote, position, and order-placement tools are explicitly available at runtime.'};
-signal.cryptoPlan={...(signal.cryptoPlan||{}),execution:{...(signal.cryptoPlan?.execution||{}),mode:'BROKER_EXECUTION_UNAVAILABLE',researchOnly:true,executableByCurrentClaudeRobinhoodConnection:false,note:brokerExecution.reason},cryptoOrders:[]};
+const tournament={schemaVersion:3,source:'TESTSTOCK_CRYPTO_KNOCKOUT',generatedAt:new Date().toISOString(),market:'24_7',supportedUsdPairs:Number(universe.supportedUsdPairs||0),objective:'Scan every active tradable Alpaca USD crypto pair, eliminate weak setups, and select the strongest qualified crypto winner plus qualified fallbacks for direct Robinhood Crypto API verification.',brokerExecution,policy:{scanAllSupportedUsdPairs:true,alwaysProduceResearchChampion:Boolean(candidates.length),buyWhenAtLeastOneFullyQualifiedCandidateExists:true,forcedCryptoBuy:false,noEligibleCandidateAction:'KEEP_SCANNING_24_7',winnerSelection:'A_PLUS_BEFORE_A_THEN_GROWTH_QUALITY_SCORE_LIQUIDITY',btcContextRequiredForAltcoins:true,noLeverage:true,noAverageDown:true},researchChampion:candidates[0]||null,qualifiedChampion:champion,fallbacks:qualified.slice(1,6),ranked:candidates};
+signal.cryptoTournament={enabled:true,sourceRef:'docs/data/crypto-tournament.json',market:'24_7',scanAllSupportedUsdPairs:true,supportedUsdPairs:Number(universe.supportedUsdPairs||0),brokerExecution,buyWhenAtLeastOneFullyQualifiedCandidateExists:true,forcedCryptoBuy:false,noEligibleCandidateAction:'KEEP_SCANNING_24_7',researchChampion:candidates[0]||null,qualifiedChampion:champion,fallbackTickers:qualified.slice(1,6).map(x=>x.ticker),instructions:'The direct Robinhood Crypto API lane evaluates only the Teststock qualified champion and already-qualified fallbacks in order. It must not invent a crypto symbol or bypass any live broker/risk/protection check.'};
+signal.cryptoPlan={...(signal.cryptoPlan||{}),execution:{...(signal.cryptoPlan?.execution||{}),mode:'DIRECT_ROBINHOOD_CRYPTO_API',researchOnly:false,requiresClaude:false,note:brokerExecution.rule}};
 signal.generatorIntegrity={...(signal.generatorIntegrity||{}),traceableFeatures:{...(signal.generatorIntegrity?.traceableFeatures||{}),cryptoKnockoutTournament:true,cryptoBrokerCapabilityGate:true}};
 signal.schemaVersion=Math.max(35,Number(signal.schemaVersion||0));
 await fs.writeFile(OUT,JSON.stringify(tournament,null,2));
 await fs.writeFile(SIGNAL,JSON.stringify(signal,null,2));
 await fs.writeFile('docs/data/claude-signal.json',JSON.stringify(signal,null,2));
-console.log(`Crypto knockout research: ${tournament.supportedUsdPairs} supported pairs, ${qualified.length} A/A+ candidate(s), execution BROKER_EXECUTION_UNAVAILABLE.`);
+console.log(`Crypto knockout research: ${tournament.supportedUsdPairs} supported pairs, ${qualified.length} A/A+ candidate(s), direct Robinhood Crypto API lane.`);

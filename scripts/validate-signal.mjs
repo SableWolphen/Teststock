@@ -12,7 +12,6 @@ if(candidateQueue.length>15)fail.push('stock candidate queue too large');
 if(new Set(candidateQueue.map(x=>x.ticker)).size!==candidateQueue.length)fail.push('duplicate stock candidate queue ticker');
 for(let i=0;i<candidateQueue.length;i++){const x=candidateQueue[i];if(Number(x.queueRank)!==i+1)fail.push('stock candidate queue rank');for(const k of ['minimumEntry','maximumEntry','stop','target1','target2'])if(!finite(x[k])||Number(x[k])<=0)fail.push(`stock candidate ${k}`);if(!['PRIMARY','RESERVE'].includes(x.queueRole))fail.push('stock candidate queue role');}
 for(const order of s.cryptoPlan?.cryptoOrders||[]){for(const k of ['minimumEntry','maximumEntry','stop','target1','target2'])if(!finite(order[k])||Number(order[k])<=0)fail.push(`crypto ${k}`);}
-const o=s.stockPlan?.eliteOption;if(o&&!o.wholeContractSizing?.runtimeCheckRequired)fail.push('option whole-contract runtime check');
 if(s.systemHealth?.actionOnCriticalFailure!=='NO_NEW_TRADES_MANAGE_EXITS_IF_POSSIBLE')fail.push('system health fail-closed policy');
 if(!s.entryGateRobustness?.secondHoldoutStart||!s.entryGateRobustness?.secondHoldout)fail.push('second untouched holdout');
 if(!s.entryGateRobustness?.regimeEntryProfiles)fail.push('regime entry profiles');
@@ -27,10 +26,7 @@ if(!s.probabilityFirstPolicy||s.probabilityFirstPolicy.status==='UNAVAILABLE')fa
 if(Number(s.probabilityFirstPolicy?.stocks?.minHistoricalSamples||0)<20)fail.push('probability stock sample floor');
 if(Number(s.probabilityFirstPolicy?.stocks?.minCostAdjustedConservativeExpectedR||0)<.5)fail.push('cost-adjusted stock expectancy floor');
 if(s.probabilityFirstPolicy?.stocks?.rewardRiskQualificationTarget!=='TARGET2')fail.push('target2 reward-risk qualification');
-if(Number(s.probabilityFirstPolicy?.options?.liveEvidenceMinimumResolvedTrades||0)<10)fail.push('option real-fill evidence floor');
 if(Number(s.probabilityFirstPolicy?.crypto?.liveEvidenceMinimumResolvedTrades||0)<5)fail.push('crypto real-fill evidence floor');
-if(!s.crossAssetOpportunityRanking||s.crossAssetOpportunityRanking.status==='UNAVAILABLE')fail.push('cross-asset opportunity ranking');
-if(s.systemHealth?.crossAssetRanking?.required!==true)fail.push('cross-asset ranking health dependency');
 if(s.shadowEvidencePolicy?.automaticLooseningAllowed!==false)fail.push('shadow automatic loosening lock');
 if(s.executionTelemetryPolicy?.sourceOfTruth!=='ROBINHOOD_CONFIRMED_FILLS_AND_ORDERS')fail.push('execution telemetry source');if(!s.dailySummaryPolicy?.enabled)fail.push('daily summary policy');
 if(s.runnerContinuationPolicy?.enabled!==true)fail.push('runner policy');
@@ -78,5 +74,5 @@ if(s.dataFreshness?.failClosed!==true)fail.push('freshness fail-closed');
 if(Number(s.dataFreshness?.cryptoAgeMinutes??999)>25)fail.push('crypto data stale at generation');
 if(Number(s.dataFreshness?.entryGateValidationAgeMinutes??999)>120)fail.push('entry-gate validation stale');
 if(!s.generatorIntegrity?.lastKnownGoodFallback)fail.push('last-known-good fallback metadata');
-for(const k of ['dualUntouchedHoldouts','regimeSpecificEntryProfiles','wholeContractOptionSizing','setupClusterAndSymbolRealFillLearning','staleDataFailClosed','costAdjustedExpectancy','target2RewardRiskQualification','crossAssetOpportunityRanking','conditionalRunnerExit','fractionalSyntheticProtection','exitPolicyHoldoutValidation','portfolioCorrelationIntelligence','championChallengerGovernance','executionLearning','postTradeAttribution','setupSpecificExitResearch','wholeShareTieBreaker','smallAccountAccessPolicy','nonLlmTriggerMonitor','lowCreditTriggerExecution','eventDrivenExecutionDispatch'])if(s.generatorIntegrity?.traceableFeatures?.[k]!==true)fail.push(`integrity feature ${k}`);
+for(const k of ['dualUntouchedHoldouts','regimeSpecificEntryProfiles','setupClusterAndSymbolRealFillLearning','staleDataFailClosed','costAdjustedExpectancy','target2RewardRiskQualification','conditionalRunnerExit','fractionalSyntheticProtection','exitPolicyHoldoutValidation','portfolioCorrelationIntelligence','championChallengerGovernance','executionLearning','postTradeAttribution','setupSpecificExitResearch','wholeShareTieBreaker','smallAccountAccessPolicy','nonLlmTriggerMonitor','lowCreditTriggerExecution','eventDrivenExecutionDispatch'])if(s.generatorIntegrity?.traceableFeatures?.[k]!==true)fail.push(`integrity feature ${k}`);
 if(fail.length)throw new Error(`signal validation failed: ${[...new Set(fail)].join(', ')}`);console.log(`signal validation passed: schema v${s.schemaVersion}, generated ${s.generatedAt}`);
