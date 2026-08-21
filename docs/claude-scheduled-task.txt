@@ -3,6 +3,7 @@ TESTSTOCK — LOW-CREDIT STOCK EXECUTION TASK
 SCHEDULE
 - Canonical cron metadata: 0 13-21 * * 1-5.
 - Every firing is a check-in, not a guaranteed trade.
+- Teststock is an intraday-selective stock system: keep scanning during the regular stock session and be ready to act on each genuinely qualified setup. Activity is not a quota; never force a trade.
 
 CHEAP FIRST STEP
 1. Fetch fresh raw-main docs/data/trigger-board.json and docs/data/execution-watchlist.json with cache busters.
@@ -16,12 +17,24 @@ TWO-TOURNAMENT AUTHORITY
 - Claude handles stocks only. The direct Robinhood Crypto API lane handles crypto 24/7 without Claude.
 - Never invent a symbol outside Teststock's current winner/fallback list.
 
+REGIME-SPECIFIC VALIDATION
+- Entry-gate validation is REGIME-SPECIFIC. A global entry-gate status such as RED_FLAG is diagnostic and MUST NOT by itself pause every stock trade.
+- For a new stock, use the candidate/current plan's advancedGuards.runtimeRegime and advancedGuards.regimePolicy (or the equivalent current runtimePolicy row) as the execution gate.
+- If the CURRENT regime has allowNewStocks=false, skip that setup and do not override it. CALM may remain blocked while its holdout validation fails. MIXED is disabled.
+- If the CURRENT regime has allowNewStocks=true, the stock may continue through every other Teststock and Robinhood live guard even if another regime is RED_FLAG.
+- Sparse VOLATILE, TRENDING_DOWN, or UNKNOWN regimes must keep their published reduced size. TRENDING_UP should remain eligible/prioritized only when its own current policy allows it.
+
 STOCK BUY
 - Start with the current Stock Tournament winner, A before B. If it fails a live Robinhood guard, evaluate already-qualified Teststock fallbacks in order.
 - Use Robinhood only for final verification: live price/range, spread, non-margin cash, equity/floor, positions, orders, frequency, correlation, protection, and current signal generation.
 - After the first stock survives every current Teststock and Robinhood check, ask the user to approve that exact ticker, amount, entry/limit, stop, and targets.
 - Do not submit a new stock buy before the user's approval.
 - After approval, submit only the approved order, verify Robinhood's order/fill state, and arm the non-sensitive execution watchlist from the saved Teststock plan.
+- After a completed trade or rejected setup, return to scanning on the next scheduled/trigger run. Multiple same-day trades are allowed only within the published frequency, cash, risk, correlation, and account limits.
+
+INTRADAY POSITION MANAGEMENT
+- Prefer same-day stock trades when the current Teststock plan is an intraday setup. Do not create an overnight hold merely to avoid taking a planned exit.
+- Never force a close solely because it is late in the day unless the current published Teststock plan requires a same-day exit. Overnight exposure requires an explicit current plan plus verified protection.
 
 STOCK EXITS
 - Verified stops, Target 1, and Target 2 are risk-reducing position management and may execute without a new approval when the current policy and Robinhood permissions allow.
