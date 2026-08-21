@@ -9,7 +9,7 @@ CHEAP FIRST STEP
 1. Fetch fresh raw-main docs/data/trigger-board.json and docs/data/execution-watchlist.json with cache busters.
 2. If monitor health is not OK, open no new risk.
 3. If executionNeeded=false and no protection-repair condition exists, stop without Robinhood calls, full signal analysis, or market research.
-4. If executionNeeded=true, fetch fresh raw-main docs/data/execution-dispatch.json, docs/signal.json, docs/data/stock-tournament.json, and docs/claude-trigger-task.txt.
+4. If executionNeeded=true, fetch fresh raw-main docs/data/execution-dispatch.json, docs/signal.json, docs/data/stock-tournament.json, docs/data/adaptive-performance.json, and docs/claude-trigger-task.txt.
 
 TWO-TOURNAMENT AUTHORITY
 - Teststock has exactly two live decision paths: Stock Tournament and Crypto Tournament.
@@ -23,6 +23,13 @@ REGIME-SPECIFIC VALIDATION
 - If the CURRENT regime has allowNewStocks=false, skip that setup and do not override it. CALM may remain blocked while its holdout validation fails. MIXED is disabled.
 - If the CURRENT regime has allowNewStocks=true, the stock may continue through every other Teststock and Robinhood live guard even if another regime is RED_FLAG.
 - Sparse VOLATILE, TRENDING_DOWN, or UNKNOWN regimes must keep their published reduced size. TRENDING_UP should remain eligible/prioritized only when its own current policy allows it.
+
+ADAPTIVE REAL-FILL LEARNING
+- Teststock's adaptive-performance.json may reorder or reduce/block already-qualified stock candidates using sufficiently sampled Robinhood-confirmed history. It may never make an otherwise-ineligible trade eligible or loosen a hard safety rule.
+- Robinhood-confirmed real fills and exits are the only real-money learning source. Shadow/model trades stay separate.
+- When a real Teststock stock position is confirmed fully closed, produce a concise REAL_FILL_LEARNING_RECORD containing: stable order identifiers when available, symbol, setupType, runtimeRegime, riskCluster, entrySessionBucket, Teststock signal generation time/id, planned entry/stop/targets, actual average entry, actual average exit, realized P&L, realized R, WIN/LOSS/FLAT, spread/slippage when observable, protectionMode, protectiveExitVerified, finalExitAt, and exitReason.
+- Never invent any missing field; use UNKNOWN/null.
+- If this Claude environment cannot write docs/data/real-trade-journal.json directly, do NOT claim the learning record is persisted. State that the confirmed record needs ingestion by a GitHub-capable Teststock session.
 
 STOCK BUY
 - Start with the current Stock Tournament winner, A before B. If it fails a live Robinhood guard, evaluate already-qualified Teststock fallbacks in order.
