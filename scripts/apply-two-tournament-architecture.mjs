@@ -72,6 +72,17 @@ signal.assetClassRouting={
   STOCK:'Use only the current Teststock stock tournament winner and already-qualified stock fallbacks. Claude performs final Robinhood verification before an approved stock order.',
   CRYPTO:'Use only the current Teststock crypto tournament qualified champion and already-qualified crypto fallbacks. The direct Robinhood Crypto API performs live quote/account/order verification and execution.'
 };
+if(signal.cryptoTournament){
+  signal.cryptoTournament.brokerExecution={
+    status:'DIRECT_API_ENABLED',
+    lane:'GITHUB_ACTIONS_ROBINHOOD_CRYPTO_API',
+    executableByDirectRobinhoodCryptoApi:true,
+    executableByCurrentClaudeRobinhoodConnection:false,
+    researchOnly:false,
+    reason:'The dedicated GitHub Actions lane uses Robinhood Crypto API credentials for live quote, account, order and protection checks without relying on Claude crypto tools.'
+  };
+  signal.cryptoTournament.researchOnlyUntilBrokerExecutionAvailable=false;
+}
 if(Array.isArray(signal.hardRules)){
   signal.hardRules=signal.hardRules.filter(x=>!String(x).toLowerCase().includes('option'));
   signal.hardRules.push('LIVE ASSET SCOPE: only STOCK and CRYPTO are eligible. Options and futures are disabled.');

@@ -11,6 +11,7 @@ function inferRegime(data){
   const label=String(data?.regime?.label||'').toUpperCase();
   const bias=String(data?.regime?.bias||'').toUpperCase();
   const detail=String(data?.regime?.detail||'').toUpperCase();
+  if(label.includes('CALM')||detail.includes('CALM'))return 'CALM';
   if(label.includes('RISK OFF')||bias==='BEARISH')return 'TRENDING_DOWN';
   if(label.includes('RISK ON')||bias==='BULLISH')return 'TRENDING_UP';
   if(label.includes('MIXED'))return 'MIXED';
@@ -34,7 +35,9 @@ for(const budget of budgets){
   const plan=await read(planFile),latest=await read(latestFile);
   if(!plan||plan.error||!latest)continue;
   const runtimeRegime=inferRegime(latest);
-  const policy=validation?.runtimePolicy?.[runtimeRegime]||{samples:0,allowNewStocks:true,allowOptions:false,stockSizeMultiplier:.5,status:'UNKNOWN_REDUCE',reason:'Current regime could not be matched to a sufficiently validated holdout bucket.'};
+  const disabled=new Set(validation?.disabledRegimes||[]);
+  const fallback=disabled.has(runtimeRegime)?{samplesPrimary:0,samplesSecond:0,allowNewStocks:false,allowOptions:false,stockSizeMultiplier:0,status:'BLOCK_NONVIABLE',reason:`${runtimeRegime} is disabled by entry-gate validation.`}:{samplesPrimary:0,samplesSecond:0,allowNewStocks:true,allowOptions:false,stockSizeMultiplier:.5,status:'UNKNOWN_REDUCE',reason:'Current regime could not be matched to a sufficiently validated holdout bucket.'};
+  const policy=validation?.runtimePolicy?.[runtimeRegime]||fallback;
   const ranked=plan.ranked||[];
   const eventBySymbol=Object.fromEntries(ranked.map(r=>[r.symbol,eventGuard(r)]));
   const blockedSymbols=[];
@@ -56,7 +59,7 @@ for(const budget of budgets){
   }
   const rejectedCandidates=ranked.slice(0,5).filter(r=>!adjusted.some(a=>a.symbol===r.symbol)).map(r=>{const ev=eventBySymbol[r.symbol]||eventGuard(r);const reasons=[];if(!policy.allowNewStocks)reasons.push(`Regime ${runtimeRegime}: ${policy.reason}`);if(ev.stockBlocked)reasons.push(...ev.reasons);if(!reasons.length)reasons.push('Did not clear one or more stock eligibility/position-sizing gates');return {symbol:r.symbol,entry:r.entry,stop:r.stop,target1:r.target1,target2:r.target2,rewardRisk:r.rewardRisk,growthQuality:r.growthQuality,reasons};});
   const remaining=round(budget-adjusted.reduce((s,x)=>s+Number(x.allocationDollars||0),0));
-  const next={...plan,schemaVersion:4,policy:{...(plan.policy||{}),holdoutValidationRequired:true,eventRiskPolicy:{stockBlackoutDaysBeforeEstimatedReport:3,optionBlackoutDaysBeforeEstimatedReport:7,blackoutThroughOneDayAfter:true,highCorporateActionRiskBlocksEntry:true},runtimeRegimePolicy:{regime:runtimeRegime,...policy}},allocations:adjusted,keepCashDollars:Math.max(0,remaining),estimatedPortfolioStopLoss:round(adjusted.reduce((s,x)=>s+Number(x.estimatedLossAtStop||0),0)),eliteOption,advancedGuards:{entryGateValidationStatus:validation?.status||'UNKNOWN',runtimeRegime,regimePolicy:policy,eventBySymbol,blockedSymbols,rejectedCandidates,automaticLooseningAllowed:false,note:'Holdout/regime and event-risk guards may only reduce or block risk. They never loosen the base Teststock gates.'}};
+  const next={...plan,schemaVersion:5,policy:{...(plan.policy||{}),holdoutValidationRequired:true,eventRiskPolicy:{stockBlackoutDaysBeforeEstimatedReport:3,optionBlackoutDaysBeforeEstimatedReport:7,blackoutThroughOneDayAfter:true,highCorporateActionRiskBlocksEntry:true},runtimeRegimePolicy:{regime:runtimeRegime,...policy},disabledRegimes:[...(validation?.disabledRegimes||[])]},allocations:adjusted,keepCashDollars:Math.max(0,remaining),estimatedPortfolioStopLoss:round(adjusted.reduce((s,x)=>s+Number(x.estimatedLossAtStop||0),0)),eliteOption,advancedGuards:{entryGateValidationStatus:validation?.status||'UNKNOWN',runtimeRegime,regimePolicy:policy,calmRetuning:runtimeRegime==='CALM'?validation?.calmRetuning||null:null,researchPriority:validation?.researchPriority||[],eventBySymbol,blockedSymbols,rejectedCandidates,automaticLooseningAllowed:false,note:'Holdout/regime and event-risk guards may only reduce or block risk. MIXED is disabled. Sparse regimes stay reduced. TRENDING_UP is prioritized for research because it has dual-holdout confirmation.'}};
   await fs.writeFile(planFile,JSON.stringify(next,null,2));
   console.log(`Advanced guards $${budget}: ${runtimeRegime} ${policy.status}; allocations ${adjusted.length}; blocked ${blockedSymbols.length}`);
 }

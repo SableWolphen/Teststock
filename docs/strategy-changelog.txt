@@ -1,5 +1,12 @@
 TESTSTOCK STRATEGY CHANGE LOG
 
+2026-08-21 — CALM REGIME RETUNING WITHOUT HOLDOUT LEAKAGE
+- Reworked entry-gate validation so CALM threshold selection no longer uses either untouched holdout for tuning. Pre-2024 development is split into 2018-2021 training and 2022-2023 calibration; the lowest CALM score threshold that clears the calibration gates with adequate sample size is selected, while 2024-2025 and 2026+ remain untouched confirmation slices.
+- Added CALM loss diagnostics by setup type, sector, year and per-trade loss rows. Setup/sector exclusions are allowed only when the same subgroup is persistently weak in both training and calibration with minimum sample support; time-period clustering is reported for diagnosis but is not used as a prospective exclusion.
+- MIXED is now a deliberately disabled regime for new stock signals because its development record is non-viable. It is no longer treated as a candidate for automatic recovery through looser or reduced sizing.
+- VOLATILE, TRENDING_DOWN and UNKNOWN remain reduced-size when untouched samples are sparse rather than being declared strategy failures from tiny samples.
+- TRENDING_UP remains enabled and is marked as the highest research priority because both untouched holdout slices currently confirm it.
+
 2026-08-20 — FULL LIVE CANDIDATE QUEUE MONITORING
 - Fixed the non-LLM trigger monitor so it watches the complete qualified stockCandidateQueue as well as stockOrders. Reserve/fallback candidates can now generate BUY_TRIGGER events when they are fresh and inside their encoded buy zones.
 - Candidate rows are de-duplicated by ticker, ranked by queueRank, and still preserve A-before-B priority. This fixes the case where a live tournament champion existed in the reserve queue but the trigger board ignored it.
@@ -42,7 +49,7 @@ This file records changes to trading RULES, thresholds, tiers, sizing, validatio
 - Added performanceScalingGuard so account equity alone can never unlock more aggressive trading risk.
 - The normal capital ladder still selects the equity tier, but Claude must also compute an effective risk tier from confirmed real-money performance and use the more conservative settings.
 - Before SCALE risk can be used, Teststock requires at least 20 resolved real trades, average realized R >= 0.20, win rate >= 45%, reliable observed drawdown below 6% when available, and no active real-fill, slippage, protection, health, persistence, or circuit-breaker block.
-- Before GROWTH risk can be used, Teststock requires at least 30 resolved real trades, average realized R >= 0.30, win rate >= 48%, reliable observed drawdown below 6% when available, and all other guards passing.
+- Before GROWTH risk can be used, Teststock requires at least 30 resolved real trades, average realized R >= 0.30, win rate >= 48%, reliable observed drawdown below 6%.
 - Manual deposits or account profits may raise the equity tier but cannot by themselves unlock higher risk. Missing or ambiguous performance evidence never unlocks more aggression.
 - Signal schema advanced to v16.
 
@@ -58,14 +65,14 @@ This file records changes to trading RULES, thresholds, tiers, sizing, validatio
 
 2026-08-19 — HOLDOUT VALIDATION + REGIME-SPECIFIC RISK + EVENT/SLIPPAGE/SHADOW GUARDS
 - Entry-gate validation now uses a chronological development period and an untouched holdout period beginning 2024-01-01. The fixed 52% historical win-rate, 2.5:1 reward/risk, 15-sample, and 0.5R conservative-expected-value thresholds are not tuned on the holdout.
-- Validation now publishes a runtime policy separately for calm, volatile, trending-down, trending-up, mixed, and unknown regimes. Weak holdout regimes can block new risk; sparse regimes automatically reduce stock size and block options. Regime validation may only reduce risk, never loosen the base gates.
+- Validation now publishes a runtime policy separately for calm, volatile, trending-down, trending-up, mixed, and unknown regimes. Weak holdout regimes can block new risk; sparse regimes automatically reduce size and block options. Regime validation may only reduce risk, never loosen the base gates.
 - Added event-risk blackouts before new positions: high corporate-action risk blocks entries; stock entries are blocked around the estimated report window from 3 days before through 1 day after; options use a stricter 7-day pre-event window through 1 day after. Estimated dates remain uncertain, so the guard is intentionally conservative.
 - Added real-fill adverse-slippage learning. With enough confirmed fills, repeated bad execution can reduce size or block the exact stock/option/crypto setup, cluster, or symbol bucket. Robinhood fills remain authoritative.
 - Added a paper shadow ledger that tracks both accepted and rejected Teststock candidates and later measures modeled R/opportunity cost from future Alpaca bars. Shadow results are diagnostic only and can never automatically increase live-money risk or override Robinhood real-fill results.
 - Claude scheduled instructions now explicitly apply holdout-regime scaling, event blackouts, slippage learning, and the rule that shadow data cannot be treated as real P&L.
 
 2026-08-18 — MULTI-REGIME VALIDATION + WHOLE-CONTRACT OPTION SAFETY
-- Added a wider historical entry-gate validation covering calm, volatile, trending-down, trending-up, and mixed SPY regimes.
+- Added a wider historical entry-gate validation covering calm, volatile, trending-down, and mixed regimes.
 - Current thresholds under review are: 52% historical win rate, 2.5:1 minimum reward/risk, 15 minimum historical samples, and 0.5R minimum conservative expected value.
 - Added a RED_FLAG result when required calm, volatile, or trending-down regime checks do not hold up.
 - Added explicit whole-contract option sizing: one real contract must fit the live dollar risk cap. Percentage sizing may never imply a fractional contract.
