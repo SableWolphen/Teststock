@@ -159,6 +159,10 @@ def active_crypto_watch(watch):
     return next((x for x in watch.get('positions', []) if x.get('assetClass') == 'CRYPTO' and x.get('status') == 'ACTIVE'), None)
 
 
+def active_crypto_accounts(accounts):
+    return [a for a in accounts if str(a.get('status', '')).lower() == 'active']
+
+
 def upsert_watch(watch, record):
     positions = watch.setdefault('positions', [])
     for i, row in enumerate(positions):
@@ -214,13 +218,12 @@ def main():
     enabled = os.getenv('ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED', '').lower() == 'true'
     api_key = os.getenv('ROBINHOOD_CRYPTO_API_KEY', '')
     private_key = os.getenv('ROBINHOOD_CRYPTO_PRIVATE_KEY_B64', '')
-    account_number = os.getenv('ROBINHOOD_CRYPTO_ACCOUNT_NUMBER', '')
     max_order_usd = Decimal(os.getenv('ROBINHOOD_CRYPTO_MAX_ORDER_USD', '25'))
 
     if not enabled:
         set_status('DISABLED', 'Direct Robinhood Crypto API execution is installed but not enabled.')
         return
-    if not (api_key and private_key and account_number):
+    if not (api_key and private_key):
         set_status('DISABLED_MISSING_SECRETS', 'Enablement is set but required Robinhood Crypto API secrets are missing.')
         return
 
@@ -230,9 +233,17 @@ def main():
     api = RobinhoodCryptoV2(api_key, private_key)
 
     accounts = api.accounts()
-    account = next((a for a in accounts if str(a.get('account_number')) == account_number), None)
-    if not account or account.get('status') != 'active':
-        set_status('BLOCKED_ACCOUNT_MISMATCH', 'Configured crypto account was not found as an active API trading account. No order sent.')
+    active_accounts = active_crypto_accounts(accounts)
+    if not active_accounts:
+        set_status('BLOCKED_NO_ACTIVE_ACCOUNT', 'Robinhood returned no active crypto trading account. No order sent.')
+        return
+    if len(active_accounts) != 1:
+        set_status('BLOCKED_MULTIPLE_ACTIVE_ACCOUNTS', 'Robinhood returned multiple active crypto trading accounts; exactly one is required. No order sent.')
+        return
+    account = active_accounts[0]
+    account_number = str(account.get('account_number') or '')
+    if not account_number:
+        set_status('BLOCKED_ACCOUNT_DATA_INVALID', 'The active Robinhood crypto trading account did not include an account number. No order sent.')
         return
 
     active = active_crypto_watch(watch)
