@@ -42,7 +42,10 @@ on:
       - 'docs/strategy-changelog.txt'
   workflow_dispatch:
   schedule:
-    - cron: '3,13,23,33,43,53 * * * *'
+    # Keep the deep hourly run separate so delayed GitHub starts cannot make it
+    # look like an ordinary refresh and skip required entry-gate validation.
+    - cron: '3 * * * *'
+    - cron: '13,23,33,43,53 * * * *'
 
 permissions:
   contents: write
@@ -71,6 +74,7 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
         run: |
           if [ "$EVENT_NAME" != "schedule" ]; then
             echo "stocks=true" >> "$GITHUB_OUTPUT"
@@ -79,13 +83,12 @@ jobs:
           fi
           dow=$(date -u +%u)
           hour=$(date -u +%H)
-          minute=$(date -u +%M)
           if [ "$dow" -ge 1 ] && [ "$dow" -le 5 ] && [ "$hour" -ge 13 ] && [ "$hour" -le 21 ]; then
             echo "stocks=true" >> "$GITHUB_OUTPUT"
           else
             echo "stocks=false" >> "$GITHUB_OUTPUT"
           fi
-          if [ "$minute" = "03" ]; then
+          if [ "$EVENT_SCHEDULE" = "3 * * * *" ]; then
             echo "deep=true" >> "$GITHUB_OUTPUT"
           else
             echo "deep=false" >> "$GITHUB_OUTPUT"

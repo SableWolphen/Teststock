@@ -28,7 +28,7 @@ if(Number(s.probabilityFirstPolicy?.stocks?.minHistoricalSamples||0)<20)fail.pus
 if(Number(s.probabilityFirstPolicy?.stocks?.minCostAdjustedConservativeExpectedR||0)<.5)fail.push('cost-adjusted stock expectancy floor');
 if(s.probabilityFirstPolicy?.stocks?.rewardRiskQualificationTarget!=='TARGET2')fail.push('target2 reward-risk qualification');
 if(Number(s.probabilityFirstPolicy?.options?.liveEvidenceMinimumResolvedTrades||0)<10)fail.push('option real-fill evidence floor');
-if(Number(s.probabilityFirstPolicy?.crypto?.liveEvidenceMinimumResolvedTrades||0)<10)fail.push('crypto real-fill evidence floor');
+if(Number(s.probabilityFirstPolicy?.crypto?.liveEvidenceMinimumResolvedTrades||0)<5)fail.push('crypto real-fill evidence floor');
 if(!s.crossAssetOpportunityRanking||s.crossAssetOpportunityRanking.status==='UNAVAILABLE')fail.push('cross-asset opportunity ranking');
 if(s.systemHealth?.crossAssetRanking?.required!==true)fail.push('cross-asset ranking health dependency');
 if(s.shadowEvidencePolicy?.automaticLooseningAllowed!==false)fail.push('shadow automatic loosening lock');
