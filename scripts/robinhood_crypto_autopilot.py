@@ -19,8 +19,7 @@ STATUS = DATA / 'crypto-api-status.json'
 SIGNAL = ROOT / 'docs' / 'signal.json'
 PLAN = DATA / 'crypto-plan-100.json'
 TOURNAMENT = DATA / 'crypto-tournament.json'
-POLICY = DATA / 'probability-first-policy.json'
-CRYPTO_EVIDENCE = DATA / 'crypto-real-trade-journal.json'
+CRYPTO_ADMISSION = DATA / 'crypto-profitability-admission.json'
 BASE = 'https://trading.robinhood.com'
 
 
@@ -178,31 +177,27 @@ def upsert_watch(watch, record):
     positions.append(record)
 
 
-def crypto_evidence_gate(policy, evidence):
-    # CLAUDE.md's Evidence and admission section applies to every asset class, not only stocks:
-    # backtests/historical stats are diagnostic only, and zero or unknown forward evidence is never
-    # a pass. docs/data/probability-first-policy.json's crypto.liveEvidenceMinimumResolvedTrades /
-    # liveEvidenceMinimumAverageR / liveEvidenceMinimumWinRatePct already declare this requirement,
-    # but nothing previously enforced it before sending a live crypto buy. This closes that gap by
-    # requiring docs/data/crypto-real-trade-journal.json to actually show sufficient resolved,
-    # positive-expectancy real fills. That ledger has zero entries today, so this fails closed until
-    # a real crypto forward-evidence pipeline exists and populates it.
-    crypto_policy = (policy or {}).get('crypto', {})
-    required_trades = int(crypto_policy.get('liveEvidenceMinimumResolvedTrades', 5))
-    required_avg_r = float(crypto_policy.get('liveEvidenceMinimumAverageR', 0.1))
-    required_win_rate = float(crypto_policy.get('liveEvidenceMinimumWinRatePct', 45))
-    summary = (evidence or {}).get('summary', {}) or {}
-    resolved = summary.get('resolvedTrades') or 0
-    avg_r = summary.get('averageRealizedR')
-    win_rate = summary.get('winRatePct')
-    if resolved < required_trades or avg_r is None or avg_r < required_avg_r or win_rate is None or win_rate < required_win_rate:
-        return False, (
-            f'Crypto live-evidence gate not met: requires {required_trades} resolved real-fill trades '
-            f'with averageRealizedR>={required_avg_r} and winRatePct>={required_win_rate}; '
-            f'crypto-real-trade-journal.json currently shows {resolved} resolved '
-            f'(avgR={avg_r}, winRate={win_rate}). No new crypto buy sent.'
+def crypto_admission_gate(admission):
+    # Shadow-first admission (CLAUDE.md's Evidence and admission section applies to every asset
+    # class, not only stocks). scripts/apply-crypto-profitability-admission.mjs computes this from
+    # forward-shadow outcomes (docs/data/crypto-shadow-trades.json, populated by
+    # scripts/update-crypto-shadow-ledger.mjs) plus confirmed real fills
+    # (docs/data/crypto-real-trade-journal.json), following the same six-shadow-outcome
+    # MICRO_PROBATION / twelve-shadow-outcome PROBATION / real-fill-gated full admission ladder
+    # already used for stocks. Only state and sizeMultiplier are consumed here -- never raw shadow
+    # or real trade records -- and this gate can only block or shrink an order, never grow it beyond
+    # ROBINHOOD_CRYPTO_MAX_ORDER_USD, buying power, or the pair's own limits.
+    state = (admission or {}).get('state', 'SHADOW_ONLY')
+    size_multiplier = Decimal(str((admission or {}).get('sizeMultiplier', 0) or 0))
+    if state in ('SHADOW_ONLY', 'LIVE_SUSPENDED') or size_multiplier <= 0:
+        shadow = (admission or {}).get('shadow', {}) or {}
+        return False, Decimal('0'), (
+            f'Crypto profitability admission gate not met (state={state}). Requires 6 independent '
+            f'positive forward-shadow outcomes for micro-size trading; currently '
+            f'{shadow.get("samples", 0)} resolved shadow outcomes '
+            f'(winRate={shadow.get("winRatePct")}, avgR={shadow.get("averageR")}). No new crypto buy sent.'
         )
-    return True, ''
+    return True, size_multiplier, ''
 
 
 def poll_order(api, account_number, order_id, seconds=25):
@@ -383,11 +378,10 @@ def main():
         set_status('WAIT_FRESH_RESEARCH', 'Crypto plan is older than 30 minutes; no new buy sent.')
         return
 
-    policy = read_json(POLICY, {})
-    evidence = read_json(CRYPTO_EVIDENCE, {})
-    evidence_ok, evidence_reason = crypto_evidence_gate(policy, evidence)
-    if not evidence_ok:
-        set_status('BLOCKED_INSUFFICIENT_CRYPTO_EVIDENCE', evidence_reason)
+    admission = read_json(CRYPTO_ADMISSION, {})
+    admission_ok, size_multiplier, admission_reason = crypto_admission_gate(admission)
+    if not admission_ok:
+        set_status('BLOCKED_INSUFFICIENT_CRYPTO_EVIDENCE', admission_reason)
         return
 
     allocations = plan.get('allocations') or []
@@ -449,7 +443,10 @@ def main():
 
     buying_power = Decimal(str(account.get('buying_power') or '0'))
     desired = Decimal(str(pick.get('allocationDollars') or '0'))
-    amount = min(desired, max_order_usd, buying_power * Decimal('0.90'))
+    # Admission size_multiplier (MICRO_PROBATION=0.25, PROBATION=0.5, LIVE_ADMITTED=1) can only
+    # shrink the effective ceiling below the already-declared ROBINHOOD_CRYPTO_MAX_ORDER_USD secret.
+    effective_max_order_usd = max_order_usd * size_multiplier
+    amount = min(desired, effective_max_order_usd, buying_power * Decimal('0.90'))
     min_amount = Decimal(str(pair.get('min_order_amount') or '1'))
     if amount < min_amount or amount <= 0:
         set_status('BLOCKED_INSUFFICIENT_BUYING_POWER', 'Qualified crypto exists but safe order amount is below the API pair minimum.')
@@ -511,7 +508,11 @@ def main():
     }
     upsert_watch(watch, record)
     write_json(WATCH, watch)
-    set_status('BUY_FILLED_AND_PROTECTED', f'{symbol} buy filled through the official Robinhood Crypto API and a broker-resident stop was armed.', candidate=symbol, grade=grade)
+    set_status(
+        'BUY_FILLED_AND_PROTECTED',
+        f'{symbol} buy filled through the official Robinhood Crypto API and a broker-resident stop was armed.',
+        candidate=symbol, grade=grade, admissionState=admission.get('state'), sizeMultiplier=str(size_multiplier),
+    )
 
 
 if __name__ == '__main__':
