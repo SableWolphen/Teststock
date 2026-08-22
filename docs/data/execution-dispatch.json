@@ -1,9 +1,9 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "source": "TESTSTOCK_EVENT_DISPATCH",
-  "generatedAt": "2026-08-22T10:52:08.245Z",
+  "generatedAt": "2026-08-22T11:07:04.181Z",
   "boardPublishedAt": "2026-08-22T10:52:07.906Z",
-  "boardAgeMs": 339,
+  "boardAgeMs": 896275,
   "maximumBoardAgeMs": 900000,
   "monitorHealth": "OK",
   "dispatchHealth": "OK",
@@ -18,18 +18,28 @@
     "BUY_TRIGGER"
   ],
   "pendingAction": null,
+  "approvalCandidates": [],
   "fallbackActions": [],
+  "multiStockPolicy": {
+    "enabled": true,
+    "maximumApprovalCandidatesPerDispatch": 4,
+    "perOrderApprovalRequired": true,
+    "oneWinnerDoesNotBlockOtherQualifiedStocks": true,
+    "rule": "A tournament winner gets first priority, not exclusive ownership of the portfolio. After any approved/filled buy, continue evaluating the remaining already-qualified candidates against remaining cash, deployed-capital, planned-stop-risk, correlation, frequency, protection and concurrent-position limits. Never force the portfolio to its maximum."
+  },
   "queuedActions": [],
   "noActionInstruction": "If claudeShouldRun is false, stop immediately. Do not call Robinhood, fetch the full signal, research markets, or produce a long report.",
-  "actionInstruction": "Atomically claim each candidate fingerprint in private execution state before any broker action. Process pendingAction first. For a BUY_TRIGGER that fails a live guard before order submission, continue through fallbackActions in order during the same Claude run. Stop after the first submitted buy; never force a trade when all candidates fail. Exit and stop events exclude all buy candidates and always take priority. Fetch only minimal live Robinhood account, position, open-order and quote state. Reject expired entries or entries outside their saved price range. Reconcile ambiguous or partial results by client order ID; never retry an uncertain submission as a new order.",
+  "actionInstruction": "Atomically claim each candidate fingerprint in private execution state before any broker action. Exit events always take priority and exclude new buys. For BUY_TRIGGER dispatches, evaluate approvalCandidates in rank order. A live-qualified candidate may be presented for its own exact user approval even when another Teststock stock is already open. After each approved fill, recompute remaining cash, account floor, total deployed capital, planned stop risk, correlation, trade-frequency limits, protection capability and concurrent-position capacity before considering the next candidate. Do not reuse one approval for another ticker. If a candidate fails before submission, continue to the next already-qualified candidate in the same run. Never force a trade or fill every available slot. Reconcile ambiguous or partial results by client order ID; never retry an uncertain submission as a new order.",
   "consumerContract": {
     "invokeOnlyWhen": "claudeShouldRun === true",
     "atomicClaimKey": "candidate.fingerprint",
-    "maximumNewBuysPerDispatch": 1,
-    "fallbackRule": "If a buy candidate fails before submission, try the next fallback in this same run. If all fail, hold cash.",
+    "maximumNewBuysPerDispatch": 4,
+    "perOrderApprovalRequired": true,
+    "multipleConcurrentStocksAllowed": true,
+    "fallbackRule": "Process already-qualified stock candidates in order. Failed candidates fall through. Successfully approved and filled candidates do not end scanning if remaining portfolio capacity exists.",
     "duplicateRule": "One fingerprint may create at most one broker order. Persist the claim outside this public repository before submission.",
     "retryRule": "After an ambiguous response, reconcile by client order ID and broker state. Never create a replacement order until the original is conclusively cancelled or rejected.",
-    "creditRule": "Use one Claude run for the ordered candidate sequence. Do not invoke Claude for unchanged fingerprints, unhealthy/stale boards, expired entries, order-status polling, or no-action reports."
+    "creditRule": "Use one Claude run for the ordered candidate sequence where practical. Do not invoke Claude for unchanged fingerprints, unhealthy/stale boards, expired entries, order-status polling, or no-action reports."
   },
   "stopPriorityRule": "A stop event outranks profit targets and buys. When any exit event exists, do not evaluate or submit a new buy.",
   "wakeBridge": {
