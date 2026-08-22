@@ -20,7 +20,7 @@ if(dispatch.pendingAction?.trigger!=='BUY_TRIGGER'&&(dispatch.fallbackActions||[
 const approvalCandidates=dispatch.approvalCandidates||[];
 if(approvalCandidates.some(action=>action.trigger!=='BUY_TRIGGER')) fail('approvalCandidates may contain only buys');
 if(approvalCandidates.some(action=>action.assetClass!=='STOCK')) fail('Claude approvalCandidates may contain only stocks');
-if(approvalCandidates.some(action=>!['PROBATION','LIVE_ADMITTED'].includes(action.profitabilityAdmission))) fail('stock approval candidate lacks profitability admission');
+if(approvalCandidates.some(action=>!['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(action.profitabilityAdmission))) fail('stock approval candidate lacks profitability admission');
 if(approvalCandidates.some(action=>action.decisionIntelligenceEligible!==true)) fail('stock approval candidate lacks decision-intelligence pass');
 if(dispatch.pendingAction?.trigger!=='BUY_TRIGGER'&&approvalCandidates.length) fail('exit dispatch cannot contain approval candidates');
 const uniqueWithin=(rows,label)=>{const ids=rows.filter(Boolean).map(x=>x.fingerprint);if(new Set(ids).size!==ids.length)fail(`${label} contains duplicate fingerprints`);};

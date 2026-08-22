@@ -281,6 +281,10 @@
     "FRACTIONAL SYNTHETIC PROTECTION: a new fractional stock entry is permitted only if active regular-session monitoring can be verified at intervals of 5 minutes or less and planned stop risk is capped at 0.75% of live equity. When the saved invalidation is observed as breached, submit the supported fractional market sell immediately when permitted and verify the result.",
     "WHOLE/HYBRID PROTECTION: use a verified broker-resident stop for whole-share quantity when supported; for mixed quantities, reconcile the whole-share broker stop with the synthetic fractional remainder so combined sell orders can never exceed the live position.",
     "SYNTHETIC STOP HONESTY: an agent-managed fractional stop is not persistent broker protection and cannot guarantee the planned exit. If monitoring becomes unavailable, do not add fractional risk and do not keep a fractional runner unattended.",
+    "TOURNAMENT AUTHORITY: do not invent a symbol outside the current Teststock stock or crypto tournament qualified set. Robinhood live checks may reject a candidate but may not substitute an unranked idea.",
+    "REGIME-SPECIFIC VALIDATION: do not freeze all stock trading merely because the aggregate entry-gate validation status is RED_FLAG. The current setup may proceed only when its runtime regime policy explicitly allows new stocks.",
+    "MULTI-STOCK PORTFOLIO: a tournament winner has first priority, not exclusivity. Continue scanning/evaluating other independently qualified stocks while positions are open, subject to all portfolio limits. Never force the portfolio to its maximum.",
+    "STOCK APPROVAL: Claude must obtain separate approval for the exact ticker, amount, entry, stop and targets of every new stock order. Risk-reducing exits may remain automatic when verified.",
     "LIVE ASSET SCOPE: only STOCK and CRYPTO are eligible. Options and futures are disabled.",
     "TOURNAMENT AUTHORITY: do not invent a symbol outside the current Teststock stock or crypto tournament qualified set. Robinhood live checks may reject a candidate but may not substitute an unranked idea.",
     "REGIME-SPECIFIC VALIDATION: do not freeze all stock trading merely because the aggregate entry-gate validation status is RED_FLAG. The current setup may proceed only when its runtime regime policy explicitly allows new stocks.",
@@ -699,12 +703,20 @@
           "reasons": []
         },
         "adaptiveTournamentScore": 56.3,
-        "adaptiveSizeMultiplier": 0,
+        "adaptiveSizeMultiplier": 0.25,
         "profitabilityAdmission": {
-          "state": "SHADOW_ONLY",
-          "sizeMultiplier": 0,
+          "state": "MICRO_PROBATION",
+          "sizeMultiplier": 0.25,
           "setupType": "STOCK_TREND",
           "runtimeRegime": "TRENDING_UP",
+          "historical": {
+            "samples": 43,
+            "winRatePct": 84,
+            "rewardRisk": 2.6
+          },
+          "strongHistorical": true,
+          "regimeDisabled": false,
+          "contradictoryShadow": false,
           "shadow": {
             "scope": "SETUP_FALLBACK",
             "samples": 0,
@@ -717,14 +729,19 @@
             "averageRealizedR": null
           },
           "thresholds": {
+            "minimumShadowSamplesForMicro": 6,
             "minimumShadowSamples": 12,
             "minimumShadowWinRatePct": 50,
             "minimumShadowAverageR": 0.15,
+            "historicalMicroMinimumSamples": 30,
+            "historicalMicroMinimumWinRatePct": 65,
+            "historicalMicroMinimumRewardRisk": 2.5,
+            "microSizeMultiplier": 0.25,
             "minimumRealSamplesForSuspensionCheck": 8,
             "minimumRealSamplesForFullAdmission": 15,
             "minimumRealAverageRForFullAdmission": 0.1
           },
-          "reason": "Pattern has not yet proven positive shadow expectancy."
+          "reason": "Strong historical sample, win rate and reward/risk passed a tightly capped historical micro-probation; forward shadow tracking remains required."
         },
         "decisionIntelligence": {
           "decisionScore": 66.36,
@@ -763,7 +780,7 @@
             "penalty": 0,
             "hardGateStillRequired": true
           },
-          "admissionState": "SHADOW_ONLY",
+          "admissionState": "MICRO_PROBATION",
           "hardGatesRemainAuthoritative": true
         },
         "decisionScore": 66.36,
@@ -831,6 +848,14 @@
           "sizeMultiplier": 0,
           "setupType": "STOCK_TREND",
           "runtimeRegime": "TRENDING_UP",
+          "historical": {
+            "samples": 20,
+            "winRatePct": 95,
+            "rewardRisk": 2.59
+          },
+          "strongHistorical": false,
+          "regimeDisabled": false,
+          "contradictoryShadow": false,
           "shadow": {
             "scope": "SETUP_FALLBACK",
             "samples": 0,
@@ -843,9 +868,14 @@
             "averageRealizedR": null
           },
           "thresholds": {
+            "minimumShadowSamplesForMicro": 6,
             "minimumShadowSamples": 12,
             "minimumShadowWinRatePct": 50,
             "minimumShadowAverageR": 0.15,
+            "historicalMicroMinimumSamples": 30,
+            "historicalMicroMinimumWinRatePct": 65,
+            "historicalMicroMinimumRewardRisk": 2.5,
+            "microSizeMultiplier": 0.25,
             "minimumRealSamplesForSuspensionCheck": 8,
             "minimumRealSamplesForFullAdmission": 15,
             "minimumRealAverageRForFullAdmission": 0.1
@@ -951,12 +981,20 @@
           "reasons": []
         },
         "adaptiveTournamentScore": 54.6,
-        "adaptiveSizeMultiplier": 0,
+        "adaptiveSizeMultiplier": 0.25,
         "profitabilityAdmission": {
-          "state": "SHADOW_ONLY",
-          "sizeMultiplier": 0,
+          "state": "MICRO_PROBATION",
+          "sizeMultiplier": 0.25,
           "setupType": "STOCK_TREND",
           "runtimeRegime": "TRENDING_UP",
+          "historical": {
+            "samples": 32,
+            "winRatePct": 81,
+            "rewardRisk": 2.6
+          },
+          "strongHistorical": true,
+          "regimeDisabled": false,
+          "contradictoryShadow": false,
           "shadow": {
             "scope": "SETUP_FALLBACK",
             "samples": 0,
@@ -969,14 +1007,19 @@
             "averageRealizedR": null
           },
           "thresholds": {
+            "minimumShadowSamplesForMicro": 6,
             "minimumShadowSamples": 12,
             "minimumShadowWinRatePct": 50,
             "minimumShadowAverageR": 0.15,
+            "historicalMicroMinimumSamples": 30,
+            "historicalMicroMinimumWinRatePct": 65,
+            "historicalMicroMinimumRewardRisk": 2.5,
+            "microSizeMultiplier": 0.25,
             "minimumRealSamplesForSuspensionCheck": 8,
             "minimumRealSamplesForFullAdmission": 15,
             "minimumRealAverageRForFullAdmission": 0.1
           },
-          "reason": "Pattern has not yet proven positive shadow expectancy."
+          "reason": "Strong historical sample, win rate and reward/risk passed a tightly capped historical micro-probation; forward shadow tracking remains required."
         },
         "decisionIntelligence": {
           "decisionScore": 64.54,
@@ -1015,7 +1058,7 @@
             "penalty": 0,
             "hardGateStillRequired": true
           },
-          "admissionState": "SHADOW_ONLY",
+          "admissionState": "MICRO_PROBATION",
           "hardGatesRemainAuthoritative": true
         },
         "decisionScore": 64.54,
@@ -1078,12 +1121,20 @@
           "reasons": []
         },
         "adaptiveTournamentScore": 54.5,
-        "adaptiveSizeMultiplier": 0,
+        "adaptiveSizeMultiplier": 0.25,
         "profitabilityAdmission": {
-          "state": "SHADOW_ONLY",
-          "sizeMultiplier": 0,
+          "state": "MICRO_PROBATION",
+          "sizeMultiplier": 0.25,
           "setupType": "STOCK_TREND",
           "runtimeRegime": "TRENDING_UP",
+          "historical": {
+            "samples": 39,
+            "winRatePct": 77,
+            "rewardRisk": 2.6
+          },
+          "strongHistorical": true,
+          "regimeDisabled": false,
+          "contradictoryShadow": false,
           "shadow": {
             "scope": "SETUP_FALLBACK",
             "samples": 0,
@@ -1096,14 +1147,19 @@
             "averageRealizedR": null
           },
           "thresholds": {
+            "minimumShadowSamplesForMicro": 6,
             "minimumShadowSamples": 12,
             "minimumShadowWinRatePct": 50,
             "minimumShadowAverageR": 0.15,
+            "historicalMicroMinimumSamples": 30,
+            "historicalMicroMinimumWinRatePct": 65,
+            "historicalMicroMinimumRewardRisk": 2.5,
+            "microSizeMultiplier": 0.25,
             "minimumRealSamplesForSuspensionCheck": 8,
             "minimumRealSamplesForFullAdmission": 15,
             "minimumRealAverageRForFullAdmission": 0.1
           },
-          "reason": "Pattern has not yet proven positive shadow expectancy."
+          "reason": "Strong historical sample, win rate and reward/risk passed a tightly capped historical micro-probation; forward shadow tracking remains required."
         },
         "decisionIntelligence": {
           "decisionScore": 63.63,
@@ -1141,7 +1197,7 @@
             "penalty": 0,
             "hardGateStillRequired": true
           },
-          "admissionState": "SHADOW_ONLY",
+          "admissionState": "MICRO_PROBATION",
           "hardGatesRemainAuthoritative": true
         },
         "decisionScore": 63.63,
@@ -1203,12 +1259,20 @@
           "reasons": []
         },
         "adaptiveTournamentScore": 54.4,
-        "adaptiveSizeMultiplier": 0,
+        "adaptiveSizeMultiplier": 0.25,
         "profitabilityAdmission": {
-          "state": "SHADOW_ONLY",
-          "sizeMultiplier": 0,
+          "state": "MICRO_PROBATION",
+          "sizeMultiplier": 0.25,
           "setupType": "STOCK_TREND",
           "runtimeRegime": "TRENDING_UP",
+          "historical": {
+            "samples": 36,
+            "winRatePct": 78,
+            "rewardRisk": 2.6
+          },
+          "strongHistorical": true,
+          "regimeDisabled": false,
+          "contradictoryShadow": false,
           "shadow": {
             "scope": "SETUP_FALLBACK",
             "samples": 0,
@@ -1221,14 +1285,19 @@
             "averageRealizedR": null
           },
           "thresholds": {
+            "minimumShadowSamplesForMicro": 6,
             "minimumShadowSamples": 12,
             "minimumShadowWinRatePct": 50,
             "minimumShadowAverageR": 0.15,
+            "historicalMicroMinimumSamples": 30,
+            "historicalMicroMinimumWinRatePct": 65,
+            "historicalMicroMinimumRewardRisk": 2.5,
+            "microSizeMultiplier": 0.25,
             "minimumRealSamplesForSuspensionCheck": 8,
             "minimumRealSamplesForFullAdmission": 15,
             "minimumRealAverageRForFullAdmission": 0.1
           },
-          "reason": "Pattern has not yet proven positive shadow expectancy."
+          "reason": "Strong historical sample, win rate and reward/risk passed a tightly capped historical micro-probation; forward shadow tracking remains required."
         },
         "decisionIntelligence": {
           "decisionScore": 63.77,
@@ -1266,7 +1335,7 @@
             "penalty": 0,
             "hardGateStillRequired": true
           },
-          "admissionState": "SHADOW_ONLY",
+          "admissionState": "MICRO_PROBATION",
           "hardGatesRemainAuthoritative": true
         },
         "decisionScore": 63.77,
@@ -1335,6 +1404,14 @@
           "sizeMultiplier": 0,
           "setupType": "STOCK_TREND",
           "runtimeRegime": "TRENDING_UP",
+          "historical": {
+            "samples": 26,
+            "winRatePct": 81,
+            "rewardRisk": 2.6
+          },
+          "strongHistorical": false,
+          "regimeDisabled": false,
+          "contradictoryShadow": false,
           "shadow": {
             "scope": "SETUP_FALLBACK",
             "samples": 0,
@@ -1347,9 +1424,14 @@
             "averageRealizedR": null
           },
           "thresholds": {
+            "minimumShadowSamplesForMicro": 6,
             "minimumShadowSamples": 12,
             "minimumShadowWinRatePct": 50,
             "minimumShadowAverageR": 0.15,
+            "historicalMicroMinimumSamples": 30,
+            "historicalMicroMinimumWinRatePct": 65,
+            "historicalMicroMinimumRewardRisk": 2.5,
+            "microSizeMultiplier": 0.25,
             "minimumRealSamplesForSuspensionCheck": 8,
             "minimumRealSamplesForFullAdmission": 15,
             "minimumRealAverageRForFullAdmission": 0.1
@@ -1462,6 +1544,14 @@
           "sizeMultiplier": 0,
           "setupType": "STOCK_TREND",
           "runtimeRegime": "TRENDING_UP",
+          "historical": {
+            "samples": 27,
+            "winRatePct": 74,
+            "rewardRisk": 2.6
+          },
+          "strongHistorical": false,
+          "regimeDisabled": false,
+          "contradictoryShadow": false,
           "shadow": {
             "scope": "SETUP_FALLBACK",
             "samples": 0,
@@ -1474,9 +1564,14 @@
             "averageRealizedR": null
           },
           "thresholds": {
+            "minimumShadowSamplesForMicro": 6,
             "minimumShadowSamples": 12,
             "minimumShadowWinRatePct": 50,
             "minimumShadowAverageR": 0.15,
+            "historicalMicroMinimumSamples": 30,
+            "historicalMicroMinimumWinRatePct": 65,
+            "historicalMicroMinimumRewardRisk": 2.5,
+            "microSizeMultiplier": 0.25,
             "minimumRealSamplesForSuspensionCheck": 8,
             "minimumRealSamplesForFullAdmission": 15,
             "minimumRealAverageRForFullAdmission": 0.1
@@ -2910,8 +3005,8 @@
     },
     "profitabilityAdmissionPolicy": {
       "enabled": true,
-      "mode": "SHADOW_FIRST_THEN_REDUCED_LIVE_PROBATION",
-      "rule": "Unproven patterns stay shadow-only. Positive shadow evidence unlocks reduced-size live probation. Full normal eligible size requires sufficient positive Robinhood-confirmed real fills. Negative probation evidence suspends the pattern back to shadow-only. This gate may reduce or block risk but never increase the maximum risk ceiling or loosen any hard safety rule."
+      "mode": "HISTORICAL_MICRO_THEN_SHADOW_AND_REAL_ADMISSION",
+      "rule": "Strong historical evidence may unlock tightly capped one-quarter-size micro-probation only when the current regime is enabled and no contradictory forward evidence exists. Six positive independent shadow outcomes may also unlock micro-probation; twelve unlock half-size probation. Full normal eligible size still requires sufficient positive Robinhood-confirmed real fills. Negative evidence suspends the pattern. This gate may reduce or block but never raise a hard risk ceiling or loosen any safety rule."
     },
     "decisionIntelligencePolicy": {
       "enabled": true,
@@ -3113,7 +3208,7 @@
   },
   "unifiedMarketIntelligence": {
     "schemaVersion": 1,
-    "generatedAt": "2026-08-22T15:21:40.240Z",
+    "generatedAt": "2026-08-22T15:31:58.808Z",
     "architecture": "TWO_TOURNAMENTS_UNIFIED_EVIDENCE",
     "objective": "Improve cost-adjusted expectancy and reduce avoidable losses through diverse evidence, forward validation, broker reconciliation and hard risk limits. No win or income guarantee.",
     "providers": [
@@ -3125,10 +3220,10 @@
           "CRYPTO"
         ],
         "role": "PRIMARY_MARKET_DATA_AND_RESEARCH",
-        "status": "CONNECTED",
-        "lastCheckedAt": "2026-08-22T15:21:40.180Z",
+        "status": "WORKFLOW_SECRET_REQUIRED",
+        "lastCheckedAt": "2026-08-22T15:31:58.707Z",
         "liveInfluence": "HARD_DATA_GATES_AND_TOURNAMENT_INPUT",
-        "freshnessMinutes": 0,
+        "freshnessMinutes": 10,
         "capabilities": [
           "tradable universe",
           "quotes and bars",
@@ -3146,7 +3241,7 @@
         ],
         "role": "BROKER_SOURCE_OF_TRUTH",
         "status": "AUTHORIZED_RUNTIME_REQUIRED",
-        "lastCheckedAt": "2026-08-22T15:21:40.180Z",
+        "lastCheckedAt": "2026-08-22T15:31:58.707Z",
         "liveInfluence": "EXECUTION_AND_CONFIRMED_FILL_LEARNING_ONLY",
         "capabilities": [
           "cash and holdings verification",
@@ -3163,8 +3258,8 @@
           "CRYPTO"
         ],
         "role": "DIRECT_BROKER_EXECUTION",
-        "status": "CONNECTED",
-        "lastCheckedAt": "2026-08-22T15:21:40.180Z",
+        "status": "WORKFLOW_SECRET_OR_RUNTIME_REQUIRED",
+        "lastCheckedAt": "2026-08-22T15:31:58.707Z",
         "liveInfluence": "QUALIFIED_CRYPTO_EXECUTION_AND_CONFIRMED_FILLS",
         "capabilities": [
           "account verification",
@@ -3180,8 +3275,8 @@
           "STOCK"
         ],
         "role": "OFFICIAL_FUNDAMENTALS_AND_FILINGS",
-        "status": "CONNECTED",
-        "lastCheckedAt": "2026-08-22T15:21:40.180Z",
+        "status": "WORKFLOW_IDENTITY_REQUIRED",
+        "lastCheckedAt": "2026-08-22T15:31:58.707Z",
         "liveInfluence": "FUNDAMENTAL_AND_EVENT_RISK_GATES",
         "capabilities": [
           "company facts",
@@ -3196,7 +3291,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "OK",
-        "lastCheckedAt": "2026-08-22T15:21:40.180Z",
+        "lastCheckedAt": "2026-08-22T15:31:58.707Z",
         "records": 2769,
         "endpoint": "https://www.insiderfinance.io/congress-trades",
         "liveInfluence": "SHADOW_ONLY"
@@ -3209,7 +3304,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "UNAVAILABLE",
-        "lastCheckedAt": "2026-08-22T15:21:40.180Z",
+        "lastCheckedAt": "2026-08-22T15:31:58.707Z",
         "records": 0,
         "endpoint": "https://stockcircle.com/congress-stock-trades?view=latest_trades",
         "liveInfluence": "SHADOW_ONLY"
@@ -3222,7 +3317,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-08-22T15:21:40.180Z",
+        "lastCheckedAt": "2026-08-22T15:31:58.707Z",
         "records": 0,
         "endpoint": "https://www.barchart.com/investing-ideas/politician-insider-trading",
         "liveInfluence": "SHADOW_ONLY"
@@ -3235,7 +3330,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-08-22T15:21:40.180Z",
+        "lastCheckedAt": "2026-08-22T15:31:58.707Z",
         "records": 0,
         "endpoint": "https://www.capitoltrades.com/politicians",
         "liveInfluence": "SHADOW_ONLY"
@@ -3248,7 +3343,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-08-22T15:21:40.180Z",
+        "lastCheckedAt": "2026-08-22T15:31:58.707Z",
         "records": 0,
         "endpoint": "https://www.quiverquant.com/congresstrading/",
         "liveInfluence": "SHADOW_ONLY"
@@ -3261,7 +3356,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-08-22T15:21:40.180Z",
+        "lastCheckedAt": "2026-08-22T15:31:58.707Z",
         "records": 0,
         "endpoint": "https://unusualwhales.com/politics",
         "liveInfluence": "SHADOW_ONLY"
@@ -3274,7 +3369,7 @@
         ],
         "role": "OPTIONAL_LICENSED_ALTERNATIVE_DATA",
         "status": "LICENSED_KEY_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-08-22T15:21:40.180Z",
+        "lastCheckedAt": "2026-08-22T15:31:58.707Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION",
         "capabilities": [
           "congressional activity",
@@ -3290,7 +3385,7 @@
         ],
         "role": "OPTIONAL_LICENSED_OPTIONS_AND_POLITICAL_DATA",
         "status": "LICENSED_KEY_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-08-22T15:21:40.180Z",
+        "lastCheckedAt": "2026-08-22T15:31:58.707Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION",
         "capabilities": [
           "political disclosures",
@@ -3305,7 +3400,7 @@
         ],
         "role": "AUTHORITATIVE_RECONCILIATION",
         "status": "REFERENCE_LINKS_FROM_SOURCE_RECORDS",
-        "lastCheckedAt": "2026-08-22T15:21:40.180Z",
+        "lastCheckedAt": "2026-08-22T15:31:58.707Z",
         "liveInfluence": "CONFIRMATION_ONLY",
         "capabilities": [
           "original disclosure links"
@@ -3320,7 +3415,7 @@
         ],
         "role": "OUTCOME_AND_BOUNDED_LEARNING_SOURCE",
         "status": "WAITING_FOR_RESOLVED_FILLS",
-        "lastCheckedAt": "2026-08-22T15:21:40.180Z",
+        "lastCheckedAt": "2026-08-22T15:31:58.707Z",
         "liveInfluence": "MAY_RERANK_REDUCE_OR_BLOCK_NEVER_RAISE_MAX_RISK",
         "records": 0
       },
@@ -3333,7 +3428,7 @@
         ],
         "role": "SECONDARY_RESEARCH_AND_MANUAL_RECONCILIATION",
         "status": "REFERENCE_ONLY_NO_OFFICIAL_EXECUTION_FEED",
-        "lastCheckedAt": "2026-08-22T15:21:40.240Z",
+        "lastCheckedAt": "2026-08-22T15:31:58.806Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -3345,7 +3440,7 @@
         ],
         "role": "SECONDARY_QUOTE_AND_NEWS_RECONCILIATION",
         "status": "REFERENCE_ONLY_NO_SUPPORTED_TRADING_API",
-        "lastCheckedAt": "2026-08-22T15:21:40.240Z",
+        "lastCheckedAt": "2026-08-22T15:31:58.807Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -3357,7 +3452,7 @@
         ],
         "role": "OPTIONAL_AUTHORIZED_MARKET_DATA_OR_BROKER_RECONCILIATION",
         "status": "OPENAPI_CREDENTIALS_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-08-22T15:21:40.240Z",
+        "lastCheckedAt": "2026-08-22T15:31:58.808Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION"
       },
       {
@@ -3369,7 +3464,7 @@
         ],
         "role": "CHART_TECHNICAL_AND_ALERT_VISUALIZATION",
         "status": "VISUALIZATION_REFERENCE_ALPACA_REMAINS_DATAFEED",
-        "lastCheckedAt": "2026-08-22T15:21:40.240Z",
+        "lastCheckedAt": "2026-08-22T15:31:58.808Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -3381,14 +3476,14 @@
         ],
         "role": "SCREENER_FUNDAMENTAL_AND_LIQUIDITY_RECONCILIATION",
         "status": "LICENSED_EXPORT_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-08-22T15:21:40.240Z",
+        "lastCheckedAt": "2026-08-22T15:31:58.808Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION"
       }
     ],
     "providerSummary": {
-      "connectedOrActive": 4,
+      "connectedOrActive": 1,
       "shadowOrConfigured": 2,
-      "referenceOrUnavailable": 9
+      "referenceOrUnavailable": 12
     },
     "admission": {
       "state": "SHADOW_FIRST",

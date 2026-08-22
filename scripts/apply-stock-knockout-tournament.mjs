@@ -46,7 +46,8 @@ const researchFinalists=top.map((x,i)=>({
 })).sort((a,b)=>b.tournamentScore-a.tournamentScore||a.rank-b.rank).map((x,i)=>({...x,rank:i+1}));
 const liveQueue=queue.map((x,i)=>({
   queueRank:num(x.queueRank||x.rank||i+1),ticker:x.ticker,action:x.action||'WAIT',queueRole:x.queueRole||'PRIMARY',entryTier:x.entryTier||tierFor(x.ticker),entryTierLabel:x.entryTierLabel||tierLabel(x.ticker),entryTierSizeMultiplier:Number(x.entryTierSizeMultiplier??tierSize(x.ticker)),
-  tournamentScore:score(x),growthQuality:x.growthQuality??null,rewardRisk:x.rewardRisk??null,
+  tournamentScore:score(x),growthQuality:x.growthQuality??null,rewardRisk:x.rewardRisk??null,setupType:x.setupType??null,
+  historicalWinRate:x.validation?.winRate??x.historicalWinRate??null,historicalSamples:x.validation?.samples??x.historicalSamples??null,
   minimumEntry:x.minimumEntry??null,maximumEntry:x.maximumEntry??null,stop:x.stop??null,target1:x.target1??null,target2:x.target2??null,
   fundamentals:enrichmentByTicker.get(x.ticker)?.fundamentals||null,
   corporateActions:enrichmentByTicker.get(x.ticker)?.corporateActions||null,

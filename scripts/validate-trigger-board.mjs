@@ -10,7 +10,7 @@ if(!['ACTIVE','REFRESHING'].includes(board.researchState))fail.push('research st
 if(!Array.isArray(board.items)||!Array.isArray(board.events))fail.push('arrays');
 const allowed=new Set(['BUY_TRIGGER','TRIGGER_1_STOP','TRIGGER_2_TARGET1','TRIGGER_3_TARGET2']);
 for(const e of board.events||[])if(!allowed.has(e.trigger))fail.push(`unknown trigger ${e.trigger}`);
-for(const e of board.events||[]){if(e.trigger==='BUY_TRIGGER'&&e.assetClass!=='STOCK')fail.push('non-stock buy sent to Claude');if(e.trigger==='BUY_TRIGGER'&&!['PROBATION','LIVE_ADMITTED'].includes(e.profitabilityAdmission))fail.push(`${e.ticker}: buy lacks profitability admission`);if(e.trigger==='BUY_TRIGGER'&&e.decisionIntelligenceEligible!==true)fail.push(`${e.ticker}: buy lacks decision-intelligence pass`);}
+for(const e of board.events||[]){if(e.trigger==='BUY_TRIGGER'&&e.assetClass!=='STOCK')fail.push('non-stock buy sent to Claude');if(e.trigger==='BUY_TRIGGER'&&!['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(e.profitabilityAdmission))fail.push(`${e.ticker}: buy lacks profitability admission`);if(e.trigger==='BUY_TRIGGER'&&e.decisionIntelligenceEligible!==true)fail.push(`${e.ticker}: buy lacks decision-intelligence pass`);}
 if(Boolean(board.executionNeeded)!==Boolean((board.events||[]).length))fail.push('executionNeeded mismatch');
 const buys=(board.events||[]).filter(e=>e.trigger==='BUY_TRIGGER');
 if(Number(board.buyCompetition?.eligibleNow||0)!==buys.length)fail.push('buy competition count');
