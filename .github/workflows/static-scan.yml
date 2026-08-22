@@ -215,9 +215,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # The trigger monitor may have published while this longer scan was running.
-          # Synchronize before regenerating the shared board/dispatch artifacts.
-          git pull --rebase origin main
           node scripts/update-trigger-board.mjs
           node scripts/validate-trigger-board.mjs
           node scripts/build-execution-dispatch.mjs
@@ -229,5 +226,8 @@ jobs:
             echo "No changes to publish"
           else
             git commit -m "Refresh static Teststock picks"
+            # During rebase Git reverses ours/theirs. Keep this just-validated refresh
+            # for generated-file conflicts while retaining unrelated upstream commits.
+            git pull --rebase -X theirs origin main
             git push
           fi
