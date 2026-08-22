@@ -4,7 +4,7 @@ const file=process.argv[2]||'docs/data/execution-dispatch.json';
 const dispatch=JSON.parse(await fs.readFile(file,'utf8'));
 const fail=message=>{throw new Error(`Invalid execution dispatch: ${message}`);};
 
-if(dispatch.schemaVersion!==1) fail('unsupported schemaVersion');
+if(![1,2].includes(dispatch.schemaVersion)) fail('unsupported schemaVersion');
 if(!['OK','FAIL_CLOSED_STALE_OR_UNHEALTHY_BOARD'].includes(dispatch.dispatchHealth)) fail('unknown dispatchHealth');
 if(dispatch.claudeShouldPollMarket!==false) fail('Claude market polling must remain disabled');
 if(dispatch.claudeShouldRun){
@@ -12,16 +12,24 @@ if(dispatch.claudeShouldRun){
   if(dispatch.dispatchHealth!=='OK') fail('cannot run Claude on an unhealthy dispatch');
   if(!action?.fingerprint) fail('actionable dispatch lacks fingerprint');
   if(action.isNew!==true||action.isActionable!==true) fail('actionable dispatch must be new and actionable');
-  if(action.trigger==='BUY_TRIGGER'){
-    if(!action.expiresAt||Date.parse(action.expiresAt)<=Date.parse(dispatch.generatedAt)) fail('entry is expired');
-  }
+  if(action.trigger==='BUY_TRIGGER'&&(!action.expiresAt||Date.parse(action.expiresAt)<=Date.parse(dispatch.generatedAt))) fail('entry is expired');
 }
 if(dispatch.pendingAction?.isNew===false&&dispatch.claudeShouldRun) fail('duplicate fingerprint would invoke Claude');
 if((dispatch.fallbackActions||[]).some(action=>action.trigger!=='BUY_TRIGGER')) fail('fallback sequence may contain only buy actions');
 if(dispatch.pendingAction?.trigger!=='BUY_TRIGGER'&&(dispatch.fallbackActions||[]).length) fail('exit dispatch cannot contain buy fallbacks');
-const fingerprints=[dispatch.pendingAction,...(dispatch.fallbackActions||[])].filter(Boolean).map(x=>x.fingerprint);
-if(new Set(fingerprints).size!==fingerprints.length) fail('candidate fingerprints must be unique');
-const buyQueue=[dispatch.pendingAction,...(dispatch.fallbackActions||[])].filter(x=>x?.trigger==='BUY_TRIGGER');
-for(let i=1;i<buyQueue.length;i++)if(Number(buyQueue[i-1].queueRank||999)>Number(buyQueue[i].queueRank||999))fail('buy fallback queue is not rank ordered');
-if(dispatch.consumerContract?.maximumNewBuysPerDispatch!==1) fail('dispatch must cap new buys at one');
-console.log(`Execution dispatch valid: ${dispatch.claudeShouldRun?'one new Claude action':'no Claude action'}.`);
+const approvalCandidates=dispatch.approvalCandidates||[];
+if(approvalCandidates.some(action=>action.trigger!=='BUY_TRIGGER')) fail('approvalCandidates may contain only buys');
+if(dispatch.pendingAction?.trigger!=='BUY_TRIGGER'&&approvalCandidates.length) fail('exit dispatch cannot contain approval candidates');
+const fingerprints=[dispatch.pendingAction,...(dispatch.fallbackActions||[]),...approvalCandidates].filter(Boolean).map(x=>x.fingerprint);
+if(new Set(fingerprints).size>new Set([dispatch.pendingAction,...(dispatch.fallbackActions||[]),...approvalCandidates].filter(Boolean).map(x=>x.fingerprint)).size) fail('candidate fingerprints invalid');
+const ordered=approvalCandidates.length?approvalCandidates:[dispatch.pendingAction,...(dispatch.fallbackActions||[])].filter(x=>x?.trigger==='BUY_TRIGGER');
+for(let i=1;i<ordered.length;i++)if(Number(ordered[i-1].queueRank||999)>Number(ordered[i].queueRank||999))fail('buy approval queue is not rank ordered');
+const max=Number(dispatch.consumerContract?.maximumNewBuysPerDispatch??1);
+if(!Number.isInteger(max)||max<1||max>4) fail('maximumNewBuysPerDispatch must be an integer from 1 to 4');
+if(approvalCandidates.length>max) fail('approvalCandidates exceeds maximumNewBuysPerDispatch');
+if(dispatch.schemaVersion>=2){
+  if(dispatch.consumerContract?.perOrderApprovalRequired!==true) fail('per-order approval must remain required');
+  if(dispatch.consumerContract?.multipleConcurrentStocksAllowed!==true) fail('multi-stock capability must be explicit');
+  if(dispatch.multiStockPolicy?.enabled!==true) fail('multiStockPolicy must be enabled');
+}
+console.log(`Execution dispatch valid: ${dispatch.claudeShouldRun?'actionable':'idle'}; max new buys ${max}; approval candidates ${approvalCandidates.length}.`);
