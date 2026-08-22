@@ -52,7 +52,9 @@ const btc=metrics('BTC/USD',daily['BTC/USD']);
 const btcTrend=!!(btc&&btc.price>btc.ma20&&btc.price>btc.ma50&&btc.m20>0);
 const ranked=symbols.map(s=>{const m=metrics(s,daily[s]);if(!m)return null;const x=candidate(m,calibration(s,daily[s]||[]),fourHourConfirm(s,daily,intra),btcTrend);return x?{...x,setupGrade:grade(x)}:null;}).filter(Boolean).sort((a,b)=>b.growthQuality-a.growthQuality||b.score-a.score||b.dollarVolume20d-a.dollarVolume20d);
 
-await fs.writeFile(path.join(outDir,'crypto-universe.json'),JSON.stringify({schemaVersion:2,generatedAt:new Date().toISOString(),supportedUsdPairs:symbols.length,btcTrendSupport:btcTrend,researchMode:'ACTIVE_24_7_MORE_OPPORTUNITIES',ranked:ranked.slice(0,30)},null,2));
+const diagSymbols=['BTC/USD','ETH/USD','SOL/USD'];
+const volumeDiagnostics={note:'TEMPORARY diagnostic to verify whether Alpaca crypto bar volume figures are real or a computation artifact before touching any liquidity threshold. Safe to remove once resolved — read-only, does not affect ranking, grading, or any gate.',rawLast5DailyBars:Object.fromEntries(diagSymbols.map(s=>[s,(daily[s]||[]).slice(-5).map(b=>({t:b.t,rawVolumeField:b.v,close:b.c,computedDollarVolumeThisBar:round(Number(b.v||0)*Number(b.c||0))}))]))};
+await fs.writeFile(path.join(outDir,'crypto-universe.json'),JSON.stringify({schemaVersion:2,generatedAt:new Date().toISOString(),supportedUsdPairs:symbols.length,btcTrendSupport:btcTrend,researchMode:'ACTIVE_24_7_MORE_OPPORTUNITIES',ranked:ranked.slice(0,30),volumeDiagnostics},null,2));
 for(const budget of budgets){
   const aPlus=ranked.filter(x=>x.setupGrade==='A+'),a=ranked.filter(x=>x.setupGrade==='A'),chosen=(aPlus.length?aPlus.slice(0,1):a.slice(0,1));
   const selectedGrade=chosen[0]?.setupGrade||'NO_TRADE',maxPortfolioRisk=budget*(selectedGrade==='A+'?.025:selectedGrade==='A'?.015:0);let remaining=budget,remainingRisk=maxPortfolioRisk;const allocations=[];
