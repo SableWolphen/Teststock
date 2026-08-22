@@ -105,10 +105,7 @@ class RobinhoodCryptoV2:
         return self.request('GET', '/api/v2/crypto/trading/accounts/').get('results', [])
 
     def holdings(self, account_number, *asset_codes):
-        # account_number is accepted here only for call-site symmetry; the real Crypto Trading
-        # API scopes holdings to the single account tied to the API key and 400s on an
-        # account_number query param ("account number provided is not valid for this request").
-        path = '/api/v2/crypto/trading/holdings/' + self.q({'asset_code': list(asset_codes) if asset_codes else None})
+        path = '/api/v2/crypto/trading/holdings/' + self.q({'account_number': account_number, 'asset_code': list(asset_codes) if asset_codes else None})
         return self.request('GET', path).get('results', [])
 
     def pairs(self, *symbols):
@@ -121,15 +118,14 @@ class RobinhoodCryptoV2:
         return rows[0] if rows else None
 
     def orders(self, account_number, symbol=None):
-        # account_number kept in the signature for call-site symmetry only -- see holdings().
-        params = {'created_at_start': (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=30)).isoformat().replace('+00:00','Z')}
+        params = {'account_number': account_number, 'created_at_start': (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=30)).isoformat().replace('+00:00','Z')}
         if symbol:
             params['symbol'] = symbol
         path = '/api/v2/crypto/trading/orders/' + self.q(params)
         return self.request('GET', path).get('results', [])
 
     def order(self, account_number, order_id):
-        path = f'/api/v2/crypto/trading/orders/{order_id}/'
+        path = f'/api/v2/crypto/trading/orders/{order_id}/' + self.q({'account_number': account_number})
         return self.request('GET', path)
 
     def place(self, account_number, side, order_type, symbol, config):
@@ -140,7 +136,7 @@ class RobinhoodCryptoV2:
             'type': order_type,
             f'{order_type}_order_config': config,
         }
-        path = '/api/v2/crypto/trading/orders/'
+        path = '/api/v2/crypto/trading/orders/' + self.q({'account_number': account_number})
         return self.request('POST', path, body)
 
     def cancel(self, order_id):
