@@ -17,7 +17,8 @@ if(!hardText.includes('chase'))fail.push('no chasing');
 for(const x of tournament.liveQueue||[]){
   const d=x.decisionIntelligence;
   if(!d||d.hardGatesRemainAuthoritative!==true)fail.push(`${x.ticker}: diagnostics`);
-  if(d?.eligibleAfterOverlay&&x.action!=='AUTO_BUY_ELIGIBLE')fail.push(`${x.ticker}: created eligibility`);
+  if(d?.eligibleAfterOverlay&&!['AUTO_BUY_ELIGIBLE','WAIT_FOR_TRIGGER'].includes(x.action))fail.push(`${x.ticker}: created eligibility`);
+  if(d?.upstreamActionAllowed&&!d?.eligibleAfterOverlay&&x.action!=='DECISION_INTELLIGENCE_BLOCK')fail.push(`${x.ticker}: block not authoritative`);
   if(d?.opportunityDecay?.expired&&d?.eligibleAfterOverlay)fail.push(`${x.ticker}: expired eligible`);
   if(d?.screener?.liquidity==='FAIL'&&d?.eligibleAfterOverlay)fail.push(`${x.ticker}: liquidity fail eligible`);
 }

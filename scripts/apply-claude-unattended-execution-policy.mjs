@@ -54,13 +54,13 @@ const policy={
     rule:'Risk-reducing exits and validated profit-taking execute without a new user approval when the live Robinhood position, trigger, quantity, order state and current exit policy are verified.'
   },
   buys:{
-    explicitApprovalRequired:false,
-    automaticWhenFullyQualifiedAndBrokerPermits:true,
-    appliesTo:['STOCK_A','STOCK_B','CRYPTO','OPTION'],
+    explicitApprovalRequired:true,
+    automaticWhenFullyQualifiedAndBrokerPermits:false,
+    appliesTo:['STOCK_A','STOCK_B'],
     stockPriority:['A','B'],
     bTierUsesReducedEncodedSize:true,
-    manualApprovalStepRemoved:true,
-    rule:'A current-generation BUY trigger may execute automatically without asking the user again when every Teststock hard guard and every required live Robinhood check passes. Use A/ELITE before B/BEST_ACCEPTABLE. B uses only its reduced encoded size. If the top candidate fails before order submission, try the next already-qualified fallback in the same run. Never create a trade by weakening a hard gate.'
+    perOrderApprovalRequired:true,
+    rule:'A current-generation stock BUY trigger may be proposed only after every Teststock hard guard and required live Robinhood check passes. Require exact ticker-specific approval before each order. Use A/ELITE before B/BEST_ACCEPTABLE; B keeps its reduced encoded size. Crypto uses its separate direct API lane. Never create a trade by weakening a hard gate.'
   },
   hardGuardsRemainMandatory:[
     'funding lock','account floor','loss brakes','freshness/generation match','maximumEntry/no chase','spread/liquidity','gap guard','correlation/portfolio heat','trade frequency','protective-exit capability','fractional-monitor health','no margin/leverage','no average down','no wider stops'
@@ -75,8 +75,8 @@ const policy={
 signal.autopilot={
   ...(signal.autopilot||{}),
   enabled:true,
-  requiresPerOrderApproval:false,
-  automaticQualifiedBuys:true,
+  requiresPerOrderApproval:true,
+  automaticQualifiedBuys:false,
   automaticRiskReducingExits:true,
   scope:'Dedicated Robinhood Agentic account only.'
 };
@@ -94,4 +94,4 @@ signal.generatorIntegrity={
 
 await fs.writeFile(SIGNAL,JSON.stringify(signal,null,2));
 await fs.writeFile(CLAUDE_SIGNAL,JSON.stringify(signal,null,2));
-console.log('Applied Claude unattended execution policy: two-read idle path, protection repair exception, current-signal guardrails, automatic qualified buys and exits.');
+console.log('Applied Claude scheduled execution policy: two-read idle path, protection repair exception, per-order approved stock buys and automatic verified exits.');

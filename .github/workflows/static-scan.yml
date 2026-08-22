@@ -29,6 +29,9 @@ on:
       - 'scripts/apply-profitability-admission.mjs'
       - 'scripts/apply-decision-intelligence.mjs'
       - 'scripts/validate-decision-intelligence.mjs'
+      - 'scripts/apply-claude-unattended-execution-policy.mjs'
+      - 'scripts/validate-unattended-execution-policy.mjs'
+      - 'scripts/validate-claude-hourly-approval-policy.mjs'
       - 'scripts/apply-two-tournament-architecture.mjs'
       - 'scripts/validate-two-tournament-architecture.mjs'
       - 'scripts/update-shadow-ledger.mjs'
@@ -190,7 +193,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -f docs/signal.json ]; then cp docs/signal.json /tmp/teststock-last-good-signal.json; fi
-          if node scripts/build-agent-signal.mjs && node scripts/augment-signal-safety.mjs && node scripts/apply-fractional-protection-policy.mjs && node scripts/apply-exit-policy-validation.mjs && node scripts/apply-strategy-intelligence.mjs && node scripts/apply-operational-safety.mjs && node scripts/apply-stock-knockout-tournament.mjs && node scripts/apply-adaptive-tournament-ranking.mjs && node scripts/apply-profitability-admission.mjs && node scripts/apply-decision-intelligence.mjs && node scripts/apply-crypto-knockout-tournament.mjs && node scripts/apply-two-tournament-architecture.mjs && node scripts/validate-signal.mjs docs/signal.json && node scripts/validate-stock-knockout.mjs && node scripts/validate-decision-intelligence.mjs && node scripts/validate-two-tournament-architecture.mjs; then
+          if node scripts/build-agent-signal.mjs && node scripts/augment-signal-safety.mjs && node scripts/apply-fractional-protection-policy.mjs && node scripts/apply-exit-policy-validation.mjs && node scripts/apply-strategy-intelligence.mjs && node scripts/apply-operational-safety.mjs && node scripts/apply-claude-unattended-execution-policy.mjs && node scripts/apply-stock-knockout-tournament.mjs && node scripts/apply-adaptive-tournament-ranking.mjs && node scripts/apply-profitability-admission.mjs && node scripts/apply-decision-intelligence.mjs && node scripts/apply-crypto-knockout-tournament.mjs && node scripts/apply-two-tournament-architecture.mjs && node scripts/validate-signal.mjs docs/signal.json && node scripts/validate-stock-knockout.mjs && node scripts/validate-decision-intelligence.mjs && node scripts/validate-unattended-execution-policy.mjs && node scripts/validate-claude-hourly-approval-policy.mjs && node scripts/validate-two-tournament-architecture.mjs; then
             echo "Fresh signal passed validation"
           else
             echo "Fresh signal failed generation or validation. Refusing to publish mixed-generation data." >&2

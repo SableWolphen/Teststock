@@ -48,9 +48,10 @@ function enrich(row,index,selected){
   const base=finite(row.adaptiveTournamentScore,row.tournamentScore,quality,0);
   const decisionScore=round(base*.7+confidence*.3-corr.penalty-(liquidityPass===false?20:0));
   const admission=row.profitabilityAdmission?.state||'UNKNOWN';
-  const eligible=row.action==='AUTO_BUY_ELIGIBLE'&&!['SHADOW_ONLY','LIVE_SUSPENDED'].includes(admission)&&liquidityPass!==false&&!opportunityDecay.expired;
+  const upstreamActionAllowed=['AUTO_BUY_ELIGIBLE','WAIT_FOR_TRIGGER'].includes(String(row.action||''));
+  const eligible=upstreamActionAllowed&&!['SHADOW_ONLY','LIVE_SUSPENDED'].includes(admission)&&liquidityPass!==false&&!opportunityDecay.expired;
   const diagnostics={setupType:setup,technicalScore:round(technical,1),patternConfidencePct:patternConfidence,historicalSamples:Number(histN||0),historicalWinRatePct:histWin??null,rewardRisk:rr,backtestStatus:Number(histN)>=30?'SUPPORTED':Number(histN)>=12?'LIMITED':'SPARSE',warnings:[...(Number(histN)<12?['SPARSE_SETUP_BACKTEST']:[]),...(patternConfidence==null?['PATTERN_CONFIDENCE_UNKNOWN']:[]),...(fundamental==null?['FUNDAMENTALS_UNKNOWN']:[]),...(spread==null?['LIQUIDITY_UNKNOWN']:[]) ]};
-  return {...row,decisionIntelligence:{decisionScore,rankBeforeOptimization:index+1,eligibleAfterOverlay:eligible,setupDiagnostics:diagnostics,screener,opportunityDecay,portfolioOptimization:corr,admissionState:admission,hardGatesRemainAuthoritative:true},decisionScore};
+  return {...row,decisionIntelligence:{decisionScore,rankBeforeOptimization:index+1,eligibleAfterOverlay:eligible,upstreamActionAllowed,setupDiagnostics:diagnostics,screener,opportunityDecay,portfolioOptimization:corr,admissionState:admission,hardGatesRemainAuthoritative:true},decisionScore,action:upstreamActionAllowed&&!eligible?'DECISION_INTELLIGENCE_BLOCK':row.action};
 }
 
 const seed=tournament.liveQueue||[];
