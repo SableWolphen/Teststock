@@ -42,34 +42,51 @@ function metrics(symbol,xs){if(!xs||xs.length<100)return null;const c=xs.map(x=>
 function fourHourConfirm(symbol,daily,intra){const d=metrics(symbol,daily[symbol]);const xs=intra[symbol]||[];if(!d||xs.length<20)return false;const c=xs.map(x=>x.c),last=c.at(-1),ma20=sma(c,20),mom=pct(last,c.at(-7));return last>=ma20&&mom>0;}
 function calibration(symbol,xs){let n=0,w=0,moves=[];for(let i=100;i<xs.length-21;i+=7){const m=metrics(symbol,xs.slice(0,i+1));if(!m||m.score<78)continue;const move=pct(xs[i+20].c,xs[i].c);n++;if(move>0)w++;moves.push(move);}return{samples:n,winRate:n?Math.round(w/n*100):null,avg20dMove:n?round(avg(moves),1):null};}
 function candidate(m,cal,confirm,btcTrend){const stop=Math.max(m.ma20,m.price-m.atr*2.1),risk=m.price-stop;if(risk<=0)return null;const entry=m.price*1.002,target1=entry+risk*3,target2=entry+risk*5;let q=m.score;if(confirm)q+=5;else q-=8;if(cal.samples>=10&&cal.winRate>=56)q+=5;if(cal.samples>=8&&cal.winRate<48)q-=8;if(m.m20>30)q-=5;if(m.atrPct>12)q-=6;if(m.symbol!=='BTC/USD'&&btcTrend!==true)q-=6;q=Math.round(clamp(q,0,100));return{...m,growthQuality:q,confirm4h:confirm,btcTrendSupport:m.symbol==='BTC/USD'?true:btcTrend,validation:cal,entry:round(entry,6),stop:round(stop,6),target1:round(target1,6),target2:round(target2,6),rewardRisk1:3,rewardRisk2:5};}
-// Liquidity floor calibration (2026-08-22): a raw-bar diagnostic (commit 9e08ebab) confirmed
-// dollarVolume20d is computed correctly (rawVolumeField * close, cross-checked against Alpaca's
-// actual last-5-day daily bars for BTC/ETH/SOL) — this is not a units/computation bug. The prior
-// 750K/1.5M thresholds were simply unreachable on this feed: even BTC/USD, the single most liquid
-// crypto asset that exists, has only ever shown ~$150-190K in 20-day average dollar volume here,
-// and no other pair comes close. Whatever specific liquidity this feed reflects, it operates on a
-// smaller absolute scale than the original thresholds assumed. Recalibrated to the observed scale
-// of this data source so the gate keeps rejecting genuinely thin pairs (the many /USDT and /USDC
-// cross-quote duplicates showing $0-300 in 20d volume) while allowing real blue-chip liquidity
-// (BTC/USD, ETH/USD, XRP/USD) to actually clear when every other technical/trend/confirmation gate
-// also passes. All other grade requirements (growthQuality, score, confirm4h, rsi, historical
-// calibration win rate, atrPct, btcOk) are unchanged.
-function grade(x){const samples=Number(x.validation?.samples||0),win=Number(x.validation?.winRate||0),historyAPlus=samples<10||win>=56,historyA=samples<6||win>=50,btcOk=x.symbol==='BTC/USD'||x.btcTrendSupport===true;if(x.growthQuality>=92&&x.score>=86&&x.confirm4h&&x.rsi<=76&&historyAPlus&&x.atrPct<=11&&btcOk&&x.dollarVolume20d>=100_000)return'A+';if(x.growthQuality>=84&&x.score>=78&&x.confirm4h&&x.rsi<=78&&historyA&&x.atrPct<=12&&btcOk&&x.dollarVolume20d>=20_000)return'A';return'NO_TRADE';}
+// Crypto.com public ticker endpoint (no auth) used ONLY as an independent, real-market liquidity
+// check for the A/A+ hard gate below. dollarVolume20d (from Alpaca crypto bars, still used above
+// for relative scoring and historical calibration, since only Alpaca has the depth of history
+// those need) was recalibrated to 20K/100K on 2026-08-22 after a diagnostic concluded its math was
+// internally consistent -- but that diagnostic never checked the number against a real market.
+// Cross-checking against Crypto.com's live tickers the same day showed Alpaca's crypto volume
+// field is roughly 1,000x-5,000x smaller than actual market volume for the same pairs (e.g.
+// AAVE/USD: Alpaca ~$7.8K over a 20-DAY average vs Crypto.com's real ~$623K in just 24 hours;
+// ETH/USD: Alpaca ~$75K vs Crypto.com's real ~$401M) -- it appears to reflect only Alpaca's own
+// trading volume, not the broader crypto market Robinhood actually executes against. The hard
+// liquidity gate now uses this real 24h figure instead. Missing/unmatched pairs resolve to 0 --
+// unknown liquidity is never treated as a pass.
+async function realVolumes(symbols){
+  const bySymbol=new Map();
+  try{
+    const r=await fetch('https://api.crypto.com/exchange/v1/public/get-tickers');
+    if(!r.ok){console.log(`Crypto.com ticker fetch failed: HTTP ${r.status}`);return new Map();}
+    const j=await r.json();
+    for(const t of (j?.result?.data||[])){
+      const inst=String(t.instrument_name||t.i||'');
+      const vv=Number(t.volume_value??t.vv??0);
+      if(inst)bySymbol.set(inst,vv);
+    }
+  }catch(e){console.log(`Crypto.com ticker fetch error: ${e.message}`);return new Map();}
+  const matched=new Map();
+  for(const s of symbols){const inst=s.replace('/','_');if(bySymbol.has(inst))matched.set(s,bySymbol.get(inst));}
+  console.log(`Real-volume liquidity check: matched ${matched.size}/${symbols.length} symbols against ${bySymbol.size} Crypto.com tickers.`);
+  return matched;
+}
+function grade(x){const samples=Number(x.validation?.samples||0),win=Number(x.validation?.winRate||0),historyAPlus=samples<10||win>=56,historyA=samples<6||win>=50,btcOk=x.symbol==='BTC/USD'||x.btcTrendSupport===true;if(x.growthQuality>=92&&x.score>=86&&x.confirm4h&&x.rsi<=76&&historyAPlus&&x.atrPct<=11&&btcOk&&x.dollarVolume24hReal>=2_000_000)return'A+';if(x.growthQuality>=84&&x.score>=78&&x.confirm4h&&x.rsi<=78&&historyA&&x.atrPct<=12&&btcOk&&x.dollarVolume24hReal>=250_000)return'A';return'NO_TRADE';}
 
 const symbols=await discoverSymbols();
 const dailyStart=new Date(Date.now()-900*86400000).toISOString().slice(0,10),intraStart=new Date(Date.now()-30*86400000).toISOString();
 console.log(`Loading Alpaca crypto history for ${symbols.length} supported USD pairs…`);
-const [daily,intra]=await Promise.all([bars(symbols,'1Day',dailyStart,8),bars(symbols,'4Hour',intraStart,5)]);
+const [daily,intra,realVol]=await Promise.all([bars(symbols,'1Day',dailyStart,8),bars(symbols,'4Hour',intraStart,5),realVolumes(symbols)]);
 const btc=metrics('BTC/USD',daily['BTC/USD']);
 const btcTrend=!!(btc&&btc.price>btc.ma20&&btc.price>btc.ma50&&btc.m20>0);
-const ranked=symbols.map(s=>{const m=metrics(s,daily[s]);if(!m)return null;const x=candidate(m,calibration(s,daily[s]||[]),fourHourConfirm(s,daily,intra),btcTrend);return x?{...x,setupGrade:grade(x)}:null;}).filter(Boolean).sort((a,b)=>b.growthQuality-a.growthQuality||b.score-a.score||b.dollarVolume20d-a.dollarVolume20d);
+const ranked=symbols.map(s=>{const m=metrics(s,daily[s]);if(!m)return null;const c=candidate(m,calibration(s,daily[s]||[]),fourHourConfirm(s,daily,intra),btcTrend);if(!c)return null;const x={...c,dollarVolume24hReal:Math.round(realVol.get(s)||0)};return{...x,setupGrade:grade(x)};}).filter(Boolean).sort((a,b)=>b.growthQuality-a.growthQuality||b.score-a.score||b.dollarVolume24hReal-a.dollarVolume24hReal);
 
 await fs.writeFile(path.join(outDir,'crypto-universe.json'),JSON.stringify({schemaVersion:2,generatedAt:new Date().toISOString(),supportedUsdPairs:symbols.length,btcTrendSupport:btcTrend,researchMode:'ACTIVE_24_7_MORE_OPPORTUNITIES',ranked:ranked.slice(0,30)},null,2));
 for(const budget of budgets){
   const aPlus=ranked.filter(x=>x.setupGrade==='A+'),a=ranked.filter(x=>x.setupGrade==='A'),chosen=(aPlus.length?aPlus.slice(0,1):a.slice(0,1));
   const selectedGrade=chosen[0]?.setupGrade||'NO_TRADE',maxPortfolioRisk=budget*(selectedGrade==='A+'?.025:selectedGrade==='A'?.015:0);let remaining=budget,remainingRisk=maxPortfolioRisk;const allocations=[];
   for(const x of chosen){const riskPct=(x.entry-x.stop)/x.entry;if(riskPct<=0||riskPct>.14)continue;const desired=budget*(x.setupGrade==='A+'?.45:.30),byRisk=remainingRisk/riskPct,amount=round(Math.min(remaining,desired,byRisk));if(amount<Math.min(5,budget*.05))continue;const loss=round(amount*riskPct);allocations.push({...x,allocationDollars:amount,estimatedUnitsAtEntry:round(amount/x.entry,8),estimatedLossAtStop:loss});remaining=round(remaining-amount);remainingRisk=round(remainingRisk-loss);}
-  const plan={schemaVersion:4,generatedAt:new Date().toISOString(),asOf:new Date().toISOString(),assetClass:'CRYPTO',market:'OPEN_24_7',budget,universe:{source:'ALL_ACTIVE_TRADABLE_ALPACA_CRYPTO_USD_PAIRS',supportedUsdPairs:symbols.length,report:'crypto-universe.json'},objective:'Use crypto\'s 24/7 market to surface more reasonable A/A+ opportunities without removing defined-risk, trend, liquidity, confirmation, or no-leverage controls.',policy:{researchMode:'ACTIVE_24_7_MORE_OPPORTUNITIES',aPlusMinGrowthQuality:92,aMinGrowthQuality:84,minRewardRisk:3,maxPositions:1,aPlusMaxPlannedPortfolioStopPct:2.5,aMaxPlannedPortfolioStopPct:1.5,aPlusMaxAllocationPct:45,aMaxAllocationPct:30,noLeverage:true,noAverageDown:true,noChasingPct:2,cryptoIs24x7:true},selectedGrade:allocations[0]?.setupGrade||'NO_TRADE',confidence:allocations[0]?.setupGrade==='A+'?'ELITE':allocations.length?'STRONG':'CASH',ranked:ranked.slice(0,10),allocations,keepCashDollars:round(remaining),estimatedPortfolioStopLoss:round(allocations.reduce((s,x)=>s+x.estimatedLossAtStop,0)),action:allocations.length?'QUALIFIED_CRYPTO':'CASH',reasons:allocations.length?[`${allocations[0].setupGrade} crypto setup won the current supported-pair tournament and passed the relaxed 24/7 opportunity gates plus trend, 4-hour confirmation, liquidity, BTC-context, volatility, and reward/risk checks.`,'Only one crypto position at a time; reduced allocation/risk caps, no leverage, no averaging down, and no chasing.']:['No supported crypto pair currently clears even the relaxed 24/7 A/A+ gates; keep scanning rather than force a trade.']};
+  const plan={schemaVersion:4,generatedAt:new Date().toISOString(),asOf:new Date().toISOString(),assetClass:'CRYPTO',market:'OPEN_24_7',budget,universe:{source:'ALL_ACTIVE_TRADABLE_ALPACA_CRYPTO_USD_PAIRS',supportedUsdPairs:symbols.length,report:'crypto-universe.json'},objective:'Use crypto\'s 24/7 market to surface more reasonable A/A+ opportunities without removing defined-risk, trend, liquidity, confirmation, or no-leverage controls.',policy:{researchMode:'ACTIVE_24_7_MORE_OPPORTUNITIES',aPlusMinGrowthQuality:92,aMinGrowthQuality:84,minRewardRisk:3,maxPositions:1,aPlusMaxPlannedPortfolioStopPct:2.5,aMaxPlannedPortfolioStopPct:1.5,aPlusMaxAllocationPct:45,aMaxAllocationPct:30,aPlusMinDollarVolume24hReal:2_000_000,aMinDollarVolume24hReal:250_000,dollarVolume24hRealSource:'CRYPTO_COM_PUBLIC_TICKERS',noLeverage:true,noAverageDown:true,noChasingPct:2,cryptoIs24x7:true},selectedGrade:allocations[0]?.setupGrade||'NO_TRADE',confidence:allocations[0]?.setupGrade==='A+'?'ELITE':allocations.length?'STRONG':'CASH',ranked:ranked.slice(0,10),allocations,keepCashDollars:round(remaining),estimatedPortfolioStopLoss:round(allocations.reduce((s,x)=>s+x.estimatedLossAtStop,0)),action:allocations.length?'QUALIFIED_CRYPTO':'CASH',reasons:allocations.length?[`${allocations[0].setupGrade} crypto setup won the current supported-pair tournament and passed the relaxed 24/7 opportunity gates plus trend, 4-hour confirmation, liquidity, BTC-context, volatility, and reward/risk checks.`,'Only one crypto position at a time; reduced allocation/risk caps, no leverage, no averaging down, and no chasing.']:['No supported crypto pair currently clears even the relaxed 24/7 A/A+ gates; keep scanning rather than force a trade.']};
   await fs.writeFile(path.join(outDir,`crypto-plan-${budget}.json`),JSON.stringify(plan,null,2));
   console.log(`Crypto $${budget}: ${allocations.map(x=>`${x.setupGrade} ${x.symbol} $${x.allocationDollars}`).join(', ')||'CASH'}`);
 }
