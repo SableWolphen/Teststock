@@ -20,8 +20,9 @@ if(dispatch.pendingAction?.trigger!=='BUY_TRIGGER'&&(dispatch.fallbackActions||[
 const approvalCandidates=dispatch.approvalCandidates||[];
 if(approvalCandidates.some(action=>action.trigger!=='BUY_TRIGGER')) fail('approvalCandidates may contain only buys');
 if(dispatch.pendingAction?.trigger!=='BUY_TRIGGER'&&approvalCandidates.length) fail('exit dispatch cannot contain approval candidates');
-const fingerprints=[dispatch.pendingAction,...(dispatch.fallbackActions||[]),...approvalCandidates].filter(Boolean).map(x=>x.fingerprint);
-if(new Set(fingerprints).size>new Set([dispatch.pendingAction,...(dispatch.fallbackActions||[]),...approvalCandidates].filter(Boolean).map(x=>x.fingerprint)).size) fail('candidate fingerprints invalid');
+const uniqueWithin=(rows,label)=>{const ids=rows.filter(Boolean).map(x=>x.fingerprint);if(new Set(ids).size!==ids.length)fail(`${label} contains duplicate fingerprints`);};
+uniqueWithin(approvalCandidates,'approvalCandidates');
+uniqueWithin(dispatch.fallbackActions||[],'fallbackActions');
 const ordered=approvalCandidates.length?approvalCandidates:[dispatch.pendingAction,...(dispatch.fallbackActions||[])].filter(x=>x?.trigger==='BUY_TRIGGER');
 for(let i=1;i<ordered.length;i++)if(Number(ordered[i-1].queueRank||999)>Number(ordered[i].queueRank||999))fail('buy approval queue is not rank ordered');
 const max=Number(dispatch.consumerContract?.maximumNewBuysPerDispatch??1);
@@ -31,5 +32,6 @@ if(dispatch.schemaVersion>=2){
   if(dispatch.consumerContract?.perOrderApprovalRequired!==true) fail('per-order approval must remain required');
   if(dispatch.consumerContract?.multipleConcurrentStocksAllowed!==true) fail('multi-stock capability must be explicit');
   if(dispatch.multiStockPolicy?.enabled!==true) fail('multiStockPolicy must be enabled');
+  if(dispatch.pendingAction?.trigger==='BUY_TRIGGER'&&approvalCandidates.length&&approvalCandidates[0].fingerprint!==dispatch.pendingAction.fingerprint) fail('pendingAction must match first approval candidate');
 }
 console.log(`Execution dispatch valid: ${dispatch.claudeShouldRun?'actionable':'idle'}; max new buys ${max}; approval candidates ${approvalCandidates.length}.`);
