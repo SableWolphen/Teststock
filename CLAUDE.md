@@ -46,6 +46,8 @@ Never bypass authentication, subscriptions, provider terms, robots restrictions,
 - Never raise account, trade, position, deployment, concentration, correlation, or loss limits.
 - Preserve market-regime gates, liquidity/spread gates, profitability admission, portfolio correlation/heat guards, event-risk checks, freshness/decay, and broker verification.
 - Every stock BUY requires the user's explicit approval for that exact order after live Robinhood verification. A trigger is not approval.
+- Alpaca discovery never proves Robinhood executability. Before presenting approval and again before submission, confirm the exact stock is currently searchable, buyable and unrestricted in the signed-in Robinhood account and supports the planned order/protection. Failed verification rejects that candidate; use only an already-qualified fallback.
+- For crypto, require the official Robinhood Crypto API trading-pair response to mark the exact pair tradable. Missing pair, quote or supported protection means no order.
 
 ## Saved trade plan
 
