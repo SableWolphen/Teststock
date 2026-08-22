@@ -1,0 +1,40 @@
+import fs from 'node:fs/promises';
+const read=async(f,x=null)=>{try{return JSON.parse(await fs.readFile(f,'utf8'))}catch{return x}};
+const write=(f,x)=>fs.writeFile(f,JSON.stringify(x,null,2));
+const now=new Date().toISOString(), age=t=>{const n=Date.parse(t||'');return Number.isFinite(n)?Math.max(0,Math.round((Date.now()-n)/60000)):null};
+const [signal,stocks,crypto,congress,adaptive]=await Promise.all([
+  read('docs/signal.json'),read('docs/data/stock-tournament.json'),read('docs/data/crypto-tournament.json'),read('docs/data/congressional-intelligence.json'),read('docs/data/adaptive-performance.json',{})
+]);
+if(!signal||!stocks||!crypto||!congress)throw new Error('Required tournament/intelligence state missing');
+const env=name=>Boolean(String(process.env[name]||'').trim());
+const congressBy=new Map((congress.tickerSignals||[]).map(x=>[x.ticker,x]));
+const provider=(id,name,assetClasses,role,status,extra={})=>({id,name,assetClasses,role,status,lastCheckedAt:now,...extra});
+const providers=[
+  provider('ALPACA','Alpaca',['STOCK','CRYPTO'],'PRIMARY_MARKET_DATA_AND_RESEARCH',env('ALPACA_API_KEY')&&env('ALPACA_API_SECRET')?'CONNECTED':'WORKFLOW_SECRET_REQUIRED',{liveInfluence:'HARD_DATA_GATES_AND_TOURNAMENT_INPUT',freshnessMinutes:age(signal.generatedAt),capabilities:['tradable universe','quotes and bars','liquidity','historical validation','corporate actions','trigger monitoring']}),
+  provider('ROBINHOOD_STOCK','Robinhood stocks',['STOCK'],'BROKER_SOURCE_OF_TRUTH','AUTHORIZED_RUNTIME_REQUIRED',{liveInfluence:'EXECUTION_AND_CONFIRMED_FILL_LEARNING_ONLY',capabilities:['cash and holdings verification','per-order approved stock execution','fills','positions','protective exits']}),
+  provider('ROBINHOOD_CRYPTO','Robinhood Crypto API',['CRYPTO'],'DIRECT_BROKER_EXECUTION',env('ROBINHOOD_CRYPTO_API_KEY')&&env('ROBINHOOD_CRYPTO_PRIVATE_KEY_B64')?'CONNECTED':'WORKFLOW_SECRET_OR_RUNTIME_REQUIRED',{liveInfluence:'QUALIFIED_CRYPTO_EXECUTION_AND_CONFIRMED_FILLS',capabilities:['account verification','orders','fills','stop protection']}),
+  provider('SEC_EDGAR','SEC EDGAR',['STOCK'],'OFFICIAL_FUNDAMENTALS_AND_FILINGS',env('SEC_USER_AGENT')?'CONNECTED':'WORKFLOW_IDENTITY_REQUIRED',{liveInfluence:'FUNDAMENTAL_AND_EVENT_RISK_GATES',capabilities:['company facts','10-K/10-Q/8-K filings']}),
+  ...congress.providers.map(p=>provider(p.id,p.id.replaceAll('_',' '),['STOCK'],'DELAYED_CONGRESSIONAL_DISCLOSURE',p.status,{records:p.records||0,endpoint:p.url,liveInfluence:'SHADOW_ONLY'})),
+  provider('QUIVER_API','Quiver Quant API',['STOCK'],'OPTIONAL_LICENSED_ALTERNATIVE_DATA',env('QUIVER_API_KEY')?'CONFIGURED_SHADOW':'LICENSED_KEY_NOT_CONFIGURED',{liveInfluence:'SHADOW_UNTIL_FORWARD_ADMISSION',capabilities:['congressional activity','government contracts','lobbying and alternative datasets']}),
+  provider('UNUSUAL_WHALES_API','Unusual Whales API',['STOCK'],'OPTIONAL_LICENSED_OPTIONS_AND_POLITICAL_DATA',env('UNUSUAL_WHALES_API_KEY')?'CONFIGURED_SHADOW':'LICENSED_KEY_NOT_CONFIGURED',{liveInfluence:'SHADOW_UNTIL_FORWARD_ADMISSION',capabilities:['political disclosures','options flow and market context']}),
+  provider('FEDERAL_DISCLOSURES','Official House/Senate disclosures',['STOCK'],'AUTHORITATIVE_RECONCILIATION','REFERENCE_LINKS_FROM_SOURCE_RECORDS',{liveInfluence:'CONFIRMATION_ONLY',capabilities:['original disclosure links']}),
+  provider('REAL_FILL_LEDGER','Teststock reconciled real fills',['STOCK','CRYPTO'],'OUTCOME_AND_BOUNDED_LEARNING_SOURCE',Number(adaptive.resolvedRealStockTrades||0)>0?'ACTIVE':'WAITING_FOR_RESOLVED_FILLS',{liveInfluence:'MAY_RERANK_REDUCE_OR_BLOCK_NEVER_RAISE_MAX_RISK',records:Number(adaptive.resolvedRealStockTrades||0)})
+];
+const unique=new Map();for(const p of providers){const old=unique.get(p.id);if(!old||old.status==='REFERENCE_ONLY')unique.set(p.id,p)}
+const registry=[...unique.values()];
+const admission={state:'SHADOW_FIRST',requirements:{minimumIndependentForwardSamples:30,minimumRegimeSamples:12,minimumCostAdjustedExpectancyR:.15,maximumAdverseExcursionReviewed:true,untouchedHoldoutRequired:true,realFillConfirmationRequiredForSizeIncrease:true},authority:'New or alternative sources start at zero live influence. Admission may permit a bounded reranking contribution only after independent forward evidence; it can never create eligibility, loosen a hard gate, or increase maximum risk.'};
+function stockEvidence(x){const t=x.ticker||x.symbol,c=congressBy.get(t),f=x.fundamentals||x.fundamentalProfile||null;return {ticker:t,sources:[{provider:'ALPACA',role:'PRIMARY_MARKET_AND_TECHNICAL',liveAuthority:'EXISTING_HARD_GATES'},{provider:'SEC_EDGAR',role:'FUNDAMENTALS_AND_FILINGS',available:Boolean(f),liveAuthority:'EXISTING_FUNDAMENTAL_EVENT_GATES'},...(c?[{provider:'CONGRESSIONAL_DISCLOSURES',role:'DELAYED_ALTERNATIVE_DATA',available:true,confidence:c.confidence,liveAuthority:'ZERO_SHADOW_ONLY'}]:[])],alternativeDataContribution:0,sourceAgreementRule:'Corroboration raises data confidence only; duplicated facts never multiply the trading score.',hardGatesRemainAuthoritative:true};}
+stocks.liveQueue=(stocks.liveQueue||[]).map(x=>({...x,unifiedSourceEvidence:stockEvidence(x)}));
+stocks.researchFinalists=(stocks.researchFinalists||[]).map(x=>({...x,unifiedSourceEvidence:stockEvidence(x)}));
+if(stocks.researchChampion)stocks.researchChampion={...stocks.researchChampion,unifiedSourceEvidence:stockEvidence(stocks.researchChampion)};
+if(stocks.liveBuyChampion)stocks.liveBuyChampion={...stocks.liveBuyChampion,unifiedSourceEvidence:stockEvidence(stocks.liveBuyChampion)};
+stocks.liveFallbacks=(stocks.liveFallbacks||[]).map(x=>({...x,unifiedSourceEvidence:stockEvidence(x)}));
+const cryptoEvidence=x=>({ticker:x.ticker||x.symbol,sources:[{provider:'ALPACA',role:'PRIMARY_CRYPTO_MARKET_RESEARCH',liveAuthority:'EXISTING_TOURNAMENT_GATES'},{provider:'ROBINHOOD_CRYPTO',role:'BROKER_VERIFICATION_AND_EXECUTION',liveAuthority:'DIRECT_API_ONLY_AFTER_QUALIFICATION'}],alternativeDataContribution:0,hardGatesRemainAuthoritative:true});
+crypto.ranked=(crypto.ranked||[]).map(x=>({...x,unifiedSourceEvidence:cryptoEvidence(x)}));
+if(crypto.researchChampion)crypto.researchChampion={...crypto.researchChampion,unifiedSourceEvidence:cryptoEvidence(crypto.researchChampion)};
+if(crypto.qualifiedChampion)crypto.qualifiedChampion={...crypto.qualifiedChampion,unifiedSourceEvidence:cryptoEvidence(crypto.qualifiedChampion)};
+const out={schemaVersion:1,generatedAt:now,architecture:'TWO_TOURNAMENTS_UNIFIED_EVIDENCE',objective:'Improve cost-adjusted expectancy and reduce avoidable losses through diverse evidence, forward validation, broker reconciliation and hard risk limits. No win or income guarantee.',providers:registry,providerSummary:{connectedOrActive:registry.filter(x=>/CONNECTED|ACTIVE|OK|DIRECT/.test(x.status)).length,shadowOrConfigured:registry.filter(x=>/SHADOW|CONFIGURED/.test(x.status)).length,referenceOrUnavailable:registry.filter(x=>/REFERENCE|REQUIRED|NOT_CONFIGURED|UNAVAILABLE|EMPTY/.test(x.status)).length},admission,stockTournament:{marketData:'ALPACA',fundamentals:'SEC_EDGAR',execution:'ROBINHOOD_PER_ORDER_APPROVAL',alternativeData:'SHADOW_FIRST'},cryptoTournament:{marketData:'ALPACA',execution:'ROBINHOOD_CRYPTO_DIRECT_API',alternativeData:'NONE_ADMITTED'},riskTruth:'Losses are unavoidable in trading. The system optimizes for positive expectancy, bounded drawdown, execution quality and survival—not all wins.'};
+signal.unifiedMarketIntelligence=out;
+signal.generatorIntegrity={...(signal.generatorIntegrity||{}),traceableFeatures:{...(signal.generatorIntegrity?.traceableFeatures||{}),unifiedProviderRegistry:true,stockCryptoSourceEvidence:true,licensedProviderReadiness:true,shadowFirstSourceAdmission:true,noProfitGuarantee:true}};
+await Promise.all([write('docs/data/market-intelligence.json',out),write('docs/data/stock-tournament.json',stocks),write('docs/data/crypto-tournament.json',crypto),write('docs/signal.json',signal),write('docs/data/claude-signal.json',signal)]);
+console.log(`Unified intelligence: ${registry.length} providers; connected/active=${out.providerSummary.connectedOrActive}; alternative live influence=0`);

@@ -66,6 +66,14 @@ jobs:
       - name: Rebuild and validate fresh stock signal using last deep-research artifacts
         if: ${{ steps.market_window.outputs.stocks == 'true' }}
         shell: bash
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          ROBINHOOD_CRYPTO_API_KEY: ${{ secrets.ROBINHOOD_CRYPTO_API_KEY }}
+          ROBINHOOD_CRYPTO_PRIVATE_KEY_B64: ${{ secrets.ROBINHOOD_CRYPTO_PRIVATE_KEY_B64 }}
+          QUIVER_API_KEY: ${{ secrets.QUIVER_API_KEY }}
+          UNUSUAL_WHALES_API_KEY: ${{ secrets.UNUSUAL_WHALES_API_KEY }}
         run: |
           set -euo pipefail
           if [ -f docs/signal.json ]; then cp docs/signal.json /tmp/teststock-last-good-signal.json; fi
@@ -84,10 +92,12 @@ jobs:
              node scripts/apply-congressional-intelligence.mjs && \
              node scripts/apply-crypto-knockout-tournament.mjs && \
              node scripts/apply-two-tournament-architecture.mjs && \
+             node scripts/build-unified-market-intelligence.mjs && \
              node scripts/validate-signal.mjs docs/signal.json && \
              node scripts/validate-stock-knockout.mjs && \
              node scripts/validate-decision-intelligence.mjs && \
              node scripts/validate-congressional-intelligence.mjs && \
+             node scripts/validate-unified-market-intelligence.mjs && \
              node scripts/validate-unattended-execution-policy.mjs && \
              node scripts/validate-claude-hourly-approval-policy.mjs && \
              node scripts/validate-two-tournament-architecture.mjs; then
