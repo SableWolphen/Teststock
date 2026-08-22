@@ -22,12 +22,14 @@ TOURNAMENT = DATA / 'crypto-tournament.json'
 CRYPTO_ADMISSION = DATA / 'crypto-profitability-admission.json'
 BASE = 'https://trading.robinhood.com'
 
-# Diagnostic-only: safe, coarse fields from the last resolved account object, captured so an
-# uncaught error anywhere after account resolution can report them. "fields" lists every key
-# Robinhood's /accounts/ response included (names only). "status", "account_type", and
-# "is_api_tradable" are coarse classification/eligibility flags -- never an account number,
-# balance, or other private quantity -- captured by value because they may explain why order
-# placement rejects an account_number that reads just succeeded with.
+# Diagnostic-only: safe, coarse fields from the accounts this API key can see, captured so an
+# uncaught error anywhere after account discovery can report them. "all_accounts" lists every
+# account Robinhood's /accounts/ response returned, labeled only by list position (never an
+# account number), each with its "status", "account_type", and "is_api_tradable" -- coarse
+# classification/eligibility flags, never an account number, balance, or other private quantity.
+# "fields"/"status"/"account_type"/"is_api_tradable" (top-level) mirror the one account selected
+# by ROBINHOOD_CRYPTO_ACCOUNT_NUMBER once resolution succeeds. Captured because is_api_tradable
+# may explain why order placement rejects an account_number that reads just succeeded with.
 _last_account_diag = {}
 
 
@@ -272,6 +274,23 @@ def main():
 
     accounts = api.accounts()
     all_active_count = len(matching_active_accounts(accounts))
+    global _last_account_diag
+    # Diagnostic-only, safe to publish: every crypto account this API key can see, labeled only by
+    # its position in the list (never the account number, balance, or any other private quantity).
+    # This exists to determine which account (if any) is actually eligible for order placement,
+    # since is_api_tradable is not surfaced anywhere in the Robinhood app UI and the account that
+    # reads succeed against is not necessarily the one writes are allowed on.
+    _last_account_diag = {
+        'all_accounts': [
+            {
+                'index': i,
+                'status': a.get('status'),
+                'account_type': a.get('account_type'),
+                'is_api_tradable': a.get('is_api_tradable'),
+            }
+            for i, a in enumerate(accounts)
+        ],
+    }
     matching_accounts = matching_active_accounts(accounts, account_selector)
     if len(matching_accounts) != 1:
         # Diagnostic counts only -- never the account number itself -- so this stays safe to
@@ -282,12 +301,13 @@ def main():
             'ROBINHOOD_CRYPTO_ACCOUNT_NUMBER selector only when more than one active crypto '
             f'account exists. No order sent. (active_accounts_total={all_active_count}, '
             f'account_selector_secret_present={bool(account_selector)}, '
-            f'accounts_matching_selector={len(matching_accounts)})'
+            f'accounts_matching_selector={len(matching_accounts)})',
+            account_diag=_last_account_diag,
         )
         return
     account = matching_accounts[0]
-    global _last_account_diag
     _last_account_diag = {
+        **_last_account_diag,
         'fields': sorted(account.keys()),
         'status': account.get('status'),
         'account_type': account.get('account_type'),
