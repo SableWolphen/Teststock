@@ -22,12 +22,13 @@ TOURNAMENT = DATA / 'crypto-tournament.json'
 CRYPTO_ADMISSION = DATA / 'crypto-profitability-admission.json'
 BASE = 'https://trading.robinhood.com'
 
-# Diagnostic-only: field NAMES (never values) from the last resolved account object, captured so
-# an uncaught error anywhere after account resolution can report which fields Robinhood's
-# /accounts/ response actually included -- e.g. whether an undocumented trading-eligibility flag
-# exists -- without ever writing an account number, balance, or other private quantity to this
-# public repo.
-_last_account_fields = []
+# Diagnostic-only: safe, coarse fields from the last resolved account object, captured so an
+# uncaught error anywhere after account resolution can report them. "fields" lists every key
+# Robinhood's /accounts/ response included (names only). "status", "account_type", and
+# "is_api_tradable" are coarse classification/eligibility flags -- never an account number,
+# balance, or other private quantity -- captured by value because they may explain why order
+# placement rejects an account_number that reads just succeeded with.
+_last_account_diag = {}
 
 
 def read_json(path, fallback=None):
@@ -285,8 +286,13 @@ def main():
         )
         return
     account = matching_accounts[0]
-    global _last_account_fields
-    _last_account_fields = sorted(account.keys())
+    global _last_account_diag
+    _last_account_diag = {
+        'fields': sorted(account.keys()),
+        'status': account.get('status'),
+        'account_type': account.get('account_type'),
+        'is_api_tradable': account.get('is_api_tradable'),
+    }
     account_number = str(account.get('account_number') or '')
     if not account_number:
         set_status('BLOCKED_ACCOUNT_DATA_INVALID', 'The active Robinhood crypto trading account did not include an account number. No order sent.')
@@ -528,13 +534,14 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as exc:
-        # account_fields is diagnostic-only field NAMES from Robinhood's own /accounts/ response
-        # (never the account number, balance, or any other value) -- safe to publish, and here to
-        # help pin down why order-placement calls reject an account_number that reads succeeded
-        # with moments earlier, without guessing at another blind fix.
+        # account_diag is diagnostic-only: field names plus a few coarse classification/eligibility
+        # values (status, account_type, is_api_tradable) from Robinhood's own /accounts/ response
+        # -- never the account number, balance, or any other private quantity -- safe to publish,
+        # and here to help pin down why order-placement calls reject an account_number that reads
+        # succeeded with moments earlier, without guessing at another blind fix.
         set_status(
             'ERROR_FAIL_CLOSED',
             f'Autopilot stopped without assuming success: {str(exc)[:220]}',
-            account_fields=_last_account_fields,
+            account_diag=_last_account_diag,
         )
         raise
