@@ -12,6 +12,7 @@ Teststock is a continuously refreshed trading research, ranking, monitoring, and
 - A candidate may be classified `DAY_TRADE`, `SWING_POSITION`, or `LONG_TERM`; this is a horizon inside its existing tournament, not another tournament.
 - Stocks use selective intraday/regime-specific validation and require explicit per-order user approval before every purchase.
 - Crypto uses the dedicated GitHub Actions Robinhood Crypto API lane. Do not route crypto through Claude's stock-approval or Robinhood-stock execution path.
+- The crypto research and executable tournaments use exact `/USD` quote pairs only. Exclude `/USDT`, `/USDC`, and every other quote currency.
 - No candidate is required. Holding cash is valid whenever every hard gate does not pass.
 
 ## Source roles

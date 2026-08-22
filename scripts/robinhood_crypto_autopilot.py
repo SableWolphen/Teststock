@@ -472,6 +472,9 @@ def main():
     rejection_reasons = []
     for candidate in picks:
         grade = candidate.get('setupGrade')
+        if not str(candidate.get('symbol', '')).endswith('/USD'):
+            rejection_reasons.append(f'{candidate.get("symbol")}: non-USD quote')
+            continue
         symbol = str(candidate['symbol']).replace('/', '-')
         if grade not in {'A', 'A+'}:
             rejection_reasons.append(f'{symbol}: grade')
