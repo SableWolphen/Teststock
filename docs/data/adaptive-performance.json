@@ -1,8 +1,10 @@
 {
-  "schemaVersion": 1,
-  "generatedAt": null,
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-22T13:01:48.617Z",
   "sourceOfTruth": "ROBINHOOD_CONFIRMED_REAL_FILLS_ONLY",
   "status": "WAITING_FOR_RECONCILED_REAL_FILLS",
+  "performanceState": "INSUFFICIENT_DATA",
+  "performanceReason": "Need more reconciled real trades before judging live strategy health.",
   "resolvedRealStockTrades": 0,
   "policy": {
     "recencyHalfLifeDays": 60,
@@ -16,9 +18,80 @@
     "mayTemporarilyBlockWeakPattern": true,
     "mayIncreaseMaximumLiveRisk": false,
     "mayLoosenHardSafetyGate": false,
-    "preserveUntouchedValidationHoldouts": true
+    "preserveUntouchedValidationHoldouts": true,
+    "note": "Adaptive evidence can only reorder already-qualified candidates or reduce/block risk. It cannot create eligibility, increase maximum risk, loosen validation, or override account/protection rules."
   },
-  "overall": null,
+  "overall": {
+    "dimension": "OVERALL",
+    "key": "ALL_REAL_STOCK_TRADES",
+    "samples": 0,
+    "wins": 0,
+    "losses": 0,
+    "flats": 0,
+    "winRatePct": null,
+    "averageRealizedR": null,
+    "realizedPnlDollars": 0,
+    "recencyWeightedWinRatePct": null,
+    "recencyWeightedAverageR": null,
+    "shrunkWinRatePct": null,
+    "shrunkAverageR": null,
+    "state": "INSUFFICIENT_DATA",
+    "priorityScoreDelta": 0,
+    "sizeMultiplier": 1,
+    "temporaryBlock": false
+  },
+  "recentPerformance": {
+    "last5": {
+      "dimension": "RECENT",
+      "key": "LAST_5",
+      "samples": 0,
+      "wins": 0,
+      "losses": 0,
+      "flats": 0,
+      "winRatePct": null,
+      "averageRealizedR": null,
+      "realizedPnlDollars": 0,
+      "recencyWeightedWinRatePct": null,
+      "recencyWeightedAverageR": null,
+      "shrunkWinRatePct": null,
+      "shrunkAverageR": null,
+      "state": "INSUFFICIENT_DATA",
+      "priorityScoreDelta": 0,
+      "sizeMultiplier": 1,
+      "temporaryBlock": false
+    },
+    "last10": {
+      "dimension": "RECENT",
+      "key": "LAST_10",
+      "samples": 0,
+      "wins": 0,
+      "losses": 0,
+      "flats": 0,
+      "winRatePct": null,
+      "averageRealizedR": null,
+      "realizedPnlDollars": 0,
+      "recencyWeightedWinRatePct": null,
+      "recencyWeightedAverageR": null,
+      "shrunkWinRatePct": null,
+      "shrunkAverageR": null,
+      "state": "INSUFFICIENT_DATA",
+      "priorityScoreDelta": 0,
+      "sizeMultiplier": 1,
+      "temporaryBlock": false
+    }
+  },
+  "executionQuality": {
+    "confirmedEntrySlippageSamples": 0,
+    "averageAdverseEntrySlippagePct": null,
+    "confirmedExitSlippageSamples": 0,
+    "averageAdverseExitSlippagePct": null,
+    "fillTimeSamples": 0,
+    "averageTimeToFillSeconds": null,
+    "protectionVerificationSamples": 0,
+    "protectiveExitVerificationRatePct": null,
+    "protectionLatencySamples": 0,
+    "averageProtectionLatencySeconds": null
+  },
   "buckets": {
     "byRegime": [],
     "bySetupType": [],
@@ -29,9 +102,44 @@
   },
   "rankingAdjustments": {},
   "materialConclusions": [],
+  "strongestPatterns": [],
+  "weakestPatterns": [],
+  "recentTrades": [],
+  "opportunityCost": {
+    "status": "NOT_ENOUGH_DATA",
+    "acceptedResolved": 0,
+    "acceptedWinRatePct": null,
+    "acceptedAverageR": null,
+    "rejectedResolved": 0,
+    "rejectedWinRatePct": null,
+    "rejectedAverageR": null,
+    "note": "Shadow opportunity cost is diagnostic only. It cannot loosen live-money gates."
+  },
   "shadowDiagnostics": {
     "separateFromRealMoney": true,
-    "summary": {},
+    "summary": {
+      "ACCEPTED": {
+        "resolved": 0,
+        "winRatePct": null,
+        "averageR": null
+      },
+      "REJECTED": {
+        "resolved": 0,
+        "winRatePct": null,
+        "averageR": null
+      },
+      "opportunityCostSignal": "NOT_ENOUGH_DATA",
+      "note": "Diagnostic only. Shadow outcomes may support profitability admission but must never loosen a hard live-money gate."
+    },
     "note": "Shadow history is diagnostic only and is never merged into real-fill adaptive statistics."
+  },
+  "ingestion": {
+    "journalFile": "docs/data/real-trade-journal.json",
+    "requiredForLearning": [
+      "reconciledFromRobinhood=true",
+      "resolved outcome WIN/LOSS/FLAT",
+      "finite realizedR"
+    ],
+    "note": "If a stock trade is not reconciled from Robinhood, it cannot influence live adaptive ranking."
   }
 }

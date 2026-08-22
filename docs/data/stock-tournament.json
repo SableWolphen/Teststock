@@ -1,11 +1,11 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 8,
   "source": "TESTSTOCK_UP_TO_20000_STOCK_KNOCKOUT",
-  "generatedAt": "2026-08-21T17:48:17.888Z",
+  "generatedAt": "2026-08-22T13:01:49.975Z",
   "objective": "Continuously eliminate weaker candidates from every legitimate active/tradable U.S. operating-company stock available, capped at 20,000 symbols, then buy the best acceptable live survivor without waiting only for a perfect setup.",
   "policy": {
     "targetTournamentSize": 20000,
-    "actualAvailableUniverse": 6072,
+    "actualAvailableUniverse": 6061,
     "scanAllAvailableUpToTarget": true,
     "alwaysProduceResearchChampion": true,
     "alwaysBuySomething": false,
@@ -19,762 +19,3805 @@
     "executionIntentWhenQualified": "BUY",
     "discretionaryCashOverrideWhenQualified": false,
     "noEligibleCandidateAction": "HOLD_CASH_AND_KEEP_SCANNING",
-    "winnerSelection": "A_FIRST_THEN_B_BY_TESTSTOCK_RANK_THEN_LIVE_ROBINHOOD_GATES",
+    "winnerSelection": "A_FIRST_THEN_BOUNDED_SELF_LEARNING_SCORE_THEN_TESTSTOCK_RANK_THEN_LIVE_ROBINHOOD_GATES",
     "fallbackSelection": "IF_WINNER_FAILS_BEFORE_ORDER_SUBMISSION_TRY_NEXT_ELIGIBLE_A_THEN_B_IN_SAME_EXECUTION_RUN",
     "safetyNote": "The B tier increases opportunity frequency without turning failed hard guards into passes. No trade is forced when both tiers fail."
   },
   "rounds": [
     {
       "round": "UNIVERSE",
-      "input": 6072,
-      "output": 2352,
+      "input": 6061,
+      "output": 2017,
       "rule": "Scan every legitimate active/tradable operating-company stock available from the connected U.S. equity universe, up to a 20,000-symbol ceiling. Never invent symbols or pad with ETFs/warrants just to hit 20,000."
     },
     {
       "round": "UP_TO_20000",
-      "input": 2352,
+      "input": 2017,
       "output": 2000,
       "rule": "Rank the entire available discovery pool by market quality, liquidity and momentum; send the best 2,000 to deeper daily-history analysis."
     },
     {
       "round": "TOP_2000",
       "input": 2000,
-      "output": 800,
+      "output": 682,
       "rule": "Require sufficient history, verified 20-day dollar liquidity, trend/setup structure and bounded volatility."
     },
     {
       "round": "TOP_800",
-      "input": 800,
-      "output": 100,
+      "input": 682,
+      "output": 94,
       "rule": "Run setup-specific historical validation and eliminate weak win-rate, sample-depth, direction, liquidity and volatility profiles."
     },
     {
       "round": "TOP_100",
-      "input": 100,
-      "output": 8,
+      "input": 94,
+      "output": 7,
       "rule": "Apply A-tier elite gates first, then a reduced-size B best-acceptable tier with positive expectancy/history/R:R floors. Hard account, price, spread, gap, correlation and protection gates never relax."
     },
     {
       "round": "LIVE_FINAL",
-      "input": 8,
-      "output": 1,
+      "input": 7,
+      "output": 0,
       "rule": "Choose live A candidates first. If no A survives, choose the strongest live B candidate at reduced size. If it fails before submission, try the next eligible fallback. Hold cash only when no A or B survives every hard guard."
     }
   ],
   "researchChampion": {
     "rank": 1,
-    "ticker": "ROIV",
-    "name": "Roivant Sciences Ltd. Common Shares",
+    "ticker": "NESR",
+    "name": "National Energy Services Reunited Corp Ordinary Shares",
     "setupType": "TREND",
-    "tournamentScore": 90.25,
+    "tournamentScore": 91.3,
     "quality": 100,
-    "historicalWinRate": 83,
-    "historicalSamples": 40,
+    "historicalWinRate": 84,
+    "historicalSamples": 43,
     "rewardRisk": 2.6,
-    "spreadPct": 0.055,
-    "entry": 37.84,
-    "stop": 35.02,
-    "target1": 42.07,
-    "target2": 45.17,
-    "entryTier": "A",
-    "entryTierLabel": "ELITE"
-  },
-  "liveBuyChampion": {
-    "queueRank": 5,
-    "ticker": "EQX",
-    "action": "AUTO_BUY_ELIGIBLE",
-    "queueRole": "RESERVE",
+    "spreadPct": null,
+    "entry": 36.71,
+    "stop": 30.75,
+    "target1": 45.65,
+    "target2": 52.21,
     "entryTier": "A",
     "entryTierLabel": "ELITE",
-    "entryTierSizeMultiplier": 1,
-    "tournamentScore": 53.8,
-    "growthQuality": 100,
-    "rewardRisk": 2.6,
-    "minimumEntry": 13.41,
-    "maximumEntry": 13.68,
-    "stop": 10.85,
-    "target1": 17.25,
-    "target2": 20.07
+    "adaptiveLearning": {
+      "matched": [],
+      "priorityScoreDelta": 0,
+      "positiveInfluenceCap": 0,
+      "sizeMultiplier": 1,
+      "blocked": false,
+      "globalSizeCap": 1,
+      "globalBlock": false,
+      "globalReasons": [],
+      "reasons": []
+    },
+    "adaptiveBaseTournamentScore": 91.3,
+    "adaptiveTournamentScore": 91.3,
+    "adaptiveSizeMultiplier": 1
   },
+  "liveBuyChampion": null,
   "liveFallbacks": [],
   "liveQueue": [
     {
       "queueRank": 1,
-      "ticker": "ROIV",
-      "action": "WAIT_FOR_TRIGGER",
-      "queueRole": "PRIMARY",
+      "ticker": "NESR",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "queueRole": "RESERVE",
       "entryTier": "A",
       "entryTierLabel": "ELITE",
       "entryTierSizeMultiplier": 1,
-      "tournamentScore": 55.8,
+      "tournamentScore": 56.3,
       "growthQuality": 100,
       "rewardRisk": 2.6,
-      "minimumEntry": 37.84,
-      "maximumEntry": 38.6,
-      "stop": 35.02,
-      "target1": 42.07,
-      "target2": 45.17
+      "minimumEntry": 36.71,
+      "maximumEntry": 37.44,
+      "stop": 30.75,
+      "target1": 45.65,
+      "target2": 52.21,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 56.3,
+      "adaptiveTournamentScore": 56.3,
+      "adaptiveSizeMultiplier": 0,
+      "adaptiveOriginalQueueRank": 1,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "STOCK_TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "decisionIntelligence": {
+        "decisionScore": 66.36,
+        "rankBeforeOptimization": 1,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "STOCK_TREND",
+          "technicalScore": 93.7,
+          "patternConfidencePct": 84,
+          "historicalSamples": 43,
+          "historicalWinRatePct": 84,
+          "rewardRisk": 2.6,
+          "backtestStatus": "SUPPORTED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN",
+            "LIQUIDITY_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "UNKNOWN",
+          "spreadPct": null,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 66.36,
+      "decisionRank": 1
     },
     {
       "queueRank": 2,
-      "ticker": "NUVB",
-      "action": "WAIT_FOR_TRIGGER",
+      "ticker": "AGNC",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "PRIMARY",
       "entryTier": "A",
       "entryTierLabel": "ELITE",
       "entryTierSizeMultiplier": 1,
-      "tournamentScore": 55.2,
+      "tournamentScore": 56.18,
       "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "minimumEntry": 7.56,
-      "maximumEntry": 7.71,
-      "stop": 6.49,
-      "target1": 9.16,
-      "target2": 10.34
+      "rewardRisk": 2.59,
+      "minimumEntry": 10.89,
+      "maximumEntry": 11.11,
+      "stop": 10.67,
+      "target1": 11.22,
+      "target2": 11.46,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 56.18,
+      "adaptiveTournamentScore": 56.18,
+      "adaptiveSizeMultiplier": 0,
+      "adaptiveOriginalQueueRank": 3,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "STOCK_TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "decisionIntelligence": {
+        "decisionScore": 65.86,
+        "rankBeforeOptimization": 2,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "STOCK_TREND",
+          "technicalScore": 94.1,
+          "patternConfidencePct": 80,
+          "historicalSamples": 20,
+          "historicalWinRatePct": 95,
+          "rewardRisk": 2.59,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN",
+            "LIQUIDITY_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "UNKNOWN",
+          "spreadPct": null,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 1,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 1,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 65.86,
+      "decisionRank": 2
     },
     {
       "queueRank": 3,
-      "ticker": "HP",
-      "action": "WAIT_FOR_TRIGGER",
+      "ticker": "EXPD",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "PRIMARY",
+      "entryTier": "A",
+      "entryTierLabel": "ELITE",
+      "entryTierSizeMultiplier": 1,
+      "tournamentScore": 54.6,
+      "growthQuality": 100,
+      "rewardRisk": 2.6,
+      "minimumEntry": 189.52,
+      "maximumEntry": 193.31,
+      "stop": 179.37,
+      "target1": 204.75,
+      "target2": 215.91,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 54.6,
+      "adaptiveTournamentScore": 54.6,
+      "adaptiveSizeMultiplier": 0,
+      "adaptiveOriginalQueueRank": 2,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "STOCK_TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "decisionIntelligence": {
+        "decisionScore": 64.54,
+        "rankBeforeOptimization": 3,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "STOCK_TREND",
+          "technicalScore": 92.2,
+          "patternConfidencePct": 81,
+          "historicalSamples": 32,
+          "historicalWinRatePct": 81,
+          "rewardRisk": 2.6,
+          "backtestStatus": "SUPPORTED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN",
+            "LIQUIDITY_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "UNKNOWN",
+          "spreadPct": null,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0.843,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.937,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 64.54,
+      "decisionRank": 3
+    },
+    {
+      "queueRank": 5,
+      "ticker": "FCFS",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "queueRole": "PRIMARY",
+      "entryTier": "A",
+      "entryTierLabel": "ELITE",
+      "entryTierSizeMultiplier": 1,
+      "tournamentScore": 54.4,
+      "growthQuality": 100,
+      "rewardRisk": 2.6,
+      "minimumEntry": 227.56,
+      "maximumEntry": 232.11,
+      "stop": 209.25,
+      "target1": 255.03,
+      "target2": 275.17,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 54.4,
+      "adaptiveTournamentScore": 54.4,
+      "adaptiveSizeMultiplier": 0,
+      "adaptiveOriginalQueueRank": 4,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "STOCK_TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "decisionIntelligence": {
+        "decisionScore": 63.77,
+        "rankBeforeOptimization": 5,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "STOCK_TREND",
+          "technicalScore": 90.7,
+          "patternConfidencePct": 78,
+          "historicalSamples": 36,
+          "historicalWinRatePct": 78,
+          "rewardRisk": 2.6,
+          "backtestStatus": "SUPPORTED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN",
+            "LIQUIDITY_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "UNKNOWN",
+          "spreadPct": null,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0.82,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.928,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 63.77,
+      "decisionRank": 4
+    },
+    {
+      "queueRank": 4,
+      "ticker": "MU",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "queueRole": "RESERVE",
+      "entryTier": "A",
+      "entryTierLabel": "ELITE",
+      "entryTierSizeMultiplier": 1,
+      "tournamentScore": 54.5,
+      "growthQuality": 100,
+      "rewardRisk": 2.6,
+      "minimumEntry": 1033.98,
+      "maximumEntry": 1054.66,
+      "stop": 891.59,
+      "target1": 1247.57,
+      "target2": 1404.19,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 54.5,
+      "adaptiveTournamentScore": 54.5,
+      "adaptiveSizeMultiplier": 0,
+      "adaptiveOriginalQueueRank": 5,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "STOCK_TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "decisionIntelligence": {
+        "decisionScore": 63.63,
+        "rankBeforeOptimization": 4,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "STOCK_TREND",
+          "technicalScore": 90.2,
+          "patternConfidencePct": 77,
+          "historicalSamples": 39,
+          "historicalWinRatePct": 77,
+          "rewardRisk": 2.6,
+          "backtestStatus": "SUPPORTED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN",
+            "LIQUIDITY_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "UNKNOWN",
+          "spreadPct": null,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 63.63,
+      "decisionRank": 5
+    },
+    {
+      "queueRank": 6,
+      "ticker": "EQX",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "queueRole": "RESERVE",
       "entryTier": "A",
       "entryTierLabel": "ELITE",
       "entryTierSizeMultiplier": 1,
       "tournamentScore": 54,
       "growthQuality": 100,
       "rewardRisk": 2.6,
-      "minimumEntry": 44.67,
-      "maximumEntry": 45.56,
-      "stop": 38.81,
-      "target1": 53.46,
-      "target2": 59.91
-    },
-    {
-      "queueRank": 4,
-      "ticker": "NAT",
-      "action": "WAIT_FOR_TRIGGER",
-      "queueRole": "RESERVE",
-      "entryTier": "A",
-      "entryTierLabel": "ELITE",
-      "entryTierSizeMultiplier": 1,
-      "tournamentScore": 54.2,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "minimumEntry": 7.18,
-      "maximumEntry": 7.32,
-      "stop": 6.55,
-      "target1": 8.13,
-      "target2": 8.82
-    },
-    {
-      "queueRank": 5,
-      "ticker": "EQX",
-      "action": "AUTO_BUY_ELIGIBLE",
-      "queueRole": "RESERVE",
-      "entryTier": "A",
-      "entryTierLabel": "ELITE",
-      "entryTierSizeMultiplier": 1,
-      "tournamentScore": 53.8,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "minimumEntry": 13.41,
-      "maximumEntry": 13.68,
-      "stop": 10.85,
-      "target1": 17.25,
-      "target2": 20.07
-    },
-    {
-      "queueRank": 6,
-      "ticker": "FTI",
-      "action": "WAIT_FOR_TRIGGER",
-      "queueRole": "RESERVE",
-      "entryTier": "A",
-      "entryTierLabel": "ELITE",
-      "entryTierSizeMultiplier": 1,
-      "tournamentScore": 53.1,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "minimumEntry": 80.15,
-      "maximumEntry": 81.75,
-      "stop": 73.88,
-      "target1": 89.56,
-      "target2": 96.45
+      "minimumEntry": 13.54,
+      "maximumEntry": 13.81,
+      "stop": 10.86,
+      "target1": 17.56,
+      "target2": 20.51,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 54,
+      "adaptiveTournamentScore": 54,
+      "adaptiveSizeMultiplier": 0,
+      "adaptiveOriginalQueueRank": 6,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "STOCK_TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "decisionIntelligence": {
+        "decisionScore": 63.62,
+        "rankBeforeOptimization": 6,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "STOCK_TREND",
+          "technicalScore": 92.2,
+          "patternConfidencePct": 76.9,
+          "historicalSamples": 26,
+          "historicalWinRatePct": 81,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN",
+            "LIQUIDITY_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "UNKNOWN",
+          "spreadPct": null,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 1,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 1,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 63.62,
+      "decisionRank": 6
     },
     {
       "queueRank": 7,
-      "ticker": "HL",
-      "action": "WAIT_FOR_TRIGGER",
+      "ticker": "NEM",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "RESERVE",
       "entryTier": "A",
       "entryTierLabel": "ELITE",
       "entryTierSizeMultiplier": 1,
-      "tournamentScore": 53.7,
+      "tournamentScore": 52.7,
       "growthQuality": 100,
       "rewardRisk": 2.6,
-      "minimumEntry": 21.26,
-      "maximumEntry": 21.69,
-      "stop": 17.02,
-      "target1": 27.62,
-      "target2": 32.28
-    },
-    {
-      "queueRank": 8,
-      "ticker": "IAG",
-      "action": "WAIT_FOR_TRIGGER",
-      "queueRole": "RESERVE",
-      "entryTier": "A",
-      "entryTierLabel": "ELITE",
-      "entryTierSizeMultiplier": 1,
-      "tournamentScore": 53,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "minimumEntry": 21.3,
-      "maximumEntry": 21.73,
-      "stop": 17.03,
-      "target1": 27.7,
-      "target2": 32.4
+      "minimumEntry": 132.07,
+      "maximumEntry": 134.71,
+      "stop": 109.31,
+      "target1": 166.21,
+      "target2": 191.25,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 52.7,
+      "adaptiveTournamentScore": 52.7,
+      "adaptiveSizeMultiplier": 0,
+      "adaptiveOriginalQueueRank": 7,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "STOCK_TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "decisionIntelligence": {
+        "decisionScore": 61.45,
+        "rankBeforeOptimization": 7,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "STOCK_TREND",
+          "technicalScore": 88.7,
+          "patternConfidencePct": 71.6,
+          "historicalSamples": 27,
+          "historicalWinRatePct": 74,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN",
+            "LIQUIDITY_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "UNKNOWN",
+          "spreadPct": null,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0.937,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.975,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 61.45,
+      "decisionRank": 7
     }
   ],
   "researchFinalists": [
     {
-      "rank": 1,
-      "ticker": "ROIV",
-      "name": "Roivant Sciences Ltd. Common Shares",
-      "setupType": "TREND",
-      "tournamentScore": 90.25,
-      "quality": 100,
-      "historicalWinRate": 83,
-      "historicalSamples": 40,
-      "rewardRisk": 2.6,
-      "spreadPct": 0.055,
-      "entry": 37.84,
-      "stop": 35.02,
-      "target1": 42.07,
-      "target2": 45.17,
-      "entryTier": "A",
-      "entryTierLabel": "ELITE"
-    },
-    {
-      "rank": 2,
-      "ticker": "NUVB",
-      "name": "Nuvation Bio Inc.",
-      "setupType": "TREND",
-      "tournamentScore": 88.77,
-      "quality": 100,
-      "historicalWinRate": 86,
-      "historicalSamples": 28,
-      "rewardRisk": 2.6,
-      "spreadPct": 0.143,
-      "entry": 7.56,
-      "stop": 6.49,
-      "target1": 9.16,
-      "target2": 10.34,
-      "entryTier": "A",
-      "entryTierLabel": "ELITE"
-    },
-    {
       "rank": 3,
-      "ticker": "HP",
-      "name": "Helmerich & Payne, Inc.",
-      "setupType": "TREND",
-      "tournamentScore": 88.31,
+      "ticker": "MSGS",
+      "name": "Madison Square Garden Sports Corp.",
+      "setupType": "PULLBACK",
+      "tournamentScore": 90.3,
       "quality": 100,
-      "historicalWinRate": 78,
-      "historicalSamples": 32,
+      "historicalWinRate": 93,
+      "historicalSamples": 15,
       "rewardRisk": 2.6,
-      "spreadPct": 0.069,
-      "entry": 44.67,
-      "stop": 38.81,
-      "target1": 53.46,
-      "target2": 59.91,
-      "entryTier": "A",
-      "entryTierLabel": "ELITE"
+      "spreadPct": null,
+      "entry": 405.99,
+      "stop": 390.65,
+      "target1": 429,
+      "target2": 445.87,
+      "entryTier": null,
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 90.3,
+      "adaptiveTournamentScore": 90.3,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "PULLBACK",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 88.75,
+        "rankBeforeOptimization": 3,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "PULLBACK",
+          "technicalScore": 94.2,
+          "patternConfidencePct": 71.5,
+          "historicalSamples": 15,
+          "historicalWinRatePct": 93,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 88.75
     },
     {
-      "rank": 4,
-      "ticker": "HL",
-      "name": "Hecla Mining Company",
+      "rank": 6,
+      "ticker": "NLY",
+      "name": "Annaly Capital Management. Inc.",
+      "setupType": "PULLBACK",
+      "tournamentScore": 89.42,
+      "quality": 100,
+      "historicalWinRate": 88,
+      "historicalSamples": 16,
+      "rewardRisk": 2.61,
+      "spreadPct": null,
+      "entry": 23.16,
+      "stop": 22.7,
+      "target1": 23.85,
+      "target2": 24.36,
+      "entryTier": null,
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 89.42,
+      "adaptiveTournamentScore": 89.42,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "PULLBACK",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 88.01,
+        "rankBeforeOptimization": 6,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "PULLBACK",
+          "technicalScore": 94.3,
+          "patternConfidencePct": 70.3,
+          "historicalSamples": 16,
+          "historicalWinRatePct": 88,
+          "rewardRisk": 2.61,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 88.01
+    },
+    {
+      "rank": 7,
+      "ticker": "NHC",
+      "name": "National Healthcare Corp.",
+      "setupType": "PULLBACK",
+      "tournamentScore": 89.4,
+      "quality": 100,
+      "historicalWinRate": 88,
+      "historicalSamples": 16,
+      "rewardRisk": 2.6,
+      "spreadPct": null,
+      "entry": 233.17,
+      "stop": 223.38,
+      "target1": 247.85,
+      "target2": 258.62,
+      "entryTier": null,
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 89.4,
+      "adaptiveTournamentScore": 89.4,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "PULLBACK",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 87.97,
+        "rankBeforeOptimization": 7,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "PULLBACK",
+          "technicalScore": 94.2,
+          "patternConfidencePct": 70.3,
+          "historicalSamples": 16,
+          "historicalWinRatePct": 88,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 87.97
+    },
+    {
+      "rank": 10,
+      "ticker": "ETON",
+      "name": "Eton Pharmaceuticals, Inc. Common Stock",
       "setupType": "TREND",
-      "tournamentScore": 88.22,
+      "tournamentScore": 88.7,
       "quality": 100,
       "historicalWinRate": 80,
       "historicalSamples": 25,
       "rewardRisk": 2.6,
-      "spreadPct": 0.048,
-      "entry": 21.26,
-      "stop": 17.02,
-      "target1": 27.62,
-      "target2": 32.28,
-      "entryTier": "A",
-      "entryTierLabel": "ELITE"
-    },
-    {
-      "rank": 5,
-      "ticker": "EQX",
-      "name": "Equinox Gold Corp.",
-      "setupType": "TREND",
-      "tournamentScore": 88.05,
-      "quality": 100,
-      "historicalWinRate": 79,
-      "historicalSamples": 28,
-      "rewardRisk": 2.6,
-      "spreadPct": 0.075,
-      "entry": 13.41,
-      "stop": 10.85,
-      "target1": 17.25,
-      "target2": 20.07,
-      "entryTier": "A",
-      "entryTierLabel": "ELITE"
-    },
-    {
-      "rank": 6,
-      "ticker": "AGNC",
-      "name": "AGNC Investment Corp. Common Stock",
-      "setupType": "PULLBACK",
-      "tournamentScore": 87.96,
-      "quality": 100,
-      "historicalWinRate": 84,
-      "historicalSamples": 19,
-      "rewardRisk": 2.59,
-      "spreadPct": 0.092,
-      "entry": 10.9,
-      "stop": 10.68,
-      "target1": 11.23,
-      "target2": 11.47,
+      "spreadPct": null,
+      "entry": 63.49,
+      "stop": 49.84,
+      "target1": 83.97,
+      "target2": 98.98,
       "entryTier": null,
-      "entryTierLabel": null
-    },
-    {
-      "rank": 7,
-      "ticker": "NAT",
-      "name": "Nordic American Tanker",
-      "setupType": "TREND",
-      "tournamentScore": 87.78,
-      "quality": 100,
-      "historicalWinRate": 76,
-      "historicalSamples": 38,
-      "rewardRisk": 2.6,
-      "spreadPct": 0.143,
-      "entry": 7.18,
-      "stop": 6.55,
-      "target1": 8.13,
-      "target2": 8.82,
-      "entryTier": "A",
-      "entryTierLabel": "ELITE"
-    },
-    {
-      "rank": 8,
-      "ticker": "SAN",
-      "name": "Banco Santander S.A.",
-      "setupType": "PULLBACK",
-      "tournamentScore": 87.53,
-      "quality": 100,
-      "historicalWinRate": 80,
-      "historicalSamples": 20,
-      "rewardRisk": 2.61,
-      "spreadPct": 0.069,
-      "entry": 14.55,
-      "stop": 14.19,
-      "target1": 15.09,
-      "target2": 15.49,
-      "entryTier": null,
-      "entryTierLabel": null
-    },
-    {
-      "rank": 9,
-      "ticker": "IAG",
-      "name": "IAMGold Corporation",
-      "setupType": "TREND",
-      "tournamentScore": 87.53,
-      "quality": 100,
-      "historicalWinRate": 75,
-      "historicalSamples": 28,
-      "rewardRisk": 2.6,
-      "spreadPct": 0.047,
-      "entry": 21.3,
-      "stop": 17.03,
-      "target1": 27.7,
-      "target2": 32.4,
-      "entryTier": "A",
-      "entryTierLabel": "ELITE"
-    },
-    {
-      "rank": 10,
-      "ticker": "FTI",
-      "name": "TechnipFMC plc Ordinary Share",
-      "setupType": "TREND",
-      "tournamentScore": 87.46,
-      "quality": 100,
-      "historicalWinRate": 73,
-      "historicalSamples": 33,
-      "rewardRisk": 2.6,
-      "spreadPct": 0.064,
-      "entry": 80.15,
-      "stop": 73.88,
-      "target1": 89.56,
-      "target2": 96.45,
-      "entryTier": "A",
-      "entryTierLabel": "ELITE"
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 88.7,
+      "adaptiveTournamentScore": 88.7,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 87.6,
+        "rankBeforeOptimization": 10,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 91.7,
+          "patternConfidencePct": 75,
+          "historicalSamples": 25,
+          "historicalWinRatePct": 80,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 87.6
     },
     {
       "rank": 11,
-      "ticker": "CSX",
-      "name": "CSX Corporation Common Stock",
+      "ticker": "JAZZ",
+      "name": "Jazz Pharmaceuticals plc Common Stock (Ireland)",
       "setupType": "PULLBACK",
-      "tournamentScore": 87.31,
+      "tournamentScore": 88.6,
       "quality": 100,
-      "historicalWinRate": 76,
-      "historicalSamples": 21,
+      "historicalWinRate": 83,
+      "historicalSamples": 18,
       "rewardRisk": 2.6,
-      "spreadPct": 0.019,
-      "entry": 51.35,
-      "stop": 50.18,
-      "target1": 53.11,
-      "target2": 54.39,
+      "spreadPct": null,
+      "entry": 254.27,
+      "stop": 245.8,
+      "target1": 266.98,
+      "target2": 276.29,
       "entryTier": null,
-      "entryTierLabel": null
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 88.6,
+      "adaptiveTournamentScore": 88.6,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "PULLBACK",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 87.17,
+        "rankBeforeOptimization": 11,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "PULLBACK",
+          "technicalScore": 93.2,
+          "patternConfidencePct": 69.8,
+          "historicalSamples": 18,
+          "historicalWinRatePct": 83,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 87.17
     },
     {
       "rank": 12,
+      "ticker": "J",
+      "name": "Jacobs Solutions Inc.",
+      "setupType": "TREND",
+      "tournamentScore": 88.2,
+      "quality": 100,
+      "historicalWinRate": 80,
+      "historicalSamples": 20,
+      "rewardRisk": 2.6,
+      "spreadPct": null,
+      "entry": 150.82,
+      "stop": 142.46,
+      "target1": 163.36,
+      "target2": 172.56,
+      "entryTier": null,
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 88.2,
+      "adaptiveTournamentScore": 88.2,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 86.65,
+        "rankBeforeOptimization": 12,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 91.7,
+          "patternConfidencePct": 70,
+          "historicalSamples": 20,
+          "historicalWinRatePct": 80,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 86.65
+    },
+    {
+      "rank": 14,
+      "ticker": "CDNA",
+      "name": "CareDx, Inc. Common Stock",
+      "setupType": "TREND",
+      "tournamentScore": 87.9,
+      "quality": 100,
+      "historicalWinRate": 76,
+      "historicalSamples": 25,
+      "rewardRisk": 2.6,
+      "spreadPct": null,
+      "entry": 49.45,
+      "stop": 44.51,
+      "target1": 56.86,
+      "target2": 62.29,
+      "entryTier": null,
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 87.9,
+      "adaptiveTournamentScore": 87.9,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 86.28,
+        "rankBeforeOptimization": 14,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 89.7,
+          "patternConfidencePct": 71.7,
+          "historicalSamples": 25,
+          "historicalWinRatePct": 76,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 86.28
+    },
+    {
+      "rank": 13,
       "ticker": "DBRG",
       "name": "DigitalBridge Group, Inc.",
       "setupType": "BREAKOUT",
-      "tournamentScore": 87.27,
+      "tournamentScore": 87.9,
       "quality": 100,
       "historicalWinRate": 79,
       "historicalSamples": 19,
       "rewardRisk": 2.6,
-      "spreadPct": 0.063,
+      "spreadPct": null,
       "entry": 15.94,
       "stop": 15.89,
       "target1": 16.01,
       "target2": 16.07,
       "entryTier": null,
-      "entryTierLabel": null
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 87.9,
+      "adaptiveTournamentScore": 87.9,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "BREAKOUT",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 86.15,
+        "rankBeforeOptimization": 13,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "BREAKOUT",
+          "technicalScore": 91.2,
+          "patternConfidencePct": 68.4,
+          "historicalSamples": 19,
+          "historicalWinRatePct": 79,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 86.15
     },
     {
-      "rank": 13,
-      "ticker": "HAL",
-      "name": "Halliburton Company",
+      "rank": 16,
+      "ticker": "IEX",
+      "name": "IDEX Corporation",
+      "setupType": "PULLBACK",
+      "tournamentScore": 87.6,
+      "quality": 100,
+      "historicalWinRate": 78,
+      "historicalSamples": 18,
+      "rewardRisk": 2.6,
+      "spreadPct": null,
+      "entry": 234.63,
+      "stop": 228.81,
+      "target1": 243.36,
+      "target2": 249.76,
+      "entryTier": null,
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 87.6,
+      "adaptiveTournamentScore": 87.6,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "PULLBACK",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 85.66,
+        "rankBeforeOptimization": 16,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "PULLBACK",
+          "technicalScore": 90.7,
+          "patternConfidencePct": 66.8,
+          "historicalSamples": 18,
+          "historicalWinRatePct": 78,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 85.66
+    },
+    {
+      "rank": 18,
+      "ticker": "LLY",
+      "name": "Eli Lilly & Co.",
       "setupType": "TREND",
-      "tournamentScore": 87.22,
+      "tournamentScore": 87.4,
+      "quality": 100,
+      "historicalWinRate": 73,
+      "historicalSamples": 26,
+      "rewardRisk": 2.6,
+      "spreadPct": null,
+      "entry": 1289.92,
+      "stop": 1196.6,
+      "target1": 1429.9,
+      "target2": 1532.55,
+      "entryTier": null,
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 87.4,
+      "adaptiveTournamentScore": 87.4,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 85.44,
+        "rankBeforeOptimization": 18,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 88.2,
+          "patternConfidencePct": 69.9,
+          "historicalSamples": 26,
+          "historicalWinRatePct": 73,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 85.44
+    },
+    {
+      "rank": 19,
+      "ticker": "MRX",
+      "name": "Marex Group Limited Ordinary Shares",
+      "setupType": "TREND",
+      "tournamentScore": 87.4,
+      "quality": 100,
+      "historicalWinRate": 73,
+      "historicalSamples": 26,
+      "rewardRisk": 2.6,
+      "spreadPct": null,
+      "entry": 75.18,
+      "stop": 66.48,
+      "target1": 88.23,
+      "target2": 97.8,
+      "entryTier": null,
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 87.4,
+      "adaptiveTournamentScore": 87.4,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 85.44,
+        "rankBeforeOptimization": 19,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 88.2,
+          "patternConfidencePct": 69.9,
+          "historicalSamples": 26,
+          "historicalWinRatePct": 73,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 85.44
+    },
+    {
+      "rank": 17,
+      "ticker": "MRVI",
+      "name": "Maravai LifeSciences Holdings, Inc. Class A Common Stock",
+      "setupType": "TREND",
+      "tournamentScore": 87.5,
       "quality": 100,
       "historicalWinRate": 70,
       "historicalSamples": 33,
       "rewardRisk": 2.6,
-      "spreadPct": 0.028,
-      "entry": 36,
-      "stop": 33.12,
-      "target1": 40.32,
-      "target2": 43.49,
+      "spreadPct": null,
+      "entry": 8.85,
+      "stop": 6.49,
+      "target1": 12.39,
+      "target2": 14.99,
       "entryTier": null,
-      "entryTierLabel": null
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 87.5,
+      "adaptiveTournamentScore": 87.5,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 85.26,
+        "rankBeforeOptimization": 17,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 86.7,
+          "patternConfidencePct": 70,
+          "historicalSamples": 33,
+          "historicalWinRatePct": 70,
+          "rewardRisk": 2.6,
+          "backtestStatus": "SUPPORTED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 85.26
     },
     {
-      "rank": 14,
-      "ticker": "CGAU",
-      "name": "Centerra Gold Inc.",
+      "rank": 20,
+      "ticker": "TGB",
+      "name": "Trekor Metals Limited",
       "setupType": "TREND",
-      "tournamentScore": 87.08,
-      "quality": 100,
-      "historicalWinRate": 72,
-      "historicalSamples": 29,
-      "rewardRisk": 2.6,
-      "spreadPct": 0.042,
-      "entry": 24.07,
-      "stop": 20.06,
-      "target1": 30.09,
-      "target2": 34.5,
-      "entryTier": null,
-      "entryTierLabel": null
-    },
-    {
-      "rank": 15,
-      "ticker": "CRNX",
-      "name": "Crinetics Pharmaceuticals, Inc. Common Stock",
-      "setupType": "TREND",
-      "tournamentScore": 87.07,
-      "quality": 100,
-      "historicalWinRate": 75,
-      "historicalSamples": 20,
-      "rewardRisk": 2.6,
-      "spreadPct": 0.012,
-      "entry": 84.73,
-      "stop": 84.21,
-      "target1": 85.51,
-      "target2": 86.08,
-      "entryTier": null,
-      "entryTierLabel": null
-    },
-    {
-      "rank": 16,
-      "ticker": "PAAS",
-      "name": "Pan American Silver Corp.",
-      "setupType": "TREND",
-      "tournamentScore": 87.01,
+      "tournamentScore": 87.2,
       "quality": 100,
       "historicalWinRate": 71,
       "historicalSamples": 28,
       "rewardRisk": 2.6,
-      "spreadPct": 0.019,
-      "entry": 53.3,
-      "stop": 47.69,
-      "target1": 61.71,
-      "target2": 67.89,
-      "entryTier": null,
-      "entryTierLabel": null
-    },
-    {
-      "rank": 17,
-      "ticker": "GMAB",
-      "name": "Genmab A/S ADS",
-      "setupType": "TREND",
-      "tournamentScore": 87,
-      "quality": 100,
-      "historicalWinRate": 75,
-      "historicalSamples": 24,
-      "rewardRisk": 2.6,
-      "spreadPct": 0.06,
-      "entry": 34.11,
-      "stop": 30.75,
-      "target1": 39.15,
-      "target2": 42.85,
-      "entryTier": null,
-      "entryTierLabel": null
-    },
-    {
-      "rank": 18,
-      "ticker": "AG",
-      "name": "FIRST MAJESTIC SILVER CORP",
-      "setupType": "TREND",
-      "tournamentScore": 86.96,
-      "quality": 100,
-      "historicalWinRate": 76,
-      "historicalSamples": 25,
-      "rewardRisk": 2.6,
-      "spreadPct": 0.094,
-      "entry": 21.95,
-      "stop": 17.98,
-      "target1": 27.9,
-      "target2": 32.27,
-      "entryTier": null,
-      "entryTierLabel": null
-    },
-    {
-      "rank": 19,
-      "ticker": "PHYS",
-      "name": "Sprott Physical Gold Trust",
-      "setupType": "TREND",
-      "tournamentScore": 86.93,
-      "quality": 100,
-      "historicalWinRate": 72,
-      "historicalSamples": 29,
-      "rewardRisk": 2.6,
-      "spreadPct": 0.057,
-      "entry": 35.03,
-      "stop": 32.43,
-      "target1": 38.93,
-      "target2": 41.79,
-      "entryTier": null,
-      "entryTierLabel": null
-    },
-    {
-      "rank": 20,
-      "ticker": "NEOG",
-      "name": "Neogen Corporation Common Stock",
-      "setupType": "TREND",
-      "tournamentScore": 86.75,
-      "quality": 100,
-      "historicalWinRate": 75,
-      "historicalSamples": 24,
-      "rewardRisk": 2.6,
-      "spreadPct": 0.084,
-      "entry": 12.81,
-      "stop": 11.32,
-      "target1": 15.05,
-      "target2": 16.68,
-      "entryTier": null,
-      "entryTierLabel": null
-    },
-    {
-      "rank": 21,
-      "ticker": "HBM",
-      "name": "Hudbay Minerals Inc.",
-      "setupType": "TREND",
-      "tournamentScore": 86.56,
-      "quality": 100,
-      "historicalWinRate": 70,
-      "historicalSamples": 27,
-      "rewardRisk": 2.6,
-      "spreadPct": 0.034,
-      "entry": 29.8,
-      "stop": 25.76,
-      "target1": 35.86,
-      "target2": 40.3,
-      "entryTier": null,
-      "entryTierLabel": null
-    },
-    {
-      "rank": 22,
-      "ticker": "PSLV",
-      "name": "Sprott Physical Silver Trust",
-      "setupType": "TREND",
-      "tournamentScore": 86.06,
-      "quality": 100,
-      "historicalWinRate": 70,
-      "historicalSamples": 23,
-      "rewardRisk": 2.6,
-      "spreadPct": 0.044,
-      "entry": 22.95,
-      "stop": 20.44,
-      "target1": 26.71,
-      "target2": 29.48,
-      "entryTier": null,
-      "entryTierLabel": null
-    },
-    {
-      "rank": 23,
-      "ticker": "MNST",
-      "name": "Monster Beverage Corporation",
-      "setupType": "PULLBACK",
-      "tournamentScore": 85.89,
-      "quality": 100,
-      "historicalWinRate": 71,
-      "historicalSamples": 17,
-      "rewardRisk": 2.6,
-      "spreadPct": 0.021,
-      "entry": 48.04,
-      "stop": 46.46,
-      "target1": 50.41,
-      "target2": 52.15,
-      "entryTier": null,
-      "entryTierLabel": null
-    },
-    {
-      "rank": 24,
-      "ticker": "TGB",
-      "name": "Trekor Metals Limited",
-      "setupType": "TREND",
-      "tournamentScore": 85.8,
-      "quality": 100,
-      "historicalWinRate": 70,
-      "historicalSamples": 27,
-      "rewardRisk": 2.6,
-      "spreadPct": 0.11,
+      "spreadPct": null,
       "entry": 9.3,
       "stop": 8.03,
       "target1": 11.21,
       "target2": 12.6,
       "entryTier": null,
-      "entryTierLabel": null
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 87.2,
+      "adaptiveTournamentScore": 87.2,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 85.09,
+        "rankBeforeOptimization": 20,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 87.2,
+          "patternConfidencePct": 69.6,
+          "historicalSamples": 28,
+          "historicalWinRatePct": 71,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 85.09
+    },
+    {
+      "rank": 21,
+      "ticker": "EZPW",
+      "name": "EZCORP, Inc. Class A Non Voting Common Stock",
+      "setupType": "TREND",
+      "tournamentScore": 87.2,
+      "quality": 100,
+      "historicalWinRate": 69,
+      "historicalSamples": 32,
+      "rewardRisk": 2.6,
+      "spreadPct": null,
+      "entry": 33.17,
+      "stop": 29.29,
+      "target1": 38.99,
+      "target2": 43.26,
+      "entryTier": null,
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 87.2,
+      "adaptiveTournamentScore": 87.2,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 84.84,
+        "rankBeforeOptimization": 21,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 86.2,
+          "patternConfidencePct": 69,
+          "historicalSamples": 32,
+          "historicalWinRatePct": 69,
+          "rewardRisk": 2.6,
+          "backtestStatus": "SUPPORTED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 84.84
+    },
+    {
+      "rank": 22,
+      "ticker": "NEOG",
+      "name": "Neogen Corporation Common Stock",
+      "setupType": "TREND",
+      "tournamentScore": 86.9,
+      "quality": 100,
+      "historicalWinRate": 70,
+      "historicalSamples": 27,
+      "rewardRisk": 2.6,
+      "spreadPct": null,
+      "entry": 12.81,
+      "stop": 11.33,
+      "target1": 15.03,
+      "target2": 16.66,
+      "entryTier": null,
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 86.9,
+      "adaptiveTournamentScore": 86.9,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 84.6,
+        "rankBeforeOptimization": 22,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 86.7,
+          "patternConfidencePct": 68,
+          "historicalSamples": 27,
+          "historicalWinRatePct": 70,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 84.6
+    },
+    {
+      "rank": 23,
+      "ticker": "TGT",
+      "name": "Target Corporation",
+      "setupType": "TREND",
+      "tournamentScore": 86.9,
+      "quality": 100,
+      "historicalWinRate": 70,
+      "historicalSamples": 27,
+      "rewardRisk": 2.6,
+      "spreadPct": null,
+      "entry": 165.46,
+      "stop": 150.13,
+      "target1": 188.46,
+      "target2": 205.32,
+      "entryTier": null,
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 86.9,
+      "adaptiveTournamentScore": 86.9,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 84.6,
+        "rankBeforeOptimization": 23,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 86.7,
+          "patternConfidencePct": 68,
+          "historicalSamples": 27,
+          "historicalWinRatePct": 70,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 84.6
+    },
+    {
+      "rank": 24,
+      "ticker": "BVN",
+      "name": "Compania de Minas Buenaventura S.A.",
+      "setupType": "TREND",
+      "tournamentScore": 86.9,
+      "quality": 100,
+      "historicalWinRate": 69,
+      "historicalSamples": 29,
+      "rewardRisk": 2.6,
+      "spreadPct": null,
+      "entry": 35.59,
+      "stop": 32.97,
+      "target1": 39.52,
+      "target2": 42.4,
+      "entryTier": null,
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 86.9,
+      "adaptiveTournamentScore": 86.9,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 84.55,
+        "rankBeforeOptimization": 24,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 86.2,
+          "patternConfidencePct": 68.4,
+          "historicalSamples": 29,
+          "historicalWinRatePct": 69,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 84.55
     },
     {
       "rank": 25,
-      "ticker": "ATAI",
-      "name": "AtaiBeckley Inc. Common Stock",
+      "ticker": "NEU",
+      "name": "NewMarket Corporation",
       "setupType": "TREND",
-      "tournamentScore": 85.66,
+      "tournamentScore": 86.8,
       "quality": 100,
-      "historicalWinRate": 73,
-      "historicalSamples": 22,
+      "historicalWinRate": 75,
+      "historicalSamples": 16,
       "rewardRisk": 2.6,
-      "spreadPct": 0.134,
-      "entry": 7.44,
-      "stop": 7.24,
-      "target1": 7.74,
-      "target2": 7.96,
+      "spreadPct": null,
+      "entry": 978.19,
+      "stop": 891.33,
+      "target1": 1108.48,
+      "target2": 1204.03,
       "entryTier": null,
-      "entryTierLabel": null
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 86.8,
+      "adaptiveTournamentScore": 86.8,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 84.41,
+        "rankBeforeOptimization": 25,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 89.2,
+          "patternConfidencePct": 63.3,
+          "historicalSamples": 16,
+          "historicalWinRatePct": 75,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 84.41
     },
     {
       "rank": 26,
-      "ticker": "NRIX",
-      "name": "Nurix Therapeutics, Inc. Common stock",
+      "ticker": "XNCR",
+      "name": "Xencor, Inc. Common Stock",
       "setupType": "TREND",
-      "tournamentScore": 85.47,
+      "tournamentScore": 86.5,
+      "quality": 100,
+      "historicalWinRate": 70,
+      "historicalSamples": 23,
+      "rewardRisk": 2.6,
+      "spreadPct": null,
+      "entry": 27.98,
+      "stop": 22.26,
+      "target1": 36.56,
+      "target2": 42.85,
+      "entryTier": null,
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 86.5,
+      "adaptiveTournamentScore": 86.5,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 83.99,
+        "rankBeforeOptimization": 26,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 86.7,
+          "patternConfidencePct": 65.3,
+          "historicalSamples": 23,
+          "historicalWinRatePct": 70,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 83.99
+    },
+    {
+      "rank": 27,
+      "ticker": "CAKE",
+      "name": "Cheesecake Factory Incorporated (The) Common Stock",
+      "setupType": "TREND",
+      "tournamentScore": 86.2,
       "quality": 100,
       "historicalWinRate": 70,
       "historicalSamples": 20,
       "rewardRisk": 2.6,
-      "spreadPct": 0.073,
-      "entry": 28.12,
-      "stop": 25.53,
-      "target1": 32.01,
-      "target2": 34.85,
+      "spreadPct": null,
+      "entry": 117.69,
+      "stop": 105.74,
+      "target1": 135.62,
+      "target2": 148.76,
       "entryTier": null,
-      "entryTierLabel": null
-    },
-    {
-      "rank": 27,
-      "ticker": "LXP",
-      "name": "LXP Industrial Trust",
-      "setupType": "BREAKOUT",
-      "tournamentScore": 85.32,
-      "quality": 100,
-      "historicalWinRate": 73,
-      "historicalSamples": 15,
-      "rewardRisk": 2.61,
-      "spreadPct": 0.099,
-      "entry": 60.96,
-      "stop": 60.68,
-      "target1": 61.38,
-      "target2": 61.69,
-      "entryTier": null,
-      "entryTierLabel": null
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 86.2,
+      "adaptiveTournamentScore": 86.2,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 83.54,
+        "rankBeforeOptimization": 27,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 86.7,
+          "patternConfidencePct": 63.3,
+          "historicalSamples": 20,
+          "historicalWinRatePct": 70,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 83.54
     },
     {
       "rank": 28,
-      "ticker": "AMBP",
-      "name": "Ardagh Metal Packaging S.A.",
-      "setupType": "TREND",
-      "tournamentScore": 85.31,
+      "ticker": "TTE",
+      "name": "TotalEnergies SE",
+      "setupType": "PULLBACK",
+      "tournamentScore": 86.1,
       "quality": 100,
-      "historicalWinRate": 75,
-      "historicalSamples": 20,
-      "rewardRisk": 2.59,
-      "spreadPct": 0.187,
-      "entry": 5.45,
-      "stop": 5.06,
-      "target1": 6.04,
-      "target2": 6.46,
+      "historicalWinRate": 71,
+      "historicalSamples": 17,
+      "rewardRisk": 2.6,
+      "spreadPct": null,
+      "entry": 89.97,
+      "stop": 87.36,
+      "target1": 93.88,
+      "target2": 96.76,
       "entryTier": null,
-      "entryTierLabel": null
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 86.1,
+      "adaptiveTournamentScore": 86.1,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "PULLBACK",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 83.39,
+        "rankBeforeOptimization": 28,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "PULLBACK",
+          "technicalScore": 87.2,
+          "patternConfidencePct": 61.9,
+          "historicalSamples": 17,
+          "historicalWinRatePct": 71,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 83.39
     },
     {
       "rank": 29,
-      "ticker": "ASM",
-      "name": "Avino Silver & Gold Mines Ltd. (Canada)",
-      "setupType": "TREND",
-      "tournamentScore": 85.18,
-      "quality": 100,
-      "historicalWinRate": 71,
-      "historicalSamples": 21,
-      "rewardRisk": 2.6,
-      "spreadPct": 0.133,
-      "entry": 7.85,
-      "stop": 6.54,
-      "target1": 9.81,
-      "target2": 11.26,
-      "entryTier": null,
-      "entryTierLabel": null
-    },
-    {
-      "rank": 30,
       "ticker": "BLFS",
       "name": "BioLife Solutions, Inc. Common Stock",
       "setupType": "TREND",
-      "tournamentScore": 85.15,
+      "tournamentScore": 86,
       "quality": 100,
-      "historicalWinRate": 71,
-      "historicalSamples": 21,
+      "historicalWinRate": 68,
+      "historicalSamples": 22,
       "rewardRisk": 2.6,
-      "spreadPct": 0.135,
+      "spreadPct": null,
       "entry": 37.96,
       "stop": 33.94,
       "target1": 43.99,
       "target2": 48.41,
       "entryTier": null,
-      "entryTierLabel": null
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 86,
+      "adaptiveTournamentScore": 86,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 83.21,
+        "rankBeforeOptimization": 29,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 85.7,
+          "patternConfidencePct": 63.2,
+          "historicalSamples": 22,
+          "historicalWinRatePct": 68,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 83.21
+    },
+    {
+      "rank": 30,
+      "ticker": "PRCH",
+      "name": "Porch Group, Inc. Common Stock",
+      "setupType": "TREND",
+      "tournamentScore": 85.7,
+      "quality": 100,
+      "historicalWinRate": 68,
+      "historicalSamples": 19,
+      "rewardRisk": 2.6,
+      "spreadPct": null,
+      "entry": 17.43,
+      "stop": 15.62,
+      "target1": 20.14,
+      "target2": 22.14,
+      "entryTier": null,
+      "entryTierLabel": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 85.7,
+      "adaptiveTournamentScore": 85.7,
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "decisionIntelligence": {
+        "decisionScore": 82.78,
+        "rankBeforeOptimization": 30,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 85.7,
+          "patternConfidencePct": 61.4,
+          "historicalSamples": 19,
+          "historicalWinRatePct": 68,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 82.78
+    },
+    {
+      "queueRank": 1,
+      "ticker": "NESR",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "queueRole": "RESERVE",
+      "entryTier": "A",
+      "entryTierLabel": "ELITE",
+      "entryTierSizeMultiplier": 1,
+      "tournamentScore": 56.3,
+      "growthQuality": 100,
+      "rewardRisk": 2.6,
+      "minimumEntry": 36.71,
+      "maximumEntry": 37.44,
+      "stop": 30.75,
+      "target1": 45.65,
+      "target2": 52.21,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 56.3,
+      "adaptiveTournamentScore": 56.3,
+      "adaptiveSizeMultiplier": 0,
+      "adaptiveOriginalQueueRank": 1,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "STOCK_TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "decisionIntelligence": {
+        "decisionScore": 66.36,
+        "rankBeforeOptimization": 1,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "STOCK_TREND",
+          "technicalScore": 93.7,
+          "patternConfidencePct": 84,
+          "historicalSamples": 43,
+          "historicalWinRatePct": 84,
+          "rewardRisk": 2.6,
+          "backtestStatus": "SUPPORTED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN",
+            "LIQUIDITY_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "UNKNOWN",
+          "spreadPct": null,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 66.36,
+      "decisionRank": 1
+    },
+    {
+      "queueRank": 2,
+      "ticker": "AGNC",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "queueRole": "PRIMARY",
+      "entryTier": "A",
+      "entryTierLabel": "ELITE",
+      "entryTierSizeMultiplier": 1,
+      "tournamentScore": 56.18,
+      "growthQuality": 100,
+      "rewardRisk": 2.59,
+      "minimumEntry": 10.89,
+      "maximumEntry": 11.11,
+      "stop": 10.67,
+      "target1": 11.22,
+      "target2": 11.46,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 56.18,
+      "adaptiveTournamentScore": 56.18,
+      "adaptiveSizeMultiplier": 0,
+      "adaptiveOriginalQueueRank": 3,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "STOCK_TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "decisionIntelligence": {
+        "decisionScore": 65.86,
+        "rankBeforeOptimization": 2,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "STOCK_TREND",
+          "technicalScore": 94.1,
+          "patternConfidencePct": 80,
+          "historicalSamples": 20,
+          "historicalWinRatePct": 95,
+          "rewardRisk": 2.59,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN",
+            "LIQUIDITY_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "UNKNOWN",
+          "spreadPct": null,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 1,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 1,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 65.86,
+      "decisionRank": 2
+    },
+    {
+      "queueRank": 3,
+      "ticker": "EXPD",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "queueRole": "PRIMARY",
+      "entryTier": "A",
+      "entryTierLabel": "ELITE",
+      "entryTierSizeMultiplier": 1,
+      "tournamentScore": 54.6,
+      "growthQuality": 100,
+      "rewardRisk": 2.6,
+      "minimumEntry": 189.52,
+      "maximumEntry": 193.31,
+      "stop": 179.37,
+      "target1": 204.75,
+      "target2": 215.91,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 54.6,
+      "adaptiveTournamentScore": 54.6,
+      "adaptiveSizeMultiplier": 0,
+      "adaptiveOriginalQueueRank": 2,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "STOCK_TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "decisionIntelligence": {
+        "decisionScore": 64.54,
+        "rankBeforeOptimization": 3,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "STOCK_TREND",
+          "technicalScore": 92.2,
+          "patternConfidencePct": 81,
+          "historicalSamples": 32,
+          "historicalWinRatePct": 81,
+          "rewardRisk": 2.6,
+          "backtestStatus": "SUPPORTED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN",
+            "LIQUIDITY_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "UNKNOWN",
+          "spreadPct": null,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0.843,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.937,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 64.54,
+      "decisionRank": 3
+    },
+    {
+      "queueRank": 5,
+      "ticker": "FCFS",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "queueRole": "PRIMARY",
+      "entryTier": "A",
+      "entryTierLabel": "ELITE",
+      "entryTierSizeMultiplier": 1,
+      "tournamentScore": 54.4,
+      "growthQuality": 100,
+      "rewardRisk": 2.6,
+      "minimumEntry": 227.56,
+      "maximumEntry": 232.11,
+      "stop": 209.25,
+      "target1": 255.03,
+      "target2": 275.17,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 54.4,
+      "adaptiveTournamentScore": 54.4,
+      "adaptiveSizeMultiplier": 0,
+      "adaptiveOriginalQueueRank": 4,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "STOCK_TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "decisionIntelligence": {
+        "decisionScore": 63.77,
+        "rankBeforeOptimization": 5,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "STOCK_TREND",
+          "technicalScore": 90.7,
+          "patternConfidencePct": 78,
+          "historicalSamples": 36,
+          "historicalWinRatePct": 78,
+          "rewardRisk": 2.6,
+          "backtestStatus": "SUPPORTED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN",
+            "LIQUIDITY_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "UNKNOWN",
+          "spreadPct": null,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0.82,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.928,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 63.77,
+      "decisionRank": 4
+    },
+    {
+      "queueRank": 4,
+      "ticker": "MU",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "queueRole": "RESERVE",
+      "entryTier": "A",
+      "entryTierLabel": "ELITE",
+      "entryTierSizeMultiplier": 1,
+      "tournamentScore": 54.5,
+      "growthQuality": 100,
+      "rewardRisk": 2.6,
+      "minimumEntry": 1033.98,
+      "maximumEntry": 1054.66,
+      "stop": 891.59,
+      "target1": 1247.57,
+      "target2": 1404.19,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 54.5,
+      "adaptiveTournamentScore": 54.5,
+      "adaptiveSizeMultiplier": 0,
+      "adaptiveOriginalQueueRank": 5,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "STOCK_TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "decisionIntelligence": {
+        "decisionScore": 63.63,
+        "rankBeforeOptimization": 4,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "STOCK_TREND",
+          "technicalScore": 90.2,
+          "patternConfidencePct": 77,
+          "historicalSamples": 39,
+          "historicalWinRatePct": 77,
+          "rewardRisk": 2.6,
+          "backtestStatus": "SUPPORTED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN",
+            "LIQUIDITY_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "UNKNOWN",
+          "spreadPct": null,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 63.63,
+      "decisionRank": 5
+    },
+    {
+      "queueRank": 6,
+      "ticker": "EQX",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "queueRole": "RESERVE",
+      "entryTier": "A",
+      "entryTierLabel": "ELITE",
+      "entryTierSizeMultiplier": 1,
+      "tournamentScore": 54,
+      "growthQuality": 100,
+      "rewardRisk": 2.6,
+      "minimumEntry": 13.54,
+      "maximumEntry": 13.81,
+      "stop": 10.86,
+      "target1": 17.56,
+      "target2": 20.51,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 54,
+      "adaptiveTournamentScore": 54,
+      "adaptiveSizeMultiplier": 0,
+      "adaptiveOriginalQueueRank": 6,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "STOCK_TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "decisionIntelligence": {
+        "decisionScore": 63.62,
+        "rankBeforeOptimization": 6,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "STOCK_TREND",
+          "technicalScore": 92.2,
+          "patternConfidencePct": 76.9,
+          "historicalSamples": 26,
+          "historicalWinRatePct": 81,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN",
+            "LIQUIDITY_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "UNKNOWN",
+          "spreadPct": null,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 1,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 1,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 63.62,
+      "decisionRank": 6
+    },
+    {
+      "queueRank": 7,
+      "ticker": "NEM",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "queueRole": "RESERVE",
+      "entryTier": "A",
+      "entryTierLabel": "ELITE",
+      "entryTierSizeMultiplier": 1,
+      "tournamentScore": 52.7,
+      "growthQuality": 100,
+      "rewardRisk": 2.6,
+      "minimumEntry": 132.07,
+      "maximumEntry": 134.71,
+      "stop": 109.31,
+      "target1": 166.21,
+      "target2": 191.25,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 52.7,
+      "adaptiveTournamentScore": 52.7,
+      "adaptiveSizeMultiplier": 0,
+      "adaptiveOriginalQueueRank": 7,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "setupType": "STOCK_TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 0,
+          "winRatePct": null,
+          "averageR": null
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Pattern has not yet proven positive shadow expectancy."
+      },
+      "decisionIntelligence": {
+        "decisionScore": 61.45,
+        "rankBeforeOptimization": 7,
+        "eligibleAfterOverlay": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "STOCK_TREND",
+          "technicalScore": 88.7,
+          "patternConfidencePct": 71.6,
+          "historicalSamples": 27,
+          "historicalWinRatePct": 74,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN",
+            "LIQUIDITY_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "UNKNOWN",
+          "spreadPct": null,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0.937,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.975,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 61.45,
+      "decisionRank": 7
     }
-  ]
+  ],
+  "adaptiveLearning": {
+    "enabled": true,
+    "selfLearning": true,
+    "maturity": "COLD_START",
+    "status": "WAITING_FOR_RECONCILED_REAL_FILLS",
+    "performanceState": "INSUFFICIENT_DATA",
+    "source": "docs/data/adaptive-performance.json",
+    "selfLearningStateSource": "docs/data/self-learning-state.json",
+    "currentRegime": "TRENDING_UP",
+    "resolvedRealStockTrades": 0,
+    "positiveInfluenceCap": 0,
+    "dimensionTrust": {
+      "REGIME": 0,
+      "SETUP_TYPE": 0,
+      "REGIME_SETUP": 0,
+      "RISK_CLUSTER": 0,
+      "ENTRY_SESSION": 0,
+      "SYMBOL": 0
+    },
+    "globalRiskAdjustment": {
+      "sizeCap": 1,
+      "blockNewEntries": false,
+      "reasons": []
+    },
+    "rule": "Positive learning influence grows automatically with reconciled sample depth and per-dimension evidence. Negative evidence, execution degradation, and protection failures may reduce or block risk sooner. The learner never creates eligibility, raises the maximum risk ceiling, rewrites code, changes funding rules, or bypasses stock approval."
+  },
+  "profitabilityAdmissionPolicy": {
+    "enabled": true,
+    "mode": "SHADOW_FIRST_THEN_REDUCED_LIVE_PROBATION",
+    "rule": "Unproven patterns stay shadow-only. Positive shadow evidence unlocks reduced-size live probation. Full normal eligible size requires sufficient positive Robinhood-confirmed real fills. Negative probation evidence suspends the pattern back to shadow-only. This gate may reduce or block risk but never increase the maximum risk ceiling or loosen any hard safety rule."
+  },
+  "decisionIntelligencePolicy": {
+    "enabled": true,
+    "mode": "BOUNDED_DECISION_OVERLAY",
+    "inspirations": {
+      "TradeIdeas": "real-time multi-stock ranking",
+      "TrendSpider": "setup-specific diagnostics and alerts",
+      "Tickeron": "pattern confidence with sample shrinkage",
+      "TradingView": "technical state and trigger visibility",
+      "Finviz": "fundamental and liquidity screening"
+    },
+    "portfolioObjective": "Rank already-qualified candidates by setup quality, confidence, freshness, liquidity and correlation while preserving cash and hard portfolio gates.",
+    "authority": "May rerank, reduce, expire, or block. Cannot create eligibility, raise risk, loosen a hard gate, add an asset class, or bypass per-order approval."
+  }
 }
