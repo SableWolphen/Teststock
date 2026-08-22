@@ -20,6 +20,7 @@ SIGNAL = ROOT / 'docs' / 'signal.json'
 PLAN = DATA / 'crypto-plan-100.json'
 TOURNAMENT = DATA / 'crypto-tournament.json'
 CRYPTO_ADMISSION = DATA / 'crypto-profitability-admission.json'
+PROBABILITY_POLICY = DATA / 'probability-first-policy.json'
 BASE = 'https://trading.robinhood.com'
 
 # Diagnostic-only: safe, coarse fields from the accounts this API key can see, captured so an
@@ -187,7 +188,7 @@ def upsert_watch(watch, record):
     positions.append(record)
 
 
-def crypto_admission_gate(admission):
+def crypto_admission_gate(admission, crypto_policy=None):
     # Shadow-first admission (CLAUDE.md's Evidence and admission section applies to every asset
     # class, not only stocks). scripts/apply-crypto-profitability-admission.mjs computes this from
     # forward-shadow outcomes (docs/data/crypto-shadow-trades.json, populated by
@@ -199,15 +200,27 @@ def crypto_admission_gate(admission):
     # ROBINHOOD_CRYPTO_MAX_ORDER_USD, buying power, or the pair's own limits.
     state = (admission or {}).get('state', 'SHADOW_ONLY')
     size_multiplier = Decimal(str((admission or {}).get('sizeMultiplier', 0) or 0))
+    seed = (crypto_policy or {}).get('dayTradeSeedLane', {}) or {}
+    if state == 'SHADOW_ONLY' and seed.get('enabled') is True:
+        cap = Decimal(str(seed.get('maxOrderUsd', 0) or 0))
+        if Decimal('0') < cap <= Decimal('5'):
+            return True, Decimal('1'), cap, 'SEED'
     if state in ('SHADOW_ONLY', 'LIVE_SUSPENDED') or size_multiplier <= 0:
         shadow = (admission or {}).get('shadow', {}) or {}
-        return False, Decimal('0'), (
+        return False, Decimal('0'), Decimal('0'), (
             f'Crypto profitability admission gate not met (state={state}). Requires 6 independent '
             f'positive forward-shadow outcomes for micro-size trading; currently '
             f'{shadow.get("samples", 0)} resolved shadow outcomes '
             f'(winRate={shadow.get("winRatePct")}, avgR={shadow.get("averageR")}). No new crypto buy sent.'
         )
-    return True, size_multiplier, ''
+    return True, size_multiplier, Decimal('0'), state
+
+
+def seed_stop_losses_today(watch):
+    today = dt.datetime.now(dt.timezone.utc).date()
+    return sum(1 for row in watch.get('positions', []) if row.get('admissionMode') == 'SEED'
+               and row.get('exitReason') == 'STOP' and parse_time(row.get('closedAt'))
+               and parse_time(row.get('closedAt')).date() == today)
 
 
 def poll_order(api, account_number, order_id, seconds=25):
@@ -398,6 +411,21 @@ def main():
             set_status('TARGET1_FILLED', f'{symbol} Target 1 partial exit filled and remaining position protection was re-armed.')
             return
 
+        max_holding_hours = Decimal(str(active.get('maxHoldingHours') or 0))
+        if max_holding_hours > 0 and age_minutes(active.get('armedAt')) >= float(max_holding_hours * 60):
+            if not cancel_open_sells(api, account_number, symbol):
+                set_status('BLOCKED_OPEN_SELL_CANCEL', f'{symbol} reached its time exit but an existing sell order could not be cleared safely.')
+                return
+            sell = api.place(account_number, 'sell', 'market', symbol, {'asset_quantity': decstr(floor_increment(qty, pair.get('asset_increment') or '0.00000001'))})
+            result = poll_order(api, account_number, sell['id'], 25)
+            if result.get('state') == 'filled':
+                upsert_watch(watch, {**active, 'status': 'CLOSED', 'closedAt': now_iso(), 'exitReason': 'TIME_EXIT'})
+                write_json(WATCH, watch)
+                set_status('TIME_EXIT_FILLED', f'{symbol} day-trade holding window expired and the exit filled.')
+            else:
+                set_status('TIME_EXIT_PENDING', f'{symbol} day-trade time exit was submitted but not yet confirmed filled.')
+            return
+
         if stop > 0:
             ensure_stop(api, account_number, symbol, qty, stop, pair)
         set_status('HOLD', f'{symbol} remains between its saved stop and targets; broker stop protection was checked.')
@@ -414,9 +442,16 @@ def main():
         return
 
     admission = read_json(CRYPTO_ADMISSION, {})
-    admission_ok, size_multiplier, admission_reason = crypto_admission_gate(admission)
+    probability_policy = read_json(PROBABILITY_POLICY, {})
+    crypto_policy = probability_policy.get('crypto', {}) or {}
+    admission_ok, size_multiplier, seed_cap, admission_reason = crypto_admission_gate(admission, crypto_policy)
     if not admission_ok:
         set_status('BLOCKED_INSUFFICIENT_CRYPTO_EVIDENCE', admission_reason)
+        return
+    seed_mode = admission_reason == 'SEED'
+    seed_policy = crypto_policy.get('dayTradeSeedLane', {}) or {}
+    if seed_mode and seed_stop_losses_today(watch) >= int(seed_policy.get('maxStopLossesPerUtcDay', 2)):
+        set_status('BLOCKED_SEED_DAILY_LOSS_PAUSE', 'Crypto seed trading paused after the maximum stop losses for the current UTC day.')
         return
 
     allocations = plan.get('allocations') or []
@@ -481,6 +516,8 @@ def main():
     # Admission size_multiplier (MICRO_PROBATION=0.25, PROBATION=0.5, LIVE_ADMITTED=1) can only
     # shrink the effective ceiling below the already-declared ROBINHOOD_CRYPTO_MAX_ORDER_USD secret.
     effective_max_order_usd = max_order_usd * size_multiplier
+    if seed_mode:
+        effective_max_order_usd = min(effective_max_order_usd, seed_cap)
     amount = min(desired, effective_max_order_usd, buying_power * Decimal('0.90'))
     min_amount = Decimal(str(pair.get('min_order_amount') or '1'))
     if amount < min_amount or amount <= 0:
@@ -525,7 +562,7 @@ def main():
 
     fill_price = Decimal(str(result.get('average_price') or reference_entry))
     record = {
-        'id': f'CRYPTO:{symbol}',
+        'id': f'CRYPTO:{symbol}:{int(time.time())}',
         'assetClass': 'CRYPTO',
         'ticker': symbol,
         'status': 'ACTIVE',
@@ -540,13 +577,15 @@ def main():
         'signalGeneratedAt': plan.get('generatedAt') or plan.get('asOf'),
         'armedAt': now_iso(),
         'brokerProtection': 'ROBINHOOD_CRYPTO_API_STOP_LOSS_GTC',
+        'admissionMode': 'SEED' if seed_mode else admission.get('state'),
+        'maxHoldingHours': int(seed_policy.get('maxHoldingHours', 8)) if seed_mode else None,
     }
     upsert_watch(watch, record)
     write_json(WATCH, watch)
     set_status(
         'BUY_FILLED_AND_PROTECTED',
         f'{symbol} buy filled through the official Robinhood Crypto API and a broker-resident stop was armed.',
-        candidate=symbol, grade=grade, admissionState=admission.get('state'), sizeMultiplier=str(size_multiplier),
+        candidate=symbol, grade=grade, admissionState=('SEED' if seed_mode else admission.get('state')), sizeMultiplier=str(size_multiplier),
     )
 
 
