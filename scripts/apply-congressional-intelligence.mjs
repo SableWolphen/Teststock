@@ -1,0 +1,18 @@
+import fs from 'node:fs/promises';
+const read=async f=>JSON.parse(await fs.readFile(f,'utf8'));
+const write=(f,x)=>fs.writeFile(f,JSON.stringify(x,null,2));
+const intel=await read('docs/data/congressional-intelligence.json');
+const tournament=await read('docs/data/stock-tournament.json');
+const signal=await read('docs/signal.json');
+const map=new Map((intel.tickerSignals||[]).map(x=>[x.ticker,x]));
+const enrich=x=>{const t=x.ticker||x.symbol,s=map.get(t)||null;return {...x,congressionalIntelligence:{mode:intel.mode,matched:Boolean(s),signal:s,rankingContribution:0,liveInfluenceAllowed:false,explanation:s?`Delayed disclosure activity found for ${s.distinctPoliticians} politician(s); retained as shadow evidence only.`:'No recent matched disclosure in the current public-source cache.',hardGatesRemainAuthoritative:true}}};
+tournament.liveQueue=(tournament.liveQueue||[]).map(enrich);
+tournament.researchFinalists=(tournament.researchFinalists||[]).map(enrich);
+if(tournament.researchChampion)tournament.researchChampion=enrich(tournament.researchChampion);
+if(tournament.liveBuyChampion)tournament.liveBuyChampion=enrich(tournament.liveBuyChampion);
+tournament.liveFallbacks=(tournament.liveFallbacks||[]).map(enrich);
+tournament.congressionalIntelligencePolicy={mode:intel.mode,admission:intel.admission,authority:intel.authority,deduplication:intel.deduplication,decay:intel.decay,summary:intel.summary};
+signal.congressionalIntelligence={policy:tournament.congressionalIntelligencePolicy,topMatchedCandidates:[...tournament.liveQueue,...tournament.researchFinalists].filter(x=>x.congressionalIntelligence?.matched).slice(0,10).map(x=>({ticker:x.ticker||x.symbol,...x.congressionalIntelligence.signal}))};
+signal.generatorIntegrity={...(signal.generatorIntegrity||{}),traceableFeatures:{...(signal.generatorIntegrity?.traceableFeatures||{}),congressionalDisclosureShadowOverlay:true,crossSourceDisclosureDeduplication:true,disclosureDelayDecay:true}};
+await Promise.all([write('docs/data/stock-tournament.json',tournament),write('docs/signal.json',signal),write('docs/data/claude-signal.json',signal)]);
+console.log(`Congressional overlay attached to ${tournament.liveQueue.length} live-queue and ${tournament.researchFinalists.length} research rows; live influence=off`);

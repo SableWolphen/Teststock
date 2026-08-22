@@ -281,6 +281,10 @@
     "FRACTIONAL SYNTHETIC PROTECTION: a new fractional stock entry is permitted only if active regular-session monitoring can be verified at intervals of 5 minutes or less and planned stop risk is capped at 0.75% of live equity. When the saved invalidation is observed as breached, submit the supported fractional market sell immediately when permitted and verify the result.",
     "WHOLE/HYBRID PROTECTION: use a verified broker-resident stop for whole-share quantity when supported; for mixed quantities, reconcile the whole-share broker stop with the synthetic fractional remainder so combined sell orders can never exceed the live position.",
     "SYNTHETIC STOP HONESTY: an agent-managed fractional stop is not persistent broker protection and cannot guarantee the planned exit. If monitoring becomes unavailable, do not add fractional risk and do not keep a fractional runner unattended.",
+    "TOURNAMENT AUTHORITY: do not invent a symbol outside the current Teststock stock or crypto tournament qualified set. Robinhood live checks may reject a candidate but may not substitute an unranked idea.",
+    "REGIME-SPECIFIC VALIDATION: do not freeze all stock trading merely because the aggregate entry-gate validation status is RED_FLAG. The current setup may proceed only when its runtime regime policy explicitly allows new stocks.",
+    "MULTI-STOCK PORTFOLIO: a tournament winner has first priority, not exclusivity. Continue scanning/evaluating other independently qualified stocks while positions are open, subject to all portfolio limits. Never force the portfolio to its maximum.",
+    "STOCK APPROVAL: Claude must obtain separate approval for the exact ticker, amount, entry, stop and targets of every new stock order. Risk-reducing exits may remain automatic when verified.",
     "LIVE ASSET SCOPE: only STOCK and CRYPTO are eligible. Options and futures are disabled.",
     "TOURNAMENT AUTHORITY: do not invent a symbol outside the current Teststock stock or crypto tournament qualified set. Robinhood live checks may reject a candidate but may not substitute an unranked idea.",
     "REGIME-SPECIFIC VALIDATION: do not freeze all stock trading merely because the aggregate entry-gate validation status is RED_FLAG. The current setup may proceed only when its runtime regime policy explicitly allows new stocks.",
@@ -2066,7 +2070,10 @@
       "regimeSpecificStockValidation": true,
       "selectiveIntradayStockMode": true,
       "multiStockConcurrentPortfolio": true,
-      "perOrderStockApproval": true
+      "perOrderStockApproval": true,
+      "congressionalDisclosureShadowOverlay": true,
+      "crossSourceDisclosureDeduplication": true,
+      "disclosureDelayDecay": true
     },
     "evidence": {
       "entryGateReport": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
@@ -2977,5 +2984,98 @@
     "perOrderApprovalRequired": true,
     "overnightRequiresExplicitCurrentPlan": true,
     "instructions": "Keep scanning during market hours even when one or more Teststock stocks are already open. A global validation RED_FLAG is diagnostic; block only the current regime when its runtime policy says allowNewStocks=false. Each new candidate must independently pass every Teststock and Robinhood gate and receive its own approval. Recompute remaining cash, portfolio stop risk, deployed capital, correlation, frequency and position capacity after every fill. Maximum positions are a ceiling, never a target. No strategy guarantees profit."
+  },
+  "congressionalIntelligence": {
+    "policy": {
+      "mode": "SHADOW_DIAGNOSTIC_ONLY",
+      "admission": {
+        "state": "SHADOW",
+        "minimumResolvedShadowSignals": 30,
+        "minimumForwardExpectancyR": 0.15,
+        "minimumRegimeSamples": 12,
+        "liveInfluenceAllowed": false,
+        "reason": "Forward profitability has not been independently established inside Teststock."
+      },
+      "authority": "Congressional disclosures are delayed research context. They cannot create live eligibility, increase size or risk, loosen a gate, or bypass per-order stock approval.",
+      "deduplication": {
+        "key": "politician+ticker+transactionDate+side+amountRange",
+        "crossSourceRule": "Agreement raises data confidence; it never counts as another politician or another trade."
+      },
+      "decay": {
+        "basis": "reported-date when available; transaction-date fallback",
+        "halfLifeDays": 30,
+        "maxAgeDays": 180,
+        "warning": "Federal disclosures can arrive long after the transaction. This is not real-time order flow."
+      },
+      "summary": {
+        "uniqueRecords": 1899,
+        "tickers": 267,
+        "latestReportedDate": "2026-08-20",
+        "automatedProvidersOk": 2,
+        "cachePreserved": false
+      }
+    },
+    "topMatchedCandidates": [
+      {
+        "ticker": "FCFS",
+        "netActivityScore": 0.2,
+        "buyWeight": 0.02,
+        "sellWeight": 0,
+        "distinctPoliticians": 1,
+        "bipartisan": false,
+        "sourceCount": 1,
+        "recordCount": 1,
+        "latestReportedDate": "2026-03-02",
+        "confidence": 43
+      },
+      {
+        "ticker": "MU",
+        "netActivityScore": 4.5,
+        "buyWeight": 0.377,
+        "sellWeight": 0,
+        "distinctPoliticians": 2,
+        "bipartisan": false,
+        "sourceCount": 1,
+        "recordCount": 2,
+        "latestReportedDate": "2026-07-08",
+        "confidence": 46
+      },
+      {
+        "ticker": "LLY",
+        "netActivityScore": -12.8,
+        "buyWeight": 0,
+        "sellWeight": 1.07,
+        "distinctPoliticians": 3,
+        "bipartisan": true,
+        "sourceCount": 2,
+        "recordCount": 3,
+        "latestReportedDate": "2026-08-05",
+        "confidence": 64
+      },
+      {
+        "ticker": "FCFS",
+        "netActivityScore": 0.2,
+        "buyWeight": 0.02,
+        "sellWeight": 0,
+        "distinctPoliticians": 1,
+        "bipartisan": false,
+        "sourceCount": 1,
+        "recordCount": 1,
+        "latestReportedDate": "2026-03-02",
+        "confidence": 43
+      },
+      {
+        "ticker": "MU",
+        "netActivityScore": 4.5,
+        "buyWeight": 0.377,
+        "sellWeight": 0,
+        "distinctPoliticians": 2,
+        "bipartisan": false,
+        "sourceCount": 1,
+        "recordCount": 2,
+        "latestReportedDate": "2026-07-08",
+        "confidence": 46
+      }
+    ]
   }
 }
