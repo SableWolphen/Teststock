@@ -1,0 +1,107 @@
+name: Fast Teststock opportunity refresh
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Lightweight refresh halfway between the heavier 10-minute full-universe scans.
+    # Together with static-scan, this gives the active stock session a roughly 5-minute
+    # opportunity refresh cadence without rerunning the 20k-symbol/SEC/correlation work.
+    - cron: '8,18,28,38,48,58 * * * *'
+
+permissions:
+  contents: write
+
+# Share the full-scan concurrency lane so fast and heavy research never publish over each other.
+concurrency:
+  group: static-scan
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Decide whether stocks are active
+        id: market_window
+        shell: bash
+        run: |
+          dow=$(date -u +%u)
+          hour=$(date -u +%H)
+          if [ "$dow" -ge 1 ] && [ "$dow" -le 5 ] && [ "$hour" -ge 13 ] && [ "$hour" -le 21 ]; then
+            echo "stocks=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "stocks=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Refresh baseline stock observations
+        if: ${{ steps.market_window.outputs.stocks == 'true' }}
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+        run: node scripts/generate-static-picks.mjs
+
+      - name: Re-rank cost-adjusted stock opportunities
+        if: ${{ steps.market_window.outputs.stocks == 'true' }}
+        run: |
+          node scripts/optimize-growth-plan.mjs
+          node scripts/enforce-model-sizing-lock.mjs
+          node scripts/apply-advanced-growth-guards.mjs
+          node scripts/apply-opportunity-expansion.mjs
+
+      - name: Refresh adaptive real-fill state
+        if: ${{ steps.market_window.outputs.stocks == 'true' }}
+        run: node scripts/build-adaptive-performance.mjs
+
+      - name: Rebuild and validate fresh stock signal using last deep-research artifacts
+        if: ${{ steps.market_window.outputs.stocks == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f docs/signal.json ]; then cp docs/signal.json /tmp/teststock-last-good-signal.json; fi
+          if node scripts/apply-probability-first-guards.mjs && \
+             node scripts/build-agent-signal.mjs && \
+             node scripts/augment-signal-safety.mjs && \
+             node scripts/apply-fractional-protection-policy.mjs && \
+             node scripts/apply-exit-policy-validation.mjs && \
+             node scripts/apply-strategy-intelligence.mjs && \
+             node scripts/apply-operational-safety.mjs && \
+             node scripts/apply-stock-knockout-tournament.mjs && \
+             node scripts/apply-adaptive-tournament-ranking.mjs && \
+             node scripts/apply-crypto-knockout-tournament.mjs && \
+             node scripts/apply-two-tournament-architecture.mjs && \
+             node scripts/validate-signal.mjs docs/signal.json && \
+             node scripts/validate-stock-knockout.mjs && \
+             node scripts/validate-two-tournament-architecture.mjs; then
+            echo "Fast opportunity refresh passed validation"
+          else
+            echo "Fast refresh failed. Refusing to publish mixed-generation data." >&2
+            if [ -f /tmp/teststock-last-good-signal.json ]; then cp /tmp/teststock-last-good-signal.json docs/signal.json; fi
+            exit 1
+          fi
+
+      - name: Publish refreshed opportunity state
+        if: ${{ steps.market_window.outputs.stocks == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data docs/signal.json
+          if git diff --cached --quiet; then
+            echo "No fast-refresh changes to publish"
+          else
+            git commit -m "Fast refresh Teststock opportunities"
+            git pull --rebase origin main
+            git push
+          fi
