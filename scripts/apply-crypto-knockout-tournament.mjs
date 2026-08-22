@@ -7,7 +7,7 @@ const read=async f=>JSON.parse(await fs.readFile(f,'utf8'));
 const signal=await read(SIGNAL);
 const universe=await read(UNIVERSE);
 const ranked=Array.isArray(universe.ranked)?universe.ranked:[];
-const candidates=ranked.map((x,i)=>({rank:i+1,ticker:x.symbol,grade:x.setupGrade||'NO_TRADE',growthQuality:x.growthQuality??null,score:x.score??null,historicalWinRate:x.validation?.winRate??null,historicalSamples:x.validation?.samples??null,rewardRisk:x.rewardRisk2??x.rewardRisk1??null,confirm4h:Boolean(x.confirm4h),btcTrendSupport:x.btcTrendSupport??null,dollarVolume20d:x.dollarVolume20d??null,entry:x.entry??null,stop:x.stop??null,target1:x.target1??null,target2:x.target2??null}));
+const candidates=ranked.map((x,i)=>({rank:i+1,ticker:x.symbol,grade:x.setupGrade||'NO_TRADE',growthQuality:x.growthQuality??null,score:x.score??null,historicalWinRate:x.validation?.winRate??null,historicalSamples:x.validation?.samples??null,rewardRisk:x.rewardRisk2??x.rewardRisk1??null,confirm4h:Boolean(x.confirm4h),btcTrendSupport:x.btcTrendSupport??null,dollarVolume20d:x.dollarVolume20d??null,dollarVolume24hReal:x.dollarVolume24hReal??null,entry:x.entry??null,stop:x.stop??null,target1:x.target1??null,target2:x.target2??null}));
 const qualified=candidates.filter(x=>x.grade==='A+'||x.grade==='A');
 const champion=qualified[0]||null;
 const brokerExecution={
