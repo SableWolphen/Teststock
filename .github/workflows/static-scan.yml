@@ -18,6 +18,8 @@ on:
       - 'scripts/optimize-growth-plan.mjs'
       - 'scripts/enforce-model-sizing-lock.mjs'
       - 'scripts/generate-crypto-picks.mjs'
+      - 'scripts/update-crypto-shadow-ledger.mjs'
+      - 'scripts/apply-crypto-profitability-admission.mjs'
       - 'scripts/apply-crypto-knockout-tournament.mjs'
       - 'scripts/build-agent-signal.mjs'
       - 'scripts/validate-entry-gates.mjs'
@@ -55,6 +57,7 @@ on:
       - 'scripts/validate-signal.mjs'
       - 'scripts/validate-execution-dispatch.mjs'
       - 'docs/data/real-trade-journal.json'
+      - 'docs/data/crypto-real-trade-journal.json'
       - 'docs/real-fill-learning-policy.txt'
       - 'docs/teststock-real-trade-journal-template.json'
       - 'docs/live-trade-state-template.json'
@@ -199,6 +202,14 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/generate-crypto-picks.mjs
+
+      - name: Update crypto forward-shadow ledger and profitability admission
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+        run: |
+          node scripts/update-crypto-shadow-ledger.mjs
+          node scripts/apply-crypto-profitability-admission.mjs
 
       - name: Apply probability-first stock and crypto overlay
         run: node scripts/apply-probability-first-guards.mjs
