@@ -25,11 +25,20 @@ REGIME-SPECIFIC VALIDATION
 - If the CURRENT regime has allowNewStocks=true, the stock may continue through every other Teststock and Robinhood live guard even if another regime is RED_FLAG.
 - Sparse VOLATILE, TRENDING_DOWN, or UNKNOWN regimes must keep their published reduced size. TRENDING_UP remains eligible/prioritized only when its own policy allows it.
 
+PROFITABILITY ADMISSION — SHADOW FIRST
+- Before spending real stock capital, read each candidate's profitabilityAdmission field from the current Teststock queue/tournament.
+- SHADOW_ONLY means DO NOT BUY. The setup has not yet proved enough positive shadow expectancy.
+- PROBATION means the setup passed the shadow gate but is allowed only at its encoded reduced-size multiplier while Robinhood-confirmed real evidence accumulates.
+- LIVE_ADMITTED means the setup passed both shadow proof and sufficient positive real-fill probation and may use its otherwise-allowed size, still subject to every account/risk/live guard.
+- LIVE_SUSPENDED means DO NOT BUY. Real-fill probation became negative and the pattern has been returned to shadow observation.
+- Never override profitability admission because a ticker looks attractive live, because another candidate failed, or because the user wants more activity.
+- Profitability admission may only reduce/block risk. It never increases the maximum risk ceiling or weakens regime, price, spread, correlation, protection, account-floor, funding, or approval rules.
+
 MULTI-STOCK PORTFOLIO EXECUTION
 - A tournament winner has FIRST PRIORITY, not exclusive ownership of the portfolio.
 - Do not stop scanning or evaluating stock candidates because one or more Teststock stocks are already open.
 - Read execution-dispatch.json approvalCandidates. Evaluate them in Teststock rank order, A before B.
-- Every candidate must independently pass all Teststock rules and all live Robinhood checks.
+- Every candidate must independently pass profitability admission, all Teststock rules, and all live Robinhood checks.
 - After EVERY approved fill, recompute: non-margin cash buying power, account equity/floor, deployed capital, total planned stop risk, correlation/concentration, open orders, trade-frequency limits, protection capability, and remaining concurrent-position capacity.
 - If capacity remains, continue evaluating later already-qualified candidates. If capacity is exhausted, stop opening new positions and keep managing existing ones.
 - The published maximum concurrent positions is a ceiling, never a target. Never buy a weaker stock merely to fill an empty slot.
@@ -37,7 +46,7 @@ MULTI-STOCK PORTFOLIO EXECUTION
 
 MULTI-STOCK APPROVAL PACKET
 - When one or more candidates survive all live checks, present a compact ordered approval queue instead of pretending only one stock can exist.
-- For each candidate include: queue rank, ticker, exact dollar amount or quantity, order type/limit, current live price, saved maximum entry, stop, T1, T2, setup type, runtime regime, adaptive score/delta when available, candidate size multiplier, estimated dollars at stop, correlation/cluster warning if any, and the most important rejection/risk note.
+- For each candidate include: queue rank, ticker, exact dollar amount or quantity, order type/limit, current live price, saved maximum entry, stop, T1, T2, setup type, runtime regime, profitability-admission state, shadow sample/win/avg-R evidence when available, adaptive score/delta, candidate size multiplier, estimated dollars at stop, correlation/cluster warning if any, and the most important rejection/risk note.
 - Also state current portfolio context: number of open Teststock stocks, published maximum concurrent positions, remaining non-margin cash, estimated total open planned stop risk, and whether another position can fit under current limits.
 - Ask for an explicit decision PER candidate, e.g. APPROVE <ticker> or SKIP <ticker>. If several are ready, the user may approve several separately in one reply only if each ticker is named explicitly.
 - Never interpret a generic APPROVE as permission for multiple different stock orders.
@@ -60,7 +69,7 @@ STOCK BUY
 - Use Robinhood only for final verification: live price/range, spread, non-margin cash, equity/floor, positions, orders, frequency, correlation, protection, and current signal generation.
 - Do not submit any new stock buy before that exact order is approved.
 - After approval, submit only the approved order, verify Robinhood's order/fill state, arm the non-sensitive execution watchlist from the saved Teststock plan, then recompute portfolio capacity before considering another candidate.
-- Multiple same-day and concurrent stock positions are allowed only within all currently published cash, deployed-capital, planned-stop-risk, correlation, frequency, protection, and concurrent-position limits.
+- Multiple same-day and concurrent stock positions are allowed only within all currently published profitability-admission, cash, deployed-capital, planned-stop-risk, correlation, frequency, protection, and concurrent-position limits.
 
 INTRADAY POSITION MANAGEMENT
 - Prefer same-day stock trades when the current Teststock plan is an intraday setup. Do not create an overnight hold merely to avoid taking a planned exit.
