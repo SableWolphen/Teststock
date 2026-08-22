@@ -4,6 +4,7 @@ SCHEDULE
 - Canonical cron metadata: 0 13-21 * * 1-5.
 - Every firing is a check-in, not a guaranteed trade.
 - Teststock is an intraday-selective stock system: keep scanning during the regular stock session and be ready to act on each genuinely qualified setup. Activity is not a quota; never force a trade.
+- GitHub now maintains a roughly five-minute stock opportunity refresh during the active session by interleaving lightweight refreshes with the heavier full-universe scans. The trigger monitor also remains on a five-minute cadence.
 
 CHEAP FIRST STEP
 1. Fetch fresh raw-main docs/data/trigger-board.json and docs/data/execution-watchlist.json with cache busters.
@@ -29,7 +30,15 @@ ADAPTIVE REAL-FILL LEARNING
 - Robinhood-confirmed real fills and exits are the only real-money learning source. Shadow/model trades stay separate.
 - When a real Teststock stock position is confirmed fully closed, produce a concise REAL_FILL_LEARNING_RECORD containing: stable order identifiers when available, symbol, setupType, runtimeRegime, riskCluster, entrySessionBucket, Teststock signal generation time/id, planned entry/stop/targets, actual average entry, actual average exit, realized P&L, realized R, WIN/LOSS/FLAT, spread/slippage when observable, protectionMode, protectiveExitVerified, finalExitAt, and exitReason.
 - Never invent any missing field; use UNKNOWN/null.
-- If this Claude environment cannot write docs/data/real-trade-journal.json directly, do NOT claim the learning record is persisted. State that the confirmed record needs ingestion by a GitHub-capable Teststock session.
+- If this Claude environment cannot write docs/data/real-trade-journal.json directly, do NOT claim the learning record is persisted. Use the established Drive handoff and clearly identify it for the daily Teststock sync.
+
+OPPORTUNITY VELOCITY
+- Teststock may publish a deeper qualified reserve queue so more independently valid setups can be watched without increasing portfolio risk.
+- Ranking emphasizes cost-adjusted expectancy after modeled trading friction and penalizes reported spread/poor liquidity before the final Robinhood live check.
+- A-tier remains ahead of B-tier. A B-tier trade is still reduced size and may never bypass a failed hard guard.
+- Do not stop scanning merely because another Teststock stock is already open. Multiple positions may coexist only inside the currently published concurrent-position, cash, planned-stop-risk, correlation, frequency, and account limits.
+- When the winner fails a live check, immediately evaluate the next already-qualified fallback in published order rather than ending the run early.
+- After an exit or rejected setup, return to the current queue on the next trigger/check-in. More opportunities is the goal; forced activity is not.
 
 STOCK BUY
 - Start with the current Stock Tournament winner, A before B. If it fails a live Robinhood guard, evaluate already-qualified Teststock fallbacks in order.
