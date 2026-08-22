@@ -35,8 +35,8 @@ Never bypass authentication, subscriptions, provider terms, robots restrictions,
 
 - Deduplicate the same fact or disclosure across sources. Agreement increases data confidence, never the number of politicians, trades, or independent signals.
 - All new/alternative sources begin with zero live ranking contribution.
-- A setup with at least 30 historical samples, at least 65% historical wins, at least 2.5:1 reward/risk, an enabled regime and no contradictory forward evidence may enter `MICRO_PROBATION` at no more than 25% of its already-bounded normal size. Six positive shadow outcomes provide an alternate micro path. This never raises a hard limit and still requires every live gate, exact Robinhood verification, protection and per-order stock approval.
-- Twelve positive shadow outcomes are required for half-size `PROBATION`; normal eligible size still requires sufficient positive confirmed Robinhood fills.
+- Backtests and historical sample/win-rate statistics are diagnostic only. They cannot create `MICRO_PROBATION`, live eligibility, or live size. Zero or unknown forward evidence is never a pass.
+- Six actual independent positive forward-shadow outcomes are required for `MICRO_PROBATION` at no more than 25% of the already-bounded normal size. Twelve independent positive shadow outcomes are required for half-size `PROBATION`; normal eligible size still requires sufficient positive confirmed Robinhood fills. Duplicate same-day symbol/setup/regime observations count once using the most adverse result.
 - Require independent forward samples, positive cost-adjusted expectancy, regime coverage, drawdown/adverse-excursion review, and untouched holdout validation before bounded influence is considered.
 - Backtests and shadow results may rerank, reduce, expire, suspend, or block. They cannot create live eligibility, raise maximum risk, loosen a gate, or increase live size.
 - Unknown data is not a pass.
