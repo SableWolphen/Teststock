@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "sourceOfTruth": "ROBINHOOD_CRYPTO_API_CONFIRMED_FILLS",
+  "generatedAt": null,
+  "lastReconciledAt": null,
+  "trades": [],
+  "summary": {
+    "resolvedTrades": 0,
+    "wins": 0,
+    "losses": 0,
+    "winRatePct": null,
+    "averageRealizedR": null,
+    "realizedPnlDollars": 0
+  },
+  "rules": [
+    "Only Robinhood Crypto API-confirmed fills and exits may populate this ledger.",
+    "This ledger is the required evidence source for scripts/robinhood_crypto_autopilot.py's live-evidence gate, which reads docs/data/probability-first-policy.json's crypto.liveEvidenceMinimumResolvedTrades / liveEvidenceMinimumAverageR / liveEvidenceMinimumWinRatePct.",
+    "A crypto buy may execute only once resolvedTrades, averageRealizedR, and winRatePct here meet those thresholds. Zero or unknown evidence is never a pass.",
+    "Never invent missing fills, prices, quantities, order ids, slippage, or exit reasons.",
+    "This ledger currently has zero entries. No automated process populates it yet -- building a real crypto forward-evidence pipeline (mirroring scripts/update-shadow-ledger.mjs for stocks) is still outstanding. Until it exists and this ledger is genuinely populated from confirmed fills, the autopilot fails closed and sends no new crypto buy."
+  ],
+  "tradeRecordContract": {
+    "journalId": "stable unique id",
+    "assetClass": "CRYPTO",
+    "symbol": "pair, e.g. BTC-USD",
+    "setupGrade": "A | A+",
+    "teststockSignalGeneratedAt": null,
+    "entryOrderId": null,
+    "entryFilledAt": null,
+    "plannedEntry": null,
+    "actualAverageEntry": null,
+    "plannedStop": null,
+    "target1": null,
+    "target2": null,
+    "entrySpreadPctAtSubmission": null,
+    "adverseEntrySlippagePct": null,
+    "protectionMode": "BROKER",
+    "protectiveExitVerified": false,
+    "finalExitAt": null,
+    "actualAverageExit": null,
+    "adverseExitSlippagePct": null,
+    "realizedPnlDollars": null,
+    "realizedR": null,
+    "outcome": "OPEN | WIN | LOSS | FLAT | UNKNOWN",
+    "exitReason": "STOP | TARGET1 | TARGET2 | TRAILING_PROTECTION | MANUAL | OTHER | UNKNOWN",
+    "reconciledFromRobinhoodCryptoApi": false
+  }
+}

@@ -19,6 +19,8 @@ STATUS = DATA / 'crypto-api-status.json'
 SIGNAL = ROOT / 'docs' / 'signal.json'
 PLAN = DATA / 'crypto-plan-100.json'
 TOURNAMENT = DATA / 'crypto-tournament.json'
+POLICY = DATA / 'probability-first-policy.json'
+CRYPTO_EVIDENCE = DATA / 'crypto-real-trade-journal.json'
 BASE = 'https://trading.robinhood.com'
 
 
@@ -174,6 +176,33 @@ def upsert_watch(watch, record):
             positions[i] = {**row, **record}
             return
     positions.append(record)
+
+
+def crypto_evidence_gate(policy, evidence):
+    # CLAUDE.md's Evidence and admission section applies to every asset class, not only stocks:
+    # backtests/historical stats are diagnostic only, and zero or unknown forward evidence is never
+    # a pass. docs/data/probability-first-policy.json's crypto.liveEvidenceMinimumResolvedTrades /
+    # liveEvidenceMinimumAverageR / liveEvidenceMinimumWinRatePct already declare this requirement,
+    # but nothing previously enforced it before sending a live crypto buy. This closes that gap by
+    # requiring docs/data/crypto-real-trade-journal.json to actually show sufficient resolved,
+    # positive-expectancy real fills. That ledger has zero entries today, so this fails closed until
+    # a real crypto forward-evidence pipeline exists and populates it.
+    crypto_policy = (policy or {}).get('crypto', {})
+    required_trades = int(crypto_policy.get('liveEvidenceMinimumResolvedTrades', 5))
+    required_avg_r = float(crypto_policy.get('liveEvidenceMinimumAverageR', 0.1))
+    required_win_rate = float(crypto_policy.get('liveEvidenceMinimumWinRatePct', 45))
+    summary = (evidence or {}).get('summary', {}) or {}
+    resolved = summary.get('resolvedTrades') or 0
+    avg_r = summary.get('averageRealizedR')
+    win_rate = summary.get('winRatePct')
+    if resolved < required_trades or avg_r is None or avg_r < required_avg_r or win_rate is None or win_rate < required_win_rate:
+        return False, (
+            f'Crypto live-evidence gate not met: requires {required_trades} resolved real-fill trades '
+            f'with averageRealizedR>={required_avg_r} and winRatePct>={required_win_rate}; '
+            f'crypto-real-trade-journal.json currently shows {resolved} resolved '
+            f'(avgR={avg_r}, winRate={win_rate}). No new crypto buy sent.'
+        )
+    return True, ''
 
 
 def poll_order(api, account_number, order_id, seconds=25):
@@ -343,6 +372,14 @@ def main():
     if age_minutes(tournament.get('generatedAt')) > 30 or age_minutes(plan.get('generatedAt') or plan.get('asOf')) > 30:
         set_status('WAIT_FRESH_RESEARCH', 'Crypto plan is older than 30 minutes; no new buy sent.')
         return
+
+    policy = read_json(POLICY, {})
+    evidence = read_json(CRYPTO_EVIDENCE, {})
+    evidence_ok, evidence_reason = crypto_evidence_gate(policy, evidence)
+    if not evidence_ok:
+        set_status('BLOCKED_INSUFFICIENT_CRYPTO_EVIDENCE', evidence_reason)
+        return
+
     allocations = plan.get('allocations') or []
     allocations_by_symbol = {str(x.get('symbol', '')).replace('-', '/'): x for x in allocations}
     ordered = [tournament.get('qualifiedChampion'), *(tournament.get('fallbacks') or [])]
