@@ -8,6 +8,8 @@ const read=async f=>JSON.parse(await fs.readFile(f,'utf8'));
 const signal=await read(SIGNAL);
 const broad=await read(BROAD);
 const plan=await read(PLAN);
+let enriched={recommendations:[]};try{enriched=await read('docs/data/latest-500.json')}catch{}
+const enrichmentByTicker=new Map((enriched.recommendations||[]).map(x=>[x.symbol||x.ticker,x]));
 const planRows=[...(plan.qualifiedCandidateQueue||plan.allocations||[])];
 const planByTicker=new Map(planRows.map(x=>[x.symbol,x]));
 const tierFor=ticker=>planByTicker.get(ticker)?.entryTier||'A';
@@ -36,12 +38,20 @@ const researchFinalists=top.map((x,i)=>({
   historicalWinRate:x.validation?.winRate??x.historicalWinRate??null,historicalSamples:x.validation?.samples??x.historicalSamples??null,
   rewardRisk:x.rewardRisk??(num(x.entry)>num(x.stop)?Number(((num(x.target2)-num(x.entry))/(num(x.entry)-num(x.stop))).toFixed(2)):null),
   spreadPct:x.spreadPct??null,entry:x.entry??x.minimumEntry??null,stop:x.stop??null,target1:x.target1??null,target2:x.target2??null,
-  entryTier:planByTicker.get(x.symbol||x.ticker)?.entryTier||null,entryTierLabel:planByTicker.get(x.symbol||x.ticker)?.entryTierLabel||null
+  entryTier:planByTicker.get(x.symbol||x.ticker)?.entryTier||null,entryTierLabel:planByTicker.get(x.symbol||x.ticker)?.entryTierLabel||null,
+  fundamentals:enrichmentByTicker.get(x.symbol||x.ticker)?.fundamentals||null,
+  corporateActions:enrichmentByTicker.get(x.symbol||x.ticker)?.corporateActions||null,
+  recentFilings:enrichmentByTicker.get(x.symbol||x.ticker)?.recentFilings||[],
+  fundamentalEligibility:enrichmentByTicker.get(x.symbol||x.ticker)?.fundamentals?.label==='STRONG'?true:enrichmentByTicker.get(x.symbol||x.ticker)?.fundamentals?.label==='WEAK'?false:null
 })).sort((a,b)=>b.tournamentScore-a.tournamentScore||a.rank-b.rank).map((x,i)=>({...x,rank:i+1}));
 const liveQueue=queue.map((x,i)=>({
   queueRank:num(x.queueRank||x.rank||i+1),ticker:x.ticker,action:x.action||'WAIT',queueRole:x.queueRole||'PRIMARY',entryTier:x.entryTier||tierFor(x.ticker),entryTierLabel:x.entryTierLabel||tierLabel(x.ticker),entryTierSizeMultiplier:Number(x.entryTierSizeMultiplier??tierSize(x.ticker)),
   tournamentScore:score(x),growthQuality:x.growthQuality??null,rewardRisk:x.rewardRisk??null,
-  minimumEntry:x.minimumEntry??null,maximumEntry:x.maximumEntry??null,stop:x.stop??null,target1:x.target1??null,target2:x.target2??null
+  minimumEntry:x.minimumEntry??null,maximumEntry:x.maximumEntry??null,stop:x.stop??null,target1:x.target1??null,target2:x.target2??null,
+  fundamentals:enrichmentByTicker.get(x.ticker)?.fundamentals||null,
+  corporateActions:enrichmentByTicker.get(x.ticker)?.corporateActions||null,
+  recentFilings:enrichmentByTicker.get(x.ticker)?.recentFilings||[],
+  fundamentalEligibility:enrichmentByTicker.get(x.ticker)?.fundamentals?.label==='STRONG'?true:enrichmentByTicker.get(x.ticker)?.fundamentals?.label==='WEAK'?false:null
 })).sort((a,b)=>(a.entryTier==='A'?0:1)-(b.entryTier==='A'?0:1)||a.queueRank-b.queueRank||b.tournamentScore-a.tournamentScore);
 const buyable=liveQueue.filter(x=>x.action==='AUTO_BUY_ELIGIBLE');
 const champion=buyable[0]||null;
