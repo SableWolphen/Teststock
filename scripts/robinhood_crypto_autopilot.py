@@ -165,7 +165,7 @@ def active_crypto_watch(watch):
 def matching_active_accounts(accounts, account_number=''):
     active = [a for a in accounts if str(a.get('status', '')).lower() == 'active']
     if account_number:
-        return [a for a in active if str(a.get('account_number') or '') == account_number]
+        return [a for a in active if str(a.get('account_number') or '').strip() == account_number.strip()]
     return active
 
 
@@ -251,7 +251,7 @@ def main():
     enabled = os.getenv('ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED', '').lower() == 'true'
     api_key = os.getenv('ROBINHOOD_CRYPTO_API_KEY', '')
     private_key = os.getenv('ROBINHOOD_CRYPTO_PRIVATE_KEY_B64', '')
-    account_selector = os.getenv('ROBINHOOD_CRYPTO_ACCOUNT_NUMBER', '') or os.getenv('ROBINHOOD_CRYPTO_AGENTIC_ACCOUNT_NUMBER', '')
+    account_selector = (os.getenv('ROBINHOOD_CRYPTO_ACCOUNT_NUMBER', '') or os.getenv('ROBINHOOD_CRYPTO_AGENTIC_ACCOUNT_NUMBER', '')).strip()
     max_order_usd = Decimal(os.getenv('ROBINHOOD_CRYPTO_MAX_ORDER_USD', '25'))
 
     if not enabled:
@@ -268,9 +268,19 @@ def main():
     api = RobinhoodCryptoV2(api_key, private_key)
 
     accounts = api.accounts()
+    all_active_count = len(matching_active_accounts(accounts))
     matching_accounts = matching_active_accounts(accounts, account_selector)
     if len(matching_accounts) != 1:
-        set_status('BLOCKED_CRYPTO_ACCOUNT_NOT_UNIQUE', 'Robinhood did not return exactly one active crypto account. Add the optional ROBINHOOD_CRYPTO_ACCOUNT_NUMBER selector only when more than one active crypto account exists. No order sent.')
+        # Diagnostic counts only -- never the account number itself -- so this stays safe to
+        # publish in docs/data/crypto-api-status.json on a public repo.
+        set_status(
+            'BLOCKED_CRYPTO_ACCOUNT_NOT_UNIQUE',
+            'Robinhood did not return exactly one active crypto account. Add the optional '
+            'ROBINHOOD_CRYPTO_ACCOUNT_NUMBER selector only when more than one active crypto '
+            f'account exists. No order sent. (active_accounts_total={all_active_count}, '
+            f'account_selector_secret_present={bool(account_selector)}, '
+            f'accounts_matching_selector={len(matching_accounts)})'
+        )
         return
     account = matching_accounts[0]
     account_number = str(account.get('account_number') or '')
