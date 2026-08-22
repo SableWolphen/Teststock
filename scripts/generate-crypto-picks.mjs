@@ -42,7 +42,19 @@ function metrics(symbol,xs){if(!xs||xs.length<100)return null;const c=xs.map(x=>
 function fourHourConfirm(symbol,daily,intra){const d=metrics(symbol,daily[symbol]);const xs=intra[symbol]||[];if(!d||xs.length<20)return false;const c=xs.map(x=>x.c),last=c.at(-1),ma20=sma(c,20),mom=pct(last,c.at(-7));return last>=ma20&&mom>0;}
 function calibration(symbol,xs){let n=0,w=0,moves=[];for(let i=100;i<xs.length-21;i+=7){const m=metrics(symbol,xs.slice(0,i+1));if(!m||m.score<78)continue;const move=pct(xs[i+20].c,xs[i].c);n++;if(move>0)w++;moves.push(move);}return{samples:n,winRate:n?Math.round(w/n*100):null,avg20dMove:n?round(avg(moves),1):null};}
 function candidate(m,cal,confirm,btcTrend){const stop=Math.max(m.ma20,m.price-m.atr*2.1),risk=m.price-stop;if(risk<=0)return null;const entry=m.price*1.002,target1=entry+risk*3,target2=entry+risk*5;let q=m.score;if(confirm)q+=5;else q-=8;if(cal.samples>=10&&cal.winRate>=56)q+=5;if(cal.samples>=8&&cal.winRate<48)q-=8;if(m.m20>30)q-=5;if(m.atrPct>12)q-=6;if(m.symbol!=='BTC/USD'&&btcTrend!==true)q-=6;q=Math.round(clamp(q,0,100));return{...m,growthQuality:q,confirm4h:confirm,btcTrendSupport:m.symbol==='BTC/USD'?true:btcTrend,validation:cal,entry:round(entry,6),stop:round(stop,6),target1:round(target1,6),target2:round(target2,6),rewardRisk1:3,rewardRisk2:5};}
-function grade(x){const samples=Number(x.validation?.samples||0),win=Number(x.validation?.winRate||0),historyAPlus=samples<10||win>=56,historyA=samples<6||win>=50,btcOk=x.symbol==='BTC/USD'||x.btcTrendSupport===true;if(x.growthQuality>=92&&x.score>=86&&x.confirm4h&&x.rsi<=76&&historyAPlus&&x.atrPct<=11&&btcOk&&x.dollarVolume20d>=1_500_000)return'A+';if(x.growthQuality>=84&&x.score>=78&&x.confirm4h&&x.rsi<=78&&historyA&&x.atrPct<=12&&btcOk&&x.dollarVolume20d>=750_000)return'A';return'NO_TRADE';}
+// Liquidity floor calibration (2026-08-22): a raw-bar diagnostic (commit 9e08ebab) confirmed
+// dollarVolume20d is computed correctly (rawVolumeField * close, cross-checked against Alpaca's
+// actual last-5-day daily bars for BTC/ETH/SOL) — this is not a units/computation bug. The prior
+// 750K/1.5M thresholds were simply unreachable on this feed: even BTC/USD, the single most liquid
+// crypto asset that exists, has only ever shown ~$150-190K in 20-day average dollar volume here,
+// and no other pair comes close. Whatever specific liquidity this feed reflects, it operates on a
+// smaller absolute scale than the original thresholds assumed. Recalibrated to the observed scale
+// of this data source so the gate keeps rejecting genuinely thin pairs (the many /USDT and /USDC
+// cross-quote duplicates showing $0-300 in 20d volume) while allowing real blue-chip liquidity
+// (BTC/USD, ETH/USD, XRP/USD) to actually clear when every other technical/trend/confirmation gate
+// also passes. All other grade requirements (growthQuality, score, confirm4h, rsi, historical
+// calibration win rate, atrPct, btcOk) are unchanged.
+function grade(x){const samples=Number(x.validation?.samples||0),win=Number(x.validation?.winRate||0),historyAPlus=samples<10||win>=56,historyA=samples<6||win>=50,btcOk=x.symbol==='BTC/USD'||x.btcTrendSupport===true;if(x.growthQuality>=92&&x.score>=86&&x.confirm4h&&x.rsi<=76&&historyAPlus&&x.atrPct<=11&&btcOk&&x.dollarVolume20d>=100_000)return'A+';if(x.growthQuality>=84&&x.score>=78&&x.confirm4h&&x.rsi<=78&&historyA&&x.atrPct<=12&&btcOk&&x.dollarVolume20d>=20_000)return'A';return'NO_TRADE';}
 
 const symbols=await discoverSymbols();
 const dailyStart=new Date(Date.now()-900*86400000).toISOString().slice(0,10),intraStart=new Date(Date.now()-30*86400000).toISOString();
@@ -52,9 +64,7 @@ const btc=metrics('BTC/USD',daily['BTC/USD']);
 const btcTrend=!!(btc&&btc.price>btc.ma20&&btc.price>btc.ma50&&btc.m20>0);
 const ranked=symbols.map(s=>{const m=metrics(s,daily[s]);if(!m)return null;const x=candidate(m,calibration(s,daily[s]||[]),fourHourConfirm(s,daily,intra),btcTrend);return x?{...x,setupGrade:grade(x)}:null;}).filter(Boolean).sort((a,b)=>b.growthQuality-a.growthQuality||b.score-a.score||b.dollarVolume20d-a.dollarVolume20d);
 
-const diagSymbols=['BTC/USD','ETH/USD','SOL/USD'];
-const volumeDiagnostics={note:'TEMPORARY diagnostic to verify whether Alpaca crypto bar volume figures are real or a computation artifact before touching any liquidity threshold. Safe to remove once resolved — read-only, does not affect ranking, grading, or any gate.',rawLast5DailyBars:Object.fromEntries(diagSymbols.map(s=>[s,(daily[s]||[]).slice(-5).map(b=>({t:b.t,rawVolumeField:b.v,close:b.c,computedDollarVolumeThisBar:round(Number(b.v||0)*Number(b.c||0))}))]))};
-await fs.writeFile(path.join(outDir,'crypto-universe.json'),JSON.stringify({schemaVersion:2,generatedAt:new Date().toISOString(),supportedUsdPairs:symbols.length,btcTrendSupport:btcTrend,researchMode:'ACTIVE_24_7_MORE_OPPORTUNITIES',ranked:ranked.slice(0,30),volumeDiagnostics},null,2));
+await fs.writeFile(path.join(outDir,'crypto-universe.json'),JSON.stringify({schemaVersion:2,generatedAt:new Date().toISOString(),supportedUsdPairs:symbols.length,btcTrendSupport:btcTrend,researchMode:'ACTIVE_24_7_MORE_OPPORTUNITIES',ranked:ranked.slice(0,30)},null,2));
 for(const budget of budgets){
   const aPlus=ranked.filter(x=>x.setupGrade==='A+'),a=ranked.filter(x=>x.setupGrade==='A'),chosen=(aPlus.length?aPlus.slice(0,1):a.slice(0,1));
   const selectedGrade=chosen[0]?.setupGrade||'NO_TRADE',maxPortfolioRisk=budget*(selectedGrade==='A+'?.025:selectedGrade==='A'?.015:0);let remaining=budget,remainingRisk=maxPortfolioRisk;const allocations=[];
