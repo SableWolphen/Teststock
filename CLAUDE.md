@@ -17,7 +17,8 @@ Teststock is a continuously refreshed trading research, ranking, monitoring, and
 
 ## Source roles
 
-- Alpaca: primary stock/crypto universe, bars, quotes, liquidity, historical research, corporate actions, and non-LLM trigger monitoring.
+- Alpaca: primary stock universe, bars, quotes, liquidity, historical research, corporate actions, and non-LLM trigger monitoring (stocks). Also used for the crypto side of the non-LLM live-position trigger monitor's latest-trade price checks.
+- Crypto.com public API: primary crypto universe discovery, daily/4-hour bars, historical calibration, and 24-hour liquidity for crypto research. Alpaca's crypto bars/volume feed was found unreliable (roughly 1,000x-5,000x volume error; unreliable native 4-hour candles) and is no longer used for crypto research data.
 - Robinhood stocks: authoritative runtime source for real cash, positions, orders, fills, and approved stock execution.
 - Robinhood Crypto API: authoritative crypto account, order, fill, and protection lane.
 - SEC EDGAR: official stock fundamentals and material filings.
