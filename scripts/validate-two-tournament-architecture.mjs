@@ -11,15 +11,20 @@ if(a?.tournaments?.stock?.validationScope!=='REGIME_SPECIFIC')fail.push('stock r
 if(a?.tournaments?.crypto?.enabled!==true)fail.push('crypto tournament');
 if(a?.crossAssetSelection!==false)fail.push('cross-asset selection');
 if(JSON.stringify(a?.liveDecisionPaths)!==JSON.stringify(['STOCK_TOURNAMENT','CRYPTO_TOURNAMENT']))fail.push('live decision paths');
-if(!Array.isArray(a?.disabledAssetClasses)||!a.disabledAssetClasses.includes('OPTION'))fail.push('option disabled');
-if(s.stockPlan?.eliteOption!=null)fail.push('live elite option still present');
-for(const t of s.capitalLadder?.tiers||[]){if(t.newOptionsAllowed!==false||Number(t.maxOptionRiskPct||0)!==0)fail.push('capital tier option risk');}
-if(Number(s.tradeFrequencyGuard?.maxNewOptionsPerDay||0)!==0)fail.push('option frequency');
-if(s.executionQuality?.maxOptionSpreadPct!=null)fail.push('option execution quality still active');
-if(s.probabilityFirstPolicy?.options?.enabled!==false||s.probabilityFirstPolicy?.options?.liveDecisionPath!==false)fail.push('probability option path enabled');
+if(!Array.isArray(a?.disabledAssetClasses)||!a.disabledAssetClasses.includes('FUTURES')||a.disabledAssetClasses.includes('OPTION'))fail.push('asset class disable state');
+if(s.stockPlan?.eliteOption&&s.stockPlan.eliteOption.liveEvidenceGate?.required!==true)fail.push('option live-evidence gate missing');
+for(const t of s.capitalLadder?.tiers||[]){
+  const optionsShouldBeAllowed=!['RECOVERY','DEFENSE'].includes(t.label);
+  if(t.newOptionsAllowed!==optionsShouldBeAllowed)fail.push('capital tier option risk');
+  if(optionsShouldBeAllowed&&!(Number(t.maxOptionRiskPct)>0))fail.push('capital tier option risk');
+  if(!optionsShouldBeAllowed&&Number(t.maxOptionRiskPct||0)!==0)fail.push('capital tier option risk');
+}
+if(Number(s.tradeFrequencyGuard?.maxNewOptionsPerDay||0)!==1)fail.push('option frequency');
+if(Number(s.executionQuality?.maxOptionSpreadPct)!==10)fail.push('option execution quality inactive');
+if(!s.probabilityFirstPolicy?.options||s.probabilityFirstPolicy.options.requireLiveRealFillEvidence!==true)fail.push('probability option evidence gate missing');
 if(s.crossAssetOpportunityRanking!=null)fail.push('cross-asset ranking still present');
 if(s.systemHealth?.crossAssetRanking!=null)fail.push('cross-asset health dependency still present');
-if(Object.prototype.hasOwnProperty.call(s.assetClassRouting||{},'OPTION'))fail.push('option asset routing');
+if(!Object.prototype.hasOwnProperty.call(s.assetClassRouting||{},'OPTION'))fail.push('option asset routing missing');
 if(s.claudeExecutionPolicy?.buys?.appliesTo?.some(x=>String(x).includes('OPTION')||String(x).includes('CRYPTO')))fail.push('Claude buy scope not stock-only');
 if(s.autopilot?.requiresPerOrderApproval!==true||s.autopilot?.automaticQualifiedBuys!==false)fail.push('stock approval policy');
 if(s.claudeExecutionPolicy?.buys?.explicitApprovalRequired!==true)fail.push('Claude stock approval required');
@@ -37,10 +42,11 @@ if(s.intradayStockPolicy?.multipleConcurrentPositionsAllowed!==true)fail.push('m
 if(s.intradayStockPolicy?.continueScanningWhilePositionsOpen!==true)fail.push('continue scanning policy');
 if(s.intradayStockPolicy?.perOrderApprovalRequired!==true)fail.push('per-order policy');
 const hard=(s.hardRules||[]).join(' ').toLowerCase();
-if(hard.includes('option orders')||hard.includes('options are exceptional'))fail.push('stale option hard rule');
+if(!hard.includes('options are exceptional'))fail.push('missing option hard rule');
 if(!hard.includes('regime-specific validation'))fail.push('regime-specific hard rule');
 if(s.generatorIntegrity?.traceableFeatures?.twoTournamentArchitecture!==true)fail.push('integrity marker');
 if(s.generatorIntegrity?.traceableFeatures?.regimeSpecificStockValidation!==true)fail.push('regime validation integrity marker');
 if(s.generatorIntegrity?.traceableFeatures?.selectiveIntradayStockMode!==true)fail.push('intraday integrity marker');
+if(s.generatorIntegrity?.traceableFeatures?.perOrderOptionApproval!==true)fail.push('option approval integrity marker');
 if(fail.length)throw new Error(`two-tournament validation failed: ${[...new Set(fail)].join(', ')}`);
-console.log('two-tournament architecture validation passed: selective intraday stocks use regime-specific validation; crypto uses direct API lane');
+console.log('two-tournament architecture validation passed: selective intraday stocks use regime-specific validation; options re-enabled behind eliteOption+live-evidence gate; crypto uses direct API lane');

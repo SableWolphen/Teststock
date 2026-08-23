@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import {execFileSync} from 'node:child_process';
 
 const key=process.env.ALPACA_API_KEY||process.env.APCA_API_KEY_ID;
 const secret=process.env.ALPACA_API_SECRET||process.env.APCA_API_SECRET_KEY;
@@ -37,3 +38,13 @@ for(const symbol of symbols){const meta=byTicker.get(symbol),events=caBySymbol.g
 for(const budget of [50,100,200,500]){const file=`docs/data/latest-${budget}.json`,data=await read(file);if(!data)continue;data.recommendations=(data.recommendations||[]).map(r=>enriched[r.symbol]?{...r,...enriched[r.symbol]}:r);data.finalistEnrichment={generatedAt:new Date().toISOString(),symbolsEnriched:Object.keys(enriched).length,sources:['SEC company facts/submissions when available','Alpaca corporate actions when available'],earningsCalendar:'UNKNOWN_FAIL_CLOSED'};await fs.writeFile(file,JSON.stringify(data,null,2));}
 if(Array.isArray(broad.topCandidates))broad.topCandidates=broad.topCandidates.map(r=>enriched[r.symbol]?{...r,...enriched[r.symbol]}:r);broad.finalistEnrichment={generatedAt:new Date().toISOString(),symbolsEnriched:Object.keys(enriched).length};await fs.writeFile('docs/data/broad-stock-universe.json',JSON.stringify(broad,null,2));
 console.log(`Enriched ${Object.keys(enriched).length} stock finalists; unavailable sources remain UNKNOWN instead of breaking the scan.`);
+
+// Refresh the live defined-risk options chain scan now that the broad stock universe is finalized for
+// this run. This is the only live source of real option contracts (docs/data/small-account-options.json);
+// without it stockPlan.eliteOption downstream has nothing to evaluate. Failure here must never fail this
+// enrichment step or the wider signal build -- options remain exceptional/optional, stocks are primary.
+try{
+  execFileSync('node',['scripts/scan-small-account-options.mjs'],{stdio:'inherit'});
+}catch(e){
+  console.warn('Options chain scan unavailable this run; continuing without it (eliteOption will be NO OPTION):',e.message);
+}
