@@ -11,7 +11,9 @@ Teststock is a continuously refreshed trading research, ranking, monitoring, and
 - Preserve exactly two tournaments: one stock tournament and one crypto tournament.
 - A candidate may be classified `DAY_TRADE`, `SWING_POSITION`, or `LONG_TERM`; this is a horizon inside its existing tournament, not another tournament.
 - Stocks use selective intraday/regime-specific validation and require explicit per-order user approval before every purchase.
+- Options are exceptional, not default, and live only inside the stock tournament's `stockPlan.eliteOption` field -- never a third tournament. They require every eliteOption research check (growth quality, learning score, historical samples/win rate, cost-adjusted expectancy, reward/risk, market/sector/intraday confirmation, adaptive performance, defined-risk sizing, DTE), the strongest-regime `allowOptions` gate, a runtime whole-contract sizing check, and a live real-fill evidence gate (minimum 10 resolved option trades, average realized R >= 0.25, win rate >= 50%, confirmed from actual Robinhood option order history) before any order. Options require their own separate per-order user approval, distinct from any stock approval, and are capped at one new position per day. Long calls/puts only -- no naked or undefined-risk option positions.
 - Crypto uses the dedicated GitHub Actions Robinhood Crypto API lane. Do not route crypto through Claude's stock-approval or Robinhood-stock execution path.
+- Stock and options universe discovery is fully live (Alpaca most-actives screener plus tradability/price/dollar-volume filters); no hardcoded ticker list may gate what can be discovered or traded. The one intentional exception is `scripts/validate-entry-gates.mjs`'s fixed backtest universe and multi-year date range, which exists only to calibrate walk-forward regime profiles and is diagnostic, not a live trading gate.
 - The crypto research and executable tournaments use exact `/USD` quote pairs only. Exclude `/USDT`, `/USDC`, and every other quote currency.
 - No candidate is required. Holding cash is valid whenever every hard gate does not pass.
 
@@ -39,6 +41,7 @@ Never bypass authentication, subscriptions, provider terms, robots restrictions,
 - All new/alternative sources begin with zero live ranking contribution.
 - Backtests and historical sample/win-rate statistics are diagnostic only. They cannot create `MICRO_PROBATION`, live eligibility, or live size. Zero or unknown forward evidence is never a pass.
 - Six actual independent positive forward-shadow outcomes are required for `MICRO_PROBATION` at no more than 25% of the already-bounded normal size. Twelve independent positive shadow outcomes are required for half-size `PROBATION`; normal eligible size still requires sufficient positive confirmed Robinhood fills. Duplicate same-day symbol/setup/regime observations count once using the most adverse result.
+- Options require their own live real-fill evidence gate: at least 10 resolved option trades, average realized R >= 0.25, and win rate >= 50%, confirmed from actual Robinhood option order history. Passing every research/eliteOption check without this evidence still means no order -- expect this to keep options shadow-only for a while, by design.
 - User-authorized crypto day-trade seed exception: while crypto admission is `SHADOW_ONLY`, one A/A+ candidate may trade through the official Robinhood Crypto API at no more than $5, with one position maximum, an eight-hour time exit and a pause after two stopped seed trades per UTC day. This bypasses only the shadow waiting period; it never applies to `LIVE_SUSPENDED` and never bypasses research, liquidity, spread, freshness, broker, buying-power, no-chase or immediate stop-protection gates. Stocks remain unchanged and require per-order approval.
 - Require independent forward samples, positive cost-adjusted expectancy, regime coverage, drawdown/adverse-excursion review, and untouched holdout validation before bounded influence is considered.
 - Backtests and shadow results may rerank, reduce, expire, suspend, or block. They cannot create live eligibility, raise maximum risk, loosen a gate, or increase live size.
@@ -51,8 +54,10 @@ Never bypass authentication, subscriptions, provider terms, robots restrictions,
 - Never raise account, trade, position, deployment, concentration, correlation, or loss limits.
 - Preserve market-regime gates, liquidity/spread gates, profitability admission, portfolio correlation/heat guards, event-risk checks, freshness/decay, and broker verification.
 - Every stock BUY requires the user's explicit approval for that exact order after live Robinhood verification. A trigger is not approval.
+- Every option BUY requires the user's own separate explicit approval for that exact contract, expiry, strike and quantity, after live Robinhood whole-contract verification and independent confirmation of the real-fill evidence gate above. A trigger, an eliteOption research pass, or a prior stock approval is never option approval.
 - Alpaca discovery never proves Robinhood executability. Before presenting approval and again before submission, confirm the exact stock is currently searchable, buyable and unrestricted in the signed-in Robinhood account and supports the planned order/protection. Failed verification rejects that candidate; use only an already-qualified fallback.
 - For crypto, require the official Robinhood Crypto API trading-pair response to mark the exact pair tradable. Missing pair, quote or supported protection means no order.
+- Before any new stock, option, or crypto entry, compute the remaining risk budget live from Robinhood account data only (`financialRiskGate`): equity, cash and buying power from a fresh Robinhood read this run, never external bank, checking, savings, credit-card, or other-brokerage data. A $0-or-missing-data result is a valid, expected outcome that forces no new trade in any asset class.
 
 ## Saved trade plan
 
@@ -130,6 +135,8 @@ Sell/protection events have priority over new buys. Alpaca and GitHub detect pri
 - `docs/data/crypto-tournament.json`
 - `docs/data/market-intelligence.json`
 - `docs/data/congressional-intelligence.json`
+- `docs/data/broad-stock-universe.json`
+- `docs/data/small-account-options.json`
 - `docs/data/trigger-board.json`
 - `docs/data/execution-dispatch.json`
 - `docs/data/execution-watchlist.json`
