@@ -17,6 +17,7 @@ DATA = ROOT / 'docs' / 'data'
 WATCH = DATA / 'execution-watchlist.json'
 STATUS = DATA / 'crypto-api-status.json'
 CROSS_CHECK = DATA / 'crypto-robinhood-cross-check.json'
+TRADABLE_UNIVERSE = DATA / 'robinhood-crypto-tradable-pairs.json'
 SIGNAL = ROOT / 'docs' / 'signal.json'
 PLAN = DATA / 'crypto-plan-100.json'
 TOURNAMENT = DATA / 'crypto-tournament.json'
@@ -222,6 +223,50 @@ def publish_robinhood_cross_check(api, tournament):
     })
 
 
+def publish_robinhood_tradable_universe(api):
+    # User-requested (2026-08-23): crypto research should look at Robinhood as well as Crypto.com, and
+    # the Crypto.com scan was widened from 80 to 200 pairs in the same change. This is a single bulk,
+    # read-only Robinhood Crypto API trading-pairs call (no symbol filter -- every USD pair this key can
+    # see), refreshed on the existing 5-minute autopilot cadence so scripts/generate-crypto-picks.mjs
+    # (a separate ~10-15 minute workflow) can prefer Crypto.com research candidates Robinhood can
+    # actually execute, rather than only discovering a mismatch after the fact. This never places,
+    # cancels or modifies an order, contributes zero live ranking weight on its own (Evidence and
+    # admission: alternative sources start at zero live contribution -- this only reorders among
+    # already-qualifying candidates), and a failure here must never block or fail-closed the real
+    # account/trading logic that follows -- it only ever affects its own output file. The real-money buy
+    # path below still independently re-verifies the exact chosen pair live before any order regardless
+    # of what this file says.
+    rows = api.pairs()
+    pairs = []
+    for row in rows:
+        symbol = str(row.get('symbol') or '').strip()
+        if not symbol:
+            asset_code, quote_code = row.get('asset_code'), row.get('quote_code')
+            symbol = f'{asset_code}-{quote_code}' if asset_code and quote_code else ''
+        if not symbol.endswith('-USD'):
+            continue
+        pairs.append({
+            'symbol': symbol,
+            'ticker': symbol.replace('-', '/'),
+            'isApiTradable': bool(row.get('is_api_tradable')),
+            'status': row.get('status'),
+            'minOrderAmount': row.get('min_order_amount'),
+        })
+    write_json(TRADABLE_UNIVERSE, {
+        'schemaVersion': 1,
+        'source': 'ROBINHOOD_CRYPTO_API_TRADING_PAIRS',
+        'generatedAt': now_iso(),
+        'note': ('Full list of USD-quoted Robinhood Crypto API trading pairs, refreshed every autopilot '
+                 'run. Research-preference input only: scripts/generate-crypto-picks.mjs uses this to '
+                 'prefer Crypto.com research candidates Robinhood can actually execute. The real-money '
+                 'buy path below still independently re-verifies the exact chosen pair live before any '
+                 'order regardless of what this file says.'),
+        'count': len(pairs),
+        'tradableCount': sum(1 for p in pairs if p['isApiTradable']),
+        'pairs': pairs,
+    })
+
+
 def set_status(status, message, **extra):
     payload = {
         'schemaVersion': 1,
@@ -363,6 +408,17 @@ def main():
         write_json(CROSS_CHECK, {
             'schemaVersion': 1,
             'source': 'ROBINHOOD_CRYPTO_API_READ_ONLY_CROSS_CHECK',
+            'generatedAt': now_iso(),
+            'available': False,
+            'error': str(exc)[:200],
+        })
+
+    try:
+        publish_robinhood_tradable_universe(api)
+    except Exception as exc:
+        write_json(TRADABLE_UNIVERSE, {
+            'schemaVersion': 1,
+            'source': 'ROBINHOOD_CRYPTO_API_TRADING_PAIRS',
             'generatedAt': now_iso(),
             'available': False,
             'error': str(exc)[:200],
