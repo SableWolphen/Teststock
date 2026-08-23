@@ -49,26 +49,38 @@ async function mapLimit(items,limit,fn){
   await Promise.all(Array.from({length:Math.min(limit,items.length)},worker));
   return out;
 }
+async function cgetRetry(url,tries=2){let last;for(let i=0;i<tries;i++){try{return await cget(url);}catch(e){last=e;if(i<tries-1)await new Promise(r=>setTimeout(r,400*(i+1)));}}throw last;}
+// get-instruments and get-tickers are fetched and error-handled independently -- a failure in one
+// (rate limit, transient network error, unexpected shape) should not discard the other, and either
+// error is captured into discoveryError below (surfaced in crypto-universe.json) so a live-run
+// failure is diagnosable from the published data alone, without needing GitHub Actions log access.
 async function discoverUniverse(){
+  const errors=[];
+  let bases=[];
   try{
-    const [instrJ,tickJ]=await Promise.all([cget(`${CC}/get-instruments`),cget(`${CC}/get-tickers`)]);
+    const instrJ=await cgetRetry(`${CC}/get-instruments`);
     const rawNames=(instrJ.data||instrJ.instruments||[]).map(x=>typeof x==='string'?x:(x.instrument_name||x.symbol)).filter(Boolean);
-    const bases=[...new Set(rawNames.filter(n=>/^[A-Z0-9]+USD$/.test(n)).map(n=>n.slice(0,-3)))];
-    const volBy=new Map();
+    bases=[...new Set(rawNames.filter(n=>/^[A-Z0-9]+USD$/.test(n)).map(n=>n.slice(0,-3)))];
+  }catch(e){errors.push(`get-instruments: ${e.message}`);}
+  const volBy=new Map();
+  try{
+    const tickJ=await cgetRetry(`${CC}/get-tickers`);
     for(const t of (tickJ.data||[])){
       const inst=String(t.instrument_name||t.i||'');
       const vv=Number(t.volume_value??t.vv??0);
       if(inst)volBy.set(inst,vv);
     }
-    const scored=bases.map(b=>({base:b,symbol:`${b}/USD`,instrument:`${b}_USD`,vol24h:volBy.get(`${b}_USD`)||0}));
-    const liquid=scored.filter(x=>x.vol24h>0).sort((a,b)=>b.vol24h-a.vol24h);
-    const chosen=(liquid.length?liquid:scored).slice(0,SCAN_LIMIT);
-    console.log(`Crypto.com universe: ${bases.length} USD spot instruments discovered, ${liquid.length} with live ticker volume, scanning top ${chosen.length} by 24h volume.`);
-    return chosen.length?chosen:fallbackSymbols.map(s=>({base:s.replace('/USD',''),symbol:s,instrument:s.replace('/','_'),vol24h:0}));
-  }catch(e){
-    console.log(`Crypto.com universe discovery failed (${e.message}); using fallback symbol list.`);
-    return fallbackSymbols.map(s=>({base:s.replace('/USD',''),symbol:s,instrument:s.replace('/','_'),vol24h:0}));
+  }catch(e){errors.push(`get-tickers: ${e.message}`);}
+  if(errors.length)console.log(`Crypto.com discovery issue(s): ${errors.join(' | ')}`);
+  if(!bases.length){
+    console.log('Crypto.com instrument discovery returned nothing usable; using fallback symbol list.');
+    return {universe:fallbackSymbols.map(s=>({base:s.replace('/USD',''),symbol:s,instrument:s.replace('/','_'),vol24h:0})),discoveryError:errors.join(' | ')||null};
   }
+  const scored=bases.map(b=>({base:b,symbol:`${b}/USD`,instrument:`${b}_USD`,vol24h:volBy.get(`${b}_USD`)||0}));
+  const liquid=scored.filter(x=>x.vol24h>0).sort((a,b)=>b.vol24h-a.vol24h);
+  const chosen=(liquid.length?liquid:scored).slice(0,SCAN_LIMIT);
+  console.log(`Crypto.com universe: ${bases.length} USD spot instruments discovered, ${liquid.length} with live ticker volume, scanning top ${chosen.length}${liquid.length?' by 24h volume':' (ticker volume unavailable this run)'}.`);
+  return {universe:chosen,discoveryError:errors.length?errors.join(' | '):null};
 }
 function rsi(c,n=14){if(c.length<n+1)return 50;let g=0,l=0;for(let i=c.length-n;i<c.length;i++){const d=c[i]-c[i-1];if(d>=0)g+=d;else l-=d;}if(!l)return 100;const rs=(g/n)/(l/n);return 100-100/(1+rs);}
 function atr(xs,n=14){const v=[];for(let i=Math.max(1,xs.length-n);i<xs.length;i++){const b=xs[i],p=xs[i-1];v.push(Math.max(b.h-b.l,Math.abs(b.h-p.c),Math.abs(b.l-p.c)));}return avg(v);}
@@ -85,7 +97,7 @@ function calibration(symbol,xs){let n=0,w=0,moves=[];for(let i=Math.min(60,xs.le
 function candidate(m,cal,intraday,btcTrend){const entry=m.price*1.002,intradayStop=Number(intraday.support4h||0)*.995,stop=Math.max(m.ma20,m.price-m.atr*2.1,intradayStop),risk=entry-stop;if(risk<=0)return null;const target1=entry+risk*3,target2=entry+risk*5;let q=m.score;if(intraday.confirmed)q+=5;else q-=8;if(cal.samples>=10&&cal.winRate>=56)q+=5;if(cal.samples>=8&&cal.winRate<48)q-=8;if(m.m20>30)q-=5;if(m.atrPct>12)q-=6;if(m.symbol!=='BTC/USD'&&btcTrend!==true)q-=6;q=Math.round(clamp(q,0,100));return{...m,...intraday,growthQuality:q,confirm4h:intraday.confirmed,btcTrendSupport:m.symbol==='BTC/USD'?true:btcTrend,validation:cal,entry:round(entry,6),stop:round(stop,6),target1:round(target1,6),target2:round(target2,6),rewardRisk1:3,rewardRisk2:5};}
 function grade(x){const samples=Number(x.validation?.samples||0),win=Number(x.validation?.winRate||0),historyAPlus=samples<10||win>=56,historyA=samples<6||win>=50,btcOk=x.symbol==='BTC/USD'||x.btcTrendSupport===true,intradayOk=x.confirm4h&&x.rsi4h>=50&&x.rsi4h<=70&&x.pullbackToSupportOrVwap&&x.momentumTurnedUp&&x.volumeConfirm;if(x.growthQuality>=92&&x.score>=86&&intradayOk&&historyAPlus&&x.atrPct<=11&&btcOk&&x.dollarVolume24hReal>=2_000_000)return'A+';if(x.growthQuality>=84&&x.score>=78&&intradayOk&&historyA&&x.atrPct<=12&&btcOk&&x.dollarVolume24hReal>=250_000)return'A';return'NO_TRADE';}
 
-const universe=await discoverUniverse();
+const {universe,discoveryError}=await discoverUniverse();
 const symbols=universe.map(u=>u.symbol);
 const volOf=new Map(universe.map(u=>[u.symbol,u.vol24h]));
 console.log(`Loading Crypto.com history for ${symbols.length} scanned USD pairs…`);
@@ -100,7 +112,7 @@ const btc=metrics('BTC/USD',daily['BTC/USD']);
 const btcTrend=!!(btc&&btc.price>btc.ma20&&btc.price>btc.ma50&&btc.m20>0);
 const ranked=symbols.map(s=>{const m=metrics(s,daily[s]);if(!m)return null;const c=candidate(m,calibration(s,daily[s]||[]),fourHourSetup(s,intra),btcTrend);if(!c)return null;const x={...c,dollarVolume24hReal:Math.round(volOf.get(s)||0)};return{...x,setupGrade:grade(x)};}).filter(Boolean).sort((a,b)=>b.growthQuality-a.growthQuality||b.score-a.score||b.dollarVolume24hReal-a.dollarVolume24hReal);
 
-await fs.writeFile(path.join(outDir,'crypto-universe.json'),JSON.stringify({schemaVersion:2,generatedAt:new Date().toISOString(),supportedUsdPairs:symbols.length,btcTrendSupport:btcTrend,researchMode:'ACTIVE_24_7_MORE_OPPORTUNITIES',dataSource:'CRYPTO_COM_PUBLIC_API',ranked:ranked.slice(0,30)},null,2));
+await fs.writeFile(path.join(outDir,'crypto-universe.json'),JSON.stringify({schemaVersion:2,generatedAt:new Date().toISOString(),supportedUsdPairs:symbols.length,btcTrendSupport:btcTrend,researchMode:'ACTIVE_24_7_MORE_OPPORTUNITIES',dataSource:'CRYPTO_COM_PUBLIC_API',discoveryError,ranked:ranked.slice(0,30)},null,2));
 for(const budget of budgets){
   const aPlus=ranked.filter(x=>x.setupGrade==='A+'),a=ranked.filter(x=>x.setupGrade==='A'),chosen=(aPlus.length?aPlus.slice(0,1):a.slice(0,1));
   const selectedGrade=chosen[0]?.setupGrade||'NO_TRADE',maxPortfolioRisk=budget*(selectedGrade==='A+'?.025:selectedGrade==='A'?.015:0);let remaining=budget,remainingRisk=maxPortfolioRisk;const allocations=[];
