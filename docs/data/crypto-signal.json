@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 8,
-  "generatedAt": "2026-08-23T11:37:01.025Z",
+  "schemaVersion": 9,
+  "generatedAt": "2026-08-23T11:45:58.250Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -19,6 +19,28 @@
     "automaticResumeAtOrAboveEquity": 80,
     "actionBelowFloor": "MANAGE_EXITS_ONLY",
     "instructions": "If live Agentic-account equity is below $75, do not open any new position. Manage and close existing positions only. Do not add money automatically. Normal new-trade eligibility may resume only after live equity is at least $80 and every other guard passes."
+  },
+  "financialRiskGate": {
+    "mode": "ROBINHOOD_ACCOUNT_DATA_ONLY",
+    "dataSource": "Live Robinhood get_portfolio (equity, cash, buying_power) plus get_equity_positions/get_option_positions and the crypto autopilot's own Robinhood Crypto API balance check, for the dedicated Agentic account only. Never any external bank, checking, savings, credit card, other brokerage, or manually remembered balance -- if it did not come from a fresh Robinhood read this run, it does not count.",
+    "instructions": "Before proposing or submitting any new stock, option, or crypto entry, compute remainingRiskBudgetDollars live from Robinhood data only: start from current Agentic-account equity and non-margin buying power; subtract the reserve required by hardAccountFloor (never trade equity below noNewTradesBelowEquity), the active profitLock protected floor, and the sum of already-committed planned stop-loss risk across every open Teststock position across all asset classes. Cap the remainder by the current capitalLadder tier's maxPlannedStopRiskPct and maxDeployedPct of equity, whichever is smaller. If Robinhood account data cannot be freshly and fully read this run, or any required figure is missing, unavailable, or stale, treat remainingRiskBudgetDollars as exactly $0 -- never estimate, assume, or reuse a previous run's number. A remainingRiskBudgetDollars of $0 or less is a valid, expected, and frequent outcome: the only allowed action is DO_NOT_TRADE (existing positions may still be managed/exited); do not open any new position in any asset class no matter how strong the signal looks. This gate is additive: it never replaces or loosens hardAccountFloor, capitalLadder, profitLock, circuitBreakers, tradeFrequencyGuard, correlationGuard, or portfolioGuard, and none of those may be loosened to make room for a trade this gate would otherwise block.",
+    "zeroBudgetIsValidOutcome": true,
+    "neverUsesExternalFunding": true,
+    "externalDataSourcesForbidden": [
+      "bank accounts",
+      "checking accounts",
+      "savings accounts",
+      "credit cards",
+      "lines of credit",
+      "buy-now-pay-later",
+      "any brokerage account other than the dedicated Robinhood Agentic account",
+      "manually asserted, remembered, or estimated balances not freshly read from Robinhood this run"
+    ],
+    "appliesToAssetClasses": [
+      "STOCK",
+      "OPTION",
+      "CRYPTO"
+    ]
   },
   "capitalLadder": {
     "basis": "Current dedicated Robinhood Agentic-account equity. Manual user deposits are allowed; the agent may never initiate them.",
@@ -133,7 +155,8 @@
   },
   "correlationGuard": {
     "maxNewPositionsPerRiskCluster": 1,
-    "clusters": {
+    "authoritativeSource": "docs/data/portfolio-correlation.json",
+    "illustrativeSectorGroupsOnly": {
       "technology": [
         "AAPL",
         "MSFT",
@@ -192,7 +215,7 @@
         "DOGE/USD"
       ]
     },
-    "instructions": "Avoid stacking highly correlated bets. Do not open more than one new position from the same listed risk cluster at a time. If live sector/correlation information shows two unlisted positions are effectively the same bet, treat them as one cluster. Existing exposure should make new correlated entries smaller or ineligible."
+    "instructions": "The authoritative correlation source is docs/data/portfolio-correlation.json, which computes real live 90-day return correlation across whatever the current scan actually discovered (no fixed ticker list, no hardcoded default). illustrativeSectorGroupsOnly is a small set of well-known-name examples for human readability only; it never limits or substitutes for the live correlation data and must never be treated as the complete or authoritative cluster list. Avoid stacking highly correlated bets: do not open more than one new position from the same live high-correlation cluster (>=0.75) at full size; a second name from the same cluster is at most half size; a third is blocked. Existing exposure should make new correlated entries smaller or ineligible."
   },
   "executionQuality": {
     "preferLimitOrders": true,
@@ -227,8 +250,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-23T11:36:58.074Z",
-    "expiresAt": "2026-08-23T12:06:58.074Z",
+    "signalAsOf": "2026-08-23T11:45:57.425Z",
+    "expiresAt": "2026-08-23T12:15:57.425Z",
     "policy": {
       "researchMode": "ACTIVE_24_7_MORE_OPPORTUNITIES",
       "dataSource": "CRYPTO_COM_PUBLIC_API",
