@@ -28,6 +28,7 @@ if(Number(s.probabilityFirstPolicy?.stocks?.minCostAdjustedConservativeExpectedR
 if(s.probabilityFirstPolicy?.stocks?.rewardRiskQualificationTarget!=='TARGET2')fail.push('target2 reward-risk qualification');
 if(Number(s.probabilityFirstPolicy?.crypto?.liveEvidenceMinimumResolvedTrades||0)<5)fail.push('crypto real-fill evidence floor');
 const seed=s.probabilityFirstPolicy?.crypto?.dayTradeSeedLane;if(seed?.enabled!==true||Number(seed?.maxOrderUsd)!==5||Number(seed?.maxConcurrentPositions)!==1||Number(seed?.maxHoldingHours)!==8||Number(seed?.maxStopLossesPerUtcDay)!==2||seed?.requiresBrokerResidentStop!==true)fail.push('crypto seed lane bounds');
+const cryptoDay=s.probabilityFirstPolicy?.crypto?.dayTradeEntry;if(Number(cryptoDay?.minimumRsi)!==50||Number(cryptoDay?.maximumRsi)!==70||cryptoDay?.requiresPullbackToSupportOrVwap!==true||cryptoDay?.requiresMomentumTurnUp!==true||cryptoDay?.requiresVolumeConfirmation!==true||Number(cryptoDay?.minimumRewardRisk)<3)fail.push('crypto day-trade entry policy');
 if(s.shadowEvidencePolicy?.automaticLooseningAllowed!==false)fail.push('shadow automatic loosening lock');
 if(s.executionTelemetryPolicy?.sourceOfTruth!=='ROBINHOOD_CONFIRMED_FILLS_AND_ORDERS')fail.push('execution telemetry source');if(!s.dailySummaryPolicy?.enabled)fail.push('daily summary policy');
 if(s.runnerContinuationPolicy?.enabled!==true)fail.push('runner policy');
