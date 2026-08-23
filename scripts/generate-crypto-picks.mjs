@@ -50,55 +50,66 @@ async function mapLimit(items,limit,fn){
   return out;
 }
 async function cgetRetry(url,tries=2){let last;for(let i=0;i<tries;i++){try{return await cget(url);}catch(e){last=e;if(i<tries-1)await new Promise(r=>setTimeout(r,400*(i+1)));}}throw last;}
-// Root cause of the first live run's fallback-to-6-symbols (2026-08-23): get-tickers' own
-// instrument_name field is confirmed raw/authoritative -- e.g. "BTCUSD" with real volume_value
-// ~$457M -- and is CONCATENATED, with no underscore. The old code built the USD universe from
-// get-instruments, then looked up each base's volume with a reconstructed "${base}_USD" key against
-// get-tickers -- a format that never matches get-tickers' real concatenated keys, so every vol24h
-// silently came back 0 even when discovery itself worked. Separately, get-instruments' raw REST
-// shape (via direct fetch(), not this MCP session's own convenience-wrapped tool) is unconfirmed and
-// may not match what was inspected manually, which is the likely reason bases ended up empty with no
-// thrown error. Fix: derive the whole universe -- names AND real volume -- from get-tickers alone in
-// one pass, since it has been empirically proven reliable; get-instruments is now only a volume-less
-// fallback source of names if get-tickers itself fails. get-candlestick separately requires
-// underscore-delimited "BASE_USD" instrument names (proven working via the fallback list's real,
-// distinct rsi4h values on that same run), so that format is kept for the `instrument` field below.
+// The previous fix's own discoveryDebug output (2026-08-23, captured directly from a live run) proved
+// two things definitively: (1) get-instruments' real raw shape is rich OBJECTS with base_ccy,
+// quote_ccy and inst_type fields directly -- e.g. {"symbol":"1INCHUSD-PERP","inst_type":
+// "PERPETUAL_SWAP","base_ccy":"1INCH","quote_ccy":"USD",...} -- not the bare concatenated name
+// strings this diagnostic session's own convenience-wrapped inspection tool had shown, so parsing
+// base_ccy/quote_ccy/inst_type directly is far more reliable than regexing the symbol string (which
+// carries a "-PERP" suffix for perpetuals, not a clean concatenated or underscore form); and (2)
+// get-tickers really did return 946 real rows that run, yet the instrument_name-keyed lookup matched
+// zero of them -- strong evidence the real v1 ticker field uses a different identifier name (most
+// likely `symbol`, mirroring get-instruments) rather than `instrument_name`. Since that still isn't
+// fully confirmed, every plausible identifier/volume field name is tried below, matched by a
+// normalized key, and a raw ticker sample is now always captured into discoveryDebug on any run that
+// doesn't end up with real volume so the true field name becomes visible from committed data if this
+// guess is still wrong. get-candlestick separately requires underscore-delimited "BASE_USD"
+// instrument names (proven working via the fallback list's real, distinct rsi4h values on the first
+// live run), so that format is kept for the `instrument` field below regardless of what get-tickers
+// or get-instruments call their own identifiers.
 async function discoverUniverse(){
   const errors=[];
   const debug={};
   const usdBase=n=>/^([A-Z0-9]+)USD$/.exec(String(n||''))?.[1]||null;
-  let rows=[];
+  const idOf=t=>t.instrument_name||t.symbol||t.i||t.s||'';
+  const isDerivative=id=>/PERP|-|\d{6}$/i.test(String(id||''));
+  let bases=[];
+  try{
+    const instrJ=await cgetRetry(`${CC}/get-instruments`);
+    const raw=Array.isArray(instrJ.data)?instrJ.data:(Array.isArray(instrJ.instruments)?instrJ.instruments:(Array.isArray(instrJ)?instrJ:[]));
+    debug.instrumentsSample=JSON.stringify(raw.slice(0,2)).slice(0,500);
+    bases=[...new Set(raw.filter(x=>x&&typeof x==='object'&&x.quote_ccy==='USD'&&x.base_ccy&&!/PERP|FUTURE/i.test(String(x.inst_type||''))&&!isDerivative(idOf(x))).map(x=>x.base_ccy))];
+    if(!bases.length){
+      // Different/older instruments shape (bare strings, or objects without base_ccy/quote_ccy).
+      const names=raw.map(x=>typeof x==='string'?x:idOf(x)).filter(Boolean).filter(n=>!isDerivative(n));
+      bases=[...new Set(names.map(usdBase).filter(Boolean))];
+    }
+  }catch(e){errors.push(`get-instruments: ${e.message}`);}
+  const norm=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const volBy=new Map();
+  let tickerRows=0,tickerSample=null;
   try{
     const tickJ=await cgetRetry(`${CC}/get-tickers`);
-    rows=Array.isArray(tickJ.data)?tickJ.data:(Array.isArray(tickJ)?tickJ:[]);
+    const rows=Array.isArray(tickJ.data)?tickJ.data:(Array.isArray(tickJ)?tickJ:[]);
+    tickerRows=rows.length;
+    if(rows.length)tickerSample=JSON.stringify(rows.slice(0,2)).slice(0,500);
+    for(const t of rows){
+      const key=norm(idOf(t));
+      if(!key)continue;
+      const vol=Number(t.volume_value??t.vv??t.quote_volume??t.volume_quote??t.turnover_24h??t.turnover??0);
+      volBy.set(key,vol);
+    }
   }catch(e){errors.push(`get-tickers: ${e.message}`);}
-  const seen=new Map();
-  for(const t of rows){
-    const base=usdBase(t.instrument_name||t.i);
-    if(!base)continue;
-    const vol24h=Number(t.volume_value??t.vv??0);
-    if(!seen.has(base)||vol24h>seen.get(base).vol24h)seen.set(base,{base,symbol:`${base}/USD`,instrument:`${base}_USD`,vol24h});
-  }
-  let scored=[...seen.values()];
-  if(!scored.length){
-    try{
-      const instrJ=await cgetRetry(`${CC}/get-instruments`);
-      const raw=Array.isArray(instrJ.data)?instrJ.data:(Array.isArray(instrJ.instruments)?instrJ.instruments:(Array.isArray(instrJ)?instrJ:[]));
-      debug.instrumentsSample=JSON.stringify(raw.slice(0,3)).slice(0,400);
-      const names=raw.map(x=>typeof x==='string'?x:(x.instrument_name||x.symbol||'')).filter(Boolean);
-      const bases=[...new Set(names.map(usdBase).filter(Boolean))];
-      scored=bases.map(base=>({base,symbol:`${base}/USD`,instrument:`${base}_USD`,vol24h:0}));
-    }catch(e){errors.push(`get-instruments: ${e.message}`);}
-  }
   if(errors.length)console.log(`Crypto.com discovery issue(s): ${errors.join(' | ')}`);
-  if(!scored.length){
+  if(!bases.length){
     console.log('Crypto.com discovery returned nothing usable from either endpoint; using fallback symbol list.');
-    return {universe:fallbackSymbols.map(s=>({base:s.replace('/USD',''),symbol:s,instrument:s.replace('/','_'),vol24h:0})),discoveryError:errors.join(' | ')||null,discoveryDebug:{...debug,tickerRowCount:rows.length}};
+    return {universe:fallbackSymbols.map(s=>({base:s.replace('/USD',''),symbol:s,instrument:s.replace('/','_'),vol24h:0})),discoveryError:errors.join(' | ')||null,discoveryDebug:{...debug,tickerRowCount:tickerRows,tickerSample}};
   }
+  const scored=bases.map(base=>({base,symbol:`${base}/USD`,instrument:`${base}_USD`,vol24h:volBy.get(norm(base+'USD'))||0}));
   const liquid=scored.filter(x=>x.vol24h>0).sort((a,b)=>b.vol24h-a.vol24h);
   const chosen=(liquid.length?liquid:scored).slice(0,SCAN_LIMIT);
-  console.log(`Crypto.com universe: ${scored.length} USD spot instruments discovered, ${liquid.length} with live ticker volume, scanning top ${chosen.length}${liquid.length?' by 24h volume':' (ticker volume unavailable this run)'}.`);
-  return {universe:chosen,discoveryError:errors.length?errors.join(' | '):null,discoveryDebug:liquid.length?undefined:{...debug,tickerRowCount:rows.length}};
+  console.log(`Crypto.com universe: ${bases.length} USD spot instruments discovered, ${liquid.length} with live ticker volume, scanning top ${chosen.length}${liquid.length?' by 24h volume':' (ticker volume unavailable this run)'}.`);
+  return {universe:chosen,discoveryError:errors.length?errors.join(' | '):null,discoveryDebug:liquid.length?undefined:{...debug,tickerRowCount:tickerRows,tickerSample}};
 }
 function rsi(c,n=14){if(c.length<n+1)return 50;let g=0,l=0;for(let i=c.length-n;i<c.length;i++){const d=c[i]-c[i-1];if(d>=0)g+=d;else l-=d;}if(!l)return 100;const rs=(g/n)/(l/n);return 100-100/(1+rs);}
 function atr(xs,n=14){const v=[];for(let i=Math.max(1,xs.length-n);i<xs.length;i++){const b=xs[i],p=xs[i-1];v.push(Math.max(b.h-b.l,Math.abs(b.h-p.c),Math.abs(b.l-p.c)));}return avg(v);}
