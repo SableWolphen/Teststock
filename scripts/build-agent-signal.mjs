@@ -115,6 +115,15 @@ const signal={
     ],
     instructions:'Before a new trade, estimate total planned stop-loss across all open Teststock positions plus the proposed trade. Do not intentionally size a new trade so that equity minus total planned stop-loss falls below the active protected floor. Floors reduce planned risk but cannot prevent gaps or slippage.'
   },
+  financialRiskGate:{
+    mode:'ROBINHOOD_ACCOUNT_DATA_ONLY',
+    dataSource:'Live Robinhood get_portfolio (equity, cash, buying_power) plus get_equity_positions/get_option_positions and the crypto autopilot\'s own Robinhood Crypto API balance check, for the dedicated Agentic account only. Never any external bank, checking, savings, credit card, other brokerage, or manually remembered balance -- if it did not come from a fresh Robinhood read this run, it does not count.',
+    instructions:'Before proposing or submitting any new stock, option, or crypto entry, compute remainingRiskBudgetDollars live from Robinhood data only: start from current Agentic-account equity and non-margin buying power; subtract the reserve required by hardAccountFloor (never trade equity below noNewTradesBelowEquity), the active profitLock protected floor, and the sum of already-committed planned stop-loss risk across every open Teststock position across all asset classes. Cap the remainder by the current capitalLadder tier\'s maxPlannedStopRiskPct and maxDeployedPct of equity, whichever is smaller. If Robinhood account data cannot be freshly and fully read this run, or any required figure is missing, unavailable, or stale, treat remainingRiskBudgetDollars as exactly $0 -- never estimate, assume, or reuse a previous run\'s number. A remainingRiskBudgetDollars of $0 or less is a valid, expected, and frequent outcome: the only allowed action is DO_NOT_TRADE (existing positions may still be managed/exited); do not open any new position in any asset class no matter how strong the signal looks. This gate is additive: it never replaces or loosens hardAccountFloor, capitalLadder, profitLock, circuitBreakers, tradeFrequencyGuard, correlationGuard, or portfolioGuard, and none of those may be loosened to make room for a trade this gate would otherwise block.',
+    zeroBudgetIsValidOutcome:true,
+    neverUsesExternalFunding:true,
+    externalDataSourcesForbidden:['bank accounts','checking accounts','savings accounts','credit cards','lines of credit','buy-now-pay-later','any brokerage account other than the dedicated Robinhood Agentic account','manually asserted, remembered, or estimated balances not freshly read from Robinhood this run'],
+    appliesToAssetClasses:['STOCK','OPTION','CRYPTO']
+  },
   circuitBreakers:{
     dailyLossPct:3,
     sevenDayDrawdownPct:6,
@@ -129,7 +138,8 @@ const signal={
   },
   correlationGuard:{
     maxNewPositionsPerRiskCluster:1,
-    clusters:{
+    authoritativeSource:'docs/data/portfolio-correlation.json',
+    illustrativeSectorGroupsOnly:{
       technology:['AAPL','MSFT','AMZN','GOOGL','META','NVDA','AVGO','AMD','PLTR','PANW','CRWD','ORCL','CRM','SMH','XLK'],
       financial:['JPM','GS','V','MA','XLF'],
       energy:['XOM','CVX','XLE'],
@@ -138,7 +148,7 @@ const signal={
       industrialUtilities:['CAT','GE','NEE','XLI','XLU'],
       crypto:['BTC/USD','ETH/USD','SOL/USD','AVAX/USD','LINK/USD','DOGE/USD']
     },
-    instructions:'Avoid stacking highly correlated bets. Do not open more than one new position from the same listed risk cluster at a time. If live sector/correlation information shows two unlisted positions are effectively the same bet, treat them as one cluster. Existing exposure should make new correlated entries smaller or ineligible.'
+    instructions:'The authoritative correlation source is docs/data/portfolio-correlation.json, which computes real live 90-day return correlation across whatever the current scan actually discovered (no fixed ticker list, no hardcoded default). illustrativeSectorGroupsOnly is a small set of well-known-name examples for human readability only; it never limits or substitutes for the live correlation data and must never be treated as the complete or authoritative cluster list. Avoid stacking highly correlated bets: do not open more than one new position from the same live high-correlation cluster (>=0.75) at full size; a second name from the same cluster is at most half size; a third is blocked. Existing exposure should make new correlated entries smaller or ineligible.'
   },
   executionQuality:{
     preferLimitOrders:true,
@@ -176,7 +186,8 @@ const signal={
     'Never access, withdraw from, charge, or borrow against any external bank, card, credit line, retirement account, or other financial account.',
     'HARD ACCOUNT FLOOR: below $75 live Agentic-account equity, manage exits only and open no new trades. Do not auto-fund. Resume new-trade eligibility only at $80 or more and only if all other guards pass.',
     'CAPITAL TIER BOUNDARIES: >=0/<80 RECOVERY; >=80/<100 DEFENSE; >=100/<125 PROVE; >=125/<150 SCALE; >=150 GROWTH. Exactly $100 is PROVE. Never select the lower tier at an exact boundary.',
-    'Apply capitalLadder, profitLock, circuitBreakers, tradeFrequencyGuard, correlationGuard, executionQuality, exitAutomation, healthGuard, portfolioGuard, and outcomeGuard before every new position.',
+    'FINANCIAL RISK GATE: before any new stock, option, or crypto entry, compute remainingRiskBudgetDollars live from Robinhood account data only (never external bank/card/other-brokerage data). A $0-or-less budget is a valid, expected outcome and forces DO_NOT_TRADE for every asset class; missing or stale Robinhood data also forces the budget to $0.',
+    'Apply financialRiskGate, capitalLadder, profitLock, circuitBreakers, tradeFrequencyGuard, correlationGuard, executionQuality, exitAutomation, healthGuard, portfolioGuard, and outcomeGuard before every new position.',
     'Use only existing non-margin cash buying power. Never use margin, borrowed funds, naked options, short stock, leveraged crypto, or undefined-risk option positions.',
     'Never confuse asset classes: STOCK orders come only from stockPlan.stockOrders, OPTION orders come only from stockPlan.eliteOption, and CRYPTO orders come only from cryptoPlan.cryptoOrders.',
     'A stock must pass Teststock expectancy, adaptive-performance, historical sample, reward/risk, market/sector/intraday, freshness, and entry gates. Never loosen a failed gate to force a trade.',
@@ -199,5 +210,5 @@ const signal={
 };
 await fs.writeFile(path.join(outDir,'signal.json'),JSON.stringify(signal,null,2));
 await fs.writeFile(path.join(dataDir,'claude-signal.json'),JSON.stringify(signal,null,2));
-await fs.writeFile(path.join(dataDir,'crypto-signal.json'),JSON.stringify({schemaVersion:8,generatedAt:signal.generatedAt,funding:signal.funding,sizing:signal.sizing,hardAccountFloor:signal.hardAccountFloor,capitalLadder:signal.capitalLadder,profitLock:signal.profitLock,circuitBreakers:signal.circuitBreakers,tradeFrequencyGuard:signal.tradeFrequencyGuard,correlationGuard:signal.correlationGuard,executionQuality:signal.executionQuality,exitAutomation:signal.exitAutomation,healthGuard:signal.healthGuard,portfolioGuard:signal.portfolioGuard,cryptoPlan},null,2));
+await fs.writeFile(path.join(dataDir,'crypto-signal.json'),JSON.stringify({schemaVersion:9,generatedAt:signal.generatedAt,funding:signal.funding,sizing:signal.sizing,hardAccountFloor:signal.hardAccountFloor,financialRiskGate:signal.financialRiskGate,capitalLadder:signal.capitalLadder,profitLock:signal.profitLock,circuitBreakers:signal.circuitBreakers,tradeFrequencyGuard:signal.tradeFrequencyGuard,correlationGuard:signal.correlationGuard,executionQuality:signal.executionQuality,exitAutomation:signal.exitAutomation,healthGuard:signal.healthGuard,portfolioGuard:signal.portfolioGuard,cryptoPlan},null,2));
 console.log('Generated Teststock agent signal schema v12 with explicit tier boundaries');
