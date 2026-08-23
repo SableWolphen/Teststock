@@ -1,5 +1,8 @@
 import fs from 'node:fs/promises';
-const baseline=['SPY','QQQ','NVDA','MSFT','AAPL','AMZN','GOOGL','META','AMD','AVGO','PLTR','PANW','CRWD','ORCL','CRM','JPM','GS','V','MA','LLY','UNH','COST','WMT','CAT','GE','XOM','CVX','NEE','UBER','TSLA'];
+// No hardcoded/default underlying list: the options-scan universe is exactly the strongest
+// names the broad, full-universe stock scan already found (docs/data/broad-stock-universe.json).
+// A previously-included fixed mega-cap baseline was removed so this never defaults to the
+// same fixed tickers regardless of what the live scan actually ranks.
 const read=async(f,x={})=>{try{return JSON.parse(await fs.readFile(f,'utf8'));}catch{return x;}};
 const round=(n,d=2)=>Number(Number(n||0).toFixed(d));
 const key=process.env.ALPACA_API_KEY||process.env.APCA_API_KEY_ID,secret=process.env.ALPACA_API_SECRET||process.env.APCA_API_SECRET_KEY;
@@ -9,7 +12,7 @@ const get=async u=>{const r=await fetch(u,{headers});if(!r.ok)throw new Error(`A
 const latest=await read('docs/data/latest-100.json');
 const broad=await read('docs/data/broad-stock-universe.json');
 const broadSymbols=(broad.topCandidates||[]).map(x=>x.symbol).filter(Boolean);
-const universe=[...new Set([...broadSymbols,...baseline])];
+const universe=[...new Set(broadSymbols)];
 const snap=new Map((latest.marketSnapshot||[]).map(x=>[x.symbol,x]));
 const recommendationScore=new Map((latest.recommendations||[]).map(x=>[x.symbol,Number(x.score||0)]));
 const broadScore=new Map((broad.topCandidates||[]).map(x=>[x.symbol,Number(x.score||0)]));

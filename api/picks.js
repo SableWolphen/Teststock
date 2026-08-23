@@ -1,7 +1,7 @@
-const UNIVERSE = [
-  'NVDA','MSFT','AAPL','AMZN','GOOGL','META','AVGO','AMD','PLTR','PANW','CRWD','ORCL','CRM',
-  'JPM','GS','V','MA','LLY','UNH','COST','WMT','CAT','GE','XOM','CVX','NEE','UBER','TSLA'
-];
+// No hardcoded/default equity universe: the 'core' segment's candidate pool is discovered
+// live every request from Alpaca's most-active screener (see discoverCoreUniverse below),
+// the same pattern already used for the 'penny' segment. BENCHMARKS are only used for
+// market-regime/breadth context, never as a recommendable buy candidate.
 const BENCHMARKS = ['SPY','QQQ'];
 function sectorBucket(symbol){
   if(['NVDA','AMD','AVGO','MSFT','AAPL','PLTR','PANW','CRWD','ORCL','CRM'].includes(symbol))return 'Technology';
@@ -219,6 +219,22 @@ async function corporateActionRisk(symbols){
   }catch{}
   return out;
 }
+async function discoverCoreUniverse(){
+  const [raw,assets]=await Promise.all([
+    alpaca('https://data.alpaca.markets/v1beta1/screener/stocks/most-actives?top=100&by=volume'),
+    alpaca('https://paper-api.alpaca.markets/v2/assets?status=active&asset_class=us_equity')
+  ]);
+  const allowed=new Set((assets||[]).filter(a=>a.tradable!==false&&!/(ETF|ETN|exchange.traded|fund|trust|warrant|unit|preferred|depositary)/i.test(a.name||'')).map(a=>a.symbol));
+  const symbols=(raw.most_actives||raw.mostActives||[]).map(x=>x.symbol).filter(Boolean);
+  if(!symbols.length)throw new Error('No active stock candidates returned from the live screener');
+  const q=new URLSearchParams({symbols:symbols.join(','),feed:'iex'});
+  const snaps=await alpaca(`https://data.alpaca.markets/v2/stocks/snapshots?${q}`);
+  return symbols.filter(symbol=>allowed.has(symbol)).filter(symbol=>{
+    const s=snaps[symbol]||{},price=Number(s.latestTrade?.p||s.latest_trade?.p||s.dailyBar?.c||s.daily_bar?.c||0);
+    const dollarVolume=price*Number(s.dailyBar?.v||s.daily_bar?.v||0);
+    return price>5&&dollarVolume>=5000000;
+  }).slice(0,40);
+}
 async function discoverPennyUniverse(){
   const [raw,assets]=await Promise.all([
     alpaca('https://data.alpaca.markets/v1beta1/screener/stocks/most-actives?top=100&by=volume'),
@@ -313,8 +329,8 @@ export default async function handler(req,res){
   try{
     const budget=clamp(Number(req.query?.budget)||200,25,5000),mode=req.query?.mode==='balanced'?'balanced':'aggressive',segment=req.query?.segment==='penny'?'penny':'core';
     const requestedFeed=(process.env.ALPACA_OPTIONS_FEED||'indicative').toLowerCase()==='opra'?'opra':'indicative';
-    const selectedUniverse=segment==='penny'?await discoverPennyUniverse():UNIVERSE;
-    if(segment==='penny'&&!selectedUniverse.length)throw new Error('No liquid $1-$5 penny stocks passed today');
+    const selectedUniverse=segment==='penny'?await discoverPennyUniverse():await discoverCoreUniverse();
+    if(!selectedUniverse.length)throw new Error(segment==='penny'?'No liquid $1-$5 penny stocks passed today':'No liquid stock candidates passed the live screener today');
     const start=new Date(Date.now()-420*86400000).toISOString().slice(0,10),symbols=[...selectedUniverse,...BENCHMARKS].join(',');
     const [raw,session]=await Promise.all([
       alpaca(`https://data.alpaca.markets/v2/stocks/bars?symbols=${symbols}&timeframe=1Day&start=${start}&limit=10000&adjustment=all&feed=iex`),
@@ -422,4 +438,3 @@ export default async function handler(req,res){
     });
   }catch(error){res.status(500).json({error:error.name==='AbortError'?'Market-data request timed out':error.message});}
 }
-
