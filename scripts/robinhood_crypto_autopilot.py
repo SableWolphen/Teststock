@@ -267,6 +267,7 @@ def ensure_stop(api, account_number, symbol, qty, stop_price, pair):
 
 def main():
     enabled = os.getenv('ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED', '').lower() == 'true'
+    dry_run = os.getenv('ROBINHOOD_CRYPTO_DRY_RUN', '').lower() == 'true'
     api_key = os.getenv('ROBINHOOD_CRYPTO_API_KEY', '')
     private_key = os.getenv('ROBINHOOD_CRYPTO_PRIVATE_KEY_B64', '')
     account_selector = (os.getenv('ROBINHOOD_CRYPTO_ACCOUNT_NUMBER', '') or os.getenv('ROBINHOOD_CRYPTO_AGENTIC_ACCOUNT_NUMBER', '')).strip()
@@ -329,6 +330,38 @@ def main():
     account_number = str(account.get('account_number') or '')
     if not account_number:
         set_status('BLOCKED_ACCOUNT_DATA_INVALID', 'The active Robinhood crypto trading account did not include an account number. No order sent.')
+        return
+
+    if dry_run:
+        research = next((x for x in (plan.get('ranked') or []) if str(x.get('symbol', '')).endswith('/USD')), None)
+        if not research:
+            set_status('DRY_RUN_BLOCKED_NO_USD_CANDIDATE', 'Read-only test connected to Robinhood, but no exact USD research candidate was available. No order sent.')
+            return
+        symbol = str(research['symbol']).replace('/', '-')
+        pair_rows = api.pairs(symbol)
+        pair = pair_rows[0] if pair_rows else None
+        quote = api.quote(symbol) if pair and pair.get('is_api_tradable') else None
+        if not pair or not pair.get('is_api_tradable') or not quote:
+            set_status('DRY_RUN_BLOCKED_PAIR_OR_QUOTE', f'Read-only test connected, but {symbol} failed the Robinhood pair/quote check. No order sent.', candidate=symbol)
+            return
+        bid, ask = Decimal(str(quote.get('bid') or 0)), Decimal(str(quote.get('ask') or 0))
+        spread_pct = (ask-bid)/((ask+bid)/2)*100 if bid > 0 and ask > 0 else Decimal('999')
+        buying_power = Decimal(str(account.get('buying_power') or 0))
+        proposed = min(Decimal('5'), max_order_usd, buying_power * Decimal('0.90'))
+        minimum = Decimal(str(pair.get('min_order_amount') or '1'))
+        checks = {
+            'exactUsdPair': symbol.endswith('-USD'),
+            'apiTradable': bool(pair.get('is_api_tradable')),
+            'validQuote': bid > 0 and ask > 0,
+            'spreadWithinCap': spread_pct <= Decimal('0.75'),
+            'buyingPowerAvailable': buying_power > 0,
+            'proposedAmountMeetsPairMinimum': proposed >= minimum,
+            'orderSubmissionDisabled': True,
+        }
+        passed = all(checks.values())
+        set_status('DRY_RUN_PASSED' if passed else 'DRY_RUN_BLOCKED',
+                   f'Read-only $5 crypto order-path test {"passed" if passed else "stopped at a safety check"} for {symbol}. No order was submitted.',
+                   candidate=symbol, researchGrade=research.get('setupGrade'), checks=checks)
         return
 
     active = active_crypto_watch(watch)
