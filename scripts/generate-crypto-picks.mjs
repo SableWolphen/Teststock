@@ -33,6 +33,16 @@ async function bars(symbols,timeframe,start,maxPages=8){
   }
   return out;
 }
+// Alpaca's crypto bars endpoint does not reliably serve a native "4Hour" aggregate for most pairs --
+// Alpaca's own guidance for non-standard intervals is to fetch a finer granularity and resample
+// client-side (confirmed on Alpaca's community forum for the analogous 90-minute-bars case). This
+// was very likely why almost every scanned pair (including BTC/USD, which certainly has deep
+// history) came back with zero 4-hour candles and could never even be evaluated for the pullback/
+// rebound day-trade entry model below, regardless of real market conditions. Fetch native 1-hour
+// bars instead (a granularity every symbol reliably has) and aggregate 4 consecutive UTC-aligned
+// hours into one synthetic 4-hour candle locally. The RSI/VWAP/momentum/volume math and thresholds
+// below are unchanged -- only the input data source is fixed.
+function aggregate4h(xs){if(!xs||!xs.length)return[];const out=[];let bucket=null,bucketKey=null;for(const x of xs){const t=new Date(x.t),hourBlock=Math.floor(t.getUTCHours()/4)*4,key=Date.UTC(t.getUTCFullYear(),t.getUTCMonth(),t.getUTCDate(),hourBlock);if(key!==bucketKey){if(bucket)out.push(bucket);bucket={t:new Date(key).toISOString(),o:Number(x.o),h:Number(x.h),l:Number(x.l),c:Number(x.c),v:Number(x.v||0)};bucketKey=key;}else{bucket.h=Math.max(bucket.h,Number(x.h));bucket.l=Math.min(bucket.l,Number(x.l));bucket.c=Number(x.c);bucket.v+=Number(x.v||0);}}if(bucket)out.push(bucket);return out;}
 function rsi(c,n=14){if(c.length<n+1)return 50;let g=0,l=0;for(let i=c.length-n;i<c.length;i++){const d=c[i]-c[i-1];if(d>=0)g+=d;else l-=d;}if(!l)return 100;const rs=(g/n)/(l/n);return 100-100/(1+rs);}
 function atr(xs,n=14){const v=[];for(let i=Math.max(1,xs.length-n);i<xs.length;i++){const b=xs[i],p=xs[i-1];v.push(Math.max(b.h-b.l,Math.abs(b.h-p.c),Math.abs(b.l-p.c)));}return avg(v);}
 function metrics(symbol,xs){if(!xs||xs.length<100)return null;const c=xs.map(x=>x.c),price=c.at(-1),m20=pct(price,c.at(-21)),m60=pct(price,c.at(-61)),ma20=sma(c,20),ma50=sma(c,50),ma100=sma(c,100),r=rsi(c),a=atr(xs),atrPct=a/price*100,high20=Math.max(...xs.slice(-20).map(x=>x.h)),high60=Math.max(...xs.slice(-60).map(x=>x.h)),vol20=avg(xs.slice(-20).map(x=>Number(x.v||0)*Number(x.c||0))),vol5=avg(xs.slice(-5).map(x=>Number(x.v||0)*Number(x.c||0))),nearHigh=price/high20,nearHigh60=price/high60;
@@ -76,7 +86,10 @@ function grade(x){const samples=Number(x.validation?.samples||0),win=Number(x.va
 const symbols=await discoverSymbols();
 const dailyStart=new Date(Date.now()-900*86400000).toISOString().slice(0,10),intraStart=new Date(Date.now()-30*86400000).toISOString();
 console.log(`Loading Alpaca crypto history for ${symbols.length} supported USD pairs…`);
-const [daily,intra,realVol]=await Promise.all([bars(symbols,'1Day',dailyStart,8),bars(symbols,'4Hour',intraStart,5),realVolumes(symbols)]);
+const [daily,intraHourly,realVol]=await Promise.all([bars(symbols,'1Day',dailyStart,8),bars(symbols,'1Hour',intraStart,8),realVolumes(symbols)]);
+const intra=Object.fromEntries(Object.entries(intraHourly).map(([s,xs])=>[s,aggregate4h(xs)]));
+const thin=symbols.filter(s=>(intra[s]||[]).length<22);
+console.log(`Aggregated 1-hour bars into 4-hour candles for ${Object.keys(intra).length}/${symbols.length} symbols. ${thin.length} symbol(s) still have fewer than 22 four-hour candles (confirm4h forced false for these): ${thin.slice(0,10).join(', ')}${thin.length>10?'…':''}`);
 const btc=metrics('BTC/USD',daily['BTC/USD']);
 const btcTrend=!!(btc&&btc.price>btc.ma20&&btc.price>btc.ma50&&btc.m20>0);
 const ranked=symbols.map(s=>{const m=metrics(s,daily[s]);if(!m)return null;const c=candidate(m,calibration(s,daily[s]||[]),fourHourSetup(s,intra),btcTrend);if(!c)return null;const x={...c,dollarVolume24hReal:Math.round(realVol.get(s)||0)};return{...x,setupGrade:grade(x)};}).filter(Boolean).sort((a,b)=>b.growthQuality-a.growthQuality||b.score-a.score||b.dollarVolume24hReal-a.dollarVolume24hReal);
