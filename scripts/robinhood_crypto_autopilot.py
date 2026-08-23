@@ -17,7 +17,6 @@ DATA = ROOT / 'docs' / 'data'
 WATCH = DATA / 'execution-watchlist.json'
 STATUS = DATA / 'crypto-api-status.json'
 CROSS_CHECK = DATA / 'crypto-robinhood-cross-check.json'
-TRADABLE_UNIVERSE = DATA / 'robinhood-crypto-tradable-pairs.json'
 SIGNAL = ROOT / 'docs' / 'signal.json'
 PLAN = DATA / 'crypto-plan-100.json'
 TOURNAMENT = DATA / 'crypto-tournament.json'
@@ -169,7 +168,7 @@ def cross_check_candidates(tournament, limit=6):
     return list(seen.keys())
 
 
-def publish_robinhood_cross_check(api, tournament):
+def build_robinhood_cross_check(api, tournament):
     # User-requested (2026-08-23): crypto research should look at Robinhood as well as Crypto.com,
     # not only Crypto.com alone. This is a read-only Robinhood Crypto API cross-check (trading-pair
     # status plus live best bid/ask) for the current Teststock research champion, qualified champion
@@ -209,10 +208,8 @@ def publish_robinhood_cross_check(api, tournament):
         except Exception as exc:
             entry.update(available=False, error=str(exc)[:200])
         results.append(entry)
-    write_json(CROSS_CHECK, {
-        'schemaVersion': 1,
-        'source': 'ROBINHOOD_CRYPTO_API_READ_ONLY_CROSS_CHECK',
-        'generatedAt': now_iso(),
+    return {
+        'available': True,
         'note': ('Diagnostic-only live Robinhood Crypto API pair/quote cross-check for the current '
                  'Teststock crypto research champion, qualified champion and fallbacks. Zero live '
                  'ranking contribution; never places, cancels or modifies an order; a missing or '
@@ -220,10 +217,10 @@ def publish_robinhood_cross_check(api, tournament):
                  'tradability. Crypto.com remains the primary crypto research/bars/liquidity source.'),
         'candidatesChecked': len(results),
         'results': results,
-    })
+    }
 
 
-def publish_robinhood_tradable_universe(api):
+def build_robinhood_tradable_universe(api):
     # User-requested (2026-08-23): crypto research should look at Robinhood as well as Crypto.com, and
     # the Crypto.com scan was widened from 80 to 200 pairs in the same change. This is a single bulk,
     # read-only Robinhood Crypto API trading-pairs call (no symbol filter -- every USD pair this key can
@@ -233,9 +230,11 @@ def publish_robinhood_tradable_universe(api):
     # cancels or modifies an order, contributes zero live ranking weight on its own (Evidence and
     # admission: alternative sources start at zero live contribution -- this only reorders among
     # already-qualifying candidates), and a failure here must never block or fail-closed the real
-    # account/trading logic that follows -- it only ever affects its own output file. The real-money buy
+    # account/trading logic that follows -- it only ever affects its own output. The real-money buy
     # path below still independently re-verifies the exact chosen pair live before any order regardless
-    # of what this file says.
+    # of what this says. Published as a field inside crypto-robinhood-cross-check.json (not its own
+    # file) because .github/workflows/*.yml cannot be edited through any available tool, and that file
+    # is the one already on the autopilot's git-add allowlist for its state-publishing commit.
     rows = api.pairs()
     pairs = []
     for row in rows:
@@ -252,19 +251,17 @@ def publish_robinhood_tradable_universe(api):
             'status': row.get('status'),
             'minOrderAmount': row.get('min_order_amount'),
         })
-    write_json(TRADABLE_UNIVERSE, {
-        'schemaVersion': 1,
-        'source': 'ROBINHOOD_CRYPTO_API_TRADING_PAIRS',
-        'generatedAt': now_iso(),
+    return {
+        'available': True,
         'note': ('Full list of USD-quoted Robinhood Crypto API trading pairs, refreshed every autopilot '
                  'run. Research-preference input only: scripts/generate-crypto-picks.mjs uses this to '
                  'prefer Crypto.com research candidates Robinhood can actually execute. The real-money '
                  'buy path below still independently re-verifies the exact chosen pair live before any '
-                 'order regardless of what this file says.'),
+                 'order regardless of what this says.'),
         'count': len(pairs),
         'tradableCount': sum(1 for p in pairs if p['isApiTradable']),
         'pairs': pairs,
-    })
+    }
 
 
 def set_status(status, message, **extra):
@@ -403,26 +400,23 @@ def main():
     # needs no account_number) and is wrapped so a failure here can never block or fail-closed the
     # real account/trading logic below -- it only ever affects its own diagnostic-only output file.
     try:
-        publish_robinhood_cross_check(api, tournament)
+        per_candidate = build_robinhood_cross_check(api, tournament)
     except Exception as exc:
-        write_json(CROSS_CHECK, {
-            'schemaVersion': 1,
-            'source': 'ROBINHOOD_CRYPTO_API_READ_ONLY_CROSS_CHECK',
-            'generatedAt': now_iso(),
-            'available': False,
-            'error': str(exc)[:200],
-        })
-
+        per_candidate = {'available': False, 'error': str(exc)[:200]}
     try:
-        publish_robinhood_tradable_universe(api)
+        full_universe = build_robinhood_tradable_universe(api)
     except Exception as exc:
-        write_json(TRADABLE_UNIVERSE, {
-            'schemaVersion': 1,
-            'source': 'ROBINHOOD_CRYPTO_API_TRADING_PAIRS',
-            'generatedAt': now_iso(),
-            'available': False,
-            'error': str(exc)[:200],
-        })
+        full_universe = {'available': False, 'error': str(exc)[:200]}
+    write_json(CROSS_CHECK, {
+        'schemaVersion': 2,
+        'source': 'ROBINHOOD_CRYPTO_API_READ_ONLY_CROSS_CHECK',
+        'generatedAt': now_iso(),
+        'note': ('Two independent, read-only Robinhood Crypto API checks published together so a '
+                 'single failure in one never blocks the other or the real account/trading logic '
+                 'below. Neither ever places, cancels or modifies an order.'),
+        'perCandidateCrossCheck': per_candidate,
+        'fullTradableUniverse': full_universe,
+    })
 
     accounts = api.accounts()
     all_active_count = len(matching_active_accounts(accounts))

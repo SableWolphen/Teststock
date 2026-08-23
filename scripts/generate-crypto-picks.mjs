@@ -22,8 +22,35 @@ const sma=(a,n)=>avg(a.slice(-n));
 // cross-check needed. Stocks are unaffected and continue to use Alpaca/SEC EDGAR as documented in
 // CLAUDE.md; this file is the crypto-only research pipeline.
 const CC='https://api.crypto.com/exchange/v1/public';
-const SCAN_LIMIT=80; // bounds API calls/runtime; symbols below this rank by 24h volume could not
-                      // clear the $250K/A or $2M/A+ liquidity floor below anyway, so nothing real is lost.
+const SCAN_LIMIT=200; // User-requested widen (2026-08-23, was 80): bounds API calls/runtime; symbols
+                      // below this rank by 24h volume are very unlikely to clear the $250K/A or $2M/A+
+                      // liquidity floor below, so little real coverage is lost at the tail.
+const ROBINHOOD_CROSS_CHECK='docs/data/crypto-robinhood-cross-check.json';
+// User-requested (2026-08-23): crypto research should also look at what Robinhood itself can actually
+// trade, not only Crypto.com's research data. robinhood_crypto_autopilot.py publishes a bulk, read-only
+// Robinhood Crypto API trading-pairs list (fullTradableUniverse) every ~5 minutes inside this same file
+// -- alongside its existing per-candidate cross-check -- from the separate crypto-autopilot workflow.
+// It is folded into the existing crypto-robinhood-cross-check.json (rather than a new file) because
+// .github/workflows/*.yml cannot be edited through any available tool, and that path is the one already
+// on the autopilot's git-add allowlist. Reading it here is a plain best-effort file read -- a
+// missing/stale/malformed file just means "unknown" for every candidate (see robinhoodTradeRank below),
+// never a hard block. Crypto.com remains the primary research/bars/liquidity source and this never
+// changes a growthQuality/score number or admits an otherwise-disqualified candidate; it only prefers,
+// among candidates that already qualify, the ones Robinhood can actually execute -- so a real-money
+// order attempt does not keep starting on a coin (like a past BOME/USD pick) that the live per-order
+// Robinhood tradability check was always going to reject anyway.
+async function loadRobinhoodTradableSymbols(){
+  try{
+    const raw=await fs.readFile(ROBINHOOD_CROSS_CHECK,'utf8');
+    const j=JSON.parse(raw);
+    const u=j.fullTradableUniverse;
+    if(!u||u.available!==true||!Array.isArray(u.pairs))return {available:false,set:new Set(),generatedAt:null};
+    const set=new Set(u.pairs.filter(p=>p&&p.isApiTradable).map(p=>String(p.ticker||'').toUpperCase()));
+    return {available:true,set,generatedAt:j.generatedAt||null,totalTradable:set.size};
+  }catch{
+    return {available:false,set:new Set(),generatedAt:null};
+  }
+}
 async function cget(url){
   const r=await fetch(url);
   if(!r.ok)throw new Error(`Crypto.com ${r.status}: ${await r.text()}`);
@@ -139,9 +166,15 @@ const dailyOk=symbols.filter(s=>(daily[s]||[]).length>=60).length,intraOk=symbol
 console.log(`Candle coverage: ${dailyOk}/${symbols.length} symbols have >=60 daily bars; ${intraOk}/${symbols.length} have >=22 four-hour bars. Anything below these minimums returns no candidate for that symbol this run.`);
 const btc=metrics('BTC/USD',daily['BTC/USD']);
 const btcTrend=!!(btc&&btc.price>btc.ma20&&btc.price>btc.ma50&&btc.m20>0);
-const ranked=symbols.map(s=>{const m=metrics(s,daily[s]);if(!m)return null;const c=candidate(m,calibration(s,daily[s]||[]),fourHourSetup(s,intra),btcTrend);if(!c)return null;const x={...c,dollarVolume24hReal:Math.round(volOf.get(s)||0)};return{...x,setupGrade:grade(x)};}).filter(Boolean).sort((a,b)=>b.growthQuality-a.growthQuality||b.score-a.score||b.dollarVolume24hReal-a.dollarVolume24hReal);
+const robinhood=await loadRobinhoodTradableSymbols();
+// true=known Robinhood-tradable, false=data available and this symbol was not in it, null=Robinhood
+// data unavailable this run (never penalized -- see loadRobinhoodTradableSymbols above).
+const robinhoodTradable=s=>robinhood.available?robinhood.set.has(s.toUpperCase()):null;
+const robinhoodTradeRank=v=>v===false?0:v===true?2:1;
+const ranked=symbols.map(s=>{const m=metrics(s,daily[s]);if(!m)return null;const c=candidate(m,calibration(s,daily[s]||[]),fourHourSetup(s,intra),btcTrend);if(!c)return null;const x={...c,dollarVolume24hReal:Math.round(volOf.get(s)||0),robinhoodTradable:robinhoodTradable(s)};return{...x,setupGrade:grade(x)};}).filter(Boolean).sort((a,b)=>robinhoodTradeRank(b.robinhoodTradable)-robinhoodTradeRank(a.robinhoodTradable)||b.growthQuality-a.growthQuality||b.score-a.score||b.dollarVolume24hReal-a.dollarVolume24hReal);
+console.log(robinhood.available?`Robinhood cross-reference: ${robinhood.totalTradable} tradable USD pairs known; ${ranked.filter(x=>x.robinhoodTradable===true).length}/${ranked.length} scanned candidates match.`:'Robinhood cross-reference unavailable this run (file missing/stale); ranking unaffected, all candidates treated as unknown.');
 
-await fs.writeFile(path.join(outDir,'crypto-universe.json'),JSON.stringify({schemaVersion:2,generatedAt:new Date().toISOString(),supportedUsdPairs:symbols.length,btcTrendSupport:btcTrend,researchMode:'ACTIVE_24_7_MORE_OPPORTUNITIES',dataSource:'CRYPTO_COM_PUBLIC_API',discoveryError,discoveryDebug,ranked:ranked.slice(0,30)},null,2));
+await fs.writeFile(path.join(outDir,'crypto-universe.json'),JSON.stringify({schemaVersion:2,generatedAt:new Date().toISOString(),supportedUsdPairs:symbols.length,btcTrendSupport:btcTrend,researchMode:'ACTIVE_24_7_MORE_OPPORTUNITIES',dataSource:'CRYPTO_COM_PUBLIC_API',robinhoodCrossCheck:{available:robinhood.available,generatedAt:robinhood.generatedAt,totalRobinhoodTradablePairs:robinhood.available?robinhood.totalTradable:null},discoveryError,discoveryDebug,ranked:ranked.slice(0,30)},null,2));
 for(const budget of budgets){
   const aPlus=ranked.filter(x=>x.setupGrade==='A+'),a=ranked.filter(x=>x.setupGrade==='A'),chosen=(aPlus.length?aPlus.slice(0,1):a.slice(0,1));
   const selectedGrade=chosen[0]?.setupGrade||'NO_TRADE',maxPortfolioRisk=budget*(selectedGrade==='A+'?.025:selectedGrade==='A'?.015:0);let remaining=budget,remainingRisk=maxPortfolioRisk;const allocations=[];
