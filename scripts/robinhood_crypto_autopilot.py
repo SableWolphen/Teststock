@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'docs' / 'data'
 WATCH = DATA / 'execution-watchlist.json'
 STATUS = DATA / 'crypto-api-status.json'
+CROSS_CHECK = DATA / 'crypto-robinhood-cross-check.json'
 SIGNAL = ROOT / 'docs' / 'signal.json'
 PLAN = DATA / 'crypto-plan-100.json'
 TOURNAMENT = DATA / 'crypto-tournament.json'
@@ -154,6 +155,73 @@ class RobinhoodCryptoV2:
         return self.request('POST', f'/api/v2/crypto/trading/orders/{order_id}/cancel/')
 
 
+def cross_check_candidates(tournament, limit=6):
+    seen = {}
+    for row in [tournament.get('researchChampion'), tournament.get('qualifiedChampion'), *(tournament.get('fallbacks') or [])]:
+        if not row:
+            continue
+        ticker = str(row.get('ticker') or '').strip()
+        if ticker and ticker not in seen:
+            seen[ticker] = row
+        if len(seen) >= limit:
+            break
+    return list(seen.keys())
+
+
+def publish_robinhood_cross_check(api, tournament):
+    # User-requested (2026-08-23): crypto research should look at Robinhood as well as Crypto.com,
+    # not only Crypto.com alone. This is a read-only Robinhood Crypto API cross-check (trading-pair
+    # status plus live best bid/ask) for the current Teststock research champion, qualified champion
+    # and fallbacks, published alongside -- never in place of -- Crypto.com's research data. It never
+    # places, cancels or otherwise affects an order, never requires the account-resolution step below
+    # to have succeeded, and contributes zero live ranking weight (Evidence and admission: alternative
+    # sources start at zero live contribution). Previously this Robinhood check only ran silently,
+    # once, immediately before a live buy attempt; surfacing it here makes a Crypto.com-vs-Robinhood
+    # price, spread or tradability disagreement visible on the dashboard on every autopilot run,
+    # whether or not a trade is ever attempted. Stocks are unaffected: Robinhood stock verification
+    # already happens at approval/submission time through the existing Claude-mediated path, and nothing
+    # here changes that.
+    tickers = cross_check_candidates(tournament)
+    results = []
+    for ticker in tickers:
+        symbol = ticker.replace('/', '-')
+        entry = {'ticker': ticker, 'symbol': symbol, 'checkedAt': now_iso()}
+        try:
+            pair_rows = api.pairs(symbol)
+            pair = pair_rows[0] if pair_rows else None
+            if not pair:
+                entry.update(available=False, reason='NOT_A_ROBINHOOD_CRYPTO_PAIR')
+                results.append(entry)
+                continue
+            is_tradable = bool(pair.get('is_api_tradable'))
+            entry.update(available=True, isApiTradable=is_tradable, status=pair.get('status'), minOrderAmount=pair.get('min_order_amount'))
+            if is_tradable:
+                quote = api.quote(symbol)
+                if quote:
+                    bid = Decimal(str(quote.get('bid') or 0))
+                    ask = Decimal(str(quote.get('ask') or 0))
+                    spread_pct = float((ask - bid) / ((ask + bid) / 2) * 100) if bid > 0 and ask > 0 else None
+                    entry.update(bid=float(bid) if bid else None, ask=float(ask) if ask else None,
+                                 spreadPct=round(spread_pct, 3) if spread_pct is not None else None)
+                else:
+                    entry.update(reason='NO_LIVE_QUOTE')
+        except Exception as exc:
+            entry.update(available=False, error=str(exc)[:200])
+        results.append(entry)
+    write_json(CROSS_CHECK, {
+        'schemaVersion': 1,
+        'source': 'ROBINHOOD_CRYPTO_API_READ_ONLY_CROSS_CHECK',
+        'generatedAt': now_iso(),
+        'note': ('Diagnostic-only live Robinhood Crypto API pair/quote cross-check for the current '
+                 'Teststock crypto research champion, qualified champion and fallbacks. Zero live '
+                 'ranking contribution; never places, cancels or modifies an order; a missing or '
+                 'failed check leaves the candidate visibly unverified rather than assuming '
+                 'tradability. Crypto.com remains the primary crypto research/bars/liquidity source.'),
+        'candidatesChecked': len(results),
+        'results': results,
+    })
+
+
 def set_status(status, message, **extra):
     payload = {
         'schemaVersion': 1,
@@ -285,6 +353,20 @@ def main():
     plan = read_json(PLAN, {})
     tournament = read_json(TOURNAMENT, {})
     api = RobinhoodCryptoV2(api_key, private_key)
+
+    # Read-only Robinhood cross-check for research visibility. Runs before account resolution (it
+    # needs no account_number) and is wrapped so a failure here can never block or fail-closed the
+    # real account/trading logic below -- it only ever affects its own diagnostic-only output file.
+    try:
+        publish_robinhood_cross_check(api, tournament)
+    except Exception as exc:
+        write_json(CROSS_CHECK, {
+            'schemaVersion': 1,
+            'source': 'ROBINHOOD_CRYPTO_API_READ_ONLY_CROSS_CHECK',
+            'generatedAt': now_iso(),
+            'available': False,
+            'error': str(exc)[:200],
+        })
 
     accounts = api.accounts()
     all_active_count = len(matching_active_accounts(accounts))
