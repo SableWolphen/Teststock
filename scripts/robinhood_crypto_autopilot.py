@@ -103,6 +103,45 @@ class RobinhoodCryptoV2:
             return {}
         return r.json()
 
+    # Fixed 2026-08-24: every list-style call below used to read only response['results'] and
+    # silently drop any 'next' page. Live evidence this was actually truncating real data: a
+    # no-filter trading_pairs call came back with a 'count' far larger than the 20 rows in
+    # 'results', and the app itself shows LTC as directly buyable while that truncated list did
+    # not include it at all -- LTC/USD reached this run's top crypto grade (A) and could not be
+    # bought only because the pairs list this script saw was page 1 of a paginated response, not
+    # Robinhood's real tradable universe. This walks 'next' (Robinhood's standard DRF-style
+    # pagination: {"results": [...], "next": <url-or-null>, ...}) until it is null, a repeat is
+    # seen (cycle guard), or a hard 50-page safety cap is hit, so a genuinely huge list still
+    # terminates rather than looping forever. A 'next' value on an unexpected host is not
+    # followed, since the request signature is computed over a path on BASE only.
+    def _get_all(self, path):
+        results = []
+        next_ref = path
+        seen = set()
+        for _ in range(50):
+            if not next_ref or next_ref in seen:
+                break
+            seen.add(next_ref)
+            data = self.request('GET', next_ref)
+            if isinstance(data, dict):
+                results.extend(data.get('results', []) or [])
+                next_val = data.get('next')
+            else:
+                next_val = None
+            if not next_val:
+                break
+            if next_val.startswith(BASE):
+                next_ref = next_val[len(BASE):]
+            elif next_val.startswith('http://') or next_val.startswith('https://'):
+                # Different host than BASE -- do not sign/request against an unverified host.
+                break
+            elif next_val.startswith('/'):
+                next_ref = next_val
+            else:
+                # Bare cursor value rather than a full path/URL.
+                next_ref = path.split('?')[0] + '?' + next_val.lstrip('?')
+        return results
+
     @staticmethod
     def q(params):
         pairs = []
@@ -114,15 +153,15 @@ class RobinhoodCryptoV2:
         return '?' + urlencode(pairs) if pairs else ''
 
     def accounts(self):
-        return self.request('GET', '/api/v2/crypto/trading/accounts/').get('results', [])
+        return self._get_all('/api/v2/crypto/trading/accounts/')
 
     def holdings(self, account_number, *asset_codes):
         path = '/api/v2/crypto/trading/holdings/' + self.q({'account_number': account_number, 'asset_code': list(asset_codes) if asset_codes else None})
-        return self.request('GET', path).get('results', [])
+        return self._get_all(path)
 
     def pairs(self, *symbols):
         path = '/api/v2/crypto/trading/trading_pairs/' + self.q({'symbol': list(symbols) if symbols else None})
-        return self.request('GET', path).get('results', [])
+        return self._get_all(path)
 
     def quote(self, symbol):
         path = '/api/v2/crypto/marketdata/best_bid_ask/' + self.q({'symbol': symbol})
@@ -134,7 +173,7 @@ class RobinhoodCryptoV2:
         if symbol:
             params['symbol'] = symbol
         path = '/api/v2/crypto/trading/orders/' + self.q(params)
-        return self.request('GET', path).get('results', [])
+        return self._get_all(path)
 
     def order(self, account_number, order_id):
         path = f'/api/v2/crypto/trading/orders/{order_id}/' + self.q({'account_number': account_number})
