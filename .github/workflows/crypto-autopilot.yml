@@ -41,6 +41,10 @@ jobs:
         if: ${{ env.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
         run: pip install --disable-pip-version-check requests pynacl
 
+      - name: Apply conservative crypto dust reconciliation
+        if: ${{ env.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
+        run: node scripts/apply-crypto-dust-reconciliation.mjs
+
       - name: Run fail-closed crypto autopilot
         if: ${{ env.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
         env:
