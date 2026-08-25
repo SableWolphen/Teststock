@@ -10,6 +10,9 @@ on:
         default: false
   schedule:
     - cron: '*/5 * * * *'
+  workflow_run:
+    workflows: ['Refresh Teststock picks']
+    types: [completed]
 
 permissions:
   contents: write
@@ -20,6 +23,7 @@ concurrency:
 
 jobs:
   crypto:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 4
     env:
