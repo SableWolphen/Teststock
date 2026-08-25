@@ -146,13 +146,59 @@ function runHandler(budget,segment='core') {
 async function readJson(file,fallback){try{return JSON.parse(await fs.readFile(file,'utf8'));}catch{return fallback;}}
 function optionId(o){return o?`${o.side||''}-${o.expiry||''}-${o.longStrike||o.strike||''}-${o.shortStrike||''}`:'stock';}
 function updateOutcomes(history,daily){
-  for(const h of history){if(h.status&&h.status!=='OPEN')continue;const bars=(daily[h.symbol]||[]).filter(b=>String(b.t||'').slice(0,10)>h.date);if(!bars.length)continue;const maxBars=bars.slice(0,20);let resolved=null;
-    for(const b of maxBars){const gapStop=h.direction==='BULLISH'?b.o<h.stop:b.o>h.stop,stopHit=h.direction==='BULLISH'?b.l<=h.stop:b.h>=h.stop,t1Hit=h.direction==='BULLISH'?b.h>=h.target1:b.l<=h.target1,t2Hit=h.direction==='BULLISH'?b.h>=h.target2:b.l<=h.target2;if(gapStop){resolved='STOP_GAP';h.estimatedExit=round(b.o*(h.direction==='BULLISH'?.998:1.002));break;}if(stopHit&&t1Hit){resolved='AMBIGUOUS';break;}if(stopHit){resolved='STOP';h.estimatedExit=round(h.stop*(h.direction==='BULLISH'?.998:1.002));break;}if(t2Hit){resolved='TARGET2';h.estimatedExit=round(h.target2*(h.direction==='BULLISH'?.999:1.001));break;}if(t1Hit){resolved='TARGET1';h.estimatedExit=round(h.target1*(h.direction==='BULLISH'?.999:1.001));break;}}
-    const last=maxBars.at(-1);if(resolved){h.status=resolved;h.resolvedAt=String(last.t||'').slice(0,10);}else if(maxBars.length>=20){const move=h.direction==='BULLISH'?pct(last.c,h.entryStock):pct(h.entryStock,last.c);h.status=move>0?'MATURED_WIN':'MATURED_LOSS';h.directional20dMove=round(move,2);h.resolvedAt=String(last.t||'').slice(0,10);}else{h.lastChecked=String(last.t||'').slice(0,10);}
+  for(const h of history){
+    const signalPrice=Number(h.signalPrice??h.entryStock??0),trigger=Number(h.trigger??signalPrice),bullish=h.direction==='BULLISH';
+    h.signalPrice=signalPrice||null;
+    for(const k of ['estimatedExit','resolvedAt','directional20dMove','triggeredAt','actualEntryPrice'])delete h[k];
+    const bars=(daily[h.symbol]||[]).filter(b=>String(b.t||'').slice(0,10)>h.date);
+    const triggeredAtSignal=signalPrice>0&&trigger>0&&(bullish?signalPrice>=trigger:signalPrice<=trigger);
+    let activationIndex=triggeredAtSignal?-1:null;
+    if(triggeredAtSignal){h.triggeredAt=h.date;h.actualEntryPrice=round(signalPrice);h.entryStock=h.actualEntryPrice;}
+    else h.entryStock=null;
+
+    const entryWindow=Math.min(20,bars.length);
+    if(activationIndex===null){
+      for(let i=0;i<entryWindow;i++){
+        const b=bars[i],triggerHit=bullish?b.h>=trigger:b.l<=trigger;if(!triggerHit)continue;
+        const stopTouched=bullish?b.l<=h.stop:b.h>=h.stop;
+        if(stopTouched){h.status='AMBIGUOUS_ENTRY_DAY';h.resolvedAt=String(b.t||'').slice(0,10);activationIndex='ambiguous';break;}
+        h.triggeredAt=String(b.t||'').slice(0,10);h.actualEntryPrice=round(trigger*(bullish?1.002:.998));h.entryStock=h.actualEntryPrice;activationIndex=i;break;
+      }
+    }
+    if(activationIndex==='ambiguous')continue;
+    if(activationIndex===null){
+      const last=bars.at(Math.min(bars.length,20)-1);
+      if(bars.length>=20){h.status='EXPIRED_UNTRIGGERED';h.resolvedAt=String(last?.t||'').slice(0,10);}
+      else {h.status='PENDING_ENTRY';if(last)h.lastChecked=String(last.t||'').slice(0,10);}
+      continue;
+    }
+
+    h.status='ACTIVE';
+    const activeStart=activationIndex<0?0:activationIndex;
+    const activeBars=bars.slice(activeStart,activeStart+20);
+    let resolved=null,resolvedBar=null;
+    for(let i=0;i<activeBars.length;i++){
+      const b=activeBars[i];
+      if(activationIndex>=0&&i===0){
+        const t1Hit=bullish?b.h>=h.target1:b.l<=h.target1,t2Hit=bullish?b.h>=h.target2:b.l<=h.target2;
+        if(t2Hit){resolved='TARGET2';h.estimatedExit=round(h.target2*(bullish?.999:1.001));resolvedBar=b;break;}
+        if(t1Hit){resolved='TARGET1';h.estimatedExit=round(h.target1*(bullish?.999:1.001));resolvedBar=b;break;}
+        continue;
+      }
+      const gapStop=bullish?b.o<h.stop:b.o>h.stop,stopHit=bullish?b.l<=h.stop:b.h>=h.stop,t1Hit=bullish?b.h>=h.target1:b.l<=h.target1,t2Hit=bullish?b.h>=h.target2:b.l<=h.target2;
+      if(gapStop){resolved='STOP_GAP';h.estimatedExit=round(b.o*(bullish?.998:1.002));resolvedBar=b;break;}
+      if(stopHit&&(t1Hit||t2Hit)){resolved='AMBIGUOUS';resolvedBar=b;break;}
+      if(stopHit){resolved='STOP';h.estimatedExit=round(h.stop*(bullish?.998:1.002));resolvedBar=b;break;}
+      if(t2Hit){resolved='TARGET2';h.estimatedExit=round(h.target2*(bullish?.999:1.001));resolvedBar=b;break;}
+      if(t1Hit){resolved='TARGET1';h.estimatedExit=round(h.target1*(bullish?.999:1.001));resolvedBar=b;break;}
+    }
+    if(resolved){h.status=resolved;h.resolvedAt=String(resolvedBar?.t||'').slice(0,10);}
+    else if(activeBars.length>=20){const last=activeBars.at(-1),move=bullish?pct(last.c,h.actualEntryPrice):pct(h.actualEntryPrice,last.c);h.status=move>0?'MATURED_WIN':'MATURED_LOSS';h.directional20dMove=round(move,2);h.resolvedAt=String(last.t||'').slice(0,10);}
+    else {const last=activeBars.at(-1);h.status='ACTIVE';if(last)h.lastChecked=String(last.t||'').slice(0,10);}
   }
   return history;
 }
-function historySummary(history){const resolved=history.filter(x=>['TARGET1','TARGET2','STOP','STOP_GAP','MATURED_WIN','MATURED_LOSS'].includes(x.status)),wins=resolved.filter(x=>['TARGET1','TARGET2','MATURED_WIN'].includes(x.status));return {tracked:history.length,open:history.filter(x=>x.status==='OPEN').length,resolved:resolved.length,winRate:resolved.length?Math.round(wins.length/resolved.length*100):null,targetHits:resolved.filter(x=>['TARGET1','TARGET2'].includes(x.status)).length,stops:resolved.filter(x=>['STOP','STOP_GAP'].includes(x.status)).length,gapStops:resolved.filter(x=>x.status==='STOP_GAP').length,note:'Tracks underlying position outcomes with conservative slippage estimates and gap-through-stop handling.'};}
+function historySummary(history){const resolved=history.filter(x=>['TARGET1','TARGET2','STOP','STOP_GAP','MATURED_WIN','MATURED_LOSS'].includes(x.status)),wins=resolved.filter(x=>['TARGET1','TARGET2','MATURED_WIN'].includes(x.status));return {tracked:history.length,pendingEntry:history.filter(x=>x.status==='PENDING_ENTRY').length,active:history.filter(x=>x.status==='ACTIVE').length,open:history.filter(x=>['PENDING_ENTRY','ACTIVE'].includes(x.status)).length,expiredUntriggered:history.filter(x=>x.status==='EXPIRED_UNTRIGGERED').length,ambiguous:history.filter(x=>['AMBIGUOUS','AMBIGUOUS_ENTRY_DAY'].includes(x.status)).length,resolved:resolved.length,winRate:resolved.length?Math.round(wins.length/resolved.length*100):null,targetHits:resolved.filter(x=>['TARGET1','TARGET2'].includes(x.status)).length,stops:resolved.filter(x=>['STOP','STOP_GAP'].includes(x.status)).length,gapStops:resolved.filter(x=>x.status==='STOP_GAP').length,note:'Only activated trades count toward win rate. Pending or never-triggered setups and ambiguous daily-bar ordering are excluded.'};}
 
 const startDaily=new Date(Date.now()-1000*86400000).toISOString().slice(0,10);
 const startIntra=new Date(Date.now()-8*86400000).toISOString();
@@ -185,11 +231,10 @@ for (const segment of ['core','penny']) for (const budget of budgets) {
 const historyFile=path.join(outDir,'trade-history.json');
 let history=updateOutcomes(await readJson(historyFile,[]),daily);
 const today=new Date().toISOString().slice(0,10);
-for(const d of generated){if(d.action!=='TRADE CANDIDATE'||!d.featured)continue;const p=d.featured,o=p.option,id=`${today}-${d.segment||'core'}-${d.budget}-${p.symbol}-${optionId(o)}`;if(history.some(x=>x.id===id))continue;history.push({id,date:today,createdAt:d.asOf,segment:d.segment||'core',budget:d.budget,symbol:p.symbol,direction:p.direction,entryStock:p.price,trigger:p.entry,stop:p.stop,target1:p.target1,target2:p.target2,setupScore:p.score,learningScore:p.learningScore,stockPlan:p.stockPlan,option:o?{kind:o.kind,side:o.side,expiry:o.expiry,longStrike:o.longStrike,shortStrike:o.shortStrike,maxRisk:o.maxRisk,maxProfit:o.maxProfit,probProfit:o.probProfit,iv:o.iv,delta:o.delta}:null,status:'OPEN'});}
+for(const d of generated){if(d.action!=='TRADE CANDIDATE'||!d.featured)continue;const p=d.featured,o=p.option,id=`${today}-${d.segment||'core'}-${d.budget}-${p.symbol}-${optionId(o)}`;if(history.some(x=>x.id===id))continue;const triggeredNow=p.direction==='BULLISH'?Number(p.price)>=Number(p.entry):Number(p.price)<=Number(p.entry);history.push({id,date:today,createdAt:d.asOf,segment:d.segment||'core',budget:d.budget,symbol:p.symbol,direction:p.direction,signalPrice:p.price,entryStock:triggeredNow?p.price:null,actualEntryPrice:triggeredNow?p.price:null,triggeredAt:triggeredNow?today:null,trigger:p.entry,stop:p.stop,target1:p.target1,target2:p.target2,setupScore:p.score,learningScore:p.learningScore,stockPlan:p.stockPlan,option:o?{kind:o.kind,side:o.side,expiry:o.expiry,longStrike:o.longStrike,shortStrike:o.shortStrike,maxRisk:o.maxRisk,maxProfit:o.maxProfit,probProfit:o.probProfit,iv:o.iv,delta:o.delta}:null,status:triggeredNow?'ACTIVE':'PENDING_ENTRY'});}
 history=history.slice(-400);
 await fs.writeFile(historyFile,JSON.stringify(history,null,2));
 const learningFile={generatedAt:new Date().toISOString(),breadth:marketBreadth,calibration,history:historySummary(history)};
 await fs.writeFile(path.join(outDir,'learning.json'),JSON.stringify(learningFile,null,2));
 await fs.writeFile(path.join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
-
 
