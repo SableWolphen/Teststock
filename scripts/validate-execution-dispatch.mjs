@@ -4,7 +4,7 @@ const file=process.argv[2]||'docs/data/execution-dispatch.json';
 const dispatch=JSON.parse(await fs.readFile(file,'utf8'));
 const fail=message=>{throw new Error(`Invalid execution dispatch: ${message}`);};
 
-if(![1,2].includes(dispatch.schemaVersion)) fail('unsupported schemaVersion');
+if(![1,2,3].includes(dispatch.schemaVersion)) fail('unsupported schemaVersion');
 if(!['OK','FAIL_CLOSED_STALE_OR_UNHEALTHY_BOARD'].includes(dispatch.dispatchHealth)) fail('unknown dispatchHealth');
 if(dispatch.claudeShouldPollMarket!==false) fail('Claude market polling must remain disabled');
 if(dispatch.claudeShouldRun){
@@ -31,10 +31,23 @@ for(let i=1;i<ordered.length;i++)if(Number(ordered[i-1].queueRank||999)>Number(o
 const max=Number(dispatch.consumerContract?.maximumNewBuysPerDispatch??1);
 if(!Number.isInteger(max)||max<1||max>4) fail('maximumNewBuysPerDispatch must be an integer from 1 to 4');
 if(approvalCandidates.length>max) fail('approvalCandidates exceeds maximumNewBuysPerDispatch');
-if(dispatch.schemaVersion>=2){
+if(dispatch.schemaVersion===2){
   if(dispatch.consumerContract?.perOrderApprovalRequired!==true) fail('per-order approval must remain required');
   if(dispatch.consumerContract?.multipleConcurrentStocksAllowed!==true) fail('multi-stock capability must be explicit');
   if(dispatch.multiStockPolicy?.enabled!==true) fail('multiStockPolicy must be enabled');
-  if(dispatch.pendingAction?.trigger==='BUY_TRIGGER'&&approvalCandidates.length&&approvalCandidates[0].fingerprint!==dispatch.pendingAction.fingerprint) fail('pendingAction must match first approval candidate');
 }
-console.log(`Execution dispatch valid: ${dispatch.claudeShouldRun?'actionable':'idle'}; max new buys ${max}; approval candidates ${approvalCandidates.length}.`);
+if(dispatch.schemaVersion>=3){
+  if(dispatch.consumerContract?.approvalMode!=='EXACT_CURRENT_BATCH') fail('approvalMode must be EXACT_CURRENT_BATCH');
+  if(dispatch.consumerContract?.exactBatchApprovalAllowed!==true) fail('exact batch approval must be enabled');
+  if(dispatch.consumerContract?.blanketFutureApprovalAllowed!==false) fail('blanket future approval must remain disabled');
+  if(dispatch.consumerContract?.multipleConcurrentStocksAllowed!==true) fail('multi-stock capability must be explicit');
+  if(dispatch.multiStockPolicy?.enabled!==true) fail('multiStockPolicy must be enabled');
+  if(dispatch.multiStockPolicy?.exactBatchApprovalAllowed!==true) fail('multiStockPolicy must permit exact batch approval');
+  if(dispatch.multiStockPolicy?.blanketFutureApprovalAllowed!==false) fail('multiStockPolicy must forbid blanket future approval');
+  if(approvalCandidates.length&&!dispatch.approvalBatchId) fail('approval batch lacks batch id');
+  if(!approvalCandidates.length&&dispatch.approvalBatchId!==null) fail('idle dispatch must not carry approval batch id');
+  if(Boolean(dispatch.stockApprovalNotification?.needed)!==Boolean(approvalCandidates.length)) fail('notification needed flag does not match approval candidates');
+  if(dispatch.stockApprovalNotification?.batchId!==dispatch.approvalBatchId) fail('notification batch id mismatch');
+}
+if(dispatch.pendingAction?.trigger==='BUY_TRIGGER'&&approvalCandidates.length&&approvalCandidates[0].fingerprint!==dispatch.pendingAction.fingerprint) fail('pendingAction must match first approval candidate');
+console.log(`Execution dispatch valid: ${dispatch.claudeShouldRun?'actionable':'idle'}; max new buys ${max}; approval candidates ${approvalCandidates.length}; batch ${dispatch.approvalBatchId||'NONE'}.`);
