@@ -7,22 +7,10 @@ const planFile=path.join(dataDir,'crypto-plan-100.json');
 const read=async(f,x=null)=>{try{return JSON.parse(await fs.readFile(f,'utf8'));}catch{return x;}};
 const round=(n,d=6)=>Number(Number(n||0).toFixed(d));
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-const day=x=>String(x||'').slice(0,10);
+const isUsdPair=symbol=>String(symbol||'').endsWith('/USD');
 
-// User-requested fix (2026-08-23): the crypto day-trade model resolves against 4-hour setups with
-// 3R/5R targets meant to play out over hours to a few days -- but this ledger was resolving against
-// once-a-day Alpaca crypto bars over a 20-DAY window. Over 500 candidate rows had accumulated with
-// zero ever reaching status RESOLVED, because a trade created today could not even be tested for
-// entry until a full calendar day had passed. That silently meant crypto could never earn the
-// forward-shadow evidence needed to leave SHADOW_ONLY, regardless of how good the setups actually
-// were. This now resolves against the same Crypto.com public 4-hour candlestick feed
-// generate-crypto-picks.mjs uses to build the entry/stop/target levels being tested -- consistent
-// with the 2026-08-22/23 decision to drop Alpaca's crypto feed entirely (unreliable volume figures,
-// unreliable native 4-hour candles) -- on the timeframe the setup actually trades on. HOLD_BARS is in
-// 4-hour units, not days.
 const CC='https://api.crypto.com/exchange/v1/public';
-const HOLD_BARS=30; // 30 x 4h = 5 days: covers the day-trade/short-swing horizon while giving a setup
-                    // that hasn't been chased yet a real chance to still be reached.
+const HOLD_BARS=30;
 async function cget(url){
   const r=await fetch(url);
   if(!r.ok)throw new Error(`Crypto.com ${r.status}: ${await r.text()}`);
@@ -37,6 +25,7 @@ function toRows(data){
   })).filter(x=>x.t&&x.c>0).sort((a,b)=>new Date(a.t)-new Date(b.t));
 }
 async function candles4h(symbol,count=300){
+  if(!isUsdPair(symbol))throw new Error(`Non-USD pair rejected by Teststock crypto policy: ${symbol}`);
   const instrument=symbol.replace('/','_');
   const q=new URLSearchParams({instrument_name:instrument,timeframe:'4h',interval:'4h',count:String(count)});
   const j=await cget(`${CC}/get-candlestick?${q}`);
@@ -71,10 +60,6 @@ function resolveTrade(t,xs){
     }
   }
   if(!entered&&forward.length>=HOLD_BARS){
-    // Price never returned to the entry zone within the day-trade/short-swing window. Mark it closed
-    // so it stops being retried and reported as misleadingly "OPEN" forever, but this stays out of
-    // admission's WIN/LOSS accounting -- apply-crypto-profitability-admission.mjs only counts
-    // status==='RESOLVED', so EXPIRED rows are excluded exactly like unresolved OPEN rows were.
     return {...current,status:'EXPIRED',resolvedAt:forward[HOLD_BARS-1]?.t||null,notes:'Price never returned to the entry zone within the day-trade/short-swing window.'};
   }
   return current;
@@ -84,8 +69,11 @@ function summary(rows){const done=rows.filter(x=>x.status==='RESOLVED'&&Number.i
 const plan=await read(planFile,{});
 let ledger=await read(ledgerFile,{schemaVersion:1,generatedAt:null,trades:[],summary:{}});
 ledger.trades=Array.isArray(ledger.trades)?ledger.trades:[];
+const beforeCount=ledger.trades.length;
+ledger.trades=ledger.trades.filter(t=>isUsdPair(t.symbol));
+const removedNonUsd=beforeCount-ledger.trades.length;
 
-const openSymbols=[...new Set(ledger.trades.filter(x=>x.status==='OPEN').map(x=>x.symbol))];
+const openSymbols=[...new Set(ledger.trades.filter(x=>x.status==='OPEN'&&isUsdPair(x.symbol)).map(x=>x.symbol))];
 for(const symbol of openSymbols){
   try{
     const xs=await candles4h(symbol,300);
@@ -94,8 +82,8 @@ for(const symbol of openSymbols){
 }
 
 const today=new Date().toISOString().slice(0,10);
-const acceptedSymbols=new Set((plan.allocations||[]).map(x=>x.symbol));
-const candidates=(plan.ranked||[]).slice(0,10);
+const acceptedSymbols=new Set((plan.allocations||[]).filter(x=>isUsdPair(x.symbol)).map(x=>x.symbol));
+const candidates=(plan.ranked||[]).filter(r=>isUsdPair(r.symbol)).slice(0,10);
 for(const r of candidates){
   if(!(Number(r.entry)>0&&Number(r.stop)>0&&Number(r.target1)>0))continue;
   const decision=acceptedSymbols.has(r.symbol)?'ACCEPTED':'REJECTED';
@@ -126,11 +114,14 @@ for(const r of candidates){
 ledger.trades=ledger.trades.slice(-2000);
 ledger.generatedAt=new Date().toISOString();
 ledger.summary=summary(ledger.trades);
+ledger.usdOnly=true;
+ledger.removedNonUsdRecordsLastRun=removedNonUsd;
 ledger.rules=[
+  'Tracks only exact /USD crypto pairs. /USDT, /USDC and every other quote currency are rejected and removed from the shadow ledger.',
   'Tracks accepted (would-have-bought) and rejected crypto model candidates for opportunity-cost diagnostics and shadow-first profitability admission.',
-  'Uses future Crypto.com 4-hour candles only after the decision timestamp; never uses future data to create the decision. A trade resolves WIN/LOSS/FLAT within 30 four-hour bars (5 days) of being created, matching the day-trade/short-swing horizon it was generated for; if price never returns to the entry zone within that window it is marked EXPIRED rather than left open indefinitely.',
-  'Shadow evidence may unlock reduced-size live probation via scripts/apply-crypto-profitability-admission.mjs; it may never automatically increase maximum live risk or loosen a hard gate.',
-  'Robinhood Crypto API-confirmed real-fill history (crypto-real-trade-journal.json) remains authoritative for actual-money performance and full admission.',
+  'Uses future Crypto.com 4-hour candles only after the decision timestamp; never uses future data to create the decision. A trade resolves WIN/LOSS/FLAT within 30 four-hour bars (5 days) of being created; if price never returns to the entry zone within that window it is marked EXPIRED.',
+  'Shadow evidence may unlock reduced-size live probation; it may never automatically increase maximum live risk or loosen a hard gate.',
+  'Robinhood Crypto API-confirmed real-fill history remains authoritative for actual-money performance and full admission.',
 ];
 await fs.writeFile(ledgerFile,JSON.stringify(ledger,null,2)+'\n');
-console.log(`Crypto shadow ledger: ${ledger.trades.length} records; ${JSON.stringify(ledger.summary)}`);
+console.log(`Crypto shadow ledger: ${ledger.trades.length} USD-only records; removed ${removedNonUsd} non-USD record(s); ${JSON.stringify(ledger.summary)}`);
