@@ -28,7 +28,17 @@
       "maxAtrPct": 7,
       "rule": "B is a reduced-size fallback, not a waiver. It must still have bullish direction, positive conservative expectancy, adequate history, acceptable R:R, bounded volatility, and every downstream live account/execution/protection guard."
     },
-    "instructions": "Target2 is the qualification target; target1 is for partial profit/de-risking. Use cost-adjusted conservative expectancy when available so execution friction cannot be ignored. A tier always ranks before B tier."
+    "instructions": "Target2 is the qualification target; target1 is for partial profit/de-risking. Use cost-adjusted conservative expectancy when available so execution friction cannot be ignored. A tier always ranks before B tier.",
+    "seedLane": {
+      "enabled": true,
+      "maxOrderUsd": 25,
+      "maxConcurrentPositions": 1,
+      "maxStopLossesPerUtcDay": 2,
+      "requiredEntryTier": "A",
+      "requiresPerOrderApproval": true,
+      "requiresProtection": true,
+      "rule": "User-authorized stock-only seed lane, added 2026-08-26, mirroring crypto.dayTradeSeedLane. It may bypass only the forward-shadow/real-fill profitability-admission wait (SHADOW_ONLY) for the single top-ranked entryTier A/ELITE candidate, at a fixed $25 order ceiling and one concurrent seed position maximum. Unlike the crypto seed lane, this one is NEVER auto-submitted -- it still requires the user's own explicit per-order approval for that exact order, exactly like every other stock buy. Every other gate remains mandatory: freshness, liquidity/spread, no-chase-past-maximum-entry, correlation, market-regime policy, buying-power, and broker-resident-or-policy-compliant-synthetic protection. Pauses after 2 stopped seed trades in one UTC day. LIVE_SUSPENDED-equivalent or any candidate already failing a live safety gate never qualifies. Does not raise, and is entirely separate from, the minimumIndependentShadowSamples thresholds (6/12) or the win-rate/average-R bars that gate MICRO_PROBATION/PROBATION in apply-profitability-admission.mjs -- those are completely unchanged by this addition."
+    }
   },
   "options": {
     "stocksRemainDefault": true,
