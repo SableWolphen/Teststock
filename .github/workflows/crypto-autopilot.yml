@@ -45,7 +45,7 @@ jobs:
         if: ${{ env.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
         run: pip install --disable-pip-version-check requests pynacl
 
-      - name: Apply conservative crypto dust reconciliation
+      - name: Apply lot-aware crypto ownership patch
         if: ${{ env.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
         run: node scripts/apply-crypto-dust-reconciliation.mjs
 
@@ -57,6 +57,10 @@ jobs:
           ROBINHOOD_CRYPTO_ACCOUNT_NUMBER: ${{ secrets.ROBINHOOD_CRYPTO_ACCOUNT_NUMBER }}
           ROBINHOOD_CRYPTO_MAX_ORDER_USD: ${{ secrets.ROBINHOOD_CRYPTO_MAX_ORDER_USD }}
         run: python scripts/robinhood_crypto_autopilot.py
+
+      - name: Restore runtime-only patched source
+        if: ${{ always() && env.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
+        run: git restore --worktree --staged scripts/robinhood_crypto_autopilot.py || true
 
       - name: Publish only non-sensitive execution state
         if: ${{ always() && env.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
@@ -70,6 +74,6 @@ jobs:
             echo "No public crypto state changes"
           else
             git commit -m "Update crypto autopilot state"
-            git pull --rebase origin main
+            git pull --rebase -X theirs origin main
             git push
           fi
