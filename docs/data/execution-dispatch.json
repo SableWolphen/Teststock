@@ -1,12 +1,12 @@
 {
   "schemaVersion": 3,
   "source": "TESTSTOCK_EVENT_DISPATCH",
-  "generatedAt": "2026-08-26T11:16:52.627Z",
-  "boardPublishedAt": "2026-08-26T10:56:09.827Z",
-  "boardAgeMs": 1242800,
+  "generatedAt": "2026-08-26T13:01:43.964Z",
+  "boardPublishedAt": "2026-08-26T13:01:43.593Z",
+  "boardAgeMs": 371,
   "maximumBoardAgeMs": 900000,
   "monitorHealth": "OK",
-  "dispatchHealth": "FAIL_CLOSED_STALE_OR_UNHEALTHY_BOARD",
+  "dispatchHealth": "OK",
   "claudeShouldRun": false,
   "claudeShouldPollMarket": false,
   "executionNeeded": false,
@@ -15,12 +15,14 @@
     "TRIGGER_1_STOP",
     "TRIGGER_3_TARGET2",
     "TRIGGER_2_TARGET1",
-    "BUY_TRIGGER"
+    "BUY_TRIGGER",
+    "SEED_LANE_BUY_TRIGGER"
   ],
   "pendingAction": null,
   "approvalCandidates": [],
   "approvalBatchId": null,
   "fallbackActions": [],
+  "seedLaneCandidate": null,
   "multiStockPolicy": {
     "enabled": true,
     "maximumApprovalCandidatesPerDispatch": 4,
@@ -31,7 +33,7 @@
   },
   "queuedActions": [],
   "noActionInstruction": "If claudeShouldRun is false, stop immediately. Do not call Robinhood, fetch the full signal, research markets, or produce a long report.",
-  "actionInstruction": "Atomically claim each candidate fingerprint in private execution state before any broker action. Exit events always take priority and exclude new buys. For BUY_TRIGGER dispatches, present approvalCandidates together as one exact approval batch when practical. The user may approve the entire current batch in one explicit response, but that approval must be bound to approvalBatchId and may never authorize future or newly-added candidates. After approval, recheck each candidate independently immediately before submission. After each approved fill, recompute remaining cash, account floor, total deployed capital, planned stop risk, correlation, trade-frequency limits, protection capability and concurrent-position capacity before considering the next candidate. If a candidate fails before submission, skip it and continue to the next approved candidate in the same batch. Never force a trade or fill every available slot. Reconcile ambiguous or partial results by client order ID; never retry an uncertain submission as a new order.",
+  "actionInstruction": "Atomically claim each candidate fingerprint in private execution state before any broker action. Exit events always take priority and exclude new buys AND the seed-lane candidate. For BUY_TRIGGER dispatches, present approvalCandidates together as one exact approval batch when practical. The user may approve the entire current batch in one explicit response, but that approval must be bound to approvalBatchId and may never authorize future or newly-added candidates. After approval, recheck each candidate independently immediately before submission. After each approved fill, recompute remaining cash, account floor, total deployed capital, planned stop risk, correlation, trade-frequency limits, protection capability and concurrent-position capacity before considering the next candidate. If a candidate fails before submission, skip it and continue to the next approved candidate in the same batch. Never force a trade or fill every available slot. Reconcile ambiguous or partial results by client order ID; never retry an uncertain submission as a new order. If seedLaneCandidate is present (and no exit event exists), it is entirely separate from approvalCandidates/approvalBatchId -- it is capped at seedLaneCandidate.maxOrderUsd, requires checking real-trade-journal.json live for an existing OPEN seedLane===true position (max 1 concurrent) and today's seed-lane stop count (pause at 2/UTC day) before presenting it, and still requires its own explicit per-order user approval before any order; it is never auto-submitted and never combined with a normal BUY_TRIGGER batch.",
   "consumerContract": {
     "invokeOnlyWhen": "claudeShouldRun === true",
     "atomicClaimKey": "candidate.fingerprint",
