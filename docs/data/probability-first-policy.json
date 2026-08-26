@@ -31,13 +31,13 @@
     "instructions": "Target2 is the qualification target; target1 is for partial profit/de-risking. Use cost-adjusted conservative expectancy when available so execution friction cannot be ignored. A tier always ranks before B tier.",
     "seedLane": {
       "enabled": true,
-      "maxOrderUsd": 25,
-      "maxConcurrentPositions": 1,
-      "maxStopLossesPerUtcDay": 2,
+      "maxOrderUsd": 5,
+      "maxConcurrentPositions": 5,
       "requiredEntryTier": "A",
       "requiresPerOrderApproval": true,
       "requiresProtection": true,
-      "rule": "User-authorized stock-only seed lane, added 2026-08-26, mirroring crypto.dayTradeSeedLane. It may bypass only the forward-shadow/real-fill profitability-admission wait (SHADOW_ONLY) for the single top-ranked entryTier A/ELITE candidate, at a fixed $25 order ceiling and one concurrent seed position maximum. Unlike the crypto seed lane, this one is NEVER auto-submitted -- it still requires the user's own explicit per-order approval for that exact order, exactly like every other stock buy. Every other gate remains mandatory: freshness, liquidity/spread, no-chase-past-maximum-entry, correlation, market-regime policy, buying-power, and broker-resident-or-policy-compliant-synthetic protection. Pauses after 2 stopped seed trades in one UTC day. LIVE_SUSPENDED-equivalent or any candidate already failing a live safety gate never qualifies. Does not raise, and is entirely separate from, the minimumIndependentShadowSamples thresholds (6/12) or the win-rate/average-R bars that gate MICRO_PROBATION/PROBATION in apply-profitability-admission.mjs -- those are completely unchanged by this addition."
+      "rotatesToNextCandidateAfterStop": true,
+      "rule": "User-authorized stock-only seed lane, added 2026-08-26, expanded 2026-08-26 at the user's explicit request. It may bypass only the forward-shadow/real-fill profitability-admission wait (SHADOW_ONLY) for up to maxConcurrentPositions distinct top-ranked entryTier A/ELITE candidates simultaneously, at a fixed $5 order ceiling each -- five concurrent slots at $5 total the same $25 maximum combined exposure as the original single-slot $25 design, just diversified across candidates instead of concentrated in one. Unlike the crypto seed lane, this one is NEVER auto-submitted -- every position still requires the user's own explicit per-order approval for that exact order, exactly like every other stock buy. Every other gate remains mandatory: freshness, liquidity/spread, no-chase-past-maximum-entry, correlation, market-regime policy, buying-power, and broker-resident-or-policy-compliant-synthetic protection. At the user's explicit request, this no longer pauses after stopped trades -- a ticker that stops out is excluded from re-selection for the rest of that UTC day (so the pipeline offers a different distinct candidate instead of immediately re-buying the same loser), and a fresh slot opens up for the next eligible candidate automatically. LIVE_SUSPENDED-equivalent or any candidate already failing a live safety gate never qualifies. Does not raise, and is entirely separate from, the minimumIndependentShadowSamples thresholds (6/12) or the win-rate/average-R bars that gate MICRO_PROBATION/PROBATION in apply-profitability-admission.mjs -- those are completely unchanged by this addition."
     }
   },
   "options": {

@@ -64,33 +64,46 @@ const finalists=(tournament.researchFinalists||[]).map(apply);
 const buyable=live.filter(x=>x.action==='AUTO_BUY_ELIGIBLE'&&!['SHADOW_ONLY','LIVE_SUSPENDED'].includes(x.profitabilityAdmission?.state));
 tournament.liveQueue=live;tournament.researchFinalists=finalists;tournament.liveBuyChampion=buyable[0]||null;tournament.liveFallbacks=buyable.slice(1);
 
-// Stock seed lane (added 2026-08-26, user-authorized, mirrors crypto.dayTradeSeedLane in
-// probability-first-policy.json). Marks at most ONE candidate -- the single top-ranked
-// entryTier A/ELITE row still stuck at SHADOW_ONLY with no active red flag -- as eligible for a
-// small fixed-dollar approval-gated buy that bypasses only the shadow-evidence wait. This never
-// changes MIN_SHADOW_MICRO/MIN_SHADOW, the win-rate/average-R bars above, or blocked/action for
-// any candidate; those still read PROFITABILITY_ADMISSION_BLOCK exactly as before for the normal
-// full-size auto-buy path. It ONLY adds an additional, separate seedLane.eligible flag that the
-// scheduled execution-check may use to present a $25-capped approval packet -- per-order human
-// approval is still mandatory before any order, unlike the crypto seed lane, which is fully
-// automatic. Concurrency and daily-stop pause are enforced live at run time (against
-// docs/data/real-trade-journal.json entries with seedLane===true), not baked into this static file,
-// since this script has no live Robinhood account access.
+// Stock seed lane (added 2026-08-26, expanded 2026-08-26 at the user's explicit request to run
+// up to maxConcurrentPositions distinct candidates at once and rotate to the next candidate after
+// a stop instead of pausing). Marks up to maxConcurrentPositions distinct top-ranked entryTier
+// A/ELITE rows still stuck at SHADOW_ONLY with no active red flag as eligible for a small
+// fixed-dollar approval-gated buy that bypasses only the shadow-evidence wait. This never changes
+// MIN_SHADOW_MICRO/MIN_SHADOW, the win-rate/average-R bars above, or blocked/action for any
+// candidate; those still read PROFITABILITY_ADMISSION_BLOCK exactly as before for the normal
+// full-size auto-buy path. It ONLY adds a separate, additional seedLane.eligible flag per ticker
+// that the scheduled execution-check may use to present a small-capped approval packet -- per-order
+// human approval is still mandatory before any order, unlike the crypto seed lane, which is fully
+// automatic. A ticker currently holding an OPEN seed position, or that closed a seed position on a
+// STOP earlier the same UTC day, is excluded from re-selection here so a fresh distinct candidate
+// is offered instead of immediately re-buying the same name that just failed -- this replaces the
+// old pause-after-2-stops behavior at the user's explicit request; it now rotates instead of
+// pausing. Final concurrency/exclusion is re-verified live at run time against
+// docs/data/real-trade-journal.json (this script has no live Robinhood account access), so this is
+// a best-effort pre-filter, not the final word.
 const seedLaneConfig=probabilityPolicy?.stocks?.seedLane||{enabled:false};
 if(seedLaneConfig.enabled===true){
-  const eligiblePool=live.filter(x=>x.entryTier==='A'&&x.profitabilityAdmission?.state==='SHADOW_ONLY'&&!x.profitabilityAdmission?.regimeDisabled&&!x.profitabilityAdmission?.contradictoryShadow);
-  eligiblePool.sort((a,b)=>Number(a.queueRank??999)-Number(b.queueRank??999));
-  const chosen=eligiblePool[0];
-  if(chosen){
-    chosen.seedLane={
-      eligible:true,
-      maxOrderUsd:Number(seedLaneConfig.maxOrderUsd||25),
-      requiredEntryTier:seedLaneConfig.requiredEntryTier||'A',
-      requiresPerOrderApproval:seedLaneConfig.requiresPerOrderApproval!==false,
-      maxConcurrentPositions:Number(seedLaneConfig.maxConcurrentPositions||1),
-      maxStopLossesPerUtcDay:Number(seedLaneConfig.maxStopLossesPerUtcDay||2),
-      rule:seedLaneConfig.rule||'Bounded stock seed lane; still requires per-order human approval; concurrency/pause enforced live against real-trade-journal.json.'
-    };
+  const todayUtc=new Date().toISOString().slice(0,10);
+  const seedTrades=(realJournal.trades||[]).filter(x=>x.assetClass==='STOCK'&&x.seedLane===true);
+  const openSeedTickers=new Set(seedTrades.filter(x=>x.outcome==='OPEN').map(x=>x.symbol));
+  const stoppedTodaySeedTickers=new Set(seedTrades.filter(x=>x.outcome==='LOSS'&&x.exitReason==='STOP'&&String(x.finalExitAt||'').slice(0,10)===todayUtc).map(x=>x.symbol));
+  const maxConcurrent=Number(seedLaneConfig.maxConcurrentPositions||1);
+  const availableSlots=Math.max(0,maxConcurrent-openSeedTickers.size);
+  if(availableSlots>0){
+    const eligiblePool=live.filter(x=>x.entryTier==='A'&&x.profitabilityAdmission?.state==='SHADOW_ONLY'&&!x.profitabilityAdmission?.regimeDisabled&&!x.profitabilityAdmission?.contradictoryShadow&&!openSeedTickers.has(x.ticker)&&!stoppedTodaySeedTickers.has(x.ticker));
+    eligiblePool.sort((a,b)=>Number(a.queueRank??999)-Number(b.queueRank??999));
+    for(const chosen of eligiblePool.slice(0,availableSlots)){
+      chosen.seedLane={
+        eligible:true,
+        maxOrderUsd:Number(seedLaneConfig.maxOrderUsd||5),
+        requiredEntryTier:seedLaneConfig.requiredEntryTier||'A',
+        requiresPerOrderApproval:seedLaneConfig.requiresPerOrderApproval!==false,
+        maxConcurrentPositions:maxConcurrent,
+        currentOpenSeedPositions:openSeedTickers.size,
+        rotatesToNextCandidateAfterStop:true,
+        rule:seedLaneConfig.rule||'Bounded stock seed lane; still requires per-order human approval; rotates to the next distinct candidate after a stop instead of pausing.'
+      };
+    }
   }
 }
 tournament.profitabilityAdmissionPolicy={enabled:true,mode:'FORWARD_SHADOW_MICRO_THEN_REAL_ADMISSION',rule:'Backtests and historical samples are diagnostic only and cannot create live eligibility. Six actual independent positive outcomes -- shadow (hypothetical) or resolved real Robinhood fills, pooled together -- may unlock tightly capped one-quarter-size micro-probation; twelve independent positive outcomes from that same pool unlock half-size probation. A resolved real fill counts at least as strongly as a shadow outcome since it is confirmed real-money evidence, not a substitute for it. Duplicate same-day symbol/setup/regime records count once using the most adverse result. Full normal eligible size still requires sufficient positive Robinhood-confirmed real fills on their own (see the separate real/LIVE_ADMITTED tier). Zero or unknown forward evidence never passes.'};
