@@ -1,13 +1,7 @@
-name: Teststock crypto autopilot
+name: Teststock crypto cross-check
 
 on:
   workflow_dispatch:
-    inputs:
-      dry_run:
-        description: 'Read-only connection and order-plan test; never submits an order'
-        required: false
-        type: boolean
-        default: false
   schedule:
     - cron: '*/5 * * * *'
   workflow_run:
@@ -18,7 +12,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: teststock-crypto-autopilot
+  group: teststock-crypto-cross-check
   cancel-in-progress: false
 
 jobs:
@@ -28,7 +22,9 @@ jobs:
     timeout-minutes: 4
     env:
       ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED: ${{ secrets.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED }}
-      ROBINHOOD_CRYPTO_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+      # Claude is the sole broker execution agent. GitHub may research, monitor and
+      # publish Robinhood cross-check state, but this workflow must never submit orders.
+      ROBINHOOD_CRYPTO_DRY_RUN: 'true'
     steps:
       - name: Checkout latest main
         uses: actions/checkout@v4
@@ -49,7 +45,7 @@ jobs:
         if: ${{ env.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
         run: node scripts/apply-crypto-dust-reconciliation.mjs
 
-      - name: Run fail-closed crypto autopilot
+      - name: Run read-only Robinhood crypto cross-check
         if: ${{ env.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
         env:
           ROBINHOOD_CRYPTO_API_KEY: ${{ secrets.ROBINHOOD_CRYPTO_API_KEY }}
@@ -62,7 +58,7 @@ jobs:
         if: ${{ always() && env.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
         run: git restore --worktree --staged scripts/robinhood_crypto_autopilot.py || true
 
-      - name: Publish only non-sensitive execution state
+      - name: Publish only non-sensitive cross-check state
         if: ${{ always() && env.ROBINHOOD_CRYPTO_AUTOPILOT_ENABLED == 'true' }}
         shell: bash
         run: |
@@ -73,7 +69,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No public crypto state changes"
           else
-            git commit -m "Update crypto autopilot state"
+            git commit -m "Update crypto cross-check state"
             git pull --rebase -X theirs origin main
             git push
           fi
