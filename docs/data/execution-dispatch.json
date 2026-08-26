@@ -1,9 +1,9 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "source": "TESTSTOCK_EVENT_DISPATCH",
-  "generatedAt": "2026-08-26T10:08:57.271Z",
-  "boardPublishedAt": "2026-08-26T10:05:16.309Z",
-  "boardAgeMs": 220962,
+  "generatedAt": "2026-08-26T10:54:53.770Z",
+  "boardPublishedAt": "2026-08-26T10:54:53.561Z",
+  "boardAgeMs": 209,
   "maximumBoardAgeMs": 900000,
   "monitorHealth": "OK",
   "dispatchHealth": "OK",
@@ -19,31 +19,41 @@
   ],
   "pendingAction": null,
   "approvalCandidates": [],
+  "approvalBatchId": null,
   "fallbackActions": [],
   "multiStockPolicy": {
     "enabled": true,
     "maximumApprovalCandidatesPerDispatch": 4,
-    "perOrderApprovalRequired": true,
+    "exactBatchApprovalAllowed": true,
+    "blanketFutureApprovalAllowed": false,
     "oneWinnerDoesNotBlockOtherQualifiedStocks": true,
-    "rule": "A tournament winner gets first priority, not exclusive ownership of the portfolio. After any approved/filled buy, continue evaluating the remaining already-qualified candidates against remaining cash, deployed-capital, planned-stop-risk, correlation, frequency, protection and concurrent-position limits. Never force the portfolio to its maximum."
+    "rule": "The user may approve every exact ticker in the current approval batch with one explicit approval. That approval applies only to the listed batch ID and expires with the candidates. Each broker order still requires its own fingerprint claim, live guard recheck, sizing calculation and broker reconciliation. A tournament winner gets first priority, not exclusive ownership of the portfolio. Never force the portfolio to its maximum."
   },
   "queuedActions": [],
   "noActionInstruction": "If claudeShouldRun is false, stop immediately. Do not call Robinhood, fetch the full signal, research markets, or produce a long report.",
-  "actionInstruction": "Atomically claim each candidate fingerprint in private execution state before any broker action. Exit events always take priority and exclude new buys. For BUY_TRIGGER dispatches, evaluate approvalCandidates in rank order. A live-qualified candidate may be presented for its own exact user approval even when another Teststock stock is already open. After each approved fill, recompute remaining cash, account floor, total deployed capital, planned stop risk, correlation, trade-frequency limits, protection capability and concurrent-position capacity before considering the next candidate. Do not reuse one approval for another ticker. If a candidate fails before submission, continue to the next already-qualified candidate in the same run. Never force a trade or fill every available slot. Reconcile ambiguous or partial results by client order ID; never retry an uncertain submission as a new order.",
+  "actionInstruction": "Atomically claim each candidate fingerprint in private execution state before any broker action. Exit events always take priority and exclude new buys. For BUY_TRIGGER dispatches, present approvalCandidates together as one exact approval batch when practical. The user may approve the entire current batch in one explicit response, but that approval must be bound to approvalBatchId and may never authorize future or newly-added candidates. After approval, recheck each candidate independently immediately before submission. After each approved fill, recompute remaining cash, account floor, total deployed capital, planned stop risk, correlation, trade-frequency limits, protection capability and concurrent-position capacity before considering the next candidate. If a candidate fails before submission, skip it and continue to the next approved candidate in the same batch. Never force a trade or fill every available slot. Reconcile ambiguous or partial results by client order ID; never retry an uncertain submission as a new order.",
   "consumerContract": {
     "invokeOnlyWhen": "claudeShouldRun === true",
     "atomicClaimKey": "candidate.fingerprint",
     "maximumNewBuysPerDispatch": 4,
-    "perOrderApprovalRequired": true,
+    "approvalMode": "EXACT_CURRENT_BATCH",
+    "exactBatchApprovalAllowed": true,
+    "blanketFutureApprovalAllowed": false,
     "multipleConcurrentStocksAllowed": true,
     "fallbackRule": "Process already-qualified stock candidates in order. Failed candidates fall through. Successfully approved and filled candidates do not end scanning if remaining portfolio capacity exists.",
     "duplicateRule": "One fingerprint may create at most one broker order. Persist the claim outside this public repository before submission.",
     "retryRule": "After an ambiguous response, reconcile by client order ID and broker state. Never create a replacement order until the original is conclusively cancelled or rejected.",
     "creditRule": "Use one Claude run for the ordered candidate sequence where practical. Do not invoke Claude for unchanged fingerprints, unhealthy/stale boards, expired entries, order-status polling, or no-action reports."
   },
+  "stockApprovalNotification": {
+    "needed": false,
+    "batchId": null,
+    "tickers": [],
+    "instruction": "Send one push alert for this exact current batch. The user can approve all listed tickers at once, but each candidate must still pass live guards before its individual broker order is submitted."
+  },
   "stopPriorityRule": "A stop event outranks profit targets and buys. When any exit event exists, do not evaluate or submit a new buy.",
   "wakeBridge": {
-    "status": "DISPATCH_PACKET_READY_NO_DIRECT_CLAUDE_WEBHOOK",
-    "note": "GitHub generates the event packet without an LLM. An authorized execution runtime must fetch this packet or be triggered externally."
+    "status": "DISPATCH_PACKET_READY_FOR_NOTIFICATION_BRIDGE",
+    "note": "GitHub generates the event packet without an LLM. The monitor workflow emits a GitHub notification for exact stock approval batches; an authorized execution runtime still performs broker actions."
   }
 }
