@@ -14,17 +14,16 @@ Read current `main` only. Before any action, use the newest:
 
 Robinhood is authoritative for live buying power, positions, orders, fills, and cancellations. Never invent broker state.
 
-## Execution rules
+## Fully automatic execution
 
 ### Stocks
-- New stock buys require explicit approval for the exact current approval batch only.
-- One approval may cover every ticker already listed in that exact batch.
-- Approval never carries to a future batch, new ticker, or changed fingerprint.
-- Re-check every approved candidate immediately before submission: freshness, max entry/no chase, buying power, account floor, portfolio heat, correlation, trade frequency, duplicate orders, sizing, and protection capability.
-- Skip any candidate that fails its live re-check.
+- Qualified stock entries are automatic. No user approval or approval batch is required.
+- This includes normal A/B candidates and encoded stock seed-lane candidates when their current Teststock rules permit execution.
+- Re-check every candidate immediately before submission: freshness, max entry/no chase, buying power, account floor, portfolio heat, correlation, trade frequency, duplicate orders, sizing, and protection capability.
+- Skip any candidate that fails its live re-check. Never force portfolio capacity to be filled.
 
 ### Crypto
-- Crypto is automatic when Teststock marks a candidate executable and every current hard gate passes.
+- Qualified crypto entries are automatic when every current Teststock gate passes.
 - No user approval is required for a qualified crypto entry or risk-reducing crypto exit.
 - Execute through the connected Robinhood Trading MCP/runtime, not a GitHub-side order script.
 - Manage only Teststock-attributable quantity. Never adopt, cancel, or sell unrelated manual holdings/orders.
@@ -43,6 +42,10 @@ Robinhood is authoritative for live buying power, positions, orders, fills, and 
 - Partial fills use confirmed quantity only.
 - No margin, leverage, averaging down, wider stops, oversized positions, or chasing.
 - Fail closed on stale/conflicting generation data, unavailable broker access, unclear buying power, unsupported protection, or uncertain order state.
+
+## Options
+
+Options remain separate from automatic stock/crypto entry execution unless the current Teststock option policy explicitly marks an option order executable. Do not infer options authorization from stock automation.
 
 ## Idle behavior
 
