@@ -3,8 +3,8 @@ name: Monitor Teststock triggers
 on:
   workflow_dispatch:
   schedule:
-    # Offset the five-minute monitor so an hourly Claude check observed around :05
-    # normally sees a trigger board refreshed around :02, while preserving <=5-minute monitoring.
+    # Offset from the five-minute Claude executor so it normally sees a trigger
+    # board refreshed a couple of minutes earlier.
     - cron: '2,7,12,17,22,27,32,37,42,47,52,57 * * * *'
   push:
     branches: [main]
@@ -14,8 +14,6 @@ on:
       - 'scripts/validate-execution-dispatch.mjs'
       - 'scripts/validate-trigger-board.mjs'
       - 'docs/data/execution-watchlist.json'
-      # Refresh immediately after a new research generation publishes instead
-      # of waiting for GitHub's best-effort scheduled runner.
       - 'docs/signal.json'
       - 'docs/data/growth-plan-*.json'
       - 'docs/data/crypto-plan-*.json'
@@ -23,7 +21,6 @@ on:
 
 permissions:
   contents: write
-  issues: write
 
 concurrency:
   group: trigger-monitor
@@ -35,7 +32,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: main
 
@@ -53,65 +50,11 @@ jobs:
       - name: Validate trigger board fail closed
         run: node scripts/validate-trigger-board.mjs
 
-      - name: Build one compact prioritized execution packet
+      - name: Build compact automatic execution packet
         run: node scripts/build-execution-dispatch.mjs
 
       - name: Validate execution packet and fail closed
         run: node scripts/validate-execution-dispatch.mjs
-
-      - name: Prepare exact stock approval notification
-        id: approval
-        shell: bash
-        run: |
-          set -euo pipefail
-          node <<'NODE' >> "$GITHUB_OUTPUT"
-          const fs=require('fs');
-          const d=JSON.parse(fs.readFileSync('docs/data/execution-dispatch.json','utf8'));
-          const rows=d.approvalCandidates||[];
-          console.log(`needed=${rows.length?'true':'false'}`);
-          console.log(`batch=${d.approvalBatchId||''}`);
-          console.log(`tickers=${rows.map(x=>x.ticker).join(',')}`);
-          NODE
-
-      - name: Send one GitHub push alert for the current stock approval batch
-        if: ${{ steps.approval.outputs.needed == 'true' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BATCH_ID: ${{ steps.approval.outputs.batch }}
-          TICKERS: ${{ steps.approval.outputs.tickers }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          title="[Teststock] Stock approval needed · ${TICKERS} · ${BATCH_ID}"
-          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state all --search "${BATCH_ID} in:title" --json number --jq '.[0].number // empty')
-          if [ -n "$existing" ]; then
-            echo "Approval notification already exists for batch ${BATCH_ID} (issue #${existing})"
-            exit 0
-          fi
-
-          node <<'NODE' > /tmp/teststock-approval-body.md
-          const fs=require('fs');
-          const d=JSON.parse(fs.readFileSync('docs/data/execution-dispatch.json','utf8'));
-          const rows=d.approvalCandidates||[];
-          console.log('## Teststock stock approval required\n');
-          console.log(`**Exact approval batch:** \`${d.approvalBatchId}\``);
-          console.log(`**Generated:** ${d.generatedAt}`);
-          console.log('\nYou may approve **all stocks in this exact batch at once**. This is not a standing approval for future candidates. Teststock must still re-check every candidate immediately before any broker order.\n');
-          console.log('| Ticker | Observed | Tier | Expires |');
-          console.log('|---|---:|---|---|');
-          for(const x of rows){
-            console.log(`| ${x.ticker} | ${x.observedPrice ?? 'UNKNOWN'} | ${x.entryTierLabel ?? x.entryTier ?? '—'} | ${x.expiresAt ?? '—'} |`);
-          }
-          console.log('\n### Approval phrase\n');
-          console.log(`Open your authorized Claude/Teststock execution session and say: **Approve all stocks in batch ${d.approvalBatchId}**.`);
-          console.log('\nIf any candidate becomes stale, violates live risk limits, loses protection capability, conflicts with an existing order, or no longer passes Teststock gates, it must be skipped even though the batch was approved.');
-          NODE
-
-          gh issue create \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "$title" \
-            --body-file /tmp/teststock-approval-body.md \
-            --assignee "$GITHUB_REPOSITORY_OWNER"
 
       - name: Publish trigger and execution state
         shell: bash
@@ -123,7 +66,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No trigger-state change to publish"
           else
-            git commit -m "Update Teststock trigger and execution dispatch"
+            git commit -m "Update Teststock trigger and automatic execution dispatch"
             git pull --rebase -X theirs origin main
             git push
           fi
