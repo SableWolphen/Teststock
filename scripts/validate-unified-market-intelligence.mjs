@@ -6,9 +6,11 @@ for(const id of ['ALPACA','ROBINHOOD_STOCK','ROBINHOOD_CRYPTO','SEC_EDGAR','INSI
 if(m.architecture!=='TWO_TOURNAMENTS_UNIFIED_EVIDENCE'||s.executionArchitecture?.mode!=='TWO_TOURNAMENTS_ONLY')fail.push('two tournaments');
 if(m.admission?.state!=='SHADOW_FIRST'||!String(m.admission?.authority).includes('never create eligibility'))fail.push('shadow-first admission');
 if(!String(m.riskTruth).includes('Losses are unavoidable'))fail.push('honest objective');
-if(s.autopilot?.requiresPerOrderApproval!==true||s.autopilot?.automaticQualifiedBuys!==false)fail.push('stock approval');
+if(s.autopilot?.stockBuysRequireUserApproval!==false||s.autopilot?.automaticQualifiedStockBuys!==true)fail.push('automatic stock execution');
+if(s.autopilot?.cryptoBuysRequireUserApproval!==false||s.autopilot?.automaticQualifiedCryptoBuys!==true)fail.push('automatic crypto execution');
+if(s.autopilot?.executionAgent!=='CLAUDE'||s.autopilot?.directGitHubBrokerExecution!==false)fail.push('Claude-only execution');
 for(const x of [...(st.liveQueue||[]),...(st.researchFinalists||[])])if(x.unifiedSourceEvidence?.alternativeDataContribution!==0||x.unifiedSourceEvidence?.hardGatesRemainAuthoritative!==true)fail.push(`${x.ticker}: stock source authority`);
 for(const x of c.ranked||[])if(x.unifiedSourceEvidence?.alternativeDataContribution!==0||x.unifiedSourceEvidence?.hardGatesRemainAuthoritative!==true)fail.push(`${x.ticker}: crypto source authority`);
-if(c.brokerExecution?.lane!=='GITHUB_ACTIONS_ROBINHOOD_CRYPTO_API')fail.push('crypto direct lane');
+if(c.brokerExecution?.lane!=='CLAUDE_ROBINHOOD_TRADING_MCP'||c.brokerExecution?.directGitHubOrderSubmissionAllowed!==false)fail.push('Claude crypto lane');
 if(fail.length)throw new Error(`unified market intelligence validation failed: ${[...new Set(fail)].join(', ')}`);
-console.log(`unified market intelligence validation passed: ${m.providers.length} providers; two tournaments; alternative influence zero; approvals preserved`);
+console.log(`unified market intelligence validation passed: ${m.providers.length} providers; two tournaments; automatic stocks+crypto through Claude; alternative influence zero`);
