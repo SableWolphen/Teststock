@@ -1,9 +1,9 @@
 {
   "schemaVersion": 3,
   "source": "TESTSTOCK_EVENT_DISPATCH",
-  "generatedAt": "2026-08-26T16:57:04.486Z",
-  "boardPublishedAt": "2026-08-26T16:57:04.180Z",
-  "boardAgeMs": 306,
+  "generatedAt": "2026-08-27T23:26:51.990Z",
+  "boardPublishedAt": "2026-08-27T23:26:51.633Z",
+  "boardAgeMs": 357,
   "maximumBoardAgeMs": 900000,
   "monitorHealth": "OK",
   "dispatchHealth": "OK",
@@ -19,30 +19,31 @@
     "SEED_LANE_BUY_TRIGGER"
   ],
   "pendingAction": null,
+  "automaticStockCandidates": [],
   "approvalCandidates": [],
   "approvalBatchId": null,
   "fallbackActions": [],
   "seedLaneCandidates": [],
   "multiStockPolicy": {
     "enabled": true,
-    "maximumApprovalCandidatesPerDispatch": 4,
-    "exactBatchApprovalAllowed": true,
-    "blanketFutureApprovalAllowed": false,
+    "maximumAutomaticCandidatesPerDispatch": 4,
+    "automaticQualifiedEntries": true,
+    "userApprovalRequired": false,
     "oneWinnerDoesNotBlockOtherQualifiedStocks": true,
-    "rule": "The user may approve every exact ticker in the current approval batch with one explicit approval. That approval applies only to the listed batch ID and expires with the candidates. Each broker order still requires its own fingerprint claim, live guard recheck, sizing calculation and broker reconciliation. A tournament winner gets first priority, not exclusive ownership of the portfolio. Never force the portfolio to its maximum."
+    "rule": "Claude may execute already-qualified current-generation stock candidates automatically in rank order. Each order still requires a fingerprint claim, immediate live guard recheck, sizing calculation and broker reconciliation. Recompute remaining portfolio capacity after every confirmed fill and never force all available slots to be filled."
   },
   "queuedActions": [],
-  "noActionInstruction": "If claudeShouldRun is false, stop immediately. Do not call Robinhood, fetch the full signal, research markets, or produce a long report.",
-  "actionInstruction": "Atomically claim each candidate fingerprint in private execution state before any broker action. Exit events always take priority and exclude new buys AND every seed-lane candidate. For BUY_TRIGGER dispatches, present approvalCandidates together as one exact approval batch when practical. The user may approve the entire current batch in one explicit response, but that approval must be bound to approvalBatchId and may never authorize future or newly-added candidates. After approval, recheck each candidate independently immediately before submission. After each approved fill, recompute remaining cash, account floor, total deployed capital, planned stop risk, correlation, trade-frequency limits, protection capability and concurrent-position capacity before considering the next candidate. If a candidate fails before submission, skip it and continue to the next approved candidate in the same batch. Never force a trade or fill every available slot. Reconcile ambiguous or partial results by client order ID; never retry an uncertain submission as a new order. If seedLaneCandidates is non-empty (and no exit event exists), each entry is entirely separate from approvalCandidates/approvalBatchId -- capped at its own maxOrderUsd, up to maxConcurrentPositions total concurrent seed positions. Before presenting or submitting any of them, read real-trade-journal.json live and recompute: which tickers currently have an OPEN seedLane===true entry (occupied slots), and which tickers closed a seedLane===true position on a STOP earlier this UTC day (excluded for the rest of today, not paused -- move to the next distinct candidate instead). Only present seed candidates for open slots on tickers not already excluded, each requiring its own explicit per-order user approval before any order; never auto-submitted, never combined with a normal BUY_TRIGGER batch, never exceed maxConcurrentPositions concurrently open seed positions.",
+  "noActionInstruction": "If claudeShouldRun is false, stop immediately. Do not call Robinhood, research markets, or produce a long report.",
+  "actionInstruction": "Atomically claim each candidate fingerprint in private execution state before broker submission. Exit events always take priority and block every new buy for the run. For BUY_TRIGGER dispatches, process automaticStockCandidates in rank order without requesting user approval. Recheck each candidate independently immediately before submission; after every confirmed fill recompute cash, account floor, deployed capital, planned stop risk, correlation, portfolio heat, trade-frequency limits, protection capability and concurrent-position capacity. Skip any candidate that no longer qualifies. Seed-lane candidates are also automatic only while their current maxOrderUsd/maxConcurrentPositions limits, same-day stop exclusion, live account state and all normal safety gates still pass. Reconcile ambiguous or partial results by client order ID; never blindly retry an uncertain submission.",
   "consumerContract": {
     "invokeOnlyWhen": "claudeShouldRun === true",
     "atomicClaimKey": "candidate.fingerprint",
     "maximumNewBuysPerDispatch": 4,
-    "approvalMode": "EXACT_CURRENT_BATCH",
-    "exactBatchApprovalAllowed": true,
-    "blanketFutureApprovalAllowed": false,
+    "approvalMode": "NONE_AUTOMATIC",
+    "userApprovalRequired": false,
+    "automaticQualifiedStocks": true,
     "multipleConcurrentStocksAllowed": true,
-    "fallbackRule": "Process already-qualified stock candidates in order. Failed candidates fall through. Successfully approved and filled candidates do not end scanning if remaining portfolio capacity exists.",
+    "fallbackRule": "Process already-qualified stock candidates in order. Failed candidates fall through. Confirmed fills reduce remaining capacity before the next candidate.",
     "duplicateRule": "One fingerprint may create at most one broker order. Persist the claim outside this public repository before submission.",
     "retryRule": "After an ambiguous response, reconcile by client order ID and broker state. Never create a replacement order until the original is conclusively cancelled or rejected.",
     "creditRule": "Use one Claude run for the ordered candidate sequence where practical. Do not invoke Claude for unchanged fingerprints, unhealthy/stale boards, expired entries, order-status polling, or no-action reports."
@@ -51,11 +52,11 @@
     "needed": false,
     "batchId": null,
     "tickers": [],
-    "instruction": "Send one push alert for this exact current batch. The user can approve all listed tickers at once, but each candidate must still pass live guards before its individual broker order is submitted."
+    "instruction": "Stock approval notifications are disabled because qualified stock entries are automatic."
   },
   "stopPriorityRule": "A stop event outranks profit targets and buys. When any exit event exists, do not evaluate or submit a new buy.",
   "wakeBridge": {
-    "status": "DISPATCH_PACKET_READY_FOR_NOTIFICATION_BRIDGE",
-    "note": "GitHub generates the event packet without an LLM. The monitor workflow emits a GitHub notification for exact stock approval batches; an authorized execution runtime still performs broker actions."
+    "status": "DISPATCH_PACKET_READY_FOR_AUTOMATIC_EXECUTOR",
+    "note": "GitHub generates the event packet without an LLM. The authorized Claude runtime executes qualified stock and crypto actions through Robinhood MCP."
   }
 }
