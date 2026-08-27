@@ -7,11 +7,7 @@ const signal=JSON.parse(await fs.readFile(SIGNAL,'utf8'));
 const policy={
   enabled:true,
   role:'SOLE_EXECUTION_AGENT',
-  schedule:{
-    cron:'*/5 * * * *',
-    timezone:'UTC',
-    note:'A persistent authorized Claude runtime checks Teststock every five minutes. GitHub scanning remains separate from broker execution.'
-  },
+  schedule:{cron:'*/5 * * * *',timezone:'UTC',note:'A persistent authorized Claude runtime checks Teststock every five minutes. GitHub scanning remains separate from broker execution.'},
   triggerBoardFirst:true,
   triggerBoardPath:'docs/data/trigger-board.json',
   executionWatchlistPath:'docs/data/execution-watchlist.json',
@@ -20,23 +16,18 @@ const policy={
   sourceOfTruth:'LATEST_RAW_MAIN',
   generationMatchRequired:true,
   generationRule:'Before adding risk, fetch the newest raw-main dispatch and signal. If generation ids or timestamps conflict, re-fetch and do not submit new risk until they match.',
-  accountGuardrailSource:{
-    source:'CURRENT_RAW_MAIN_SIGNAL_ONLY',
-    hardAccountFloorPath:'signal.hardAccountFloor',
-    capitalLadderPath:'signal.capitalLadder',
-    legacyNinetyDollarPauseThresholdAllowed:false,
-    idleAccountLookupAllowed:false
-  },
+  accountGuardrailSource:{source:'CURRENT_RAW_MAIN_SIGNAL_ONLY',hardAccountFloorPath:'signal.hardAccountFloor',capitalLadderPath:'signal.capitalLadder',legacyNinetyDollarPauseThresholdAllowed:false,idleAccountLookupAllowed:false},
   stockBuys:{
-    explicitApprovalRequired:true,
-    automaticWhenFullyQualifiedAndBrokerPermits:false,
-    batchApprovalAllowed:true,
-    approvalScope:'CURRENT_EXACT_DISPATCH_ONLY',
-    appliesTo:['STOCK_A','STOCK_B'],
-    stockPriority:['A','B'],
+    executionOwner:'CLAUDE',
+    explicitApprovalRequired:false,
+    automaticWhenFullyQualifiedAndBrokerPermits:true,
+    appliesTo:['STOCK_A','STOCK_B','STOCK_SEED'],
+    stockPriority:['A','B','SEED'],
     bTierUsesReducedEncodedSize:true,
-    perFutureOrderStandingApprovalAllowed:false,
-    rule:'One user approval may authorize all exact stock candidates in the current batch only. Claude must re-check every candidate immediately before submitting and skip anything that no longer qualifies.'
+    seedLaneUsesEncodedCap:true,
+    requireRobinhoodTradingMcp:true,
+    requireLiveBrokerRecheck:true,
+    rule:'Qualified stock entries are automatic through Claude. Immediately before each submission, re-check freshness, price/max-entry/no-chase, buying power, account floor, portfolio heat, correlation, trade frequency, duplicate state, sizing and protection capability. Skip anything that no longer qualifies.'
   },
   crypto:{
     executionOwner:'CLAUDE',
@@ -66,28 +57,19 @@ const policy={
     ambiguousSubmissionRule:'Reconcile the original client order id and broker state before any retry.',
     unprotectedEntryRule:'If required protection cannot be established after a fill, use the safest currently authorized risk-reducing action.'
   },
-  hardGuardsRemainMandatory:[
-    'funding lock','account floor','loss brakes','freshness/generation match','maximumEntry/no chase','spread/liquidity','gap guard','correlation/portfolio heat','trade frequency','protective-exit capability','no margin/leverage','no average down','no wider stops'
-  ],
-  protectionReconciliation:{
-    enabled:true,
-    projectsOrDriveRequiredForWatchlistRead:false,
-    idleRepairExceptionAllowed:true,
-    neverInventLevels:true
-  },
-  idle:{
-    normalReads:['docs/data/trigger-board.json','docs/data/execution-watchlist.json'],
-    robinhoodCallsOnNormalIdle:false,
-    rule:'If no actionable stock dispatch, qualified crypto execution, or protection repair exists, stop.'
-  }
+  hardGuardsRemainMandatory:['funding lock','account floor','loss brakes','freshness/generation match','maximumEntry/no chase','spread/liquidity','gap guard','correlation/portfolio heat','trade frequency','protective-exit capability','no margin/leverage','no average down','no wider stops'],
+  protectionReconciliation:{enabled:true,projectsOrDriveRequiredForWatchlistRead:false,idleRepairExceptionAllowed:true,neverInventLevels:true},
+  idle:{normalReads:['docs/data/trigger-board.json','docs/data/execution-watchlist.json'],robinhoodCallsOnNormalIdle:false,rule:'If no actionable stock dispatch, qualified crypto execution, or protection repair exists, stop.'}
 };
 
 signal.autopilot={
   ...(signal.autopilot||{}),
   enabled:true,
   executionAgent:'CLAUDE',
-  stockBuysRequireCurrentBatchApproval:true,
+  stockBuysRequireCurrentBatchApproval:false,
+  stockBuysRequireUserApproval:false,
   cryptoBuysRequireUserApproval:false,
+  automaticQualifiedStockBuys:true,
   automaticQualifiedCryptoBuys:true,
   automaticRiskReducingExits:true,
   directGitHubBrokerExecution:false,
@@ -95,13 +77,15 @@ signal.autopilot={
 };
 delete signal.autopilot.preApprovedExactCandidateException;
 signal.claudeExecutionPolicy=policy;
-signal.schemaVersion=Math.max(35,Number(signal.schemaVersion||0));
+signal.schemaVersion=Math.max(36,Number(signal.schemaVersion||0));
 signal.generatorIntegrity={
   ...(signal.generatorIntegrity||{}),
   traceableFeatures:{
     ...(signal.generatorIntegrity?.traceableFeatures||{}),
     claudeUnattendedExecutionPolicy:true,
     claudeSoleExecutionAgent:true,
+    automaticStockExecution:true,
+    automaticCryptoExecution:true,
     idleProtectionReconciliation:true,
     robinhoodTradingMcpExecution:true
   }
@@ -109,4 +93,4 @@ signal.generatorIntegrity={
 
 await fs.writeFile(SIGNAL,JSON.stringify(signal,null,2));
 await fs.writeFile(CLAUDE_SIGNAL,JSON.stringify(signal,null,2));
-console.log('Applied lean Claude execution policy: approved stock batches, automatic qualified crypto and automatic exits through Robinhood Trading MCP; no direct GitHub broker execution.');
+console.log('Applied fully automatic Claude execution policy: qualified stocks, qualified crypto and exits through Robinhood Trading MCP; no manual entry approval and no direct GitHub broker execution.');
