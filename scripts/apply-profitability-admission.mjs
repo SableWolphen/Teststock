@@ -68,13 +68,12 @@ tournament.liveQueue=live;tournament.researchFinalists=finalists;tournament.live
 // up to maxConcurrentPositions distinct candidates at once and rotate to the next candidate after
 // a stop instead of pausing). Marks up to maxConcurrentPositions distinct top-ranked entryTier
 // A/ELITE rows still stuck at SHADOW_ONLY with no active red flag as eligible for a small
-// fixed-dollar approval-gated buy that bypasses only the shadow-evidence wait. This never changes
+// fixed-dollar automatic buy that bypasses only the shadow-evidence wait. This never changes
 // MIN_SHADOW_MICRO/MIN_SHADOW, the win-rate/average-R bars above, or blocked/action for any
 // candidate; those still read PROFITABILITY_ADMISSION_BLOCK exactly as before for the normal
 // full-size auto-buy path. It ONLY adds a separate, additional seedLane.eligible flag per ticker
-// that the scheduled execution-check may use to present a small-capped approval packet -- per-order
-// human approval is still mandatory before any order, unlike the crypto seed lane, which is fully
-// automatic. A ticker currently holding an OPEN seed position, or that closed a seed position on a
+// that the scheduled execution-check may use to present a small-capped automatic packet. A ticker
+// currently holding an OPEN seed position, or that closed a seed position on a
 // STOP earlier the same UTC day, is excluded from re-selection here so a fresh distinct candidate
 // is offered instead of immediately re-buying the same name that just failed -- this replaces the
 // old pause-after-2-stops behavior at the user's explicit request; it now rotates instead of
@@ -88,7 +87,9 @@ if(seedLaneConfig.enabled===true){
   const openSeedTickers=new Set(seedTrades.filter(x=>x.outcome==='OPEN').map(x=>x.symbol));
   const stoppedTodaySeedTickers=new Set(seedTrades.filter(x=>x.outcome==='LOSS'&&x.exitReason==='STOP'&&String(x.finalExitAt||'').slice(0,10)===todayUtc).map(x=>x.symbol));
   const maxConcurrent=Number(seedLaneConfig.maxConcurrentPositions||1);
-  const availableSlots=Math.max(0,maxConcurrent-openSeedTickers.size);
+  const openedToday=seedTrades.filter(x=>String(x.entryFilledAt||'').slice(0,10)===todayUtc).length;
+  const dailyRemaining=Math.max(0,Number(seedLaneConfig.maxNewPositionsPerUtcDay||1)-openedToday);
+  const availableSlots=Math.min(Math.max(0,maxConcurrent-openSeedTickers.size),dailyRemaining);
   if(availableSlots>0){
     const eligiblePool=live.filter(x=>x.entryTier==='A'&&x.profitabilityAdmission?.state==='SHADOW_ONLY'&&!x.profitabilityAdmission?.regimeDisabled&&!x.profitabilityAdmission?.contradictoryShadow&&!openSeedTickers.has(x.ticker)&&!stoppedTodaySeedTickers.has(x.ticker));
     eligiblePool.sort((a,b)=>Number(a.queueRank??999)-Number(b.queueRank??999));
@@ -97,11 +98,18 @@ if(seedLaneConfig.enabled===true){
         eligible:true,
         maxOrderUsd:Number(seedLaneConfig.maxOrderUsd||5),
         requiredEntryTier:seedLaneConfig.requiredEntryTier||'A',
-        requiresPerOrderApproval:seedLaneConfig.requiresPerOrderApproval!==false,
+        requiresPerOrderApproval:false,
         maxConcurrentPositions:maxConcurrent,
+        maxNewPositionsPerUtcDay:Number(seedLaneConfig.maxNewPositionsPerUtcDay||1),
         currentOpenSeedPositions:openSeedTickers.size,
+        openedSeedPositionsToday:openedToday,
+        existingRobinhoodCashOnly:true,
+        agentMayInitiateDeposits:false,
+        agentMayInitiateBankTransfers:false,
+        marginAllowed:false,
+        requiresBrokerResidentStop:seedLaneConfig.requiresBrokerResidentStop===true,
         rotatesToNextCandidateAfterStop:true,
-        rule:seedLaneConfig.rule||'Bounded stock seed lane; still requires per-order human approval; rotates to the next distinct candidate after a stop instead of pausing.'
+        rule:seedLaneConfig.rule||'Bounded automatic stock seed lane using existing Robinhood cash only; rotates to the next distinct candidate after a stop instead of pausing.'
       };
     }
   }

@@ -1,16 +1,17 @@
 import fs from 'node:fs/promises';
 const board=JSON.parse(await fs.readFile('docs/data/trigger-board.json','utf8'));
 const fail=[];
-if(board.schemaVersion!==4)fail.push('schemaVersion');
+if(board.schemaVersion!==5)fail.push('schemaVersion');
 if(board.source!=='TESTSTOCK_NON_LLM_TRIGGER_MONITOR')fail.push('source');
 if(board.monitorCadenceMinutes!==5)fail.push('monitor cadence');
 if(board.claudeMarketPollingRequired!==false)fail.push('Claude polling lock');
 if(board.siteAvailability!=='24_7_PUBLIC_DASHBOARD')fail.push('24/7 site availability metadata');
 if(!['ACTIVE','REFRESHING'].includes(board.researchState))fail.push('research state');
 if(!Array.isArray(board.items)||!Array.isArray(board.events))fail.push('arrays');
-const allowed=new Set(['BUY_TRIGGER','TRIGGER_1_STOP','TRIGGER_2_TARGET1','TRIGGER_3_TARGET2']);
+const allowed=new Set(['BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','CRYPTO_SEED_LANE_BUY_TRIGGER','TRIGGER_1_STOP','TRIGGER_2_TARGET1','TRIGGER_3_TARGET2']);
 for(const e of board.events||[])if(!allowed.has(e.trigger))fail.push(`unknown trigger ${e.trigger}`);
 for(const e of board.events||[]){if(e.trigger==='BUY_TRIGGER'&&e.assetClass!=='STOCK')fail.push('non-stock buy sent to Claude');if(e.trigger==='BUY_TRIGGER'&&!['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(e.profitabilityAdmission))fail.push(`${e.ticker}: buy lacks profitability admission`);if(e.trigger==='BUY_TRIGGER'&&e.decisionIntelligenceEligible!==true)fail.push(`${e.ticker}: buy lacks decision-intelligence pass`);}
+for(const e of board.events||[]){if(e.trigger==='SEED_LANE_BUY_TRIGGER'&&(e.assetClass!=='STOCK'||e.seedLane?.eligible!==true||e.seedLane?.requiresPerOrderApproval!==false||Number(e.seedLane?.maxOrderUsd)!==5))fail.push(`${e.ticker}: invalid stock seed trigger`);if(e.trigger==='CRYPTO_SEED_LANE_BUY_TRIGGER'&&(e.assetClass!=='CRYPTO'||e.seedLane?.eligible!==true||e.seedLane?.requiresPerOrderApproval!==false||Number(e.seedLane?.maxOrderUsd)!==5))fail.push(`${e.ticker}: invalid crypto seed trigger`);}
 if(Boolean(board.executionNeeded)!==Boolean((board.events||[]).length))fail.push('executionNeeded mismatch');
 const buys=(board.events||[]).filter(e=>e.trigger==='BUY_TRIGGER');
 if(Number(board.buyCompetition?.eligibleNow||0)!==buys.length)fail.push('buy competition count');

@@ -50,8 +50,9 @@ function enrich(row,index,selected){
   const admission=row.profitabilityAdmission?.state||'UNKNOWN';
   const upstreamActionAllowed=['AUTO_BUY_ELIGIBLE','WAIT_FOR_TRIGGER'].includes(String(row.action||''));
   const eligible=upstreamActionAllowed&&!['SHADOW_ONLY','LIVE_SUSPENDED'].includes(admission)&&liquidityPass!==false&&!opportunityDecay.expired;
+  const eligibleForSeedLane=row.seedLane?.eligible===true&&admission==='SHADOW_ONLY'&&liquidityPass!==false&&fundamental!==false&&!opportunityDecay.expired;
   const diagnostics={setupType:setup,technicalScore:round(technical,1),patternConfidencePct:patternConfidence,historicalSamples:Number(histN||0),historicalWinRatePct:histWin??null,rewardRisk:rr,backtestStatus:Number(histN)>=30?'SUPPORTED':Number(histN)>=12?'LIMITED':'SPARSE',warnings:[...(Number(histN)<12?['SPARSE_SETUP_BACKTEST']:[]),...(patternConfidence==null?['PATTERN_CONFIDENCE_UNKNOWN']:[]),...(fundamental==null?['FUNDAMENTALS_UNKNOWN']:[]),...(spread==null?['LIQUIDITY_UNKNOWN']:[]) ]};
-  return {...row,decisionIntelligence:{decisionScore,rankBeforeOptimization:index+1,eligibleAfterOverlay:eligible,upstreamActionAllowed,setupDiagnostics:diagnostics,screener,opportunityDecay,portfolioOptimization:corr,admissionState:admission,hardGatesRemainAuthoritative:true},decisionScore,action:upstreamActionAllowed&&!eligible?'DECISION_INTELLIGENCE_BLOCK':row.action};
+  return {...row,decisionIntelligence:{decisionScore,rankBeforeOptimization:index+1,eligibleAfterOverlay:eligible,eligibleForSeedLane,upstreamActionAllowed,setupDiagnostics:diagnostics,screener,opportunityDecay,portfolioOptimization:corr,admissionState:admission,hardGatesRemainAuthoritative:true},decisionScore,action:upstreamActionAllowed&&!eligible?'DECISION_INTELLIGENCE_BLOCK':row.action};
 }
 
 const seed=tournament.liveQueue||[];
@@ -64,7 +65,7 @@ const finalists=(tournament.researchFinalists||[]).map((x,i)=>byTicker.get(x.tic
 const buyable=live.filter(x=>x.action==='AUTO_BUY_ELIGIBLE'&&x.decisionIntelligence.eligibleAfterOverlay);
 
 tournament.schemaVersion=Math.max(8,Number(tournament.schemaVersion||0));
-tournament.decisionIntelligencePolicy={enabled:true,mode:'BOUNDED_DECISION_OVERLAY',inspirations:{TradeIdeas:'real-time multi-stock ranking',TrendSpider:'setup-specific diagnostics and alerts',Tickeron:'pattern confidence with sample shrinkage',TradingView:'technical state and trigger visibility',Finviz:'fundamental and liquidity screening'},portfolioObjective:'Rank already-qualified candidates by setup quality, confidence, freshness, liquidity and correlation while preserving cash and hard portfolio gates.',authority:'May rerank, reduce, expire, or block. Cannot create eligibility, raise risk, loosen a hard gate, add an asset class, or bypass per-order approval.'};
+tournament.decisionIntelligencePolicy={enabled:true,mode:'BOUNDED_DECISION_OVERLAY',inspirations:{TradeIdeas:'real-time multi-stock ranking',TrendSpider:'setup-specific diagnostics and alerts',Tickeron:'pattern confidence with sample shrinkage',TradingView:'technical state and trigger visibility',Finviz:'fundamental and liquidity screening'},portfolioObjective:'Rank already-qualified candidates by setup quality, confidence, freshness, liquidity and correlation while preserving cash and hard portfolio gates.',authority:'May rerank, reduce, expire, or block. Cannot create eligibility outside an explicitly authorized automatic seed lane, raise risk, loosen a hard gate, add an asset class, or exceed the encoded seed-lane cap.'};
 tournament.liveQueue=live;tournament.researchFinalists=finalists;tournament.liveBuyChampion=buyable[0]||null;tournament.liveFallbacks=buyable.slice(1);
 const q=new Map(live.map(x=>[x.ticker||x.symbol,x]));
 signal.stockPlan=signal.stockPlan||{};

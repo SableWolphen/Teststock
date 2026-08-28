@@ -36,7 +36,9 @@ Risk-reducing Teststock exits and validated profit-taking are automatic and need
 
 Stock entries are fully automatic when Teststock marks them actionable. No user approval, approval phrase, or approval batch is required.
 
-Process `automaticStockCandidates` in rank order. If that field is absent, use the current actionable BUY_TRIGGER sequence from `pendingAction` plus `fallbackActions`. Seed-lane stock entries are also automatic only when they appear in `seedLaneCandidates` and still pass their encoded seed limits.
+Process `automaticStockCandidates` in rank order. If that field is absent, use the current actionable BUY_TRIGGER sequence from `pendingAction` plus `fallbackActions`. Seed-lane stock entries are also automatic only when they appear in `seedLaneCandidates` and still pass their encoded seed limits. Seed entries may use only current non-margin cash/buying power already inside the dedicated Robinhood account. Never initiate a deposit, transfer, external funding action, margin use, or borrowing.
+
+Before any stock seed submission, reconcile Robinhood's current positions, open orders, and same-UTC-day order/fill history. Enforce `maxConcurrentPositions` and `maxNewPositionsPerUtcDay` against broker-confirmed state, not only repository journals. If you cannot verify those limits or cannot distinguish a prior equivalent seed submission, return `NO_ACTION` for that candidate. Never submit repeatedly merely because this workflow runs every five minutes.
 
 Immediately before each stock order, verify current price/max-entry/no-chase, tradability, buying power, account floor, positions, open orders, duplicate fingerprint/client-order state, sizing, portfolio heat, correlation, trade frequency, and protection capability through current Teststock data plus Robinhood. Skip any candidate that fails. After every confirmed fill, recompute remaining cash/risk/correlation/capacity before considering another stock. Never force all slots to be filled.
 
@@ -47,6 +49,10 @@ Crypto is fully automatic through Claude when Teststock marks a current `/USD` c
 Use the qualified champion first, then only already-qualified fallbacks in tournament order. Re-read current price/tradability/buying power/positions/open orders through Robinhood immediately before submission. Skip rather than chase if the live price is outside Teststock's allowed entry. Never create a crypto symbol that Teststock did not qualify.
 
 Before a crypto buy, verify there is no equivalent live or pending Teststock order/position that would make the submission a duplicate. Submit at most one new crypto entry per run. After a confirmed entry, verify confirmed filled quantity/average price and establish the required supported protection. If required protection cannot be established, take the safest policy-authorized risk-reducing action rather than knowingly leaving the new position unprotected.
+
+Crypto seed entries are automatic only when they appear in `seedLaneCandidates` with `assetClass: CRYPTO`. Enforce the encoded $5 cap, one-position concurrency, daily-entry limit, maximum holding period and broker-resident-stop requirement. Use only existing non-margin Robinhood cash; never deposit, transfer, borrow, or add outside money.
+
+Before any crypto seed submission, reconcile Robinhood's current crypto positions, open orders, and same-UTC-day order/fill history. If the one-position limit, daily-entry limit, prior equivalent submission, or required protection cannot be verified, return `NO_ACTION` for that candidate.
 
 ## Broker reconciliation
 

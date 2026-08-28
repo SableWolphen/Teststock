@@ -38,7 +38,7 @@ const pendingAction=selected?compact(selected):null;
 const automaticStockCandidates=hasExitEvent?[]:actionableCandidates.filter(x=>x.trigger==='BUY_TRIGGER').slice(0,MAX_NEW_BUYS_PER_DISPATCH).map(compact);
 const fallbackActions=selected?.trigger==='BUY_TRIGGER'?automaticStockCandidates.slice(1):[];
 
-const seedEvents=(board?.events||[]).filter(e=>e.trigger==='SEED_LANE_BUY_TRIGGER'&&e.assetClass==='STOCK').map(e=>{
+const seedEvents=(board?.events||[]).filter(e=>(e.trigger==='SEED_LANE_BUY_TRIGGER'&&e.assetClass==='STOCK')||(e.trigger==='CRYPTO_SEED_LANE_BUY_TRIGGER'&&e.assetClass==='CRYPTO')).map(e=>{
   const fingerprint=`${e.id}|${e.trigger}|${e.stateChangedAt}`;
   const triggerAgeMs=ageMs(e.stateChangedAt);
   const isFresh=triggerAgeMs<=MAX_ENTRY_AGE_MS;
@@ -46,14 +46,19 @@ const seedEvents=(board?.events||[]).filter(e=>e.trigger==='SEED_LANE_BUY_TRIGGE
   return {...e,fingerprint,triggerAgeMs,isFresh,isNew,isActionable:boardHealthy&&isFresh&&isNew};
 });
 const compactSeed=e=>({
-  fingerprint:e.fingerprint,assetClass:'STOCK',ticker:e.ticker,trigger:e.trigger,
+  fingerprint:e.fingerprint,assetClass:e.assetClass,ticker:e.ticker,trigger:e.trigger,
   maxOrderUsd:Number(e.seedLane?.maxOrderUsd||5),
-  maxConcurrentPositions:Number(e.seedLane?.maxConcurrentPositions||5),
+  maxConcurrentPositions:Number(e.seedLane?.maxConcurrentPositions||(e.assetClass==='CRYPTO'?1:2)),
+  maxNewPositionsPerUtcDay:Number(e.seedLane?.maxNewPositionsPerUtcDay||1),
+  maxHoldingHours:e.assetClass==='CRYPTO'?Number(e.seedLane?.maxHoldingHours||8):null,
   requiresPerOrderApproval:false,
+  existingRobinhoodCashOnly:true,agentMayInitiateDeposits:false,agentMayInitiateBankTransfers:false,marginAllowed:false,
+  requiresBrokerResidentStop:e.seedLane?.requiresBrokerResidentStop===true,
   requestedAction:'VERIFY_LIVE_GUARDS_CONCURRENCY_AND_EXECUTE_SEED_IF_STILL_ELIGIBLE',
   observedPrice:e.observedPrice,triggerStateChangedAt:e.stateChangedAt,
+  minimumEntry:e.minimumEntry,maximumEntry:e.maximumEntry,stop:e.stop,target1:e.target1,target2:e.target2,
   reason:e.reason,
-  packet:`${e.ticker} | SEED_LANE_BUY_TRIGGER | observed ${e.observedPrice ?? 'UNKNOWN'} | capped at $${Number(e.seedLane?.maxOrderUsd||5)} | automatic after live recheck`
+  packet:`${e.ticker} | ${e.trigger} | observed ${e.observedPrice ?? 'UNKNOWN'} | capped at $${Number(e.seedLane?.maxOrderUsd||5)} existing Robinhood cash only | automatic after live recheck`
 });
 const seedLaneCandidates=hasExitEvent?[]:seedEvents.filter(e=>e.isActionable).map(compactSeed);
 
@@ -62,7 +67,7 @@ const out={
   boardAgeMs:Number.isFinite(boardAgeMs)?boardAgeMs:null,maximumBoardAgeMs:MAX_BOARD_AGE_MS,
   monitorHealth:board?.monitorHealth||'UNAVAILABLE',dispatchHealth:boardHealthy?'OK':'FAIL_CLOSED_STALE_OR_UNHEALTHY_BOARD',
   claudeShouldRun:Boolean(pendingAction)||seedLaneCandidates.length>0,claudeShouldPollMarket:false,executionNeeded:permittedCandidates.length>0||seedLaneCandidates.length>0,
-  dispatchFingerprints:[...permittedCandidates.map(x=>x.fingerprint),...seedLaneCandidates.map(x=>x.fingerprint)],priorityOrder:['TRIGGER_1_STOP','TRIGGER_3_TARGET2','TRIGGER_2_TARGET1','BUY_TRIGGER','SEED_LANE_BUY_TRIGGER'],
+  dispatchFingerprints:[...permittedCandidates.map(x=>x.fingerprint),...seedLaneCandidates.map(x=>x.fingerprint)],priorityOrder:['TRIGGER_1_STOP','TRIGGER_3_TARGET2','TRIGGER_2_TARGET1','BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','CRYPTO_SEED_LANE_BUY_TRIGGER'],
   pendingAction,automaticStockCandidates,approvalCandidates:[],approvalBatchId:null,fallbackActions,seedLaneCandidates,
   multiStockPolicy:{enabled:true,maximumAutomaticCandidatesPerDispatch:MAX_NEW_BUYS_PER_DISPATCH,automaticQualifiedEntries:true,userApprovalRequired:false,oneWinnerDoesNotBlockOtherQualifiedStocks:true,rule:'Claude may execute already-qualified current-generation stock candidates automatically in rank order. Each order still requires a fingerprint claim, immediate live guard recheck, sizing calculation and broker reconciliation. Recompute remaining portfolio capacity after every confirmed fill and never force all available slots to be filled.'},
   queuedActions:permittedCandidates.filter(x=>!x.isActionable).map(x=>({ticker:x.ticker,trigger:x.trigger,fingerprint:x.fingerprint,isNew:x.isNew,isFresh:x.isFresh})),
