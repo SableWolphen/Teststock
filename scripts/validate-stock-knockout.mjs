@@ -12,11 +12,14 @@ if(signal.stockTournament?.buyWhenAtLeastOneAOrBCandidatePasses!==true)fail.push
 if(JSON.stringify(signal.stockTournament?.tierPriority)!==JSON.stringify(['A','B']))fail.push('tier priority');
 if(signal.stockTournament?.noEligibleCandidateAction!=='HOLD_CASH_AND_KEEP_SCANNING')fail.push('no-eligible action');
 if(signal.stockPlan?.bestAcceptableEntryPolicy?.enabled!==true)fail.push('best-acceptable policy');
-if(Number(signal.stockPlan?.bestAcceptableEntryPolicy?.bTier?.sizeMultiplier)!==.5)fail.push('B size multiplier');
+if(Number(signal.stockPlan?.bestAcceptableEntryPolicy?.aTier?.sizeMultiplier)!==1)fail.push('A size multiplier');
+if(Number(signal.stockPlan?.bestAcceptableEntryPolicy?.bTier?.sizeMultiplier)!==.25)fail.push('B micro size multiplier');
 if(tournament.source!=='TESTSTOCK_UP_TO_20000_STOCK_KNOCKOUT')fail.push('tournament source');
-if(Number(tournament.schemaVersion)<4)fail.push('tournament schema');
+if(Number(tournament.schemaVersion)<5)fail.push('tournament schema');
 if(Number(tournament.policy?.targetTournamentSize)!==20000)fail.push('tournament policy size');
 if(tournament.policy?.scanAllAvailableUpToTarget!==true)fail.push('tournament scan-all rule');
+if(tournament.policy?.aTier!=='ELITE_NORMAL_ENCODED_SIZE')fail.push('A tier policy');
+if(tournament.policy?.bTier!=='BEST_ACCEPTABLE_MICRO_25_PERCENT_SIZE')fail.push('B tier micro policy');
 if(!Array.isArray(tournament.rounds)||tournament.rounds.length<6)fail.push('knockout rounds');
 const expected=['UNIVERSE','UP_TO_20000','TOP_2000','TOP_800','TOP_100','LIVE_FINAL'];
 for(const r of expected)if(!tournament.rounds?.some(x=>x.round===r))fail.push(`missing round ${r}`);
@@ -24,8 +27,9 @@ if(!Array.isArray(tournament.researchFinalists)||tournament.researchFinalists.le
 if(tournament.policy?.alwaysBuySomething!==false)fail.push('tournament forced-buy lock');
 if(tournament.policy?.buyWhenAtLeastOneAOrBCandidatePasses!==true)fail.push('tournament A/B buy rule');
 if(JSON.stringify(tournament.policy?.tierPriority)!==JSON.stringify(['A','B']))fail.push('tournament tier priority');
-for(const x of tournament.liveQueue||[])if(!['A','B'].includes(x.entryTier))fail.push(`invalid entry tier ${x.ticker}`);
+for(const x of tournament.liveQueue||[]){if(!['A','B'].includes(x.entryTier))fail.push(`invalid entry tier ${x.ticker}`);if(x.entryTier==='B'&&Number(x.entryTierSizeMultiplier)>.25)fail.push(`${x.ticker}: B size above micro cap`);}
 if(signal.generatorIntegrity?.traceableFeatures?.stockKnockoutTournament!==true)fail.push('integrity feature');
 if(signal.generatorIntegrity?.traceableFeatures?.bestAcceptableStockTier!==true)fail.push('best acceptable integrity feature');
+if(signal.generatorIntegrity?.traceableFeatures?.bTierMicroProbation!==true)fail.push('B micro integrity feature');
 if(fail.length)throw new Error(`stock knockout validation failed: ${[...new Set(fail)].join(', ')}`);
-console.log(`stock knockout validation passed: target up to 20000, actual universe ${tournament.policy?.actualAvailableUniverse||'unknown'}, ${tournament.researchFinalists.length} research finalists, A=${(tournament.liveQueue||[]).filter(x=>x.entryTier==='A').length}, B=${(tournament.liveQueue||[]).filter(x=>x.entryTier==='B').length}; live champion ${tournament.liveBuyChampion?.ticker||'none'}`);
+console.log(`stock knockout validation passed: target up to 20000, actual universe ${tournament.policy?.actualAvailableUniverse||'unknown'}, ${tournament.researchFinalists.length} research finalists, A=${(tournament.liveQueue||[]).filter(x=>x.entryTier==='A').length}, B=${(tournament.liveQueue||[]).filter(x=>x.entryTier==='B').length}; B capped at 25%; live champion ${tournament.liveBuyChampion?.ticker||'none'}`);
