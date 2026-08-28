@@ -21,6 +21,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: trigger-monitor
@@ -40,6 +41,48 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Self-heal stale stock research during the regular session
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          # A stale candidate is never tradable as-is. During the regular US
+          # stock session, request a fresh full scan so the candidate gets
+          # rebuilt from current data and can be re-evaluated from scratch.
+          dow=$(TZ=America/New_York date +%u)
+          hour=$(TZ=America/New_York date +%H)
+          minute=$(TZ=America/New_York date +%M)
+          minute_of_day=$((10#$hour * 60 + 10#$minute))
+
+          if [ "$dow" -lt 1 ] || [ "$dow" -gt 5 ] || [ "$minute_of_day" -lt 570 ] || [ "$minute_of_day" -ge 960 ]; then
+            echo "Outside regular US stock session; no stale-stock refresh request needed."
+            exit 0
+          fi
+
+          if ! jq -e '
+            [
+              (.stockPlan.stockCandidateQueue // [])[],
+              (.stockPlan.stockOrders // [])[]
+            ]
+            | any(.action == "STALE_DO_NOT_TRADE")
+          ' docs/signal.json >/dev/null; then
+            echo "No stale stock candidates found."
+            exit 0
+          fi
+
+          echo "Stale stock research detected during the regular session."
+
+          if gh run list --workflow static-scan.yml --limit 20 --json status \
+            | jq -e 'any(.[]; .status == "queued" or .status == "in_progress")' >/dev/null; then
+            echo "A Refresh Teststock picks run is already queued or in progress; not duplicating it."
+            exit 0
+          fi
+
+          gh workflow run static-scan.yml --ref main
+          echo "Requested a fresh full Teststock scan. The stale candidate remains blocked until the refreshed generation passes every gate."
 
       - name: Detect entry stop and profit triggers without an LLM
         env:
