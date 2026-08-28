@@ -1,6 +1,13 @@
 name: Claude Teststock executor
 
+# Event-driven: fires immediately after either upstream data workflow publishes
+# a fresh dispatch, instead of relying solely on the cron below. The schedule
+# is kept only as a backup/reconciliation sweep in case a workflow_run event
+# is ever missed.
 on:
+  workflow_run:
+    workflows: ["Refresh Teststock picks", "Monitor Teststock triggers"]
+    types: [completed]
   schedule:
     - cron: '*/5 * * * *'
   workflow_dispatch:
@@ -14,6 +21,12 @@ permissions:
 
 jobs:
   execute:
+    # Only react to a workflow_run that actually succeeded and published from
+    # main; never act on a failed/cancelled upstream run. Schedule and manual
+    # workflow_dispatch events always proceed.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     # A persistent self-hosted runner is required so Robinhood MCP OAuth can be
     # authenticated once with `claude mcp ...` / `/mcp` and securely refreshed
     # by Claude Code. Add the custom `teststock-trader` label only to that runner.
@@ -39,7 +52,35 @@ jobs:
           test -f docs/data/crypto-tournament.json
           echo 'Claude runtime and Teststock execution inputs are present.'
 
+      - name: Check whether the fresh dispatch requires execution
+        id: dispatch_check
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Cheap cost-saving pre-check only. Fails OPEN (defaults to running
+          # Claude) on any read/parse error, so a bug here can never silently
+          # suppress a real trigger the way the missed 5-minute cron did -
+          # Claude's own fail-closed reading of the dispatch is still the
+          # authoritative decision every time this step can't be certain.
+          should_run=$(python -c "
+          import json
+          try:
+              with open('docs/data/execution-dispatch.json', 'r', encoding='utf-8') as f:
+                  d = json.load(f)
+              print('true' if d.get('claudeShouldRun') else 'false')
+          except Exception:
+              print('true')
+          " 2>/dev/null || echo true)
+          echo "should_run=$should_run" >> "$GITHUB_OUTPUT"
+          echo "Dispatch claudeShouldRun=$should_run"
+
+      - name: Dispatch does not require execution
+        if: steps.dispatch_check.outputs.should_run != 'true'
+        shell: bash
+        run: echo 'claudeShouldRun is false; exiting without calling Robinhood.'
+
       - name: Run Claude sole execution agent
+        if: steps.dispatch_check.outputs.should_run == 'true'
         shell: bash
         env:
           # Optional on a self-hosted runner already authenticated to Claude.
