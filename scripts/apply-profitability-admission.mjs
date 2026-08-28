@@ -89,7 +89,9 @@ if(seedLaneConfig.enabled===true){
   const maxConcurrent=Number(seedLaneConfig.maxConcurrentPositions||1);
   const openedToday=seedTrades.filter(x=>String(x.entryFilledAt||'').slice(0,10)===todayUtc).length;
   const dailyRemaining=Math.max(0,Number(seedLaneConfig.maxNewPositionsPerUtcDay||1)-openedToday);
-  const availableSlots=Math.min(Math.max(0,maxConcurrent-openSeedTickers.size),dailyRemaining);
+  // Publish enough ranked fallbacks to fill the remaining concurrent capacity. The executor still
+  // enforces dailyRemaining against Robinhood-confirmed state and may open at most one of them today.
+  const availableSlots=dailyRemaining>0?Math.max(0,maxConcurrent-openSeedTickers.size):0;
   if(availableSlots>0){
     const eligiblePool=live.filter(x=>x.entryTier==='A'&&x.profitabilityAdmission?.state==='SHADOW_ONLY'&&!x.profitabilityAdmission?.regimeDisabled&&!x.profitabilityAdmission?.contradictoryShadow&&!openSeedTickers.has(x.ticker)&&!stoppedTodaySeedTickers.has(x.ticker));
     eligiblePool.sort((a,b)=>Number(a.queueRank??999)-Number(b.queueRank??999));
