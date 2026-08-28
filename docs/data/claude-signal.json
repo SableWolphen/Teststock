@@ -2,7 +2,7 @@
   "schemaVersion": 43,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-08-26T10:57:02.330Z",
+  "generatedAt": "2026-08-28T02:05:16.321Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -83,7 +83,7 @@
         "newOptionsAllowed": true
       }
     ],
-    "instructions": "Select the current equity tier exactly as published. Apply its stock allocation multiplier, max deployed percentage and planned-stop-risk cap across all open/new positions. Options use that same tier's maxOptionRiskPct and require newOptionsAllowed=true plus every eliteOption and live-evidence check; crypto uses its own tournament and direct Robinhood Crypto API risk limits."
+    "instructions": "Select the current equity tier exactly as published. Apply its stock allocation multiplier, max deployed percentage and planned-stop-risk cap across all open/new positions. Options use that same tier's maxOptionRiskPct and require newOptionsAllowed=true plus every eliteOption and live-evidence check; crypto uses its own tournament and Claude Robinhood Trading MCP risk limits."
   },
   "profitLock": {
     "mode": "TIERED_EQUITY_FLOOR",
@@ -245,7 +245,7 @@
     "stockProtection": "Determine the live stock quantity. For whole-share quantity, create and verify a broker-resident persistent protective stop when Robinhood accepts it. Do not retry unsupported trigger orders for a fractional remainder. Fractional quantity may use only signal.fractionalProtectionPolicy synthetic monitoring, and only while its monitoring/risk requirements pass.",
     "optionProtection": "After an option buy fills, immediately place a persistent sell-to-close protective stop-market or stop-limit order when the connected Robinhood option tool supports that order type. Verify the protective order is accepted and covers the full intended contract quantity.",
     "cryptoProtection": "If crypto execution becomes supported by the connected Robinhood tools, place the strongest supported persistent protective exit at or near the Teststock invalidation immediately after entry.",
-    "noProtectionNoEntry": "New stock or option entries require the strongest supported verified protection under the current stock/fractional/option policy. Crypto entries use the direct Robinhood Crypto API protection path.",
+    "noProtectionNoEntry": "New stock or option entries require the strongest supported verified protection under the current stock/fractional/option policy. Crypto entries require the strongest supported verified protection through the Robinhood Trading MCP.",
     "target1": "At target1, sell about 25% of the ORIGINAL position when practical, then protect the remaining quantity at breakeven or tighter without widening risk.",
     "target2": "At target2, use runnerContinuationPolicy. Sell enough of the ORIGINAL position to leave at most the authorized runner: normally 50% at target2 for a strong 25% runner, 60% for a moderate 15% runner, or all remaining 75% if no runner is authorized.",
     "bracketCaution": "Do not assume bracket/OCO support. If the broker/tool does not support linked bracket orders, sequence protective-order changes and profit-taking carefully and verify quantities after every fill.",
@@ -264,15 +264,22 @@
   },
   "autopilot": {
     "enabled": true,
-    "requiresPerOrderApproval": true,
-    "scope": "Dedicated Robinhood Agentic account for individually approved stock orders; direct Robinhood Crypto API lane for crypto.",
-    "automaticQualifiedBuys": false,
-    "automaticRiskReducingExits": true
+    "requiresPerOrderApproval": false,
+    "scope": "Dedicated Robinhood Agentic account; qualified stock and crypto entries plus risk-reducing exits execute through Claude and the authenticated Robinhood Trading MCP.",
+    "executionAgent": "CLAUDE",
+    "stockBuysRequireCurrentBatchApproval": false,
+    "stockBuysRequireUserApproval": false,
+    "cryptoBuysRequireUserApproval": false,
+    "automaticQualifiedStockBuys": true,
+    "automaticQualifiedCryptoBuys": true,
+    "automaticRiskReducingExits": true,
+    "directGitHubBrokerExecution": false,
+    "automaticQualifiedBuys": true
   },
   "assetClassRouting": {
-    "STOCK": "Use only current Teststock stock tournament qualified candidates. Claude performs final Robinhood verification and obtains a separate approval for each new stock order. Multiple independent stock positions may coexist.",
-    "OPTION": "Use only stockPlan.eliteOption, only after its runtime whole-contract check passes, and only after Claude independently confirms the live Teststock real-fill evidence gate (liveEvidenceGate) against actual Robinhood option order history. Options are exceptional, capped at one new position per day, and require their own separate user approval distinct from any stock approval.",
-    "CRYPTO": "Use only the current Teststock crypto tournament qualified champion and already-qualified crypto fallbacks. The direct Robinhood Crypto API performs live quote/account/order verification and execution."
+    "STOCK": "Use only current Teststock stock tournament qualified candidates. Claude performs final Robinhood Trading MCP verification and automatically executes qualified stock entries when all gates pass.",
+    "OPTION": "Use only stockPlan.eliteOption, only after its runtime whole-contract check passes, and only after Claude independently confirms the live Teststock real-fill evidence gate against actual Robinhood option order history. Options remain exceptional and require separate explicit approval unless a later policy explicitly changes that.",
+    "CRYPTO": "Use only the current Teststock crypto tournament qualified champion and already-qualified crypto fallbacks. Claude performs final Robinhood Trading MCP verification and automatically executes qualified crypto entries when all gates pass."
   },
   "hardRules": [
     "FUNDING LOCK: never initiate a deposit, ACH transfer, debit-card transfer, bank transfer, wire, internal transfer, or any other movement of money into the Robinhood Agentic account.",
@@ -318,16 +325,17 @@
     "TOURNAMENT AUTHORITY: do not invent a symbol outside the current Teststock stock or crypto tournament qualified set. Robinhood live checks may reject a candidate but may not substitute an unranked idea.",
     "REGIME-SPECIFIC VALIDATION: do not freeze all stock trading merely because the aggregate entry-gate validation status is RED_FLAG. The current setup may proceed only when its runtime regime policy explicitly allows new stocks.",
     "MULTI-STOCK PORTFOLIO: a tournament winner has first priority, not exclusivity. Continue scanning/evaluating other independently qualified stocks while positions are open, subject to all portfolio limits. Never force the portfolio to its maximum.",
-    "STOCK APPROVAL: Claude must obtain separate approval for the exact ticker, amount, entry, stop and targets of every new stock order. Risk-reducing exits may remain automatic when verified.",
-    "OPTION APPROVAL: options are exceptional, not default, and live only inside stockPlan.eliteOption -- never a third tournament. Claude must obtain its own separate approval for the exact contract, expiry, strike, quantity and max risk of any option order, only after every eliteOption research check, the runtime whole-contract sizing check, and the real-fill evidence gate (liveEvidenceGate: minimum resolved trades, average realized R and win rate, confirmed from actual Robinhood option order history) all pass. Options remain capped at one new position per day."
+    "AUTOMATIC STOCK EXECUTION: Claude may automatically submit only Teststock-qualified stock entries that still pass all current live Robinhood MCP, freshness, no-chase, buying-power, sizing, duplicate, correlation, portfolio-risk and protection checks immediately before submission.",
+    "AUTOMATIC CRYPTO EXECUTION: Claude may automatically submit only the Teststock qualified crypto champion or already-qualified fallbacks that still pass all current live Robinhood MCP, freshness, liquidity, spread, no-chase, buying-power, sizing, duplicate and protection checks immediately before submission.",
+    "OPTION APPROVAL: options are exceptional, not default, and live only inside stockPlan.eliteOption -- never a third tournament. Claude must obtain its own separate approval for the exact contract, expiry, strike, quantity and max risk of any option order, only after every eliteOption research check, the runtime whole-contract sizing check, and the real-fill evidence gate all pass. Options remain capped at one new position per day."
   ],
   "stockPlan": {
     "assetClass": "STOCK",
     "overallAction": "WAIT_FOR_MARKET_OPEN",
     "reason": "Market is closed.",
     "confidence": "A_PLUS",
-    "signalAsOf": "2026-08-26T10:54:57.788Z",
-    "expiresAt": "2026-08-27T22:54:57.788Z",
+    "signalAsOf": "2026-08-28T02:04:10.070Z",
+    "expiresAt": "2026-08-29T14:04:10.070Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 3,
       "maxOptionPremiumPct": 8,
@@ -446,25 +454,25 @@
       {
         "assetClass": "STOCK",
         "rank": 1,
-        "ticker": "MATX",
+        "ticker": "NUVB",
         "sector": null,
         "action": "MARKET_CLOSED_RECHECK",
-        "allocationPctOfRobinhoodBuyingPower": 29.75,
-        "scanPrice": 222.8,
-        "minimumEntry": 223.59,
-        "maximumEntry": 228.06,
-        "stop": 212.46,
-        "target1": 240.28,
-        "target2": 252.53,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": 1.48,
+        "allocationPctOfRobinhoodBuyingPower": 10.9,
+        "scanPrice": 6.99,
+        "minimumEntry": 7.56,
+        "maximumEntry": 7.71,
+        "stop": 6.52,
+        "target1": 9.12,
+        "target2": 10.26,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 1.5,
         "rewardRisk": 2.6,
         "growthQuality": 100,
         "expectancy": {
-          "expectedR": 2.17,
-          "conservativeExpectedR": 2.17,
-          "costAdjustedConservativeExpectedR": 2.11,
+          "expectedR": 2.09,
+          "conservativeExpectedR": 2.01,
+          "costAdjustedConservativeExpectedR": 1.98,
           "assumedRoundTripFrictionPct": 0.3,
-          "frictionR": 0.06
+          "frictionR": 0.022
         },
         "adaptivePerformance": {
           "samples": 0,
@@ -479,8 +487,8 @@
           "canIncreaseLiveSize": false,
           "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
         },
-        "historicalWinRate": 88,
-        "historicalSamples": 32,
+        "historicalWinRate": 86,
+        "historicalSamples": 28,
         "exitPlan": {
           "target1SellPctOfOriginal": 25,
           "target2Action": "DYNAMIC_TO_RUNNER_SIGNAL",
@@ -503,85 +511,8 @@
           "policyRef": "signal.fractionalProtectionPolicy"
         },
         "operationalSafety": {
-          "signalReferencePrice": 223.59,
-          "entryToStopDistancePct": 4.978,
-          "wholeShareRuntimeCheckRequired": true,
-          "wholeShareProtectabilityIsTieBreakerOnly": true,
-          "smallAccountAccessPolicyRef": "signal.smallAccountAccessPolicy",
-          "multiStockCompetitionPolicyRef": "signal.multiStockCompetitionPolicy",
-          "nonLlmTriggerMonitorRef": "signal.nonLlmTriggerMonitor",
-          "eventDrivenExecutionDispatchRef": "signal.eventDrivenExecutionDispatch",
-          "signalDriftPolicyRef": "signal.signalDriftPolicy",
-          "portfolioHeatPolicyRef": "signal.portfolioHeatPolicy",
-          "killSwitchRef": "signal.automationKillSwitch"
-        },
-        "entryTier": "A",
-        "entryTierLabel": "ELITE",
-        "entryTierSizeMultiplier": 1,
-        "bestAcceptableFallback": false
-      },
-      {
-        "assetClass": "STOCK",
-        "rank": 2,
-        "ticker": "RVMD",
-        "sector": null,
-        "action": "MARKET_CLOSED_RECHECK",
-        "allocationPctOfRobinhoodBuyingPower": 5.64,
-        "scanPrice": 211.21,
-        "minimumEntry": 219.85,
-        "maximumEntry": 224.25,
-        "stop": 202.31,
-        "target1": 246.16,
-        "target2": 265.45,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.45,
-        "rewardRisk": 2.6,
-        "growthQuality": 100,
-        "expectancy": {
-          "expectedR": 1.84,
-          "conservativeExpectedR": 1.84,
-          "costAdjustedConservativeExpectedR": 1.81,
-          "assumedRoundTripFrictionPct": 0.3,
-          "frictionR": 0.038
-        },
-        "adaptivePerformance": {
-          "samples": 0,
-          "wins": 0,
-          "losses": 0,
-          "winRate": null,
-          "sizeMultiplier": 1,
-          "qualityAdjustment": 0,
-          "label": "UNPROVEN",
-          "source": "MODEL_RESEARCH_ONLY",
-          "modelReportedSizeMultiplier": 1,
-          "canIncreaseLiveSize": false,
-          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
-        },
-        "historicalWinRate": 79,
-        "historicalSamples": 34,
-        "exitPlan": {
-          "target1SellPctOfOriginal": 25,
-          "target2Action": "DYNAMIC_TO_RUNNER_SIGNAL",
-          "maxRunnerPctOfOriginal": 0,
-          "moderateRunnerPctOfOriginal": 15,
-          "noRunnerPctOfOriginal": 0,
-          "runnerPolicyRef": "signal.runnerContinuationPolicy",
-          "validatedPolicy": "T1_25_T2_75",
-          "target2BaseSellPctOfOriginal": 75,
-          "runnerSignal": "NONE",
-          "runnerPctOfOriginal": 0,
-          "runnerAction": "EXIT_REMAINDER_AT_TARGET2"
-        },
-        "protectionPlan": {
-          "determineFromLiveQuantity": true,
-          "wholeShares": "BROKER_PERSISTENT_STOP_WHEN_SUPPORTED",
-          "fractionalRemainder": "SYNTHETIC_STOP_ONLY_IF_ACTIVE_MONITORING_PASSES",
-          "fractionalMaxPlannedStopRiskPctOfLiveEquity": 0.75,
-          "syntheticMonitoringMaxMinutes": 5,
-          "policyRef": "signal.fractionalProtectionPolicy"
-        },
-        "operationalSafety": {
-          "signalReferencePrice": 219.85,
-          "entryToStopDistancePct": 7.978,
+          "signalReferencePrice": 7.56,
+          "entryToStopDistancePct": 13.757,
           "wholeShareRuntimeCheckRequired": true,
           "wholeShareProtectabilityIsTieBreakerOnly": true,
           "smallAccountAccessPolicyRef": "signal.smallAccountAccessPolicy",
@@ -601,29 +532,26 @@
     "stockCandidateQueue": [
       {
         "assetClass": "STOCK",
-        "queueRank": 1,
-        "queueRole": "RESERVE",
-        "rank": 2,
-        "ticker": "NBR",
+        "rank": 1,
+        "ticker": "NUVB",
         "sector": null,
         "action": "PROFITABILITY_ADMISSION_BLOCK",
-        "allocationPctOfRobinhoodBuyingPower": 0,
-        "requiresLiveSizing": true,
-        "scanPrice": 88.29,
-        "minimumEntry": 97.81,
-        "maximumEntry": 99.77,
-        "stop": 83.52,
-        "target1": 119.25,
-        "target2": 134.96,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": null,
+        "allocationPctOfRobinhoodBuyingPower": 10.9,
+        "scanPrice": 6.99,
+        "minimumEntry": 7.56,
+        "maximumEntry": 7.71,
+        "stop": 6.52,
+        "target1": 9.12,
+        "target2": 10.26,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 1.5,
         "rewardRisk": 2.6,
         "growthQuality": 100,
         "expectancy": {
-          "expectedR": 2.1,
-          "conservativeExpectedR": 2.1,
-          "costAdjustedConservativeExpectedR": 2.08,
+          "expectedR": 2.09,
+          "conservativeExpectedR": 2.01,
+          "costAdjustedConservativeExpectedR": 1.98,
           "assumedRoundTripFrictionPct": 0.3,
-          "frictionR": 0.021
+          "frictionR": 0.022
         },
         "adaptivePerformance": {
           "samples": 0,
@@ -639,7 +567,9 @@
           "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
         },
         "historicalWinRate": 86,
-        "historicalSamples": 37,
+        "historicalSamples": 28,
+        "queueRank": 1,
+        "queueRole": "PRIMARY",
         "entryTier": "A",
         "entryTierLabel": "ELITE",
         "entryTierSizeMultiplier": 1,
@@ -655,7 +585,7 @@
           "globalReasons": [],
           "reasons": []
         },
-        "adaptiveTournamentScore": 56.1,
+        "adaptiveTournamentScore": 55.2,
         "adaptiveSizeMultiplier": 0,
         "profitabilityAdmission": {
           "state": "SHADOW_ONLY",
@@ -663,7 +593,7 @@
           "setupType": "STOCK_TREND",
           "runtimeRegime": "TRENDING_UP",
           "historical": {
-            "samples": 37,
+            "samples": 28,
             "winRatePct": 86,
             "rewardRisk": 2.6
           },
@@ -675,8 +605,11 @@
             "samples": 0,
             "winRatePct": null,
             "averageR": null,
+            "realFillSamples": 0,
+            "shadowOnlySamples": 0,
             "independenceKey": "decisionDate+symbol+setup+regime",
-            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys."
+            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
+            "evidencePoolNote": "Pool includes both hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
           },
           "real": {
             "samples": 0,
@@ -695,26 +628,28 @@
           },
           "reason": "Pattern has not yet proven positive shadow expectancy."
         },
+        "seedLane": {
+          "eligible": false
+        },
         "decisionIntelligence": {
-          "decisionScore": 66.55,
+          "decisionScore": 65.63,
           "rankBeforeOptimization": 1,
           "eligibleAfterOverlay": false,
           "upstreamActionAllowed": false,
           "setupDiagnostics": {
             "setupType": "STOCK_TREND",
             "technicalScore": 94.2,
-            "patternConfidencePct": 86,
-            "historicalSamples": 37,
+            "patternConfidencePct": 83.6,
+            "historicalSamples": 28,
             "historicalWinRatePct": 86,
             "rewardRisk": 2.6,
-            "backtestStatus": "SUPPORTED",
+            "backtestStatus": "LIMITED",
             "warnings": [
-              "FUNDAMENTALS_UNKNOWN",
               "LIQUIDITY_UNKNOWN"
             ]
           },
           "screener": {
-            "fundamentals": "UNKNOWN",
+            "fundamentals": "FAIL",
             "liquidity": "UNKNOWN",
             "spreadPct": null,
             "unknownIsNotAnOverride": true
@@ -735,31 +670,34 @@
           "admissionState": "SHADOW_ONLY",
           "hardGatesRemainAuthoritative": true
         },
-        "decisionScore": 66.55,
-        "decisionRank": 2
+        "decisionScore": 65.63,
+        "decisionRank": 1
       },
       {
         "assetClass": "STOCK",
-        "rank": 1,
-        "ticker": "MATX",
+        "queueRank": 2,
+        "queueRole": "RESERVE",
+        "rank": 2,
+        "ticker": "ECO",
         "sector": null,
         "action": "PROFITABILITY_ADMISSION_BLOCK",
-        "allocationPctOfRobinhoodBuyingPower": 29.75,
-        "scanPrice": 222.8,
-        "minimumEntry": 223.59,
-        "maximumEntry": 228.06,
-        "stop": 212.46,
-        "target1": 240.28,
-        "target2": 252.53,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": 1.48,
+        "allocationPctOfRobinhoodBuyingPower": 0,
+        "requiresLiveSizing": true,
+        "scanPrice": 66.48,
+        "minimumEntry": 66.48,
+        "maximumEntry": 67.81,
+        "stop": 60.07,
+        "target1": 76.1,
+        "target2": 83.15,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": null,
         "rewardRisk": 2.6,
         "growthQuality": 100,
         "expectancy": {
-          "expectedR": 2.17,
-          "conservativeExpectedR": 2.17,
-          "costAdjustedConservativeExpectedR": 2.11,
+          "expectedR": 1.84,
+          "conservativeExpectedR": 1.84,
+          "costAdjustedConservativeExpectedR": 1.81,
           "assumedRoundTripFrictionPct": 0.3,
-          "frictionR": 0.06
+          "frictionR": 0.031
         },
         "adaptivePerformance": {
           "samples": 0,
@@ -774,10 +712,8 @@
           "canIncreaseLiveSize": false,
           "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
         },
-        "historicalWinRate": 88,
-        "historicalSamples": 32,
-        "queueRank": 2,
-        "queueRole": "PRIMARY",
+        "historicalWinRate": 79,
+        "historicalSamples": 39,
         "entryTier": "A",
         "entryTierLabel": "ELITE",
         "entryTierSizeMultiplier": 1,
@@ -793,7 +729,7 @@
           "globalReasons": [],
           "reasons": []
         },
-        "adaptiveTournamentScore": 56,
+        "adaptiveTournamentScore": 54.9,
         "adaptiveSizeMultiplier": 0,
         "profitabilityAdmission": {
           "state": "SHADOW_ONLY",
@@ -801,8 +737,8 @@
           "setupType": "STOCK_TREND",
           "runtimeRegime": "TRENDING_UP",
           "historical": {
-            "samples": 32,
-            "winRatePct": 88,
+            "samples": 39,
+            "winRatePct": 79,
             "rewardRisk": 2.6
           },
           "historicalEvidenceIsDiagnosticOnly": true,
@@ -813,8 +749,11 @@
             "samples": 0,
             "winRatePct": null,
             "averageR": null,
+            "realFillSamples": 0,
+            "shadowOnlySamples": 0,
             "independenceKey": "decisionDate+symbol+setup+regime",
-            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys."
+            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
+            "evidencePoolNote": "Pool includes both hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
           },
           "real": {
             "samples": 0,
@@ -833,17 +772,20 @@
           },
           "reason": "Pattern has not yet proven positive shadow expectancy."
         },
+        "seedLane": {
+          "eligible": false
+        },
         "decisionIntelligence": {
-          "decisionScore": 66.72,
+          "decisionScore": 64.33,
           "rankBeforeOptimization": 2,
           "eligibleAfterOverlay": false,
           "upstreamActionAllowed": false,
           "setupDiagnostics": {
             "setupType": "STOCK_TREND",
-            "technicalScore": 94.2,
-            "patternConfidencePct": 88,
-            "historicalSamples": 32,
-            "historicalWinRatePct": 88,
+            "technicalScore": 91.2,
+            "patternConfidencePct": 79,
+            "historicalSamples": 39,
+            "historicalWinRatePct": 79,
             "rewardRisk": 2.6,
             "backtestStatus": "SUPPORTED",
             "warnings": [
@@ -860,9 +802,9 @@
           "opportunityDecay": {
             "scanAgeMinutes": 0,
             "halfLifeMinutes": 15,
-            "entryProximity": 0.941,
+            "entryProximity": 1,
             "freshnessMultiplier": 1,
-            "combinedMultiplier": 0.976,
+            "combinedMultiplier": 1,
             "expired": false
           },
           "portfolioOptimization": {
@@ -873,31 +815,34 @@
           "admissionState": "SHADOW_ONLY",
           "hardGatesRemainAuthoritative": true
         },
-        "decisionScore": 66.72,
-        "decisionRank": 1
+        "decisionScore": 64.33,
+        "decisionRank": 2
       },
       {
         "assetClass": "STOCK",
-        "rank": 2,
-        "ticker": "RVMD",
+        "queueRank": 3,
+        "queueRole": "RESERVE",
+        "rank": 3,
+        "ticker": "HP",
         "sector": null,
         "action": "PROFITABILITY_ADMISSION_BLOCK",
-        "allocationPctOfRobinhoodBuyingPower": 5.64,
-        "scanPrice": 211.21,
-        "minimumEntry": 219.85,
-        "maximumEntry": 224.25,
-        "stop": 202.31,
-        "target1": 246.16,
-        "target2": 265.45,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.45,
+        "allocationPctOfRobinhoodBuyingPower": 0,
+        "requiresLiveSizing": true,
+        "scanPrice": 42.41,
+        "minimumEntry": 44.67,
+        "maximumEntry": 45.56,
+        "stop": 40.41,
+        "target1": 51.06,
+        "target2": 55.75,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": null,
         "rewardRisk": 2.6,
         "growthQuality": 100,
         "expectancy": {
-          "expectedR": 1.84,
-          "conservativeExpectedR": 1.84,
-          "costAdjustedConservativeExpectedR": 1.81,
+          "expectedR": 1.81,
+          "conservativeExpectedR": 1.81,
+          "costAdjustedConservativeExpectedR": 1.78,
           "assumedRoundTripFrictionPct": 0.3,
-          "frictionR": 0.038
+          "frictionR": 0.031
         },
         "adaptivePerformance": {
           "samples": 0,
@@ -912,10 +857,8 @@
           "canIncreaseLiveSize": false,
           "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
         },
-        "historicalWinRate": 79,
-        "historicalSamples": 34,
-        "queueRank": 3,
-        "queueRole": "PRIMARY",
+        "historicalWinRate": 78,
+        "historicalSamples": 32,
         "entryTier": "A",
         "entryTierLabel": "ELITE",
         "entryTierSizeMultiplier": 1,
@@ -931,7 +874,7 @@
           "globalReasons": [],
           "reasons": []
         },
-        "adaptiveTournamentScore": 54.4,
+        "adaptiveTournamentScore": 54,
         "adaptiveSizeMultiplier": 0,
         "profitabilityAdmission": {
           "state": "SHADOW_ONLY",
@@ -939,8 +882,8 @@
           "setupType": "STOCK_TREND",
           "runtimeRegime": "TRENDING_UP",
           "historical": {
-            "samples": 34,
-            "winRatePct": 79,
+            "samples": 32,
+            "winRatePct": 78,
             "rewardRisk": 2.6
           },
           "historicalEvidenceIsDiagnosticOnly": true,
@@ -951,8 +894,11 @@
             "samples": 0,
             "winRatePct": null,
             "averageR": null,
+            "realFillSamples": 0,
+            "shadowOnlySamples": 0,
             "independenceKey": "decisionDate+symbol+setup+regime",
-            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys."
+            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
+            "evidencePoolNote": "Pool includes both hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
           },
           "real": {
             "samples": 0,
@@ -971,17 +917,20 @@
           },
           "reason": "Pattern has not yet proven positive shadow expectancy."
         },
+        "seedLane": {
+          "eligible": false
+        },
         "decisionIntelligence": {
-          "decisionScore": 63.98,
+          "decisionScore": 63.49,
           "rankBeforeOptimization": 3,
           "eligibleAfterOverlay": false,
           "upstreamActionAllowed": false,
           "setupDiagnostics": {
             "setupType": "STOCK_TREND",
-            "technicalScore": 91.2,
-            "patternConfidencePct": 79,
-            "historicalSamples": 34,
-            "historicalWinRatePct": 79,
+            "technicalScore": 90.7,
+            "patternConfidencePct": 78,
+            "historicalSamples": 32,
+            "historicalWinRatePct": 78,
             "rewardRisk": 2.6,
             "backtestStatus": "SUPPORTED",
             "warnings": [
@@ -989,7 +938,7 @@
             ]
           },
           "screener": {
-            "fundamentals": "FAIL",
+            "fundamentals": "PASS",
             "liquidity": "UNKNOWN",
             "spreadPct": null,
             "unknownIsNotAnOverride": true
@@ -997,9 +946,9 @@
           "opportunityDecay": {
             "scanAgeMinutes": 0,
             "halfLifeMinutes": 15,
-            "entryProximity": 0.345,
+            "entryProximity": 0.154,
             "freshnessMultiplier": 1,
-            "combinedMultiplier": 0.738,
+            "combinedMultiplier": 0.661,
             "expired": false
           },
           "portfolioOptimization": {
@@ -1010,34 +959,34 @@
           "admissionState": "SHADOW_ONLY",
           "hardGatesRemainAuthoritative": true
         },
-        "decisionScore": 63.98,
+        "decisionScore": 63.49,
         "decisionRank": 3
       },
       {
         "assetClass": "STOCK",
         "queueRank": 4,
         "queueRole": "RESERVE",
-        "rank": 6,
-        "ticker": "MEOH",
+        "rank": 4,
+        "ticker": "VRDN",
         "sector": null,
         "action": "PROFITABILITY_ADMISSION_BLOCK",
         "allocationPctOfRobinhoodBuyingPower": 0,
         "requiresLiveSizing": true,
-        "scanPrice": 57.12,
-        "minimumEntry": 61.18,
-        "maximumEntry": 62.4,
-        "stop": 54.35,
-        "target1": 71.42,
-        "target2": 78.94,
+        "scanPrice": 23.89,
+        "minimumEntry": 24.8,
+        "maximumEntry": 25.3,
+        "stop": 22.81,
+        "target1": 27.79,
+        "target2": 29.97,
         "plannedStopRiskPctOfRobinhoodBuyingPower": null,
         "rewardRisk": 2.6,
         "growthQuality": 100,
         "expectancy": {
           "expectedR": 1.84,
           "conservativeExpectedR": 1.77,
-          "costAdjustedConservativeExpectedR": 1.75,
+          "costAdjustedConservativeExpectedR": 1.74,
           "assumedRoundTripFrictionPct": 0.3,
-          "frictionR": 0.027
+          "frictionR": 0.037
         },
         "adaptivePerformance": {
           "samples": 0,
@@ -1089,8 +1038,11 @@
             "samples": 0,
             "winRatePct": null,
             "averageR": null,
+            "realFillSamples": 0,
+            "shadowOnlySamples": 0,
             "independenceKey": "decisionDate+symbol+setup+regime",
-            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys."
+            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
+            "evidencePoolNote": "Pool includes both hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
           },
           "real": {
             "samples": 0,
@@ -1108,6 +1060,9 @@
             "minimumRealAverageRForFullAdmission": 0.1
           },
           "reason": "Pattern has not yet proven positive shadow expectancy."
+        },
+        "seedLane": {
+          "eligible": false
         },
         "decisionIntelligence": {
           "decisionScore": 63.33,
@@ -1136,9 +1091,9 @@
           "opportunityDecay": {
             "scanAgeMinutes": 0,
             "halfLifeMinutes": 15,
-            "entryProximity": 0,
+            "entryProximity": 0.393,
             "freshnessMultiplier": 1,
-            "combinedMultiplier": 0.6,
+            "combinedMultiplier": 0.757,
             "expired": false
           },
           "portfolioOptimization": {
@@ -1156,27 +1111,27 @@
         "assetClass": "STOCK",
         "queueRank": 5,
         "queueRole": "RESERVE",
-        "rank": 4,
-        "ticker": "TGT",
+        "rank": 7,
+        "ticker": "BNY",
         "sector": null,
         "action": "PROFITABILITY_ADMISSION_BLOCK",
         "allocationPctOfRobinhoodBuyingPower": 0,
         "requiresLiveSizing": true,
-        "scanPrice": 163.37,
-        "minimumEntry": 170.38,
-        "maximumEntry": 173.79,
-        "stop": 152.68,
-        "target1": 196.93,
-        "target2": 216.4,
+        "scanPrice": 162.22,
+        "minimumEntry": 162.22,
+        "maximumEntry": 165.46,
+        "stop": 158.56,
+        "target1": 167.71,
+        "target2": 171.74,
         "plannedStopRiskPctOfRobinhoodBuyingPower": null,
         "rewardRisk": 2.6,
         "growthQuality": 100,
         "expectancy": {
-          "expectedR": 1.77,
-          "conservativeExpectedR": 1.77,
-          "costAdjustedConservativeExpectedR": 1.74,
+          "expectedR": 1.88,
+          "conservativeExpectedR": 1.7,
+          "costAdjustedConservativeExpectedR": 1.57,
           "assumedRoundTripFrictionPct": 0.3,
-          "frictionR": 0.029
+          "frictionR": 0.133
         },
         "adaptivePerformance": {
           "samples": 0,
@@ -1191,8 +1146,8 @@
           "canIncreaseLiveSize": false,
           "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
         },
-        "historicalWinRate": 77,
-        "historicalSamples": 30,
+        "historicalWinRate": 80,
+        "historicalSamples": 25,
         "entryTier": "A",
         "entryTierLabel": "ELITE",
         "entryTierSizeMultiplier": 1,
@@ -1208,7 +1163,7 @@
           "globalReasons": [],
           "reasons": []
         },
-        "adaptiveTournamentScore": 53.6,
+        "adaptiveTournamentScore": 53.7,
         "adaptiveSizeMultiplier": 0,
         "profitabilityAdmission": {
           "state": "SHADOW_ONLY",
@@ -1216,8 +1171,8 @@
           "setupType": "STOCK_TREND",
           "runtimeRegime": "TRENDING_UP",
           "historical": {
-            "samples": 30,
-            "winRatePct": 77,
+            "samples": 25,
+            "winRatePct": 80,
             "rewardRisk": 2.6
           },
           "historicalEvidenceIsDiagnosticOnly": true,
@@ -1228,8 +1183,11 @@
             "samples": 0,
             "winRatePct": null,
             "averageR": null,
+            "realFillSamples": 0,
+            "shadowOnlySamples": 0,
             "independenceKey": "decisionDate+symbol+setup+regime",
-            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys."
+            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
+            "evidencePoolNote": "Pool includes both hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
           },
           "real": {
             "samples": 0,
@@ -1248,294 +1206,20 @@
           },
           "reason": "Pattern has not yet proven positive shadow expectancy."
         },
+        "seedLane": {
+          "eligible": false
+        },
         "decisionIntelligence": {
-          "decisionScore": 63,
+          "decisionScore": 63.1,
           "rankBeforeOptimization": 5,
           "eligibleAfterOverlay": false,
           "upstreamActionAllowed": false,
           "setupDiagnostics": {
             "setupType": "STOCK_TREND",
-            "technicalScore": 90.2,
-            "patternConfidencePct": 77,
-            "historicalSamples": 30,
-            "historicalWinRatePct": 77,
-            "rewardRisk": 2.6,
-            "backtestStatus": "SUPPORTED",
-            "warnings": [
-              "FUNDAMENTALS_UNKNOWN",
-              "LIQUIDITY_UNKNOWN"
-            ]
-          },
-          "screener": {
-            "fundamentals": "UNKNOWN",
-            "liquidity": "UNKNOWN",
-            "spreadPct": null,
-            "unknownIsNotAnOverride": true
-          },
-          "opportunityDecay": {
-            "scanAgeMinutes": 0,
-            "halfLifeMinutes": 15,
-            "entryProximity": 0.315,
-            "freshnessMultiplier": 1,
-            "combinedMultiplier": 0.726,
-            "expired": false
-          },
-          "portfolioOptimization": {
-            "maxCorrelationToHigherRanked": 0,
-            "penalty": 0,
-            "hardGateStillRequired": true
-          },
-          "admissionState": "SHADOW_ONLY",
-          "hardGatesRemainAuthoritative": true
-        },
-        "decisionScore": 63,
-        "decisionRank": 5
-      },
-      {
-        "assetClass": "STOCK",
-        "queueRank": 6,
-        "queueRole": "RESERVE",
-        "rank": 5,
-        "ticker": "FIVE",
-        "sector": null,
-        "action": "PROFITABILITY_ADMISSION_BLOCK",
-        "allocationPctOfRobinhoodBuyingPower": 0,
-        "requiresLiveSizing": true,
-        "scanPrice": 259.48,
-        "minimumEntry": 263.35,
-        "maximumEntry": 268.62,
-        "stop": 235.31,
-        "target1": 305.41,
-        "target2": 336.25,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": null,
-        "rewardRisk": 2.6,
-        "growthQuality": 100,
-        "expectancy": {
-          "expectedR": 1.77,
-          "conservativeExpectedR": 1.77,
-          "costAdjustedConservativeExpectedR": 1.74,
-          "assumedRoundTripFrictionPct": 0.3,
-          "frictionR": 0.028
-        },
-        "adaptivePerformance": {
-          "samples": 0,
-          "wins": 0,
-          "losses": 0,
-          "winRate": null,
-          "sizeMultiplier": 1,
-          "qualityAdjustment": 0,
-          "label": "UNPROVEN",
-          "source": "MODEL_RESEARCH_ONLY",
-          "modelReportedSizeMultiplier": 1,
-          "canIncreaseLiveSize": false,
-          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
-        },
-        "historicalWinRate": 77,
-        "historicalSamples": 30,
-        "entryTier": "A",
-        "entryTierLabel": "ELITE",
-        "entryTierSizeMultiplier": 1,
-        "bestAcceptableFallback": false,
-        "adaptiveLearning": {
-          "matched": [],
-          "priorityScoreDelta": 0,
-          "positiveInfluenceCap": 0,
-          "sizeMultiplier": 1,
-          "blocked": false,
-          "globalSizeCap": 1,
-          "globalBlock": false,
-          "globalReasons": [],
-          "reasons": []
-        },
-        "adaptiveTournamentScore": 53.6,
-        "adaptiveSizeMultiplier": 0,
-        "profitabilityAdmission": {
-          "state": "SHADOW_ONLY",
-          "sizeMultiplier": 0,
-          "setupType": "STOCK_TREND",
-          "runtimeRegime": "TRENDING_UP",
-          "historical": {
-            "samples": 30,
-            "winRatePct": 77,
-            "rewardRisk": 2.6
-          },
-          "historicalEvidenceIsDiagnosticOnly": true,
-          "regimeDisabled": false,
-          "contradictoryShadow": false,
-          "shadow": {
-            "scope": "SETUP_FALLBACK",
-            "samples": 0,
-            "winRatePct": null,
-            "averageR": null,
-            "independenceKey": "decisionDate+symbol+setup+regime",
-            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys."
-          },
-          "real": {
-            "samples": 0,
-            "winRatePct": null,
-            "averageRealizedR": null
-          },
-          "thresholds": {
-            "minimumIndependentShadowSamplesForMicro": 6,
-            "minimumIndependentShadowSamples": 12,
-            "minimumShadowWinRatePct": 50,
-            "minimumShadowAverageR": 0.15,
-            "microSizeMultiplier": 0.25,
-            "minimumRealSamplesForSuspensionCheck": 8,
-            "minimumRealSamplesForFullAdmission": 15,
-            "minimumRealAverageRForFullAdmission": 0.1
-          },
-          "reason": "Pattern has not yet proven positive shadow expectancy."
-        },
-        "decisionIntelligence": {
-          "decisionScore": 63,
-          "rankBeforeOptimization": 6,
-          "eligibleAfterOverlay": false,
-          "upstreamActionAllowed": false,
-          "setupDiagnostics": {
-            "setupType": "STOCK_TREND",
-            "technicalScore": 90.2,
-            "patternConfidencePct": 77,
-            "historicalSamples": 30,
-            "historicalWinRatePct": 77,
-            "rewardRisk": 2.6,
-            "backtestStatus": "SUPPORTED",
-            "warnings": [
-              "LIQUIDITY_UNKNOWN"
-            ]
-          },
-          "screener": {
-            "fundamentals": "PASS",
-            "liquidity": "UNKNOWN",
-            "spreadPct": null,
-            "unknownIsNotAnOverride": true
-          },
-          "opportunityDecay": {
-            "scanAgeMinutes": 0,
-            "halfLifeMinutes": 15,
-            "entryProximity": 0.755,
-            "freshnessMultiplier": 1,
-            "combinedMultiplier": 0.902,
-            "expired": false
-          },
-          "portfolioOptimization": {
-            "maxCorrelationToHigherRanked": 0,
-            "penalty": 0,
-            "hardGateStillRequired": true
-          },
-          "admissionState": "SHADOW_ONLY",
-          "hardGatesRemainAuthoritative": true
-        },
-        "decisionScore": 63,
-        "decisionRank": 6
-      },
-      {
-        "assetClass": "STOCK",
-        "queueRank": 7,
-        "queueRole": "RESERVE",
-        "rank": 7,
-        "ticker": "PHYS",
-        "sector": null,
-        "action": "PROFITABILITY_ADMISSION_BLOCK",
-        "allocationPctOfRobinhoodBuyingPower": 0,
-        "requiresLiveSizing": true,
-        "scanPrice": 35.45,
-        "minimumEntry": 35.45,
-        "maximumEntry": 36.16,
-        "stop": 32.9,
-        "target1": 39.28,
-        "target2": 42.08,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": null,
-        "rewardRisk": 2.6,
-        "growthQuality": 100,
-        "expectancy": {
-          "expectedR": 1.77,
-          "conservativeExpectedR": 1.64,
-          "costAdjustedConservativeExpectedR": 1.6,
-          "assumedRoundTripFrictionPct": 0.3,
-          "frictionR": 0.042
-        },
-        "adaptivePerformance": {
-          "samples": 0,
-          "wins": 0,
-          "losses": 0,
-          "winRate": null,
-          "sizeMultiplier": 1,
-          "qualityAdjustment": 0,
-          "label": "UNPROVEN",
-          "source": "MODEL_RESEARCH_ONLY",
-          "modelReportedSizeMultiplier": 1,
-          "canIncreaseLiveSize": false,
-          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
-        },
-        "historicalWinRate": 77,
-        "historicalSamples": 26,
-        "entryTier": "A",
-        "entryTierLabel": "ELITE",
-        "entryTierSizeMultiplier": 1,
-        "bestAcceptableFallback": false,
-        "adaptiveLearning": {
-          "matched": [],
-          "priorityScoreDelta": 0,
-          "positiveInfluenceCap": 0,
-          "sizeMultiplier": 1,
-          "blocked": false,
-          "globalSizeCap": 1,
-          "globalBlock": false,
-          "globalReasons": [],
-          "reasons": []
-        },
-        "adaptiveTournamentScore": 53.2,
-        "adaptiveSizeMultiplier": 0,
-        "profitabilityAdmission": {
-          "state": "SHADOW_ONLY",
-          "sizeMultiplier": 0,
-          "setupType": "STOCK_TREND",
-          "runtimeRegime": "TRENDING_UP",
-          "historical": {
-            "samples": 26,
-            "winRatePct": 77,
-            "rewardRisk": 2.6
-          },
-          "historicalEvidenceIsDiagnosticOnly": true,
-          "regimeDisabled": false,
-          "contradictoryShadow": false,
-          "shadow": {
-            "scope": "SETUP_FALLBACK",
-            "samples": 0,
-            "winRatePct": null,
-            "averageR": null,
-            "independenceKey": "decisionDate+symbol+setup+regime",
-            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys."
-          },
-          "real": {
-            "samples": 0,
-            "winRatePct": null,
-            "averageRealizedR": null
-          },
-          "thresholds": {
-            "minimumIndependentShadowSamplesForMicro": 6,
-            "minimumIndependentShadowSamples": 12,
-            "minimumShadowWinRatePct": 50,
-            "minimumShadowAverageR": 0.15,
-            "microSizeMultiplier": 0.25,
-            "minimumRealSamplesForSuspensionCheck": 8,
-            "minimumRealSamplesForFullAdmission": 15,
-            "minimumRealAverageRForFullAdmission": 0.1
-          },
-          "reason": "Pattern has not yet proven positive shadow expectancy."
-        },
-        "decisionIntelligence": {
-          "decisionScore": 62.28,
-          "rankBeforeOptimization": 7,
-          "eligibleAfterOverlay": false,
-          "upstreamActionAllowed": false,
-          "setupDiagnostics": {
-            "setupType": "STOCK_TREND",
-            "technicalScore": 90.2,
-            "patternConfidencePct": 73.4,
-            "historicalSamples": 26,
-            "historicalWinRatePct": 77,
+            "technicalScore": 91.7,
+            "patternConfidencePct": 75,
+            "historicalSamples": 25,
+            "historicalWinRatePct": 80,
             "rewardRisk": 2.6,
             "backtestStatus": "LIMITED",
             "warnings": [
@@ -1565,7 +1249,297 @@
           "admissionState": "SHADOW_ONLY",
           "hardGatesRemainAuthoritative": true
         },
-        "decisionScore": 62.28,
+        "decisionScore": 63.1,
+        "decisionRank": 5
+      },
+      {
+        "assetClass": "STOCK",
+        "queueRank": 6,
+        "queueRole": "RESERVE",
+        "rank": 5,
+        "ticker": "EQX",
+        "sector": null,
+        "action": "PROFITABILITY_ADMISSION_BLOCK",
+        "allocationPctOfRobinhoodBuyingPower": 0,
+        "requiresLiveSizing": true,
+        "scanPrice": 13.45,
+        "minimumEntry": 14.05,
+        "maximumEntry": 14.33,
+        "stop": 11.74,
+        "target1": 17.52,
+        "target2": 20.06,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": null,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "expectancy": {
+          "expectedR": 1.81,
+          "conservativeExpectedR": 1.71,
+          "costAdjustedConservativeExpectedR": 1.69,
+          "assumedRoundTripFrictionPct": 0.3,
+          "frictionR": 0.018
+        },
+        "adaptivePerformance": {
+          "samples": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "sizeMultiplier": 1,
+          "qualityAdjustment": 0,
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+        },
+        "historicalWinRate": 78,
+        "historicalSamples": 27,
+        "entryTier": "A",
+        "entryTierLabel": "ELITE",
+        "entryTierSizeMultiplier": 1,
+        "bestAcceptableFallback": false,
+        "adaptiveLearning": {
+          "matched": [],
+          "priorityScoreDelta": 0,
+          "positiveInfluenceCap": 0,
+          "sizeMultiplier": 1,
+          "blocked": false,
+          "globalSizeCap": 1,
+          "globalBlock": false,
+          "globalReasons": [],
+          "reasons": []
+        },
+        "adaptiveTournamentScore": 53.5,
+        "adaptiveSizeMultiplier": 0,
+        "profitabilityAdmission": {
+          "state": "SHADOW_ONLY",
+          "sizeMultiplier": 0,
+          "setupType": "STOCK_TREND",
+          "runtimeRegime": "TRENDING_UP",
+          "historical": {
+            "samples": 27,
+            "winRatePct": 78,
+            "rewardRisk": 2.6
+          },
+          "historicalEvidenceIsDiagnosticOnly": true,
+          "regimeDisabled": false,
+          "contradictoryShadow": false,
+          "shadow": {
+            "scope": "SETUP_FALLBACK",
+            "samples": 0,
+            "winRatePct": null,
+            "averageR": null,
+            "realFillSamples": 0,
+            "shadowOnlySamples": 0,
+            "independenceKey": "decisionDate+symbol+setup+regime",
+            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
+            "evidencePoolNote": "Pool includes both hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
+          },
+          "real": {
+            "samples": 0,
+            "winRatePct": null,
+            "averageRealizedR": null
+          },
+          "thresholds": {
+            "minimumIndependentShadowSamplesForMicro": 6,
+            "minimumIndependentShadowSamples": 12,
+            "minimumShadowWinRatePct": 50,
+            "minimumShadowAverageR": 0.15,
+            "microSizeMultiplier": 0.25,
+            "minimumRealSamplesForSuspensionCheck": 8,
+            "minimumRealSamplesForFullAdmission": 15,
+            "minimumRealAverageRForFullAdmission": 0.1
+          },
+          "reason": "Pattern has not yet proven positive shadow expectancy."
+        },
+        "seedLane": {
+          "eligible": false
+        },
+        "decisionIntelligence": {
+          "decisionScore": 62.8,
+          "rankBeforeOptimization": 6,
+          "eligibleAfterOverlay": false,
+          "upstreamActionAllowed": false,
+          "setupDiagnostics": {
+            "setupType": "STOCK_TREND",
+            "technicalScore": 90.7,
+            "patternConfidencePct": 75.2,
+            "historicalSamples": 27,
+            "historicalWinRatePct": 78,
+            "rewardRisk": 2.6,
+            "backtestStatus": "LIMITED",
+            "warnings": [
+              "FUNDAMENTALS_UNKNOWN",
+              "LIQUIDITY_UNKNOWN"
+            ]
+          },
+          "screener": {
+            "fundamentals": "UNKNOWN",
+            "liquidity": "UNKNOWN",
+            "spreadPct": null,
+            "unknownIsNotAnOverride": true
+          },
+          "opportunityDecay": {
+            "scanAgeMinutes": 0,
+            "halfLifeMinutes": 15,
+            "entryProximity": 0.286,
+            "freshnessMultiplier": 1,
+            "combinedMultiplier": 0.714,
+            "expired": false
+          },
+          "portfolioOptimization": {
+            "maxCorrelationToHigherRanked": 0,
+            "penalty": 0,
+            "hardGateStillRequired": true
+          },
+          "admissionState": "SHADOW_ONLY",
+          "hardGatesRemainAuthoritative": true
+        },
+        "decisionScore": 62.8,
+        "decisionRank": 6
+      },
+      {
+        "assetClass": "STOCK",
+        "queueRank": 7,
+        "queueRole": "RESERVE",
+        "rank": 6,
+        "ticker": "EXPD",
+        "sector": null,
+        "action": "PROFITABILITY_ADMISSION_BLOCK",
+        "allocationPctOfRobinhoodBuyingPower": 0,
+        "requiresLiveSizing": true,
+        "scanPrice": 190.69,
+        "minimumEntry": 191.2,
+        "maximumEntry": 195.02,
+        "stop": 183.27,
+        "target1": 203.09,
+        "target2": 211.82,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": null,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "expectancy": {
+          "expectedR": 1.7,
+          "conservativeExpectedR": 1.7,
+          "costAdjustedConservativeExpectedR": 1.63,
+          "assumedRoundTripFrictionPct": 0.3,
+          "frictionR": 0.072
+        },
+        "adaptivePerformance": {
+          "samples": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "sizeMultiplier": 1,
+          "qualityAdjustment": 0,
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+        },
+        "historicalWinRate": 75,
+        "historicalSamples": 32,
+        "entryTier": "A",
+        "entryTierLabel": "ELITE",
+        "entryTierSizeMultiplier": 1,
+        "bestAcceptableFallback": false,
+        "adaptiveLearning": {
+          "matched": [],
+          "priorityScoreDelta": 0,
+          "positiveInfluenceCap": 0,
+          "sizeMultiplier": 1,
+          "blocked": false,
+          "globalSizeCap": 1,
+          "globalBlock": false,
+          "globalReasons": [],
+          "reasons": []
+        },
+        "adaptiveTournamentScore": 53.4,
+        "adaptiveSizeMultiplier": 0,
+        "profitabilityAdmission": {
+          "state": "SHADOW_ONLY",
+          "sizeMultiplier": 0,
+          "setupType": "STOCK_TREND",
+          "runtimeRegime": "TRENDING_UP",
+          "historical": {
+            "samples": 32,
+            "winRatePct": 75,
+            "rewardRisk": 2.6
+          },
+          "historicalEvidenceIsDiagnosticOnly": true,
+          "regimeDisabled": false,
+          "contradictoryShadow": false,
+          "shadow": {
+            "scope": "SETUP_FALLBACK",
+            "samples": 0,
+            "winRatePct": null,
+            "averageR": null,
+            "realFillSamples": 0,
+            "shadowOnlySamples": 0,
+            "independenceKey": "decisionDate+symbol+setup+regime",
+            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
+            "evidencePoolNote": "Pool includes both hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
+          },
+          "real": {
+            "samples": 0,
+            "winRatePct": null,
+            "averageRealizedR": null
+          },
+          "thresholds": {
+            "minimumIndependentShadowSamplesForMicro": 6,
+            "minimumIndependentShadowSamples": 12,
+            "minimumShadowWinRatePct": 50,
+            "minimumShadowAverageR": 0.15,
+            "microSizeMultiplier": 0.25,
+            "minimumRealSamplesForSuspensionCheck": 8,
+            "minimumRealSamplesForFullAdmission": 15,
+            "minimumRealAverageRForFullAdmission": 0.1
+          },
+          "reason": "Pattern has not yet proven positive shadow expectancy."
+        },
+        "seedLane": {
+          "eligible": false
+        },
+        "decisionIntelligence": {
+          "decisionScore": 62.44,
+          "rankBeforeOptimization": 7,
+          "eligibleAfterOverlay": false,
+          "upstreamActionAllowed": false,
+          "setupDiagnostics": {
+            "setupType": "STOCK_TREND",
+            "technicalScore": 89.2,
+            "patternConfidencePct": 75,
+            "historicalSamples": 32,
+            "historicalWinRatePct": 75,
+            "rewardRisk": 2.6,
+            "backtestStatus": "SUPPORTED",
+            "warnings": [
+              "FUNDAMENTALS_UNKNOWN",
+              "LIQUIDITY_UNKNOWN"
+            ]
+          },
+          "screener": {
+            "fundamentals": "UNKNOWN",
+            "liquidity": "UNKNOWN",
+            "spreadPct": null,
+            "unknownIsNotAnOverride": true
+          },
+          "opportunityDecay": {
+            "scanAgeMinutes": 0,
+            "halfLifeMinutes": 15,
+            "entryProximity": 0.955,
+            "freshnessMultiplier": 1,
+            "combinedMultiplier": 0.982,
+            "expired": false
+          },
+          "portfolioOptimization": {
+            "maxCorrelationToHigherRanked": 0,
+            "penalty": 0,
+            "hardGateStillRequired": true
+          },
+          "admissionState": "SHADOW_ONLY",
+          "hardGatesRemainAuthoritative": true
+        },
+        "decisionScore": 62.44,
         "decisionRank": 7
       }
     ],
@@ -1610,7 +1584,7 @@
     "multiPositionExecution": {
       "enabled": true,
       "continueScanningWhilePositionsOpen": true,
-      "perOrderApprovalRequired": true,
+      "perOrderApprovalRequired": false,
       "selectionRule": "Evaluate all currently qualified candidates in Teststock rank order. A successful fill consumes portfolio capacity but does not terminate scanning or invalidate unrelated candidates.",
       "portfolioRecheckAfterEveryFill": [
         "non-margin cash",
@@ -1630,8 +1604,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-08-26T10:56:44.650Z",
-    "expiresAt": "2026-08-26T11:26:44.650Z",
+    "signalAsOf": "2026-08-28T02:05:01.562Z",
+    "expiresAt": "2026-08-28T02:35:01.562Z",
     "policy": {
       "researchMode": "ACTIVE_24_7_MORE_OPPORTUNITIES",
       "dataSource": "CRYPTO_COM_PUBLIC_API",
@@ -1655,17 +1629,18 @@
       "sizingMode": "ROBINHOOD_EXISTING_CASH_ONLY_WITH_CAPITAL_LADDER"
     },
     "execution": {
-      "mode": "DIRECT_ROBINHOOD_CRYPTO_API",
-      "note": "Use the Teststock qualified crypto champion first, then already-qualified fallbacks in tournament order. The direct Robinhood Crypto API must independently verify the live quote, account, holdings, open orders, sizing and protection before execution.",
+      "mode": "CLAUDE_ROBINHOOD_TRADING_MCP",
+      "note": "Claude is the sole execution agent. Use the Teststock qualified crypto champion first, then already-qualified fallbacks in tournament order. Before any order Claude must use the authenticated Robinhood Trading MCP to independently verify the live quote, tradability, Agentic-account buying power, holdings, open orders, sizing, no-chase limits, duplicate protection and required protection. GitHub research/monitoring must never submit the broker order directly.",
       "researchOnly": false,
-      "requiresClaude": false
+      "requiresClaude": true,
+      "directGitHubOrderSubmissionAllowed": false
     },
     "cryptoOrders": []
   },
   "entryGateRobustness": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
     "status": "RED_FLAG",
-    "generatedAt": "2026-08-26T10:56:21.458Z",
+    "generatedAt": "2026-08-28T02:04:36.462Z",
     "holdoutStart": "2024-01-01",
     "holdoutEnd": "2025-12-31",
     "secondHoldoutStart": "2026-01-01",
@@ -1941,7 +1916,7 @@
   },
   "shadowDiagnostics": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/shadow-trades.json",
-    "generatedAt": "2026-08-26T10:55:29.203Z",
+    "generatedAt": "2026-08-28T02:04:39.088Z",
     "summary": {
       "ACCEPTED": {
         "resolved": 0,
@@ -1965,7 +1940,7 @@
   },
   "probabilityFirstPolicy": {
     "schemaVersion": 4,
-    "generatedAt": "2026-08-26T10:57:02.266Z",
+    "generatedAt": "2026-08-28T02:05:16.262Z",
     "objective": "Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto active around the clock, and cash acceptable. Prefer elite A stocks, allow a reduced-size B best-acceptable stock when no A survives, and let crypto surface more reasonable 24/7 opportunities without removing hard risk controls. This policy cannot eliminate market loss risk.",
     "stocks": {
       "minGrowthQuality": 92,
@@ -2071,13 +2046,13 @@
   },
   "dataFreshness": {
     "status": "GENERATED_THIS_RUN",
-    "lastSuccessfulGeneration": "2026-08-26T10:57:02.370Z",
+    "lastSuccessfulGeneration": "2026-08-28T02:05:16.356Z",
     "expectedRefreshCadenceMinutes": 10,
     "stockExpectedRefreshMinutesDuringMarket": 10,
     "cryptoExpectedRefreshMinutes": 10,
-    "stockSignalAsOf": "2026-08-26T10:54:57.788Z",
-    "cryptoSignalAsOf": "2026-08-26T10:56:44.650Z",
-    "stockAgeMinutes": 2,
+    "stockSignalAsOf": "2026-08-28T02:04:10.070Z",
+    "cryptoSignalAsOf": "2026-08-28T02:05:01.562Z",
+    "stockAgeMinutes": 1,
     "cryptoAgeMinutes": 0,
     "entryGateValidationAgeMinutes": 1,
     "staleAfterMinutes": {
@@ -2126,7 +2101,11 @@
       "lowCreditTriggerExecution": true,
       "eventDrivenExecutionDispatch": true,
       "claudeUnattendedExecutionPolicy": true,
+      "claudeSoleExecutionAgent": true,
+      "automaticStockExecution": true,
+      "automaticCryptoExecution": true,
       "idleProtectionReconciliation": true,
+      "robinhoodTradingMcpExecution": true,
       "stockKnockoutTournament": true,
       "bestAcceptableStockTier": true,
       "adaptiveTournamentRanking": true,
@@ -2149,7 +2128,9 @@
       "regimeSpecificStockValidation": true,
       "selectiveIntradayStockMode": true,
       "multiStockConcurrentPortfolio": true,
-      "perOrderStockApproval": true,
+      "automaticQualifiedStockBuys": true,
+      "automaticQualifiedCryptoBuys": true,
+      "claudeRobinhoodTradingMcpExecution": true,
       "perOrderOptionApproval": true,
       "optionLiveEvidenceGate": true,
       "unifiedProviderRegistry": true,
@@ -2159,7 +2140,7 @@
       "noProfitGuarantee": true,
       "robinhoodExecutableFinalistsOnly": true,
       "exactStockRuntimeSymbolCheck": true,
-      "exactCryptoApiPairCheck": true
+      "exactCryptoRuntimePairCheck": true
     },
     "evidence": {
       "entryGateReport": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
@@ -2168,7 +2149,7 @@
     }
   },
   "systemHealth": {
-    "generatedAt": "2026-08-26T10:57:02.370Z",
+    "generatedAt": "2026-08-28T02:05:16.356Z",
     "signalAgeMinutes": 0,
     "dataFreshnessStatus": "GENERATED_THIS_RUN",
     "entryGateValidation": {
@@ -2183,7 +2164,7 @@
     },
     "shadowLedger": {
       "status": "AVAILABLE",
-      "ageMinutes": 2,
+      "ageMinutes": 1,
       "requiredForTrading": false
     },
     "runtimeBroker": {
@@ -2430,9 +2411,9 @@
   },
   "exitPolicyValidation": {
     "status": "AVAILABLE",
-    "generatedAt": "2026-08-26T10:55:27.325Z",
+    "generatedAt": "2026-08-28T02:04:37.936Z",
     "recommendedPolicy": "T1_25_T2_75",
-    "recommendationReason": "The no-runner baseline was the strongest policy in development, so no runner policy is promoted.",
+    "recommendationReason": "Development winner T1_25_T2_50_RUN25 did not clear untouched confirmation requirements; baseline retained.",
     "reportUrl": "https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/exit-policy-validation.json",
     "automaticRiskIncreaseAllowed": false
   },
@@ -2444,20 +2425,11 @@
   },
   "portfolioCorrelationIntelligence": {
     "status": "AVAILABLE",
-    "generatedAt": "2026-08-26T10:55:24.793Z",
+    "generatedAt": "2026-08-28T02:04:35.442Z",
     "lookbackTradingDays": 90,
     "highCorrelationThreshold": 0.75,
     "veryHighCorrelationThreshold": 0.88,
-    "clusters": [
-      {
-        "key": "GFI|PHYS",
-        "members": [
-          "GFI",
-          "PHYS"
-        ],
-        "maxPairCorrelation": 0.821
-      }
-    ],
+    "clusters": [],
     "policy": {
       "maxFullSizeNamesPerHighCorrelationCluster": 1,
       "maxNamesPerHighCorrelationCluster": 2,
@@ -2469,15 +2441,15 @@
   },
   "championChallenger": {
     "status": "AVAILABLE",
-    "generatedAt": "2026-08-26T10:55:27.413Z",
+    "generatedAt": "2026-08-28T02:04:38.021Z",
     "mode": "CHAMPION_CHALLENGER",
     "champion": {
       "exitPolicy": "T1_25_T2_75",
       "status": "LIVE_POLICY_ONLY_IF_ALL_RUNTIME_GUARDS_PASS",
       "evidence": {
-        "exitValidationGeneratedAt": "2026-08-26T10:55:27.325Z",
-        "entryValidationGeneratedAt": "2026-08-26T10:55:25.786Z",
-        "probabilityPolicyGeneratedAt": "2026-08-26T10:08:55.691Z"
+        "exitValidationGeneratedAt": "2026-08-28T02:04:37.936Z",
+        "entryValidationGeneratedAt": "2026-08-28T02:04:36.462Z",
+        "probabilityPolicyGeneratedAt": "2026-08-26T10:57:02.266Z"
       }
     },
     "promotionPolicy": {
@@ -2506,7 +2478,7 @@
   },
   "adaptivePerformance": {
     "status": "WAITING_FOR_RECONCILED_REAL_FILLS",
-    "generatedAt": "2026-08-26T10:56:21.535Z",
+    "generatedAt": "2026-08-28T02:04:39.135Z",
     "resolvedRealStockTrades": 0,
     "sourceOfTruth": "ROBINHOOD_CONFIRMED_REAL_FILLS_ONLY",
     "policy": {
@@ -2742,84 +2714,86 @@
   },
   "claudeExecutionPolicy": {
     "enabled": true,
+    "role": "SOLE_EXECUTION_AGENT",
     "schedule": {
-      "cron": "0 13-21 * * 1-5",
+      "cron": "*/5 * * * *",
       "timezone": "UTC",
-      "expectedObservedFireMinuteApprox": 5,
-      "expectedObservedTimesUtc": [
-        "13:05",
-        "14:05",
-        "15:05",
-        "16:05",
-        "17:05",
-        "18:05",
-        "19:05",
-        "20:05",
-        "21:05"
-      ],
-      "easternDaylightApprox": "09:05-17:05 ET",
-      "note": "Claude performs low-credit hourly check-ins. Platform scheduling may drift; never assume an exact second or minute."
+      "note": "A persistent authorized Claude runtime checks Teststock every five minutes. GitHub scanning remains separate from broker execution."
     },
-    "checkIsNotTrade": true,
     "triggerBoardFirst": true,
     "triggerBoardPath": "docs/data/trigger-board.json",
     "executionWatchlistPath": "docs/data/execution-watchlist.json",
     "dispatchPath": "docs/data/execution-dispatch.json",
+    "cryptoAdmissionPath": "docs/data/crypto-profitability-admission.json",
     "sourceOfTruth": "LATEST_RAW_MAIN",
     "generationMatchRequired": true,
-    "generationRule": "Before acting, fetch the newest raw-main trigger/dispatch and signal. Any new-risk order may proceed only when the event belongs to the current active signal generation. If generation ids/timestamps conflict, re-fetch and do not submit new risk until they match.",
+    "generationRule": "Before adding risk, fetch the newest raw-main dispatch and signal. If generation ids or timestamps conflict, re-fetch and do not submit new risk until they match.",
     "accountGuardrailSource": {
       "source": "CURRENT_RAW_MAIN_SIGNAL_ONLY",
       "hardAccountFloorPath": "signal.hardAccountFloor",
       "capitalLadderPath": "signal.capitalLadder",
       "legacyNinetyDollarPauseThresholdAllowed": false,
-      "idleAccountLookupAllowed": false,
-      "rule": "Never use a remembered or hard-coded $90 pause threshold. On a real execution or protection-repair run, fetch the current raw-main signal and use its current hardAccountFloor/capitalLadder/circuit-breaker values. On a normal idle heartbeat, do not query Robinhood merely to calculate account-floor status."
+      "idleAccountLookupAllowed": false
     },
-    "protectionReconciliation": {
-      "enabled": true,
-      "watchlistIsPublicSavedTriggerSource": true,
-      "projectsOrDriveRequiredForWatchlistRead": false,
-      "idleRepairExceptionAllowed": true,
-      "idleRepairTriggers": [
-        "ACTIVE watchlist position missing required saved stop/targets",
-        "watchlist contradicts a previously reported live holding",
-        "prior run explicitly reported UNPROTECTED or UNRECONCILED live position"
+    "stockBuys": {
+      "executionOwner": "CLAUDE",
+      "explicitApprovalRequired": false,
+      "automaticWhenFullyQualifiedAndBrokerPermits": true,
+      "appliesTo": [
+        "STOCK_A",
+        "STOCK_B",
+        "STOCK_SEED"
       ],
-      "minimumBrokerReadScope": [
-        "live position for affected ticker",
-        "open sell/protective orders for affected ticker"
+      "stockPriority": [
+        "A",
+        "B",
+        "SEED"
       ],
-      "noGeneralAccountSweep": true,
-      "neverInventLevels": true,
-      "fractionalArmingRule": "An ACTIVE watchlist record with saved levels plus a healthy <=5-minute trigger monitor means GitHub-side synthetic monitoring is armed. It is not broker-resident stop protection.",
-      "missingPlanRule": "Recover levels only from trustworthy existing Teststock/GitHub history. If no saved invalidation can be recovered, open no new risk and use only risk-reducing actions actually authorized by current policy and supported by Robinhood.",
-      "writeFailureRule": "If GitHub write capability is unavailable, never claim the watchlist was changed. Existing raw-main watchlist data may still prove prior arming."
+      "bTierUsesReducedEncodedSize": true,
+      "seedLaneUsesEncodedCap": true,
+      "requireRobinhoodTradingMcp": true,
+      "requireLiveBrokerRecheck": true,
+      "rule": "Qualified stock entries are automatic through Claude. Immediately before each submission, re-check freshness, price/max-entry/no-chase, buying power, account floor, portfolio heat, correlation, trade frequency, duplicate state, sizing and protection capability. Skip anything that no longer qualifies."
+    },
+    "crypto": {
+      "executionOwner": "CLAUDE",
+      "explicitApprovalRequired": false,
+      "automaticWhenFullyQualifiedAndBrokerPermits": true,
+      "directGitHubOrderSubmissionAllowed": false,
+      "requireRobinhoodTradingMcp": true,
+      "requireLiveBrokerRecheck": true,
+      "requireCurrentAdmissionGate": true,
+      "manualHoldingsIsolationRequired": true,
+      "rule": "Qualified crypto is automatic through Claude using the connected Robinhood Trading MCP. Re-check tradability, quote/spread, buying power, holdings, open orders, sizing and protection live immediately before submission. Manage only Teststock-attributable quantity."
     },
     "exits": {
       "explicitApprovalRequired": false,
       "automaticWhenDetectedAndBrokerPermits": true,
+      "appliesTo": [
+        "STOCK",
+        "OPTION",
+        "CRYPTO"
+      ],
       "scope": [
         "TRIGGER_1_STOP",
         "TRIGGER_2_TARGET1",
-        "TRIGGER_3_TARGET2"
-      ],
-      "rule": "Risk-reducing exits and validated profit-taking execute without a new user approval when the live Robinhood position, trigger, quantity, order state and current exit policy are verified."
+        "TRIGGER_3_TARGET2",
+        "CRYPTO_STOP",
+        "CRYPTO_TARGET",
+        "CRYPTO_TIME_EXIT",
+        "EMERGENCY_PROTECTION_EXIT"
+      ]
     },
-    "buys": {
-      "explicitApprovalRequired": true,
-      "automaticWhenFullyQualifiedAndBrokerPermits": false,
-      "appliesTo": [
-        "STOCK_A",
-        "STOCK_B"
-      ],
-      "stockPriority": [
-        "A",
-        "B"
-      ],
-      "bTierUsesReducedEncodedSize": true,
-      "perOrderApprovalRequired": true,
-      "rule": "For stocks, evaluate the current Teststock tournament qualified queue in order, A before B. Require each candidate current runtime regime policy to allow new stocks. Use Robinhood only for final live verification. Ask for a separate exact approval for each candidate that survives. After an approved fill, recompute remaining portfolio capacity and continue to later qualified candidates when capacity remains. Do not invent a different stock. Crypto execution is handled by the separate direct Robinhood Crypto API lane."
+    "brokerExecutionContract": {
+      "executor": "CLAUDE_ONLY",
+      "transport": "ROBINHOOD_TRADING_MCP",
+      "duplicateProtectionRequired": true,
+      "reconcileByClientOrderId": true,
+      "neverAssumeFill": true,
+      "partialFillsUseConfirmedQuantityOnly": true,
+      "protectionRequiredAfterEntry": true,
+      "ambiguousSubmissionRule": "Reconcile the original client order id and broker state before any retry.",
+      "unprotectedEntryRule": "If required protection cannot be established after a fill, use the safest currently authorized risk-reducing action."
     },
     "hardGuardsRemainMandatory": [
       "funding lock",
@@ -2832,54 +2806,59 @@
       "correlation/portfolio heat",
       "trade frequency",
       "protective-exit capability",
-      "fractional-monitor health",
       "no margin/leverage",
       "no average down",
       "no wider stops"
     ],
+    "protectionReconciliation": {
+      "enabled": true,
+      "projectsOrDriveRequiredForWatchlistRead": false,
+      "idleRepairExceptionAllowed": true,
+      "neverInventLevels": true
+    },
     "idle": {
       "normalReads": [
         "docs/data/trigger-board.json",
         "docs/data/execution-watchlist.json"
       ],
       "robinhoodCallsOnNormalIdle": false,
-      "rule": "If no actionable dispatch exists and no protection-repair condition exists, stop immediately after the two small raw-main reads without Robinhood market/account work or full market analysis."
+      "rule": "If no actionable stock dispatch, qualified crypto execution, or protection repair exists, stop."
     }
   },
   "stockTournament": {
     "enabled": true,
     "sourceRef": "docs/data/stock-tournament.json",
     "targetTournamentSize": 20000,
-    "actualAvailableUniverse": 6076,
+    "actualAvailableUniverse": 6077,
     "scanAllAvailableUpToTarget": true,
     "rounds": [
       {
         "round": "UNIVERSE",
-        "input": 6076,
-        "output": 1996,
+        "input": 6077,
+        "output": 1999,
         "rule": "Scan every legitimate active/tradable operating-company stock available from the connected U.S. equity universe, up to a 20,000-symbol ceiling. Never invent symbols or pad with ETFs/warrants just to hit 20,000."
       },
       {
         "round": "UP_TO_20000",
-        "input": 1996,
-        "output": 1996,
+        "input": 1999,
+        "output": 1999,
         "rule": "Rank the entire available discovery pool by market quality, liquidity and momentum; send the best 2,000 to deeper daily-history analysis."
       },
       {
         "round": "TOP_2000",
-        "input": 1996,
-        "output": 706,
+        "input": 1999,
+        "output": 691,
         "rule": "Require sufficient history, verified 20-day dollar liquidity, trend/setup structure and bounded volatility."
       },
       {
         "round": "TOP_800",
-        "input": 706,
-        "output": 97,
+        "input": 691,
+        "output": 74,
         "rule": "Run setup-specific historical validation and eliminate weak win-rate, sample-depth, direction, liquidity and volatility profiles."
       },
       {
         "round": "TOP_100",
-        "input": 97,
+        "input": 74,
         "output": 7,
         "rule": "Apply A-tier elite gates first, then a reduced-size B best-acceptable tier with positive expectancy/history/R:R floors. Hard account, price, spread, gap, correlation and protection gates never relax."
       },
@@ -2902,40 +2881,40 @@
     "noEligibleCandidateAction": "HOLD_CASH_AND_KEEP_SCANNING",
     "researchChampion": {
       "rank": 1,
-      "ticker": "NBR",
-      "name": "Nabors Industries Ltd.",
+      "ticker": "NUVB",
+      "name": "Nuvation Bio Inc.",
       "setupType": "TREND",
-      "tournamentScore": 91.1,
+      "tournamentScore": 90.19,
       "quality": 100,
       "historicalWinRate": 86,
-      "historicalSamples": 37,
+      "historicalSamples": 28,
       "rewardRisk": 2.6,
       "spreadPct": null,
-      "entry": 97.81,
-      "stop": 83.52,
-      "target1": 119.25,
-      "target2": 134.96,
+      "entry": 7.56,
+      "stop": 6.52,
+      "target1": 9.12,
+      "target2": 10.26,
       "entryTier": "A",
       "entryTierLabel": "ELITE",
       "fundamentals": {
-        "label": "MIXED",
-        "coverage": 1,
-        "revenueGrowthPct": 13.3,
-        "latestAnnualNetIncome": -11784000,
-        "latestEquityEstimate": 1206338000,
+        "label": "WEAK",
+        "coverage": 0.6666666666666666,
+        "revenueGrowthPct": null,
+        "latestAnnualNetIncome": -567939000,
+        "latestEquityEstimate": 463788000,
         "source": "SEC_COMPANYFACTS",
         "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
       },
       "corporateActions": {
         "risk": "CLEAR",
-        "windowStart": "2026-08-12",
-        "windowEnd": "2026-10-10",
+        "windowStart": "2026-08-14",
+        "windowEnd": "2026-10-12",
         "events": [],
         "source": "ALPACA_CORPORATE_ACTIONS",
         "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
       },
       "recentFilings": [],
-      "fundamentalEligibility": null,
+      "fundamentalEligibility": false,
       "adaptiveLearning": {
         "matched": [],
         "priorityScoreDelta": 0,
@@ -2947,8 +2926,8 @@
         "globalReasons": [],
         "reasons": []
       },
-      "adaptiveBaseTournamentScore": 91.1,
-      "adaptiveTournamentScore": 91.1,
+      "adaptiveBaseTournamentScore": 90.19,
+      "adaptiveTournamentScore": 90.19,
       "adaptiveSizeMultiplier": 1
     },
     "liveBuyChampion": null,
@@ -2983,7 +2962,7 @@
     "profitabilityAdmissionPolicy": {
       "enabled": true,
       "mode": "FORWARD_SHADOW_MICRO_THEN_REAL_ADMISSION",
-      "rule": "Backtests and historical samples are diagnostic only and cannot create live eligibility. Six actual independent positive forward-shadow outcomes may unlock tightly capped one-quarter-size micro-probation; twelve independent positive shadow outcomes unlock half-size probation. Duplicate same-day symbol/setup/regime records count once using the most adverse result. Full normal eligible size still requires sufficient positive Robinhood-confirmed real fills. Zero or unknown forward evidence never passes."
+      "rule": "Backtests and historical samples are diagnostic only and cannot create live eligibility. Six actual independent positive outcomes -- shadow (hypothetical) or resolved real Robinhood fills, pooled together -- may unlock tightly capped one-quarter-size micro-probation; twelve independent positive outcomes from that same pool unlock half-size probation. A resolved real fill counts at least as strongly as a shadow outcome since it is confirmed real-money evidence, not a substitute for it. Duplicate same-day symbol/setup/regime records count once using the most adverse result. Full normal eligible size still requires sufficient positive Robinhood-confirmed real fills on their own (see the separate real/LIVE_ADMITTED tier). Zero or unknown forward evidence never passes."
     },
     "decisionIntelligencePolicy": {
       "enabled": true,
@@ -3022,25 +3001,49 @@
         "warning": "Federal disclosures can arrive long after the transaction. This is not real-time order flow."
       },
       "summary": {
-        "uniqueRecords": 1866,
-        "tickers": 252,
-        "latestReportedDate": "2026-08-24",
+        "uniqueRecords": 1827,
+        "tickers": 249,
+        "latestReportedDate": "2026-08-26",
         "automatedProvidersOk": 1,
         "cachePreserved": false
       }
     },
     "topMatchedCandidates": [
       {
-        "ticker": "MDT",
-        "netActivityScore": -8.2,
+        "ticker": "JNJ",
+        "netActivityScore": -8.4,
         "buyWeight": 0,
-        "sellWeight": 0.686,
+        "sellWeight": 0.703,
+        "distinctPoliticians": 2,
+        "bipartisan": false,
+        "sourceCount": 1,
+        "recordCount": 2,
+        "latestReportedDate": "2026-08-05",
+        "confidence": 46
+      },
+      {
+        "ticker": "WAB",
+        "netActivityScore": -4.3,
+        "buyWeight": 0,
+        "sellWeight": 0.36,
         "distinctPoliticians": 1,
         "bipartisan": false,
         "sourceCount": 1,
         "recordCount": 1,
-        "latestReportedDate": "2026-08-05",
+        "latestReportedDate": "2026-07-16",
         "confidence": 43
+      },
+      {
+        "ticker": "SBUX",
+        "netActivityScore": 4.3,
+        "buyWeight": 0.405,
+        "sellWeight": 0.048,
+        "distinctPoliticians": 2,
+        "bipartisan": false,
+        "sourceCount": 1,
+        "recordCount": 2,
+        "latestReportedDate": "2026-07-21",
+        "confidence": 46
       }
     ]
   },
@@ -3051,73 +3054,74 @@
     "scanAllSupportedUsdPairs": true,
     "supportedUsdPairs": 200,
     "brokerExecution": {
-      "status": "DIRECT_API_ENABLED",
-      "lane": "GITHUB_ACTIONS_ROBINHOOD_CRYPTO_API",
-      "executableByDirectRobinhoodCryptoApi": true,
-      "executableByCurrentClaudeRobinhoodConnection": false,
+      "status": "CLAUDE_ROBINHOOD_TRADING_MCP",
+      "lane": "CLAUDE_ROBINHOOD_TRADING_MCP",
+      "directGitHubOrderSubmissionAllowed": false,
+      "executableByCurrentClaudeRobinhoodConnection": true,
+      "executableByDirectRobinhoodCryptoApi": false,
+      "requiresAuthenticatedRobinhoodTradingMcp": true,
       "researchOnly": false,
-      "reason": "The dedicated GitHub Actions lane uses Robinhood Crypto API credentials for live quote, account, order and protection checks without relying on Claude crypto tools."
+      "requiresClaude": true,
+      "rule": "Claude is the sole execution agent. Use the Teststock qualified crypto champion first, then already-qualified fallbacks in tournament order. Before any order Claude must use the authenticated Robinhood Trading MCP to independently verify the live quote, tradability, Agentic-account buying power, holdings, open orders, sizing, no-chase limits, duplicate protection and required protection. GitHub research/monitoring must never submit the broker order directly.",
+      "reason": "Claude is the sole execution agent. GitHub research and monitoring never submit broker orders directly."
     },
     "buyWhenAtLeastOneFullyQualifiedCandidateExists": true,
     "forcedCryptoBuy": false,
     "noEligibleCandidateAction": "KEEP_SCANNING_24_7",
     "researchChampion": {
       "rank": 1,
-      "ticker": "SOL/USD",
+      "ticker": "BTC/USD",
       "grade": "A+",
       "growthQuality": 100,
       "score": 100,
-      "historicalWinRate": 0,
-      "historicalSamples": 4,
+      "historicalWinRate": 50,
+      "historicalSamples": 8,
       "rewardRisk": 5,
       "confirm4h": true,
-      "rsi4h": 63.7,
-      "vwap4h": 97.011474,
+      "rsi4h": 63.2,
+      "vwap4h": 79213.245339,
       "pullbackToSupportOrVwap": true,
       "momentumTurnedUp": true,
       "volumeConfirm": false,
       "btcTrendSupport": true,
-      "dollarVolume20d": 24019503,
-      "dollarVolume24hReal": 35842455,
-      "entry": 97.76514,
-      "stop": 96.18267,
-      "target1": 102.51255,
-      "target2": 105.67749,
+      "dollarVolume20d": 315871415,
+      "dollarVolume24hReal": 497203590,
+      "entry": 80570.84004,
+      "stop": 78817.179112,
+      "target1": 85831.822823,
+      "target2": 89339.144678,
       "robinhoodTradable": true
     },
     "qualifiedChampion": {
       "rank": 1,
-      "ticker": "SOL/USD",
+      "ticker": "BTC/USD",
       "grade": "A+",
       "growthQuality": 100,
       "score": 100,
-      "historicalWinRate": 0,
-      "historicalSamples": 4,
+      "historicalWinRate": 50,
+      "historicalSamples": 8,
       "rewardRisk": 5,
       "confirm4h": true,
-      "rsi4h": 63.7,
-      "vwap4h": 97.011474,
+      "rsi4h": 63.2,
+      "vwap4h": 79213.245339,
       "pullbackToSupportOrVwap": true,
       "momentumTurnedUp": true,
       "volumeConfirm": false,
       "btcTrendSupport": true,
-      "dollarVolume20d": 24019503,
-      "dollarVolume24hReal": 35842455,
-      "entry": 97.76514,
-      "stop": 96.18267,
-      "target1": 102.51255,
-      "target2": 105.67749,
+      "dollarVolume20d": 315871415,
+      "dollarVolume24hReal": 497203590,
+      "entry": 80570.84004,
+      "stop": 78817.179112,
+      "target1": 85831.822823,
+      "target2": 89339.144678,
       "robinhoodTradable": true
     },
-    "fallbackTickers": [
-      "LINK/USD",
-      "ETH/USD"
-    ],
-    "instructions": "The direct Robinhood Crypto API lane evaluates only the Teststock qualified champion and already-qualified fallbacks in order. It must not invent a crypto symbol or bypass any live broker/risk/protection check.",
+    "fallbackTickers": [],
+    "instructions": "Claude evaluates only the Teststock qualified champion and already-qualified fallbacks in order through the authenticated Robinhood Trading MCP. Claude must not invent a crypto symbol or bypass any live broker, risk, freshness, no-chase, duplicate-order, sizing or protection check.",
     "researchOnlyUntilBrokerExecutionAvailable": false
   },
   "executionArchitecture": {
-    "version": 4,
+    "version": 5,
     "mode": "TWO_TOURNAMENTS_ONLY",
     "researchAuthority": "TESTSTOCK",
     "tournaments": {
@@ -3126,20 +3130,20 @@
         "source": "docs/data/stock-tournament.json",
         "operatingMode": "CONTINUOUS_SCAN_SELECTIVE_INTRADAY_MULTI_POSITION",
         "purpose": "Continuously scan during the stock session, rank contenders, execute independently qualified setups in priority order, and continue scanning even while other Teststock stock positions are open.",
-        "execution": "Claude uses Robinhood only for final broker-side verification of already-qualified Teststock candidates: price, buying power, positions/orders, spread, account/risk/protection guards, then requests the required per-order user approval and executes when permitted.",
-        "selectorRule": "Do not invent a different stock. Start with Teststock liveBuyChampion/current best qualified stock, then continue through already-qualified Teststock candidates in order. A filled winner does not make the remaining independently qualified candidates ineligible.",
+        "execution": "Claude uses the authenticated Robinhood Trading MCP for final broker-side verification of already-qualified Teststock candidates and automatically submits qualified stock orders when every Teststock and live broker guard passes.",
+        "selectorRule": "Do not invent a different stock. Start with the current Teststock liveBuyChampion/current best qualified stock, then continue through already-qualified Teststock candidates in order. A filled winner does not make the remaining independently qualified candidates ineligible.",
         "portfolioRule": "Multiple Teststock stock positions may be open concurrently. Recompute remaining cash, deployed capital, planned stop risk, correlation, frequency, protection and concurrent-position capacity after every fill. The published maximum is a ceiling, never a quota.",
-        "approvalRule": "Every new stock order requires its own exact user approval. One approval never authorizes a different ticker or a second order.",
+        "approvalRule": "No manual approval is required for qualified stock entries. Claude may submit only candidates that Teststock already marked executable and that still pass every live broker and risk check immediately before submission.",
         "validationScope": "REGIME_SPECIFIC",
-        "validationRule": "A global entry-gate RED_FLAG does not freeze unrelated regimes. The CURRENT setup may proceed only when its current runtime regime policy has allowNewStocks=true. A blocked regime remains blocked; sparse regimes keep their reduced size.",
-        "activityRule": "Scan continuously on the configured schedules and take every independently qualified opportunity that survives all gates and its own user approval, subject to published cash/risk/frequency/concurrent-position limits. Never create trades merely to increase activity.",
+        "validationRule": "A global entry-gate RED_FLAG does not freeze unrelated regimes. The current setup may proceed only when its current runtime regime policy has allowNewStocks=true. A blocked regime remains blocked; sparse regimes keep their reduced size.",
+        "activityRule": "Scan continuously on the configured schedules and take every independently qualified opportunity that survives all gates, subject to published cash/risk/frequency/concurrent-position limits. Never create trades merely to increase activity.",
         "holdingRule": "Prefer same-day management for intraday setups. Overnight exposure requires an explicit current Teststock plan and verified protection; never hold overnight just to avoid a planned exit."
       },
       "crypto": {
         "enabled": true,
         "source": "docs/data/crypto-tournament.json",
         "purpose": "Continuously research and rank supported crypto pairs using trend, confirmation, history, liquidity, BTC context and risk checks until the best qualified setup survives.",
-        "execution": "The direct Robinhood Crypto API lane uses the Teststock crypto winner/fallback and Robinhood live quote/account/order state for final execution checks. Claude is not required for overnight crypto execution.",
+        "execution": "Claude uses the authenticated Robinhood Trading MCP for final live quote, tradability, buying-power, holdings, open-order, sizing, duplicate-protection and protection checks, then automatically executes the Teststock qualified crypto champion or already-qualified fallback when every gate passes.",
         "selectorRule": "Do not invent a different crypto asset. Use the Teststock qualified crypto champion or an already-qualified fallback only."
       }
     },
@@ -3151,7 +3155,7 @@
       "FUTURES"
     ],
     "crossAssetSelection": false,
-    "rule": "Teststock decides what is worth considering through two independent tournaments. Robinhood is the live execution truth. Broker-side checks may reject a tournament candidate but may never replace it with an unranked idea or weaken Teststock gates."
+    "rule": "Teststock decides what is worth considering through two independent tournaments. Robinhood Trading MCP is the live execution truth. Broker-side checks may reject a tournament candidate but may never replace it with an unranked idea or weaken Teststock gates."
   },
   "intradayStockPolicy": {
     "enabled": true,
@@ -3163,13 +3167,13 @@
     "forcedTradeQuota": false,
     "multipleConcurrentPositionsAllowed": true,
     "continueScanningWhilePositionsOpen": true,
-    "perOrderApprovalRequired": true,
+    "perOrderApprovalRequired": false,
     "overnightRequiresExplicitCurrentPlan": true,
-    "instructions": "Keep scanning during market hours even when one or more Teststock stocks are already open. A global validation RED_FLAG is diagnostic; block only the current regime when its runtime policy says allowNewStocks=false. Each new candidate must independently pass every Teststock and Robinhood gate and receive its own approval. Recompute remaining cash, portfolio stop risk, deployed capital, correlation, frequency and position capacity after every fill. Maximum positions are a ceiling, never a target. No strategy guarantees profit."
+    "instructions": "Keep scanning during market hours even when one or more Teststock stocks are already open. A global validation RED_FLAG is diagnostic; block only the current regime when its runtime policy says allowNewStocks=false. Each new candidate must independently pass every Teststock and Robinhood MCP gate. Recompute remaining cash, portfolio stop risk, deployed capital, correlation, frequency and position capacity after every fill. Maximum positions are a ceiling, never a target. No strategy guarantees profit."
   },
   "unifiedMarketIntelligence": {
     "schemaVersion": 1,
-    "generatedAt": "2026-08-26T10:57:02.927Z",
+    "generatedAt": "2026-08-28T02:05:16.885Z",
     "architecture": "TWO_TOURNAMENTS_UNIFIED_EVIDENCE",
     "objective": "Improve cost-adjusted expectancy and reduce avoidable losses through diverse evidence, forward validation, broker reconciliation and hard risk limits. No win or income guarantee.",
     "providers": [
@@ -3182,7 +3186,7 @@
         ],
         "role": "PRIMARY_MARKET_DATA_AND_RESEARCH",
         "status": "CONNECTED",
-        "lastCheckedAt": "2026-08-26T10:57:02.872Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.832Z",
         "liveInfluence": "HARD_DATA_GATES_AND_TOURNAMENT_INPUT",
         "freshnessMinutes": 0,
         "capabilities": [
@@ -3202,7 +3206,7 @@
         ],
         "role": "BROKER_SOURCE_OF_TRUTH",
         "status": "AUTHORIZED_RUNTIME_REQUIRED",
-        "lastCheckedAt": "2026-08-26T10:57:02.872Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.832Z",
         "liveInfluence": "EXECUTION_AND_CONFIRMED_FILL_LEARNING_ONLY",
         "capabilities": [
           "cash and holdings verification",
@@ -3220,7 +3224,7 @@
         ],
         "role": "DIRECT_BROKER_EXECUTION",
         "status": "CONNECTED",
-        "lastCheckedAt": "2026-08-26T10:57:02.872Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.832Z",
         "liveInfluence": "QUALIFIED_CRYPTO_EXECUTION_AND_CONFIRMED_FILLS",
         "capabilities": [
           "account verification",
@@ -3237,7 +3241,7 @@
         ],
         "role": "OFFICIAL_FUNDAMENTALS_AND_FILINGS",
         "status": "CONNECTED",
-        "lastCheckedAt": "2026-08-26T10:57:02.872Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.832Z",
         "liveInfluence": "FUNDAMENTAL_AND_EVENT_RISK_GATES",
         "capabilities": [
           "company facts",
@@ -3252,8 +3256,8 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "OK",
-        "lastCheckedAt": "2026-08-26T10:57:02.872Z",
-        "records": 2774,
+        "lastCheckedAt": "2026-08-28T02:05:16.832Z",
+        "records": 2767,
         "endpoint": "https://www.insiderfinance.io/congress-trades",
         "liveInfluence": "SHADOW_ONLY"
       },
@@ -3265,7 +3269,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "UNAVAILABLE",
-        "lastCheckedAt": "2026-08-26T10:57:02.872Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.832Z",
         "records": 0,
         "endpoint": "https://stockcircle.com/congress-stock-trades?view=latest_trades",
         "liveInfluence": "SHADOW_ONLY"
@@ -3278,7 +3282,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-08-26T10:57:02.872Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.832Z",
         "records": 0,
         "endpoint": "https://www.barchart.com/investing-ideas/politician-insider-trading",
         "liveInfluence": "SHADOW_ONLY"
@@ -3291,7 +3295,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-08-26T10:57:02.872Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.832Z",
         "records": 0,
         "endpoint": "https://www.capitoltrades.com/politicians",
         "liveInfluence": "SHADOW_ONLY"
@@ -3304,7 +3308,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-08-26T10:57:02.872Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.832Z",
         "records": 0,
         "endpoint": "https://www.quiverquant.com/congresstrading/",
         "liveInfluence": "SHADOW_ONLY"
@@ -3317,7 +3321,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-08-26T10:57:02.872Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.832Z",
         "records": 0,
         "endpoint": "https://unusualwhales.com/politics",
         "liveInfluence": "SHADOW_ONLY"
@@ -3330,7 +3334,7 @@
         ],
         "role": "OPTIONAL_LICENSED_ALTERNATIVE_DATA",
         "status": "LICENSED_KEY_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-08-26T10:57:02.872Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.832Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION",
         "capabilities": [
           "congressional activity",
@@ -3346,7 +3350,7 @@
         ],
         "role": "OPTIONAL_LICENSED_OPTIONS_AND_POLITICAL_DATA",
         "status": "LICENSED_KEY_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-08-26T10:57:02.872Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.832Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION",
         "capabilities": [
           "political disclosures",
@@ -3361,7 +3365,7 @@
         ],
         "role": "AUTHORITATIVE_RECONCILIATION",
         "status": "REFERENCE_LINKS_FROM_SOURCE_RECORDS",
-        "lastCheckedAt": "2026-08-26T10:57:02.872Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.832Z",
         "liveInfluence": "CONFIRMATION_ONLY",
         "capabilities": [
           "original disclosure links"
@@ -3376,7 +3380,7 @@
         ],
         "role": "OUTCOME_AND_BOUNDED_LEARNING_SOURCE",
         "status": "WAITING_FOR_RESOLVED_FILLS",
-        "lastCheckedAt": "2026-08-26T10:57:02.872Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.832Z",
         "liveInfluence": "MAY_RERANK_REDUCE_OR_BLOCK_NEVER_RAISE_MAX_RISK",
         "records": 0
       },
@@ -3389,7 +3393,7 @@
         ],
         "role": "SECONDARY_RESEARCH_AND_MANUAL_RECONCILIATION",
         "status": "REFERENCE_ONLY_NO_OFFICIAL_EXECUTION_FEED",
-        "lastCheckedAt": "2026-08-26T10:57:02.927Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.885Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -3401,7 +3405,7 @@
         ],
         "role": "SECONDARY_QUOTE_AND_NEWS_RECONCILIATION",
         "status": "REFERENCE_ONLY_NO_SUPPORTED_TRADING_API",
-        "lastCheckedAt": "2026-08-26T10:57:02.927Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.885Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -3413,7 +3417,7 @@
         ],
         "role": "OPTIONAL_AUTHORIZED_MARKET_DATA_OR_BROKER_RECONCILIATION",
         "status": "OPENAPI_CREDENTIALS_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-08-26T10:57:02.927Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.885Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION"
       },
       {
@@ -3425,7 +3429,7 @@
         ],
         "role": "CHART_TECHNICAL_AND_ALERT_VISUALIZATION",
         "status": "VISUALIZATION_REFERENCE_ALPACA_REMAINS_DATAFEED",
-        "lastCheckedAt": "2026-08-26T10:57:02.927Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.885Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -3437,7 +3441,7 @@
         ],
         "role": "SCREENER_FUNDAMENTAL_AND_LIQUIDITY_RECONCILIATION",
         "status": "LICENSED_EXPORT_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-08-26T10:57:02.927Z",
+        "lastCheckedAt": "2026-08-28T02:05:16.885Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION"
       }
     ],
@@ -3530,16 +3534,19 @@
   "robinhoodExecutableUniversePolicy": {
     "enabled": true,
     "mode": "ROBINHOOD_EXECUTABLE_FINALISTS_ONLY",
-    "discoveryVsExecution": "Alpaca may scan the market to find candidates; only exact symbols verified buyable by the appropriate Robinhood lane may be ordered.",
+    "executionAgent": "CLAUDE",
+    "brokerLane": "ROBINHOOD_TRADING_MCP",
+    "discoveryVsExecution": "Research sources may discover candidates; only exact candidates independently verified through the authenticated Robinhood Trading MCP immediately before submission may be ordered.",
     "stock": {
-      "catalogAvailableToGithub": false,
-      "gate": "SIGNED_IN_ROBINHOOD_RUNTIME_EXACT_SYMBOL_CHECK",
-      "perOrderApprovalStillRequired": true
+      "gate": "CLAUDE_ROBINHOOD_TRADING_MCP_EXACT_SYMBOL_CHECK",
+      "perOrderApprovalStillRequired": false,
+      "automaticQualifiedBuys": true
     },
     "crypto": {
-      "gate": "OFFICIAL_ROBINHOOD_CRYPTO_API_TRADING_PAIRS_CHECK",
-      "implementedIn": "scripts/robinhood_crypto_autopilot.py"
+      "gate": "CLAUDE_ROBINHOOD_TRADING_MCP_EXACT_PAIR_CHECK",
+      "automaticQualifiedBuys": true
     },
+    "directGitHubBrokerExecutionAllowed": false,
     "failClosed": true,
     "noBrokerConfirmationMeansNoOrder": true
   }

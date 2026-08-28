@@ -1,18 +1,20 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "source": "TESTSTOCK_CRYPTO_KNOCKOUT",
-  "generatedAt": "2026-08-26T10:57:02.800Z",
+  "generatedAt": "2026-08-28T02:05:16.762Z",
   "market": "24_7",
   "supportedUsdPairs": 200,
-  "objective": "Scan every active tradable Alpaca USD crypto pair, eliminate weak setups, and select the strongest qualified crypto winner plus qualified fallbacks for direct Robinhood Crypto API verification.",
+  "objective": "Scan every active tradable USD crypto pair, eliminate weak setups, and select the strongest qualified crypto winner plus qualified fallbacks for Claude to verify and execute through the authenticated Robinhood Trading MCP.",
   "brokerExecution": {
-    "status": "DIRECT_ROBINHOOD_CRYPTO_API",
-    "lane": "GITHUB_ACTIONS_ROBINHOOD_CRYPTO_API",
-    "executableByCurrentClaudeRobinhoodConnection": false,
-    "executableByDirectRobinhoodCryptoApi": true,
+    "status": "CLAUDE_ROBINHOOD_TRADING_MCP",
+    "lane": "CLAUDE_ROBINHOOD_TRADING_MCP",
+    "directGitHubOrderSubmissionAllowed": false,
+    "executableByCurrentClaudeRobinhoodConnection": true,
+    "executableByDirectRobinhoodCryptoApi": false,
+    "requiresAuthenticatedRobinhoodTradingMcp": true,
     "researchOnly": false,
-    "requiresClaude": false,
-    "rule": "Use the Teststock qualified crypto champion first, then already-qualified fallbacks in tournament order. The direct Robinhood Crypto API must independently verify the live quote, account, holdings, open orders, sizing and protection before execution."
+    "requiresClaude": true,
+    "rule": "Claude is the sole execution agent. Use the Teststock qualified crypto champion first, then already-qualified fallbacks in tournament order. Before any order Claude must use the authenticated Robinhood Trading MCP to independently verify the live quote, tradability, Agentic-account buying power, holdings, open orders, sizing, no-chase limits, duplicate protection and required protection. GitHub research/monitoring must never submit the broker order directly."
   },
   "policy": {
     "scanAllSupportedUsdPairs": true,
@@ -27,29 +29,29 @@
   },
   "researchChampion": {
     "rank": 1,
-    "ticker": "SOL/USD",
+    "ticker": "BTC/USD",
     "grade": "A+",
     "growthQuality": 100,
     "score": 100,
-    "historicalWinRate": 0,
-    "historicalSamples": 4,
+    "historicalWinRate": 50,
+    "historicalSamples": 8,
     "rewardRisk": 5,
     "confirm4h": true,
-    "rsi4h": 63.7,
-    "vwap4h": 97.011474,
+    "rsi4h": 63.2,
+    "vwap4h": 79213.245339,
     "pullbackToSupportOrVwap": true,
     "momentumTurnedUp": true,
     "volumeConfirm": false,
     "btcTrendSupport": true,
-    "dollarVolume20d": 24019503,
-    "dollarVolume24hReal": 35842455,
-    "entry": 97.76514,
-    "stop": 96.18267,
-    "target1": 102.51255,
-    "target2": 105.67749,
+    "dollarVolume20d": 315871415,
+    "dollarVolume24hReal": 497203590,
+    "entry": 80570.84004,
+    "stop": 78817.179112,
+    "target1": 85831.822823,
+    "target2": 89339.144678,
     "robinhoodTradable": true,
     "unifiedSourceEvidence": {
-      "ticker": "SOL/USD",
+      "ticker": "BTC/USD",
       "sources": [
         {
           "provider": "ALPACA",
@@ -72,12 +74,12 @@
       "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
       "profitExit": {
         "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-        "target1": 102.51255,
-        "target2": 105.67749
+        "target1": 85831.822823,
+        "target2": 89339.144678
       },
       "lossExit": {
         "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-        "level": 96.18267
+        "level": 78817.179112
       },
       "timeExit": {
         "rule": "Exit when the short-horizon signal expires; crypto has no market close."
@@ -91,45 +93,48 @@
       "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
     },
     "brokerEligibility": {
-      "broker": "ROBINHOOD_CRYPTO_API",
-      "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
+      "broker": "ROBINHOOD_TRADING_MCP",
+      "assetClass": "CRYPTO",
+      "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
       "researchEligible": true,
       "liveOrderAllowed": false,
-      "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
+      "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
       "requirements": [
-        "exact symbol returned as API-tradable trading pair",
-        "direct Robinhood quote available",
-        "account and order increments valid",
-        "broker-resident stop supported"
+        "exact pair tradable in the authenticated Robinhood Agentic account",
+        "live Robinhood quote available",
+        "account buying power and order increments valid",
+        "current quote remains inside Teststock no-chase limits",
+        "no duplicate or conflicting open order exists",
+        "required protection is supported"
       ],
-      "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
+      "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
     }
   },
   "qualifiedChampion": {
     "rank": 1,
-    "ticker": "SOL/USD",
+    "ticker": "BTC/USD",
     "grade": "A+",
     "growthQuality": 100,
     "score": 100,
-    "historicalWinRate": 0,
-    "historicalSamples": 4,
+    "historicalWinRate": 50,
+    "historicalSamples": 8,
     "rewardRisk": 5,
     "confirm4h": true,
-    "rsi4h": 63.7,
-    "vwap4h": 97.011474,
+    "rsi4h": 63.2,
+    "vwap4h": 79213.245339,
     "pullbackToSupportOrVwap": true,
     "momentumTurnedUp": true,
     "volumeConfirm": false,
     "btcTrendSupport": true,
-    "dollarVolume20d": 24019503,
-    "dollarVolume24hReal": 35842455,
-    "entry": 97.76514,
-    "stop": 96.18267,
-    "target1": 102.51255,
-    "target2": 105.67749,
+    "dollarVolume20d": 315871415,
+    "dollarVolume24hReal": 497203590,
+    "entry": 80570.84004,
+    "stop": 78817.179112,
+    "target1": 85831.822823,
+    "target2": 89339.144678,
     "robinhoodTradable": true,
     "unifiedSourceEvidence": {
-      "ticker": "SOL/USD",
+      "ticker": "BTC/USD",
       "sources": [
         {
           "provider": "ALPACA",
@@ -152,12 +157,12 @@
       "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
       "profitExit": {
         "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-        "target1": 102.51255,
-        "target2": 105.67749
+        "target1": 85831.822823,
+        "target2": 89339.144678
       },
       "lossExit": {
         "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-        "level": 96.18267
+        "level": 78817.179112
       },
       "timeExit": {
         "rule": "Exit when the short-horizon signal expires; crypto has no market close."
@@ -171,733 +176,47 @@
       "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
     },
     "brokerEligibility": {
-      "broker": "ROBINHOOD_CRYPTO_API",
-      "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
+      "broker": "ROBINHOOD_TRADING_MCP",
+      "assetClass": "CRYPTO",
+      "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
       "researchEligible": true,
       "liveOrderAllowed": false,
-      "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
+      "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
       "requirements": [
-        "exact symbol returned as API-tradable trading pair",
-        "direct Robinhood quote available",
-        "account and order increments valid",
-        "broker-resident stop supported"
+        "exact pair tradable in the authenticated Robinhood Agentic account",
+        "live Robinhood quote available",
+        "account buying power and order increments valid",
+        "current quote remains inside Teststock no-chase limits",
+        "no duplicate or conflicting open order exists",
+        "required protection is supported"
       ],
-      "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
+      "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
     }
   },
-  "fallbacks": [
-    {
-      "rank": 2,
-      "ticker": "LINK/USD",
-      "grade": "A",
-      "growthQuality": 100,
-      "score": 100,
-      "historicalWinRate": 0,
-      "historicalSamples": 4,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 53.4,
-      "vwap4h": 11.489219,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": true,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 679957,
-      "dollarVolume24hReal": 763051,
-      "entry": 11.475906,
-      "stop": 11.431773,
-      "target1": 11.608305,
-      "target2": 11.696571,
-      "robinhoodTradable": true
-    },
-    {
-      "rank": 4,
-      "ticker": "ETH/USD",
-      "grade": "A+",
-      "growthQuality": 97,
-      "score": 100,
-      "historicalWinRate": 38,
-      "historicalSamples": 8,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 58.9,
-      "vwap4h": 2461.348371,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": true,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 187382771,
-      "dollarVolume24hReal": 270765076,
-      "entry": 2473.97808,
-      "stop": 2449.038773,
-      "target1": 2548.796002,
-      "target2": 2598.674617,
-      "robinhoodTradable": true
-    }
-  ],
+  "fallbacks": [],
   "ranked": [
     {
       "rank": 1,
-      "ticker": "SOL/USD",
+      "ticker": "BTC/USD",
       "grade": "A+",
       "growthQuality": 100,
       "score": 100,
-      "historicalWinRate": 0,
-      "historicalSamples": 4,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 63.7,
-      "vwap4h": 97.011474,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": true,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 24019503,
-      "dollarVolume24hReal": 35842455,
-      "entry": 97.76514,
-      "stop": 96.18267,
-      "target1": 102.51255,
-      "target2": 105.67749,
-      "robinhoodTradable": true,
-      "unifiedSourceEvidence": {
-        "ticker": "SOL/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 102.51255,
-          "target2": 105.67749
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 96.18267
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 2,
-      "ticker": "LINK/USD",
-      "grade": "A",
-      "growthQuality": 100,
-      "score": 100,
-      "historicalWinRate": 0,
-      "historicalSamples": 4,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 53.4,
-      "vwap4h": 11.489219,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": true,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 679957,
-      "dollarVolume24hReal": 763051,
-      "entry": 11.475906,
-      "stop": 11.431773,
-      "target1": 11.608305,
-      "target2": 11.696571,
-      "robinhoodTradable": true,
-      "unifiedSourceEvidence": {
-        "ticker": "LINK/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 11.608305,
-          "target2": 11.696571
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 11.431773
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 3,
-      "ticker": "PYTH/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 100,
-      "score": 100,
-      "historicalWinRate": 0,
-      "historicalSamples": 4,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 58.7,
-      "vwap4h": 0.051998,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": false,
-      "volumeConfirm": true,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 33316,
-      "dollarVolume24hReal": 81296,
-      "entry": 0.053286,
-      "stop": 0.05111,
-      "target1": 0.059815,
-      "target2": 0.064167,
-      "robinhoodTradable": true,
-      "unifiedSourceEvidence": {
-        "ticker": "PYTH/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.059815,
-          "target2": 0.064167
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.05111
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 4,
-      "ticker": "ETH/USD",
-      "grade": "A+",
-      "growthQuality": 97,
-      "score": 100,
-      "historicalWinRate": 38,
+      "historicalWinRate": 50,
       "historicalSamples": 8,
       "rewardRisk": 5,
       "confirm4h": true,
-      "rsi4h": 58.9,
-      "vwap4h": 2461.348371,
+      "rsi4h": 63.2,
+      "vwap4h": 79213.245339,
       "pullbackToSupportOrVwap": true,
       "momentumTurnedUp": true,
       "volumeConfirm": false,
       "btcTrendSupport": true,
-      "dollarVolume20d": 187382771,
-      "dollarVolume24hReal": 270765076,
-      "entry": 2473.97808,
-      "stop": 2449.038773,
-      "target1": 2548.796002,
-      "target2": 2598.674617,
-      "robinhoodTradable": true,
-      "unifiedSourceEvidence": {
-        "ticker": "ETH/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 2548.796002,
-          "target2": 2598.674617
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 2449.038773
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 5,
-      "ticker": "PAXG/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 92,
-      "score": 100,
-      "historicalWinRate": 50,
-      "historicalSamples": 10,
-      "rewardRisk": 5,
-      "confirm4h": false,
-      "rsi4h": 45.9,
-      "vwap4h": 4636.702583,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": false,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 955474,
-      "dollarVolume24hReal": 515965,
-      "entry": 4627.07568,
-      "stop": 4607.123128,
-      "target1": 4686.933337,
-      "target2": 4726.838442,
-      "robinhoodTradable": true,
-      "unifiedSourceEvidence": {
-        "ticker": "PAXG/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 4686.933337,
-          "target2": 4726.838442
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 4607.123128
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 6,
-      "ticker": "WIF/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 89,
-      "score": 89,
-      "historicalWinRate": 0,
-      "historicalSamples": 3,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 53.8,
-      "vwap4h": 0.203386,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": true,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 17624,
-      "dollarVolume24hReal": 13275,
-      "entry": 0.201502,
-      "stop": 0.2,
-      "target1": 0.206009,
-      "target2": 0.209013,
-      "robinhoodTradable": true,
-      "unifiedSourceEvidence": {
-        "ticker": "WIF/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.206009,
-          "target2": 0.209013
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.2
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 7,
-      "ticker": "PENGU/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 87,
-      "score": 100,
-      "historicalWinRate": 20,
-      "historicalSamples": 5,
-      "rewardRisk": 5,
-      "confirm4h": false,
-      "rsi4h": 50.1,
-      "vwap4h": 0.009657,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": false,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 14274,
-      "dollarVolume24hReal": 28730,
-      "entry": 0.009455,
-      "stop": 0.009452,
-      "target1": 0.009465,
-      "target2": 0.009472,
-      "robinhoodTradable": true,
-      "unifiedSourceEvidence": {
-        "ticker": "PENGU/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.009465,
-          "target2": 0.009472
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.009452
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 8,
-      "ticker": "VVV/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 87,
-      "score": 100,
-      "historicalWinRate": null,
-      "historicalSamples": 0,
-      "rewardRisk": 5,
-      "confirm4h": false,
-      "rsi4h": 85.4,
-      "vwap4h": 17.381878,
-      "pullbackToSupportOrVwap": false,
-      "momentumTurnedUp": false,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 1875,
-      "dollarVolume24hReal": 2658,
-      "entry": 18.29151,
-      "stop": 17.185789,
-      "target1": 21.608672,
-      "target2": 23.820114,
-      "robinhoodTradable": true,
-      "unifiedSourceEvidence": {
-        "ticker": "VVV/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 21.608672,
-          "target2": 23.820114
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 17.185789
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 9,
-      "ticker": "BTC/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 84,
-      "score": 100,
-      "historicalWinRate": 44,
-      "historicalSamples": 9,
-      "rewardRisk": 5,
-      "confirm4h": false,
-      "rsi4h": 61.4,
-      "vwap4h": 78392.034934,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": false,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 281640451,
-      "dollarVolume24hReal": 447516597,
-      "entry": 78886.42794,
-      "stop": 78000.074759,
-      "target1": 81545.487482,
-      "target2": 83318.193843,
+      "dollarVolume20d": 315871415,
+      "dollarVolume24hReal": 497203590,
+      "entry": 80570.84004,
+      "stop": 78817.179112,
+      "target1": 85831.822823,
+      "target2": 89339.144678,
       "robinhoodTradable": true,
       "unifiedSourceEvidence": {
         "ticker": "BTC/USD",
@@ -923,12 +242,12 @@
         "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
         "profitExit": {
           "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 81545.487482,
-          "target2": 83318.193843
+          "target1": 85831.822823,
+          "target2": 89339.144678
         },
         "lossExit": {
           "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 78000.074759
+          "level": 78817.179112
         },
         "timeExit": {
           "rule": "Exit when the short-horizon signal expires; crypto has no market close."
@@ -942,42 +261,460 @@
         "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
       },
       "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
         "researchEligible": true,
         "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
         "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
         ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
       }
     },
     {
-      "rank": 10,
-      "ticker": "SHIB/USD",
+      "rank": 2,
+      "ticker": "AAVE/USD",
       "grade": "NO_TRADE",
-      "growthQuality": 84,
-      "score": 92,
-      "historicalWinRate": 0,
+      "growthQuality": 100,
+      "score": 100,
+      "historicalWinRate": 50,
       "historicalSamples": 4,
       "rewardRisk": 5,
-      "confirm4h": false,
-      "rsi4h": 46.6,
-      "vwap4h": 0.000005,
+      "confirm4h": true,
+      "rsi4h": 53.3,
+      "vwap4h": 131.846304,
       "pullbackToSupportOrVwap": true,
       "momentumTurnedUp": true,
       "volumeConfirm": false,
       "btcTrendSupport": true,
-      "dollarVolume20d": 171834,
-      "dollarVolume24hReal": 187526,
+      "dollarVolume20d": 269604,
+      "dollarVolume24hReal": 75356,
+      "entry": 129.07263,
+      "stop": 126.757627,
+      "target1": 136.017639,
+      "target2": 140.647645,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "AAVE/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 136.017639,
+          "target2": 140.647645
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 126.757627
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 3,
+      "ticker": "CRV/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 100,
+      "score": 100,
+      "historicalWinRate": 0,
+      "historicalSamples": 3,
+      "rewardRisk": 5,
+      "confirm4h": true,
+      "rsi4h": 60.9,
+      "vwap4h": 0.324916,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": true,
+      "volumeConfirm": false,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 56438,
+      "dollarVolume24hReal": 31080,
+      "entry": 0.334167,
+      "stop": 0.320927,
+      "target1": 0.373886,
+      "target2": 0.400366,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "CRV/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 0.373886,
+          "target2": 0.400366
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 0.320927
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 4,
+      "ticker": "FLOKI/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 100,
+      "score": 97,
+      "historicalWinRate": 33,
+      "historicalSamples": 6,
+      "rewardRisk": 5,
+      "confirm4h": true,
+      "rsi4h": 54.8,
+      "vwap4h": 0.000027,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": true,
+      "volumeConfirm": false,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 18831,
+      "dollarVolume24hReal": 9860,
+      "entry": 0.000027,
+      "stop": 0.000027,
+      "target1": 0.000028,
+      "target2": 0.000029,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "FLOKI/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 0.000028,
+          "target2": 0.000029
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 0.000027
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 5,
+      "ticker": "PNUT/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 99,
+      "score": 99,
+      "historicalWinRate": 33,
+      "historicalSamples": 3,
+      "rewardRisk": 5,
+      "confirm4h": true,
+      "rsi4h": 52.6,
+      "vwap4h": 0.052443,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": true,
+      "volumeConfirm": true,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 4975,
+      "dollarVolume24hReal": 2997,
+      "entry": 0.052565,
+      "stop": 0.051643,
+      "target1": 0.055329,
+      "target2": 0.057172,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "PNUT/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 0.055329,
+          "target2": 0.057172
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 0.051643
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 6,
+      "ticker": "ORCA/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 98,
+      "score": 93,
+      "historicalWinRate": 0,
+      "historicalSamples": 3,
+      "rewardRisk": 5,
+      "confirm4h": true,
+      "rsi4h": 52.7,
+      "vwap4h": 1.280517,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": false,
+      "volumeConfirm": true,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 2804,
+      "dollarVolume24hReal": 4201,
+      "entry": 1.290456,
+      "stop": 1.265842,
+      "target1": 1.364297,
+      "target2": 1.413525,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "ORCA/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 1.364297,
+          "target2": 1.413525
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 1.265842
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 7,
+      "ticker": "SHIB/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 97,
+      "score": 92,
+      "historicalWinRate": 0,
+      "historicalSamples": 2,
+      "rewardRisk": 5,
+      "confirm4h": true,
+      "rsi4h": 53,
+      "vwap4h": 0.000005,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": false,
+      "volumeConfirm": true,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 172570,
+      "dollarVolume24hReal": 129402,
       "entry": 0.000005,
       "stop": 0.000005,
-      "target1": 0.000006,
-      "target2": 0.000007,
+      "target1": 0.000007,
+      "target2": 0.000008,
       "robinhoodTradable": true,
       "unifiedSourceEvidence": {
         "ticker": "SHIB/USD",
@@ -1003,8 +740,8 @@
         "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
         "profitExit": {
           "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.000006,
-          "target2": 0.000007
+          "target1": 0.000007,
+          "target2": 0.000008
         },
         "lossExit": {
           "method": "ROBINHOOD_CRYPTO_GTC_STOP",
@@ -1022,42 +759,1456 @@
         "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
       },
       "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
         "researchEligible": true,
         "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
         "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
         ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 8,
+      "ticker": "COMP/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 96,
+      "score": 91,
+      "historicalWinRate": 0,
+      "historicalSamples": 3,
+      "rewardRisk": 5,
+      "confirm4h": true,
+      "rsi4h": 60.6,
+      "vwap4h": 19.465655,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": true,
+      "volumeConfirm": true,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 5059,
+      "dollarVolume24hReal": 2958,
+      "entry": 19.692306,
+      "stop": 19.368327,
+      "target1": 20.664244,
+      "target2": 21.312202,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "COMP/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 20.664244,
+          "target2": 21.312202
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 19.368327
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 9,
+      "ticker": "ADA/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 92,
+      "score": 100,
+      "historicalWinRate": 50,
+      "historicalSamples": 2,
+      "rewardRisk": 5,
+      "confirm4h": false,
+      "rsi4h": 49.9,
+      "vwap4h": 0.213638,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": false,
+      "volumeConfirm": false,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 4258345,
+      "dollarVolume24hReal": 4416575,
+      "entry": 0.214658,
+      "stop": 0.212369,
+      "target1": 0.221527,
+      "target2": 0.226107,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "ADA/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 0.221527,
+          "target2": 0.226107
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 0.212369
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 10,
+      "ticker": "DOGE/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 92,
+      "score": 100,
+      "historicalWinRate": 20,
+      "historicalSamples": 5,
+      "rewardRisk": 5,
+      "confirm4h": false,
+      "rsi4h": 54.1,
+      "vwap4h": 0.088284,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": false,
+      "volumeConfirm": false,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 3273592,
+      "dollarVolume24hReal": 2981339,
+      "entry": 0.089244,
+      "stop": 0.087587,
+      "target1": 0.094216,
+      "target2": 0.09753,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "DOGE/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 0.094216,
+          "target2": 0.09753
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 0.087587
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
       }
     },
     {
       "rank": 11,
-      "ticker": "WLFI/USD",
+      "ticker": "UNI/USD",
       "grade": "NO_TRADE",
-      "growthQuality": 80,
-      "score": 75,
+      "growthQuality": 92,
+      "score": 100,
+      "historicalWinRate": 33,
+      "historicalSamples": 6,
+      "rewardRisk": 5,
+      "confirm4h": false,
+      "rsi4h": 81.2,
+      "vwap4h": 4.497948,
+      "pullbackToSupportOrVwap": false,
+      "momentumTurnedUp": true,
+      "volumeConfirm": true,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 75801,
+      "dollarVolume24hReal": 428710,
+      "entry": 4.713709,
+      "stop": 4.370294,
+      "target1": 5.743953,
+      "target2": 6.430783,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "UNI/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 5.743953,
+          "target2": 6.430783
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 4.370294
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 12,
+      "ticker": "LDO/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 90,
+      "score": 98,
       "historicalWinRate": 0,
-      "historicalSamples": 2,
+      "historicalSamples": 6,
+      "rewardRisk": 5,
+      "confirm4h": false,
+      "rsi4h": 46.4,
+      "vwap4h": 0.362765,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": false,
+      "volumeConfirm": false,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 12275,
+      "dollarVolume24hReal": 17539,
+      "entry": 0.368636,
+      "stop": 0.360951,
+      "target1": 0.39169,
+      "target2": 0.407059,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "LDO/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 0.39169,
+          "target2": 0.407059
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 0.360951
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 13,
+      "ticker": "XPL/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 88,
+      "score": 83,
+      "historicalWinRate": 0,
+      "historicalSamples": 4,
       "rewardRisk": 5,
       "confirm4h": true,
-      "rsi4h": 55.1,
-      "vwap4h": 0.058471,
+      "rsi4h": 55.3,
+      "vwap4h": 0.090398,
       "pullbackToSupportOrVwap": true,
       "momentumTurnedUp": true,
       "volumeConfirm": false,
       "btcTrendSupport": true,
-      "dollarVolume20d": 46626,
-      "dollarVolume24hReal": 43176,
-      "entry": 0.059148,
-      "stop": 0.058077,
-      "target1": 0.062361,
-      "target2": 0.064503,
+      "dollarVolume20d": 8977,
+      "dollarVolume24hReal": 5703,
+      "entry": 0.094759,
+      "stop": 0.089946,
+      "target1": 0.109199,
+      "target2": 0.118825,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "XPL/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 0.109199,
+          "target2": 0.118825
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 0.089946
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 14,
+      "ticker": "ETH/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 87,
+      "score": 100,
+      "historicalWinRate": 63,
+      "historicalSamples": 8,
+      "rewardRisk": 5,
+      "confirm4h": false,
+      "rsi4h": 61.9,
+      "vwap4h": 2482.778518,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": false,
+      "volumeConfirm": false,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 201947570,
+      "dollarVolume24hReal": 254338500,
+      "entry": 2515.66128,
+      "stop": 2470.364625,
+      "target1": 2651.551244,
+      "target2": 2742.144553,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "ETH/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 2651.551244,
+          "target2": 2742.144553
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 2470.364625
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 15,
+      "ticker": "SOL/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 87,
+      "score": 100,
+      "historicalWinRate": 29,
+      "historicalSamples": 7,
+      "rewardRisk": 5,
+      "confirm4h": false,
+      "rsi4h": 74.4,
+      "vwap4h": 101.418328,
+      "pullbackToSupportOrVwap": false,
+      "momentumTurnedUp": false,
+      "volumeConfirm": false,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 27922154,
+      "dollarVolume24hReal": 64935910,
+      "entry": 108.03564,
+      "stop": 100.41938,
+      "target1": 130.88442,
+      "target2": 146.11694,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "SOL/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 130.88442,
+          "target2": 146.11694
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 100.41938
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 16,
+      "ticker": "XRP/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 87,
+      "score": 100,
+      "historicalWinRate": 0,
+      "historicalSamples": 5,
+      "rewardRisk": 5,
+      "confirm4h": false,
+      "rsi4h": 45.2,
+      "vwap4h": 1.443015,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": false,
+      "volumeConfirm": false,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 22040773,
+      "dollarVolume24hReal": 19652633,
+      "entry": 1.450094,
+      "stop": 1.4358,
+      "target1": 1.492978,
+      "target2": 1.521567,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "XRP/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 1.492978,
+          "target2": 1.521567
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 1.4358
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 17,
+      "ticker": "LINK/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 87,
+      "score": 100,
+      "historicalWinRate": 25,
+      "historicalSamples": 4,
+      "rewardRisk": 5,
+      "confirm4h": false,
+      "rsi4h": 62.5,
+      "vwap4h": 11.608681,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": false,
+      "volumeConfirm": false,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 822749,
+      "dollarVolume24hReal": 1981726,
+      "entry": 11.889732,
+      "stop": 11.525284,
+      "target1": 12.983076,
+      "target2": 13.711972,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "LINK/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 12.983076,
+          "target2": 13.711972
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 11.525284
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 18,
+      "ticker": "ENA/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 87,
+      "score": 100,
+      "historicalWinRate": 33,
+      "historicalSamples": 3,
+      "rewardRisk": 5,
+      "confirm4h": false,
+      "rsi4h": 74.9,
+      "vwap4h": 0.161265,
+      "pullbackToSupportOrVwap": false,
+      "momentumTurnedUp": true,
+      "volumeConfirm": true,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 94501,
+      "dollarVolume24hReal": 435091,
+      "entry": 0.188186,
+      "stop": 0.150912,
+      "target1": 0.300008,
+      "target2": 0.374555,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "ENA/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 0.300008,
+          "target2": 0.374555
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 0.150912
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 19,
+      "ticker": "HYPE/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 87,
+      "score": 100,
+      "historicalWinRate": null,
+      "historicalSamples": 0,
+      "rewardRisk": 5,
+      "confirm4h": false,
+      "rsi4h": 59.4,
+      "vwap4h": 81.344808,
+      "pullbackToSupportOrVwap": false,
+      "momentumTurnedUp": false,
+      "volumeConfirm": false,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 113421,
+      "dollarVolume24hReal": 103669,
+      "entry": 84.24315,
+      "stop": 80.938084,
+      "target1": 94.158348,
+      "target2": 100.76848,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "HYPE/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 94.158348,
+          "target2": 100.76848
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 80.938084
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 20,
+      "ticker": "PENGU/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 87,
+      "score": 100,
+      "historicalWinRate": 33,
+      "historicalSamples": 6,
+      "rewardRisk": 5,
+      "confirm4h": false,
+      "rsi4h": 47.8,
+      "vwap4h": 0.009634,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": false,
+      "volumeConfirm": false,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 15690,
+      "dollarVolume24hReal": 25532,
+      "entry": 0.009702,
+      "stop": 0.009494,
+      "target1": 0.010327,
+      "target2": 0.010743,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "PENGU/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 0.010327,
+          "target2": 0.010743
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 0.009494
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 21,
+      "ticker": "ZRO/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 87,
+      "score": 100,
+      "historicalWinRate": 29,
+      "historicalSamples": 7,
+      "rewardRisk": 5,
+      "confirm4h": false,
+      "rsi4h": 40.7,
+      "vwap4h": 1.1825,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": false,
+      "volumeConfirm": false,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 14409,
+      "dollarVolume24hReal": 15360,
+      "entry": 1.174244,
+      "stop": 1.165055,
+      "target1": 1.201809,
+      "target2": 1.220186,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "ZRO/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 1.201809,
+          "target2": 1.220186
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 1.165055
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 22,
+      "ticker": "SUI/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 87,
+      "score": 95,
+      "historicalWinRate": 0,
+      "historicalSamples": 4,
+      "rewardRisk": 5,
+      "confirm4h": false,
+      "rsi4h": 52.3,
+      "vwap4h": 0.776452,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": false,
+      "volumeConfirm": false,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 524693,
+      "dollarVolume24hReal": 538587,
+      "entry": 0.784015,
+      "stop": 0.769143,
+      "target1": 0.828631,
+      "target2": 0.858375,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "SUI/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 0.828631,
+          "target2": 0.858375
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 0.769143
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 23,
+      "ticker": "ONDO/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 87,
+      "score": 82,
+      "historicalWinRate": 50,
+      "historicalSamples": 6,
+      "rewardRisk": 5,
+      "confirm4h": true,
+      "rsi4h": 61.1,
+      "vwap4h": 0.377062,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": true,
+      "volumeConfirm": true,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 47084,
+      "dollarVolume24hReal": 35012,
+      "entry": 0.380249,
+      "stop": 0.371086,
+      "target1": 0.407737,
+      "target2": 0.426063,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "ONDO/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 0.407737,
+          "target2": 0.426063
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 0.371086
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 24,
+      "ticker": "BCH/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 83,
+      "score": 91,
+      "historicalWinRate": 0,
+      "historicalSamples": 2,
+      "rewardRisk": 5,
+      "confirm4h": false,
+      "rsi4h": 51.7,
+      "vwap4h": 268.241669,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": false,
+      "volumeConfirm": false,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 111247,
+      "dollarVolume24hReal": 68466,
+      "entry": 268.19532,
+      "stop": 266.64806,
+      "target1": 272.8371,
+      "target2": 275.93162,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "BCH/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 272.8371,
+          "target2": 275.93162
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 266.64806
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 25,
+      "ticker": "WLFI/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 81,
+      "score": 76,
+      "historicalWinRate": 0,
+      "historicalSamples": 2,
+      "rewardRisk": 5,
+      "confirm4h": true,
+      "rsi4h": 66.4,
+      "vwap4h": 0.05864,
+      "pullbackToSupportOrVwap": false,
+      "momentumTurnedUp": true,
+      "volumeConfirm": true,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 49014,
+      "dollarVolume24hReal": 68663,
+      "entry": 0.061042,
+      "stop": 0.058177,
+      "target1": 0.069637,
+      "target2": 0.075368,
       "robinhoodTradable": true,
       "unifiedSourceEvidence": {
         "ticker": "WLFI/USD",
@@ -1083,12 +2234,12 @@
         "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
         "profitExit": {
           "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.062361,
-          "target2": 0.064503
+          "target1": 0.069637,
+          "target2": 0.075368
         },
         "lossExit": {
           "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.058077
+          "level": 0.058177
         },
         "timeExit": {
           "rule": "Exit when the short-horizon signal expires; crypto has no market close."
@@ -1102,1485 +2253,48 @@
         "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
       },
       "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
         "researchEligible": true,
         "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
         "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
         ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 12,
-      "ticker": "AVNT/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 78,
-      "score": 73,
-      "historicalWinRate": null,
-      "historicalSamples": 0,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 61.6,
-      "vwap4h": 0.102422,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": false,
-      "volumeConfirm": true,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 8862,
-      "dollarVolume24hReal": 4745,
-      "entry": 0.103046,
-      "stop": 0.101903,
-      "target1": 0.106474,
-      "target2": 0.108759,
-      "robinhoodTradable": true,
-      "unifiedSourceEvidence": {
-        "ticker": "AVNT/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.106474,
-          "target2": 0.108759
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.101903
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 13,
-      "ticker": "GRT/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 72,
-      "score": 67,
-      "historicalWinRate": 0,
-      "historicalSamples": 1,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 57,
-      "vwap4h": 0.017665,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": false,
-      "volumeConfirm": true,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 7533,
-      "dollarVolume24hReal": 7423,
-      "entry": 0.017665,
-      "stop": 0.017576,
-      "target1": 0.017934,
-      "target2": 0.018113,
-      "robinhoodTradable": true,
-      "unifiedSourceEvidence": {
-        "ticker": "GRT/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.017934,
-          "target2": 0.018113
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.017576
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 14,
-      "ticker": "BONK/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 36,
-      "score": 44,
-      "historicalWinRate": 0,
-      "historicalSamples": 4,
-      "rewardRisk": 5,
-      "confirm4h": false,
-      "rsi4h": 40.8,
-      "vwap4h": 0.000003,
-      "pullbackToSupportOrVwap": false,
-      "momentumTurnedUp": false,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 45927,
-      "dollarVolume24hReal": 20737,
-      "entry": 0.000003,
-      "stop": 0.000003,
-      "target1": 0.000003,
-      "target2": 0.000003,
-      "robinhoodTradable": true,
-      "unifiedSourceEvidence": {
-        "ticker": "BONK/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.000003,
-          "target2": 0.000003
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.000003
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 15,
-      "ticker": "VIRTUAL/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 100,
-      "score": 100,
-      "historicalWinRate": 0,
-      "historicalSamples": 4,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 59.8,
-      "vwap4h": 0.75321,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": false,
-      "volumeConfirm": true,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 18095,
-      "dollarVolume24hReal": 53631,
-      "entry": 0.753805,
-      "stop": 0.744623,
-      "target1": 0.781349,
-      "target2": 0.799712,
-      "robinhoodTradable": false,
-      "unifiedSourceEvidence": {
-        "ticker": "VIRTUAL/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.781349,
-          "target2": 0.799712
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.744623
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 16,
-      "ticker": "CVX/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 100,
-      "score": 100,
-      "historicalWinRate": 25,
-      "historicalSamples": 4,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 62.9,
-      "vwap4h": 2.091107,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": true,
-      "volumeConfirm": true,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 9374,
-      "dollarVolume24hReal": 16747,
-      "entry": 2.227045,
-      "stop": 2.080651,
-      "target1": 2.666226,
-      "target2": 2.959014,
-      "robinhoodTradable": false,
-      "unifiedSourceEvidence": {
-        "ticker": "CVX/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 2.666226,
-          "target2": 2.959014
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 2.080651
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 17,
-      "ticker": "ZRX/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 100,
-      "score": 100,
-      "historicalWinRate": 0,
-      "historicalSamples": 2,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 55.1,
-      "vwap4h": 0.097859,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": true,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 2918,
-      "dollarVolume24hReal": 6247,
-      "entry": 0.099739,
-      "stop": 0.09737,
-      "target1": 0.106847,
-      "target2": 0.111586,
-      "robinhoodTradable": false,
-      "unifiedSourceEvidence": {
-        "ticker": "ZRX/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.106847,
-          "target2": 0.111586
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.09737
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 18,
-      "ticker": "CELR/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 100,
-      "score": 100,
-      "historicalWinRate": 0,
-      "historicalSamples": 4,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 61.1,
-      "vwap4h": 0.002324,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": true,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 8867,
-      "dollarVolume24hReal": 5448,
-      "entry": 0.002297,
-      "stop": 0.002274,
-      "target1": 0.002366,
-      "target2": 0.002412,
-      "robinhoodTradable": false,
-      "unifiedSourceEvidence": {
-        "ticker": "CELR/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.002366,
-          "target2": 0.002412
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.002274
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 19,
-      "ticker": "CHILLGUY/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 100,
-      "score": 100,
-      "historicalWinRate": 33,
-      "historicalSamples": 6,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 57.5,
-      "vwap4h": 0.011632,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": true,
-      "volumeConfirm": true,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 2440,
-      "dollarVolume24hReal": 4275,
-      "entry": 0.011924,
-      "stop": 0.011549,
-      "target1": 0.013048,
-      "target2": 0.013798,
-      "robinhoodTradable": false,
-      "unifiedSourceEvidence": {
-        "ticker": "CHILLGUY/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.013048,
-          "target2": 0.013798
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.011549
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 20,
-      "ticker": "DIA/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 100,
-      "score": 100,
-      "historicalWinRate": 0,
-      "historicalSamples": 1,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 68.3,
-      "vwap4h": 0.138442,
-      "pullbackToSupportOrVwap": false,
-      "momentumTurnedUp": true,
-      "volumeConfirm": true,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 2789,
-      "dollarVolume24hReal": 2682,
-      "entry": 0.143817,
-      "stop": 0.137209,
-      "target1": 0.163643,
-      "target2": 0.17686,
-      "robinhoodTradable": false,
-      "unifiedSourceEvidence": {
-        "ticker": "DIA/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.163643,
-          "target2": 0.17686
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.137209
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 21,
-      "ticker": "TAO/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 100,
-      "score": 99,
-      "historicalWinRate": 17,
-      "historicalSamples": 6,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 53.9,
-      "vwap4h": 235.227369,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": true,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 79794,
-      "dollarVolume24hReal": 121036,
-      "entry": 236.48202,
-      "stop": 233.694655,
-      "target1": 244.844115,
-      "target2": 250.418845,
-      "robinhoodTradable": false,
-      "unifiedSourceEvidence": {
-        "ticker": "TAO/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 244.844115,
-          "target2": 250.418845
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 233.694655
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 22,
-      "ticker": "A/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 100,
-      "score": 98,
-      "historicalWinRate": 0,
-      "historicalSamples": 3,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 60.3,
-      "vwap4h": 0.074136,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": true,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 526,
-      "dollarVolume24hReal": 2958,
-      "entry": 0.075731,
-      "stop": 0.073754,
-      "target1": 0.081662,
-      "target2": 0.085615,
-      "robinhoodTradable": false,
-      "unifiedSourceEvidence": {
-        "ticker": "A/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.081662,
-          "target2": 0.085615
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.073754
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 23,
-      "ticker": "TFUEL/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 100,
-      "score": 95,
-      "historicalWinRate": null,
-      "historicalSamples": 0,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 58.5,
-      "vwap4h": 0.008764,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": false,
-      "volumeConfirm": true,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 10725,
-      "dollarVolume24hReal": 14185,
-      "entry": 0.008849,
-      "stop": 0.008714,
-      "target1": 0.009252,
-      "target2": 0.009521,
-      "robinhoodTradable": false,
-      "unifiedSourceEvidence": {
-        "ticker": "TFUEL/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.009252,
-          "target2": 0.009521
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.008714
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 24,
-      "ticker": "ORDI/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 100,
-      "score": 95,
-      "historicalWinRate": 20,
-      "historicalSamples": 5,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 58,
-      "vwap4h": 4.152548,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": true,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 5254,
-      "dollarVolume24hReal": 3530,
-      "entry": 4.192769,
-      "stop": 4.122494,
-      "target1": 4.403593,
-      "target2": 4.544143,
-      "robinhoodTradable": false,
-      "unifiedSourceEvidence": {
-        "ticker": "ORDI/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 4.403593,
-          "target2": 4.544143
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 4.122494
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 25,
-      "ticker": "BONE/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 100,
-      "score": 95,
-      "historicalWinRate": null,
-      "historicalSamples": 0,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 69.8,
-      "vwap4h": 0.053439,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": true,
-      "volumeConfirm": true,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 2917,
-      "dollarVolume24hReal": 3418,
-      "entry": 0.054008,
-      "stop": 0.052313,
-      "target1": 0.059092,
-      "target2": 0.062481,
-      "robinhoodTradable": false,
-      "unifiedSourceEvidence": {
-        "ticker": "BONE/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.059092,
-          "target2": 0.062481
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.052313
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
       }
     },
     {
       "rank": 26,
-      "ticker": "OGN/USD",
+      "ticker": "HBAR/USD",
       "grade": "NO_TRADE",
-      "growthQuality": 98,
-      "score": 93,
+      "growthQuality": 80,
+      "score": 88,
       "historicalWinRate": 0,
       "historicalSamples": 1,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 52.8,
-      "vwap4h": 0.018794,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": true,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 2912,
-      "dollarVolume24hReal": 2448,
-      "entry": 0.018587,
-      "stop": 0.018313,
-      "target1": 0.019409,
-      "target2": 0.019958,
-      "robinhoodTradable": false,
-      "unifiedSourceEvidence": {
-        "ticker": "OGN/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.019409,
-          "target2": 0.019958
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.018313
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 27,
-      "ticker": "MOG/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 96,
-      "score": 91,
-      "historicalWinRate": 0,
-      "historicalSamples": 1,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 63.8,
-      "vwap4h": 0,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": true,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 4794,
-      "dollarVolume24hReal": 3345,
-      "entry": 0,
-      "stop": 0,
-      "target1": 0,
-      "target2": 0,
-      "robinhoodTradable": false,
-      "unifiedSourceEvidence": {
-        "ticker": "MOG/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0,
-          "target2": 0
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 28,
-      "ticker": "ELA/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 94,
-      "score": 94,
-      "historicalWinRate": null,
-      "historicalSamples": 0,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 71,
-      "vwap4h": 0.346846,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": true,
-      "volumeConfirm": true,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 1114,
-      "dollarVolume24hReal": 14982,
-      "entry": 0.371441,
-      "stop": 0.311165,
-      "target1": 0.552271,
-      "target2": 0.672823,
-      "robinhoodTradable": false,
-      "unifiedSourceEvidence": {
-        "ticker": "ELA/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.552271,
-          "target2": 0.672823
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.311165
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 29,
-      "ticker": "VELO/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 94,
-      "score": 89,
-      "historicalWinRate": 0,
-      "historicalSamples": 3,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 59.6,
-      "vwap4h": 0.003859,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": true,
-      "volumeConfirm": false,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 7261,
-      "dollarVolume24hReal": 7752,
-      "entry": 0.003926,
-      "stop": 0.003785,
-      "target1": 0.004349,
-      "target2": 0.004631,
-      "robinhoodTradable": false,
-      "unifiedSourceEvidence": {
-        "ticker": "VELO/USD",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
-            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
-          },
-          {
-            "provider": "ROBINHOOD_CRYPTO",
-            "role": "BROKER_VERIFICATION_AND_EXECUTION",
-            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "DAY_TRADE",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
-        "profitExit": {
-          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 0.004349,
-          "target2": 0.004631
-        },
-        "lossExit": {
-          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 0.003785
-        },
-        "timeExit": {
-          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
-        },
-        "risk": {
-          "noLeverage": true,
-          "noAverageDown": true,
-          "noChasing": true,
-          "unprotectedPositionAllowed": false
-        },
-        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
-        "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
-        ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
-      }
-    },
-    {
-      "rank": 30,
-      "ticker": "XAUT/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 92,
-      "score": 100,
-      "historicalWinRate": 0,
-      "historicalSamples": 3,
       "rewardRisk": 5,
       "confirm4h": false,
-      "rsi4h": 46.1,
-      "vwap4h": 4625.516804,
+      "rsi4h": 48.8,
+      "vwap4h": 0.079516,
       "pullbackToSupportOrVwap": true,
       "momentumTurnedUp": false,
       "volumeConfirm": false,
       "btcTrendSupport": true,
-      "dollarVolume20d": 762997,
-      "dollarVolume24hReal": 579082,
-      "entry": 4617.27612,
-      "stop": 4596.773138,
-      "target1": 4678.785068,
-      "target2": 4719.791033,
-      "robinhoodTradable": false,
+      "dollarVolume20d": 500089,
+      "dollarVolume24hReal": 360960,
+      "entry": 0.078846,
+      "stop": 0.078343,
+      "target1": 0.080356,
+      "target2": 0.081362,
+      "robinhoodTradable": true,
       "unifiedSourceEvidence": {
-        "ticker": "XAUT/USD",
+        "ticker": "HBAR/USD",
         "sources": [
           {
             "provider": "ALPACA",
@@ -2603,12 +2317,12 @@
         "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
         "profitExit": {
           "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
-          "target1": 4678.785068,
-          "target2": 4719.791033
+          "target1": 0.080356,
+          "target2": 0.081362
         },
         "lossExit": {
           "method": "ROBINHOOD_CRYPTO_GTC_STOP",
-          "level": 4596.773138
+          "level": 0.078343
         },
         "timeExit": {
           "rule": "Exit when the short-horizon signal expires; crypto has no market close."
@@ -2622,18 +2336,353 @@
         "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
       },
       "brokerEligibility": {
-        "broker": "ROBINHOOD_CRYPTO_API",
-        "status": "DIRECT_API_PAIR_CHECK_REQUIRED",
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
         "researchEligible": true,
         "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SELECTION_AND_SUBMISSION",
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
         "requirements": [
-          "exact symbol returned as API-tradable trading pair",
-          "direct Robinhood quote available",
-          "account and order increments valid",
-          "broker-resident stop supported"
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
         ],
-        "rule": "Only the direct Robinhood Crypto API may change liveOrderAllowed to true for the current request. A missing/non-tradable pair is rejected."
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 27,
+      "ticker": "TRUMP/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 79,
+      "score": 98,
+      "historicalWinRate": null,
+      "historicalSamples": 0,
+      "rewardRisk": 5,
+      "confirm4h": false,
+      "rsi4h": 70.9,
+      "vwap4h": 2.455615,
+      "pullbackToSupportOrVwap": false,
+      "momentumTurnedUp": true,
+      "volumeConfirm": true,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 207468,
+      "dollarVolume24hReal": 555646,
+      "entry": 2.771532,
+      "stop": 2.345712,
+      "target1": 4.048991,
+      "target2": 4.90063,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "TRUMP/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 4.048991,
+          "target2": 4.90063
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 2.345712
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 28,
+      "ticker": "WIF/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 78,
+      "score": 91,
+      "historicalWinRate": 50,
+      "historicalSamples": 2,
+      "rewardRisk": 5,
+      "confirm4h": false,
+      "rsi4h": 76.7,
+      "vwap4h": 0.213113,
+      "pullbackToSupportOrVwap": false,
+      "momentumTurnedUp": false,
+      "volumeConfirm": false,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 17753,
+      "dollarVolume24hReal": 22417,
+      "entry": 0.221442,
+      "stop": 0.207254,
+      "target1": 0.264007,
+      "target2": 0.292384,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "WIF/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 0.264007,
+          "target2": 0.292384
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 0.207254
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 29,
+      "ticker": "AVAX/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 78,
+      "score": 86,
+      "historicalWinRate": 0,
+      "historicalSamples": 2,
+      "rewardRisk": 5,
+      "confirm4h": false,
+      "rsi4h": 53.2,
+      "vwap4h": 7.469619,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": false,
+      "volumeConfirm": false,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 238842,
+      "dollarVolume24hReal": 214938,
+      "entry": 7.53504,
+      "stop": 7.39877,
+      "target1": 7.943849,
+      "target2": 8.216389,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "AVAX/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 7.943849,
+          "target2": 8.216389
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 7.39877
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
+      }
+    },
+    {
+      "rank": 30,
+      "ticker": "NEAR/USD",
+      "grade": "NO_TRADE",
+      "growthQuality": 75,
+      "score": 70,
+      "historicalWinRate": 56,
+      "historicalSamples": 9,
+      "rewardRisk": 5,
+      "confirm4h": true,
+      "rsi4h": 62.9,
+      "vwap4h": 1.901219,
+      "pullbackToSupportOrVwap": true,
+      "momentumTurnedUp": true,
+      "volumeConfirm": false,
+      "btcTrendSupport": true,
+      "dollarVolume20d": 125316,
+      "dollarVolume24hReal": 118559,
+      "entry": 1.932557,
+      "stop": 1.884888,
+      "target1": 2.075565,
+      "target2": 2.170903,
+      "robinhoodTradable": true,
+      "unifiedSourceEvidence": {
+        "ticker": "NEAR/USD",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_CRYPTO_MARKET_RESEARCH",
+            "liveAuthority": "EXISTING_TOURNAMENT_GATES"
+          },
+          {
+            "provider": "ROBINHOOD_CRYPTO",
+            "role": "BROKER_VERIFICATION_AND_EXECUTION",
+            "liveAuthority": "DIRECT_API_ONLY_AFTER_QUALIFICATION"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "holdingWindow": "INTRADAY_OR_24H_SETUP_WINDOW",
+        "profitExit": {
+          "method": "ROBINHOOD_CRYPTO_LIMIT_TARGETS",
+          "target1": 2.075565,
+          "target2": 2.170903
+        },
+        "lossExit": {
+          "method": "ROBINHOOD_CRYPTO_GTC_STOP",
+          "level": 1.884888
+        },
+        "timeExit": {
+          "rule": "Exit when the short-horizon signal expires; crypto has no market close."
+        },
+        "risk": {
+          "noLeverage": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        },
+        "longTermNote": "Crypto is not classified LONG_TERM without independently validated network, custody and fundamental evidence."
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "CRYPTO",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact pair tradable in the authenticated Robinhood Agentic account",
+          "live Robinhood quote available",
+          "account buying power and order increments valid",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protection is supported"
+        ],
+        "rule": "Claude must verify the exact crypto candidate through the authenticated Robinhood Trading MCP immediately before submission. Missing or non-tradable pairs, stale data, sizing conflicts, duplicate-order risk or unavailable protection mean no order."
       }
     }
   ]
