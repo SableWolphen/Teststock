@@ -48,16 +48,18 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           set -euo pipefail
+          output_path="$(mktemp /tmp/teststock-claude-executor.XXXXXX.json)"
+          trap 'rm -f "$output_path"' EXIT
           claude -p "$(cat scripts/claude-executor-prompt.md)" \
             --mcp-config .mcp.json \
             --allowedTools "Read,Glob,Grep,mcp__robinhood-trading" \
             --max-turns 16 \
             --output-format json \
-            > /tmp/teststock-claude-executor.json
+            > "$output_path"
 
-          python - <<'PY'
-          import json
-          p='/tmp/teststock-claude-executor.json'
+          python - "$output_path" <<'PY'
+          import json, sys
+          p=sys.argv[1]
           with open(p,'r',encoding='utf-8') as f:
               data=json.load(f)
           # Keep logs intentionally small; never print MCP payloads/account data.
