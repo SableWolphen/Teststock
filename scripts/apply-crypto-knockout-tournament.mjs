@@ -12,7 +12,8 @@ const qualified=candidates.filter(x=>x.grade==='A+'||x.grade==='A');
 const champion=qualified[0]||null;
 const brokerExecution={
   status:'CLAUDE_ROBINHOOD_TRADING_MCP',
-  lane:'CLAUDE_SOLE_EXECUTION_AGENT',
+  lane:'CLAUDE_ROBINHOOD_TRADING_MCP',
+  directGitHubOrderSubmissionAllowed:false,
   executableByCurrentClaudeRobinhoodConnection:true,
   executableByDirectRobinhoodCryptoApi:false,
   requiresAuthenticatedRobinhoodTradingMcp:true,
