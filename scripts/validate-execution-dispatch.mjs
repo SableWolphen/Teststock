@@ -10,9 +10,11 @@ if(dispatch.claudeShouldPollMarket!==false) fail('Claude market polling must rem
 if(dispatch.claudeShouldRun){
   const action=dispatch.pendingAction;
   if(dispatch.dispatchHealth!=='OK') fail('cannot run Claude on an unhealthy dispatch');
-  if(!action?.fingerprint) fail('actionable dispatch lacks fingerprint');
-  if(action.isNew!==true||action.isActionable!==true) fail('actionable dispatch must be new and actionable');
-  if(action.trigger==='BUY_TRIGGER'&&(!action.expiresAt||Date.parse(action.expiresAt)<=Date.parse(dispatch.generatedAt))) fail('entry is expired');
+  if(action){
+    if(!action.fingerprint) fail('actionable dispatch lacks fingerprint');
+    if(action.isNew!==true||action.isActionable!==true) fail('actionable dispatch must be new and actionable');
+    if(action.trigger==='BUY_TRIGGER'&&(!action.expiresAt||Date.parse(action.expiresAt)<=Date.parse(dispatch.generatedAt))) fail('entry is expired');
+  }else if(!(dispatch.seedLaneCandidates||[]).some(x=>x?.fingerprint)) fail('actionable dispatch lacks a normal or seed fingerprint');
 }
 if(dispatch.pendingAction?.isNew===false&&dispatch.claudeShouldRun) fail('duplicate fingerprint would invoke Claude');
 if((dispatch.fallbackActions||[]).some(action=>action.trigger!=='BUY_TRIGGER')) fail('fallback sequence may contain only buy actions');
