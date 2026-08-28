@@ -1,23 +1,23 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "source": "TESTSTOCK_NON_LLM_TRIGGER_MONITOR",
-  "publishedAt": "2026-08-28T02:05:17.374Z",
+  "publishedAt": "2026-08-28T12:04:56.312Z",
   "monitorHealth": "OK",
   "monitorCadenceMinutes": 5,
   "priceSource": "ALPACA_MARKET_DATA",
   "claudeMarketPollingRequired": false,
   "siteAvailability": "24_7_PUBLIC_DASHBOARD",
-  "researchState": "ACTIVE",
-  "researchAgeMinutes": 0,
+  "researchState": "REFRESHING",
+  "researchAgeMinutes": 599.7,
   "displayPolicy": "Never present aged research as an active trading signal. During refresh, keep the latest candidate visible as display-only and block new buy triggers until a fresh generation arrives.",
   "stockSessionRule": "Stock entry eligibility can close with the market; the site and monitoring health remain independently visible.",
   "executionWakeBridge": {
-    "status": "NOT_AVAILABLE_IN_THIS_REPOSITORY",
-    "note": "This monitor detects triggers without an LLM and publishes them. It cannot itself wake Claude or place Robinhood orders. A Claude run or another authorized execution bridge is still required to act."
+    "status": "DISPATCH_PACKET_READY_FOR_AUTOMATIC_EXECUTOR",
+    "note": "This monitor detects triggers without an LLM. The authorized Claude runner consumes the generated dispatch and is the sole Robinhood Trading MCP execution agent."
   },
   "watchlist": {
     "activePositions": 2,
-    "armingRule": "After a confirmed Robinhood buy, the execution agent must add the saved stop/target plan to docs/data/execution-watchlist.json. If it cannot arm this watchlist, do not treat fractional synthetic protection as active."
+    "armingRule": "After a confirmed Robinhood buy, the execution agent must establish and verify the encoded protection through Robinhood. Unverified protection means no new seed risk."
   },
   "executionNeeded": false,
   "buyCompetition": {
@@ -47,6 +47,7 @@
       "rewardRisk": 2.6,
       "profitabilityAdmission": "SHADOW_ONLY",
       "decisionIntelligenceEligible": false,
+      "decisionIntelligenceSeedEligible": false,
       "seedLaneEligible": false,
       "seedLane": {
         "eligible": false
@@ -76,6 +77,7 @@
       "rewardRisk": 2.6,
       "profitabilityAdmission": "SHADOW_ONLY",
       "decisionIntelligenceEligible": false,
+      "decisionIntelligenceSeedEligible": false,
       "seedLaneEligible": false,
       "seedLane": {
         "eligible": false
@@ -105,6 +107,7 @@
       "rewardRisk": 2.6,
       "profitabilityAdmission": "SHADOW_ONLY",
       "decisionIntelligenceEligible": false,
+      "decisionIntelligenceSeedEligible": false,
       "seedLaneEligible": false,
       "seedLane": {
         "eligible": false
@@ -134,6 +137,7 @@
       "rewardRisk": 2.6,
       "profitabilityAdmission": "SHADOW_ONLY",
       "decisionIntelligenceEligible": false,
+      "decisionIntelligenceSeedEligible": false,
       "seedLaneEligible": false,
       "seedLane": {
         "eligible": false
@@ -163,6 +167,7 @@
       "rewardRisk": 2.6,
       "profitabilityAdmission": "SHADOW_ONLY",
       "decisionIntelligenceEligible": false,
+      "decisionIntelligenceSeedEligible": false,
       "seedLaneEligible": false,
       "seedLane": {
         "eligible": false
@@ -192,6 +197,7 @@
       "rewardRisk": 2.6,
       "profitabilityAdmission": "SHADOW_ONLY",
       "decisionIntelligenceEligible": false,
+      "decisionIntelligenceSeedEligible": false,
       "seedLaneEligible": false,
       "seedLane": {
         "eligible": false
@@ -221,6 +227,7 @@
       "rewardRisk": 2.6,
       "profitabilityAdmission": "SHADOW_ONLY",
       "decisionIntelligenceEligible": false,
+      "decisionIntelligenceSeedEligible": false,
       "seedLaneEligible": false,
       "seedLane": {
         "eligible": false
@@ -276,7 +283,8 @@
   "errors": [],
   "triggerDefinitions": {
     "BUY_TRIGGER": "Qualified fresh entry zone reached; live broker checks still required.",
-    "SEED_LANE_BUY_TRIGGER": "A seed-lane-eligible SHADOW_ONLY candidate reached its entry zone. Capped at seedLane.maxOrderUsd, one of up to seedLane.maxConcurrentPositions concurrent seed positions, still requires the user's per-order approval like every other stock buy -- never auto-submitted. A stopped-out seed ticker rotates out for the rest of that UTC day rather than pausing the lane.",
+    "SEED_LANE_BUY_TRIGGER": "An A-tier SHADOW_ONLY stock candidate reached its entry zone. Automatic through Claude Robinhood Trading MCP, capped at $5, existing cash only, and every other live guard remains mandatory.",
+    "CRYPTO_SEED_LANE_BUY_TRIGGER": "An A/A+ crypto candidate reached its entry zone. Automatic through Claude Robinhood Trading MCP, capped at $5, existing cash only, one position at a time, and every other live guard remains mandatory.",
     "TRIGGER_1_STOP": "Stop/invalidation reached — verify position and sell protected quantity.",
     "TRIGGER_2_TARGET1": "Target 1 reached — execute validated first scale-out.",
     "TRIGGER_3_TARGET2": "Target 2 reached — execute validated exit/runner decision."
