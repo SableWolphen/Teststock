@@ -8,14 +8,14 @@ const read=async(file,fallback=null)=>{try{return JSON.parse(await fs.readFile(f
 const write=async(file,data)=>fs.writeFile(file,JSON.stringify(data,null,2));
 
 const policy={
-  schemaVersion:4,
+  schemaVersion:5,
   generatedAt:new Date().toISOString(),
-  objective:'Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto active around the clock, and cash acceptable. Prefer elite A stocks, allow a reduced-size B best-acceptable stock when no A survives, and let crypto surface more reasonable 24/7 opportunities without removing hard risk controls. This policy cannot eliminate market loss risk.',
+  objective:'Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto active around the clock, and cash acceptable. Prefer elite A stocks at normal encoded size, allow a tightly capped B best-acceptable micro-probation stock when no A survives, and let crypto surface more reasonable 24/7 opportunities without removing hard risk controls. This policy cannot eliminate market loss risk.',
   stocks:{
     minGrowthQuality:92,minHistoricalSamples:20,minHistoricalWinRatePct:55,minConservativeExpectedR:0.6,minCostAdjustedConservativeExpectedR:0.55,minRewardRisk:2.5,rewardRiskQualificationTarget:'TARGET2',maxAtrPct:7,reduceSizeAboveAtrPct:5,highVolatilitySizeMultiplier:0.5,maxSinglePositionPlannedStopPct:1.5,maxCombinedNewStockPlannedStopPct:2.5,
-    bestAcceptable:{enabled:true,entryTier:'B',sizeMultiplier:.5,minGrowthQuality:88,minHistoricalSamples:20,minHistoricalWinRatePct:53,minConservativeExpectedR:.45,minCostAdjustedConservativeExpectedR:.45,minRewardRisk:2.25,maxAtrPct:7,rule:'B is a reduced-size fallback, not a waiver. It must still have bullish direction, positive conservative expectancy, adequate history, acceptable R:R, bounded volatility, and every downstream live account/execution/protection guard.'},
+    bestAcceptable:{enabled:true,entryTier:'B',sizeMultiplier:.25,minGrowthQuality:88,minHistoricalSamples:20,minHistoricalWinRatePct:53,minConservativeExpectedR:.45,minCostAdjustedConservativeExpectedR:.45,minRewardRisk:2.25,maxAtrPct:7,rule:'B is a micro-probation fallback capped at one-quarter of normal candidate size, not a waiver. It must still have bullish direction, positive conservative expectancy, adequate history, acceptable R:R, bounded volatility, and every downstream live account/execution/protection guard.'},
     seedLane:{enabled:true,maxOrderUsd:5,maxConcurrentPositions:2,maxNewPositionsPerUtcDay:1,requiredEntryTier:'A',requiresPerOrderApproval:false,requiresBrokerResidentStop:true,existingRobinhoodCashOnly:true,agentMayInitiateDeposits:false,agentMayInitiateBankTransfers:false,marginAllowed:false,rule:'User-authorized automatic stock learning lane. It may bypass only the forward profitability-admission wait at a fixed $5 ceiling. Every research, freshness, entry-zone, no-chase, decision-intelligence, buying-power, account-floor, portfolio, duplicate-order and protection gate remains mandatory. LIVE_SUSPENDED and contradictory shadow evidence never qualify.'},
-    instructions:'Target2 is the qualification target; target1 is for partial profit/de-risking. Use cost-adjusted conservative expectancy when available so execution friction cannot be ignored. A tier always ranks before B tier. The automatic seed lane uses only existing dedicated Robinhood cash and can never deposit, transfer, borrow or use margin.'
+    instructions:'Target2 is the qualification target; target1 is for partial profit/de-risking. Use cost-adjusted conservative expectancy when available so execution friction cannot be ignored. A tier always ranks before B tier. A candidates may use their normal encoded size only after every downstream runtime and broker guard passes. B candidates remain capped at 25% micro-probation size. The automatic seed lane uses only existing dedicated Robinhood cash and can never deposit, transfer, borrow or use margin.'
   },
   options:{
     stocksRemainDefault:true,minUnderlyingGrowthQuality:97,minHistoricalSamples:25,minHistoricalWinRatePct:62,minConservativeExpectedR:0.9,minCostAdjustedConservativeExpectedR:0.85,minRewardRisk:3,requireWholeContractRuntimeCheck:true,requireLiveRealFillEvidence:true,liveEvidenceMinimumResolvedTrades:10,liveEvidenceMinimumAverageR:0.25,liveEvidenceMinimumWinRatePct:50,
@@ -54,8 +54,9 @@ for(const budget of budgets){
     const tier=row.entryTier==='B'?'B':'A',checks=stockChecks(row,tier);
     if(!Object.values(checks).every(Boolean))continue;
     const baseAmount=Number(row.allocationDollars||0),entry=Number(row.entry||0),stop=Number(row.stop||0);if(!(entry>stop&&baseAmount>0))continue;
-    const stopPct=(entry-stop)/entry,highVol=Number(row.atrPct??row.technicals?.atrPct??0)>policy.stocks.reduceSizeAboveAtrPct,volatilityMultiplier=highVol?policy.stocks.highVolatilitySizeMultiplier:1,maxAmountBySingleStop=(budget*(policy.stocks.maxSinglePositionPlannedStopPct/100))/stopPct,amount=round(Math.min(baseAmount*volatilityMultiplier,maxAmountBySingleStop));if(amount<=0)continue;
-    kept.push({...row,entryTier:tier,entryTierLabel:tier==='B'?'BEST_ACCEPTABLE':'ELITE',entryTierSizeMultiplier:Number(row.entryTierSizeMultiplier??(tier==='B'?.5:1)),allocationDollars:amount,estimatedSharesAtEntry:round(amount/entry,6),estimatedLossAtStop:round(amount*stopPct),probabilityFirstChecks:checks,probabilityFirstSizeMultiplier:volatilityMultiplier});
+    const tierMultiplier=tier==='B'?policy.stocks.bestAcceptable.sizeMultiplier:1;
+    const stopPct=(entry-stop)/entry,highVol=Number(row.atrPct??row.technicals?.atrPct??0)>policy.stocks.reduceSizeAboveAtrPct,volatilityMultiplier=highVol?policy.stocks.highVolatilitySizeMultiplier:1,maxAmountBySingleStop=(budget*(policy.stocks.maxSinglePositionPlannedStopPct/100))/stopPct,amount=round(Math.min(baseAmount*tierMultiplier*volatilityMultiplier,maxAmountBySingleStop));if(amount<=0)continue;
+    kept.push({...row,entryTier:tier,entryTierLabel:tier==='B'?'BEST_ACCEPTABLE_MICRO':'ELITE',entryTierSizeMultiplier:tierMultiplier,allocationDollars:amount,estimatedSharesAtEntry:round(amount/entry,6),estimatedLossAtStop:round(amount*stopPct),probabilityFirstChecks:checks,probabilityFirstSizeMultiplier:volatilityMultiplier});
   }
   let remainingCombinedRisk=budget*(policy.stocks.maxCombinedNewStockPlannedStopPct/100);const final=[];
   for(const row of kept.sort((a,b)=>(a.entryTier==='A'?0:1)-(b.entryTier==='A'?0:1)||Number(b.portfolioOpportunityScore||0)-Number(a.portfolioOpportunityScore||0)||Number(b.growthQuality||0)-Number(a.growthQuality||0))){const risk=Number(row.estimatedLossAtStop||0);if(risk<=0||risk>remainingCombinedRisk)continue;final.push(row);remainingCombinedRisk=round(remainingCombinedRisk-risk);if(final.length>=4)break;}
@@ -83,4 +84,4 @@ for(const budget of budgets){
 }
 
 await write(path.join(dataDir,'probability-first-policy.json'),policy);
-console.log('Applied probability-first stock/options/crypto overlay with A-first, reduced-size B stock fallback and relaxed 24/7 crypto research gates.');
+console.log('Applied probability-first stock/options/crypto overlay with A-first normal encoded stock size, 25% B micro-probation fallback and relaxed 24/7 crypto research gates.');
