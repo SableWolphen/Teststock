@@ -25,12 +25,12 @@ if(!s.probabilityFirstPolicy?.options||s.probabilityFirstPolicy.options.requireL
 if(s.crossAssetOpportunityRanking!=null)fail.push('cross-asset ranking still present');
 if(s.systemHealth?.crossAssetRanking!=null)fail.push('cross-asset health dependency still present');
 if(!Object.prototype.hasOwnProperty.call(s.assetClassRouting||{},'OPTION'))fail.push('option asset routing missing');
-const appliesTo=s.claudeExecutionPolicy?.buys?.appliesTo||[];
-if(!appliesTo.includes('STOCK_A')||!appliesTo.includes('STOCK_B')||!appliesTo.includes('CRYPTO'))fail.push('Claude buy scope');
+const stockAppliesTo=s.claudeExecutionPolicy?.stockBuys?.appliesTo||[];
+if(!stockAppliesTo.includes('STOCK_A')||!stockAppliesTo.includes('STOCK_B'))fail.push('Claude stock buy scope');
 if(s.autopilot?.requiresPerOrderApproval!==false||s.autopilot?.automaticQualifiedBuys!==true)fail.push('automatic stock policy');
 if(s.autopilot?.automaticQualifiedStockBuys!==true||s.autopilot?.automaticQualifiedCryptoBuys!==true)fail.push('automatic asset buys');
-if(s.claudeExecutionPolicy?.buys?.explicitApprovalRequired!==false)fail.push('Claude approval still required');
-if(s.claudeExecutionPolicy?.buys?.automaticWhenFullyQualifiedAndBrokerPermits!==true)fail.push('Claude automatic buy disabled');
+if(s.claudeExecutionPolicy?.stockBuys?.explicitApprovalRequired!==false||s.claudeExecutionPolicy?.crypto?.explicitApprovalRequired!==false)fail.push('Claude approval still required');
+if(s.claudeExecutionPolicy?.stockBuys?.automaticWhenFullyQualifiedAndBrokerPermits!==true||s.claudeExecutionPolicy?.crypto?.automaticWhenFullyQualifiedAndBrokerPermits!==true)fail.push('Claude automatic buy disabled');
 if(s.autopilot?.automaticRiskReducingExits!==true)fail.push('automatic exits disabled');
 if(a?.tournaments?.stock?.execution?.includes('automatically submits qualified stock orders')!==true)fail.push('stock Claude MCP execution');
 if(a?.tournaments?.crypto?.execution?.includes('authenticated Robinhood Trading MCP')!==true)fail.push('crypto Claude MCP execution');
