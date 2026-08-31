@@ -87,6 +87,12 @@ jobs:
           # If you prefer API billing, store ANTHROPIC_API_KEY as a GitHub
           # Actions secret; never commit it.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # The self-hosted Windows runner's Python defaults stdout to the
+          # legacy cp1252 console codepage, which raises UnicodeEncodeError
+          # (and fails this whole step, after Claude's own run already
+          # completed) on a non-ASCII character such as an arrow in Claude's
+          # result text. Force UTF-8 stdio so printing the result can't crash.
+          PYTHONIOENCODING: utf-8
         run: |
           set -euo pipefail
           output_path="$(mktemp /tmp/teststock-claude-executor.XXXXXX.json)"
