@@ -44,7 +44,11 @@ for(const [i,x] of stockCandidates.entries()){
   // final concurrency and same-day-stop exclusion are re-verified live by the execution-check
   // against real-trade-journal.json, not here.
   const seedLaneEligible=x.seedLane?.eligible===true;
-  const admissionOk=['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(admission);
+  // Mirrors apply-profitability-admission.mjs's own blocked set (SHADOW_ONLY, LIVE_SUSPENDED).
+  // Older explicit allowlist (MICRO_PROBATION/PROBATION/LIVE_ADMITTED only) predated the tiered
+  // A-normal/B-micro policy and silently blocked every ELITE_RUNTIME_ELIGIBLE/BEST_ACCEPTABLE_MICRO
+  // candidate -- i.e. every current A-tier stock -- from ever reaching a BUY_TRIGGER.
+  const admissionOk=!['SHADOW_ONLY','LIVE_SUSPENDED','UNKNOWN'].includes(admission);
   if(!actionAllowed&&!seedLaneEligible){status='BLOCKED_UPSTREAM';reason=`Candidate action ${x.action||'UNKNOWN'} is not eligible for monitoring.`;}
   else if(!actionAllowed&&seedLaneEligible&&!admissionOk){
     if(!decisionSeedEligible){status='BLOCKED_DECISION_INTELLIGENCE';reason='The automatic stock seed lane bypasses only profitability admission; seed-specific decision intelligence did not pass.';}
