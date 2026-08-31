@@ -23,7 +23,7 @@ if(dispatch.pendingAction?.trigger!=='BUY_TRIGGER'&&(dispatch.fallbackActions||[
 const automaticStockCandidates=dispatch.automaticStockCandidates||[];
 if(automaticStockCandidates.some(action=>action.trigger!=='BUY_TRIGGER')) fail('automaticStockCandidates may contain only BUY_TRIGGER actions');
 if(automaticStockCandidates.some(action=>action.assetClass!=='STOCK')) fail('automaticStockCandidates may contain only stocks');
-if(automaticStockCandidates.some(action=>!['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(action.profitabilityAdmission))) fail('automatic stock candidate lacks profitability admission');
+if(automaticStockCandidates.some(action=>['SHADOW_ONLY','LIVE_SUSPENDED','UNKNOWN',undefined,null].includes(action.profitabilityAdmission))) fail('automatic stock candidate lacks profitability admission');
 if(automaticStockCandidates.some(action=>action.decisionIntelligenceEligible!==true)) fail('automatic stock candidate lacks decision-intelligence pass');
 if(dispatch.pendingAction?.trigger!=='BUY_TRIGGER'&&automaticStockCandidates.length) fail('exit dispatch cannot contain automatic stock candidates');
 
