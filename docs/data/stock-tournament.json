@@ -1,7 +1,7 @@
 {
   "schemaVersion": 8,
   "source": "TESTSTOCK_UP_TO_20000_STOCK_KNOCKOUT",
-  "generatedAt": "2026-09-01T17:19:23.702Z",
+  "generatedAt": "2026-09-01T17:32:09.194Z",
   "objective": "Continuously eliminate weaker candidates from every legitimate active/tradable U.S. operating-company stock available, capped at 20,000 symbols, then buy the best acceptable live survivor without waiting only for a perfect setup.",
   "policy": {
     "targetTournamentSize": 20000,
@@ -51,13 +51,13 @@
     {
       "round": "TOP_100",
       "input": 65,
-      "output": 4,
+      "output": 0,
       "rule": "Apply A-tier elite gates first, then a 25% B best-acceptable micro tier with positive expectancy/history/R:R floors. Hard account, price, spread, gap, correlation and protection gates never relax."
     },
     {
       "round": "LIVE_FINAL",
-      "input": 4,
-      "output": 1,
+      "input": 0,
+      "output": 0,
       "rule": "Choose live A candidates first at up to normal encoded size. If no A survives, choose the strongest live B candidate at micro-probation size capped at 25%. If it fails before submission, try the next eligible fallback. Hold cash only when no A or B survives every hard guard."
     }
   ],
@@ -76,25 +76,10 @@
     "stop": 88.64,
     "target1": 95.29,
     "target2": 98.22,
-    "entryTier": "B",
-    "entryTierLabel": "BEST_ACCEPTABLE",
-    "fundamentals": {
-      "label": "MIXED",
-      "coverage": 0,
-      "revenueGrowthPct": null,
-      "latestAnnualNetIncome": null,
-      "latestEquityEstimate": null,
-      "source": "SEC_COMPANYFACTS",
-      "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-    },
-    "corporateActions": {
-      "risk": "CLEAR",
-      "windowStart": "2026-08-18",
-      "windowEnd": "2026-10-16",
-      "events": [],
-      "source": "ALPACA_CORPORATE_ACTIONS",
-      "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-    },
+    "entryTier": null,
+    "entryTierLabel": null,
+    "fundamentals": null,
+    "corporateActions": null,
     "recentFilings": [],
     "fundamentalEligibility": null,
     "adaptiveLearning": {
@@ -131,7 +116,7 @@
         {
           "provider": "SEC_EDGAR",
           "role": "FUNDAMENTALS_AND_FILINGS",
-          "available": true,
+          "available": false,
           "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
         }
       ],
@@ -181,257 +166,29 @@
       "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
     }
   },
-  "liveBuyChampion": {
-    "queueRank": 1,
-    "ticker": "BNS",
-    "action": "AUTO_BUY_ELIGIBLE",
-    "queueRole": "PRIMARY",
-    "entryTier": "B",
-    "entryTierLabel": "BEST_ACCEPTABLE",
-    "entryTierSizeMultiplier": 0.25,
-    "tournamentScore": 56.5,
-    "growthQuality": 100,
-    "rewardRisk": 2.6,
-    "setupType": null,
-    "historicalWinRate": 93,
-    "historicalSamples": 27,
-    "minimumEntry": 91.3,
-    "maximumEntry": 93.13,
-    "stop": 88.64,
-    "target1": 95.29,
-    "target2": 98.22,
-    "fundamentals": {
-      "label": "MIXED",
-      "coverage": 0,
-      "revenueGrowthPct": null,
-      "latestAnnualNetIncome": null,
-      "latestEquityEstimate": null,
-      "source": "SEC_COMPANYFACTS",
-      "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-    },
-    "corporateActions": {
-      "risk": "CLEAR",
-      "windowStart": "2026-08-18",
-      "windowEnd": "2026-10-16",
-      "events": [],
-      "source": "ALPACA_CORPORATE_ACTIONS",
-      "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-    },
-    "recentFilings": [],
-    "fundamentalEligibility": null,
-    "adaptiveLearning": {
-      "matched": [],
-      "priorityScoreDelta": 0,
-      "positiveInfluenceCap": 0,
-      "sizeMultiplier": 1,
-      "blocked": false,
-      "globalSizeCap": 1,
-      "globalBlock": false,
-      "globalReasons": [],
-      "reasons": []
-    },
-    "adaptiveBaseTournamentScore": 56.5,
-    "adaptiveTournamentScore": 56.5,
-    "adaptiveSizeMultiplier": 0.25,
-    "adaptiveOriginalQueueRank": 1,
-    "profitabilityAdmission": {
-      "state": "BEST_ACCEPTABLE_MICRO",
-      "sizeMultiplier": 0.25,
-      "entryTier": "B",
-      "setupType": "STOCK_TREND",
-      "runtimeRegime": "TRENDING_DOWN",
-      "historical": {
-        "samples": 27,
-        "winRatePct": 93,
-        "rewardRisk": 2.6
-      },
-      "historicalEvidenceIsDiagnosticOnly": true,
-      "regimeDisabled": false,
-      "contradictoryShadow": false,
-      "negativeRealProbation": false,
-      "shadow": {
-        "scope": "SETUP_FALLBACK",
-        "samples": 0,
-        "winRatePct": null,
-        "averageR": null,
-        "realFillSamples": 0,
-        "shadowOnlySamples": 0,
-        "independenceKey": "decisionDate+symbol+setup+regime",
-        "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
-        "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
-      },
-      "real": {
-        "samples": 0,
-        "winRatePct": null,
-        "averageRealizedR": null
-      },
-      "thresholds": {
-        "minimumIndependentShadowSamplesForMicro": 6,
-        "minimumIndependentShadowSamples": 12,
-        "minimumShadowWinRatePct": 50,
-        "minimumShadowAverageR": 0.15,
-        "eliteARuntimeSizeMultiplier": 1,
-        "bestAcceptableBMicroSizeMultiplier": 0.25,
-        "minimumRealSamplesForSuspensionCheck": 8,
-        "minimumRealSamplesForFullAdmission": 15,
-        "minimumRealAverageRForFullAdmission": 0.1
-      },
-      "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
-    },
-    "seedLane": {
-      "eligible": false
-    },
-    "decisionIntelligence": {
-      "decisionScore": 67.15,
-      "rankBeforeOptimization": 1,
-      "eligibleAfterOverlay": true,
-      "eligibleForSeedLane": false,
-      "upstreamActionAllowed": true,
-      "setupDiagnostics": {
-        "setupType": "STOCK_TREND",
-        "technicalScore": 94.2,
-        "patternConfidencePct": 88.7,
-        "historicalSamples": 27,
-        "historicalWinRatePct": 93,
-        "rewardRisk": 2.6,
-        "backtestStatus": "LIMITED",
-        "warnings": [
-          "FUNDAMENTALS_UNKNOWN",
-          "LIQUIDITY_UNKNOWN"
-        ]
-      },
-      "screener": {
-        "fundamentals": "UNKNOWN",
-        "liquidity": "UNKNOWN",
-        "spreadPct": null,
-        "unknownIsNotAnOverride": true
-      },
-      "opportunityDecay": {
-        "scanAgeMinutes": 0,
-        "halfLifeMinutes": 15,
-        "entryProximity": 1,
-        "freshnessMultiplier": 1,
-        "combinedMultiplier": 1,
-        "expired": false
-      },
-      "portfolioOptimization": {
-        "maxCorrelationToHigherRanked": 0,
-        "penalty": 0,
-        "hardGateStillRequired": true
-      },
-      "admissionState": "BEST_ACCEPTABLE_MICRO",
-      "hardGatesRemainAuthoritative": true
-    },
-    "decisionScore": 67.15,
-    "decisionRank": 1,
-    "congressionalIntelligence": {
-      "mode": "SHADOW_DIAGNOSTIC_ONLY",
-      "matched": false,
-      "signal": null,
-      "rankingContribution": 0,
-      "liveInfluenceAllowed": false,
-      "explanation": "No recent matched disclosure in the current public-source cache.",
-      "hardGatesRemainAuthoritative": true
-    },
-    "unifiedSourceEvidence": {
-      "ticker": "BNS",
-      "sources": [
-        {
-          "provider": "ALPACA",
-          "role": "PRIMARY_MARKET_AND_TECHNICAL",
-          "liveAuthority": "EXISTING_HARD_GATES"
-        },
-        {
-          "provider": "SEC_EDGAR",
-          "role": "FUNDAMENTALS_AND_FILINGS",
-          "available": true,
-          "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
-        }
-      ],
-      "alternativeDataContribution": 0,
-      "sourceAgreementRule": "Corroboration raises data confidence only; duplicated facts never multiply the trading score.",
-      "hardGatesRemainAuthoritative": true
-    },
-    "timeHorizonPolicy": {
-      "classification": "SWING_POSITION",
-      "classificationIsAdvisory": true,
-      "mayNotCreateEligibility": true,
-      "existingHardStopAndRiskRemainAuthoritative": true,
-      "holdingWindow": "DAYS_TO_WEEKS",
-      "profitExit": {
-        "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
-        "target1": 95.29,
-        "target2": 98.22
-      },
-      "lossExit": {
-        "method": "EXISTING_PROTECTED_STOP",
-        "level": 88.64
-      },
-      "timeExit": {
-        "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
-      },
-      "risk": {
-        "overnightGapReviewRequired": true,
-        "unprotectedPositionAllowed": false
-      }
-    },
-    "brokerEligibility": {
-      "broker": "ROBINHOOD_TRADING_MCP",
-      "assetClass": "STOCK",
-      "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
-      "researchEligible": true,
-      "liveOrderAllowed": false,
-      "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
-      "requirements": [
-        "exact symbol searchable and buyable in the authenticated Robinhood Agentic account",
-        "asset not restricted, halted, closing-only or unsupported",
-        "quantity and order type supported",
-        "non-margin buying power sufficient",
-        "current quote remains inside Teststock no-chase limits",
-        "no duplicate or conflicting open order exists",
-        "required protective exit path is supported"
-      ],
-      "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-    }
-  },
+  "liveBuyChampion": null,
   "liveFallbacks": [],
-  "liveQueue": [
+  "liveQueue": [],
+  "researchFinalists": [
     {
-      "queueRank": 1,
+      "rank": 1,
       "ticker": "BNS",
-      "action": "AUTO_BUY_ELIGIBLE",
-      "queueRole": "PRIMARY",
-      "entryTier": "B",
-      "entryTierLabel": "BEST_ACCEPTABLE",
-      "entryTierSizeMultiplier": 0.25,
-      "tournamentScore": 56.5,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "setupType": null,
+      "name": "Bank of Nova Scotia",
+      "setupType": "PULLBACK",
+      "tournamentScore": 90.95,
+      "quality": 100,
       "historicalWinRate": 93,
       "historicalSamples": 27,
-      "minimumEntry": 91.3,
-      "maximumEntry": 93.13,
+      "rewardRisk": 2.6,
+      "spreadPct": 0.055,
+      "entry": 91.3,
       "stop": 88.64,
       "target1": 95.29,
       "target2": 98.22,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 0,
-        "revenueGrowthPct": null,
-        "latestAnnualNetIncome": null,
-        "latestEquityEstimate": null,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "entryTier": null,
+      "entryTierLabel": null,
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
@@ -445,16 +202,15 @@
         "globalReasons": [],
         "reasons": []
       },
-      "adaptiveBaseTournamentScore": 56.5,
-      "adaptiveTournamentScore": 56.5,
-      "adaptiveSizeMultiplier": 0.25,
-      "adaptiveOriginalQueueRank": 1,
+      "adaptiveBaseTournamentScore": 90.95,
+      "adaptiveTournamentScore": 90.95,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
-        "entryTier": "B",
-        "setupType": "STOCK_TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "entryTier": "A",
+        "setupType": "PULLBACK",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 27,
           "winRatePct": 93,
@@ -462,15 +218,15 @@
         },
         "historicalEvidenceIsDiagnosticOnly": true,
         "regimeDisabled": false,
-        "contradictoryShadow": false,
+        "contradictoryShadow": true,
         "negativeRealProbation": false,
         "shadow": {
           "scope": "SETUP_FALLBACK",
-          "samples": 0,
-          "winRatePct": null,
-          "averageR": null,
+          "samples": 4,
+          "winRatePct": 0,
+          "averageR": -1,
           "realFillSamples": 0,
-          "shadowOnlySamples": 0,
+          "shadowOnlySamples": 4,
           "independenceKey": "decisionDate+symbol+setup+regime",
           "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
           "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
@@ -491,19 +247,20 @@
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "seedLane": {
         "eligible": false
       },
       "decisionIntelligence": {
-        "decisionScore": 67.15,
+        "decisionScore": 91.27,
         "rankBeforeOptimization": 1,
-        "eligibleAfterOverlay": true,
+        "eligibleAfterOverlay": false,
         "eligibleForSeedLane": false,
-        "upstreamActionAllowed": true,
+        "upstreamActionAllowed": false,
         "setupDiagnostics": {
-          "setupType": "STOCK_TREND",
+          "setupType": "PULLBACK",
           "technicalScore": 94.2,
           "patternConfidencePct": 88.7,
           "historicalSamples": 27,
@@ -511,22 +268,21 @@
           "rewardRisk": 2.6,
           "backtestStatus": "LIMITED",
           "warnings": [
-            "FUNDAMENTALS_UNKNOWN",
-            "LIQUIDITY_UNKNOWN"
+            "FUNDAMENTALS_UNKNOWN"
           ]
         },
         "screener": {
           "fundamentals": "UNKNOWN",
-          "liquidity": "UNKNOWN",
-          "spreadPct": null,
+          "liquidity": "PASS",
+          "spreadPct": 0.055,
           "unknownIsNotAnOverride": true
         },
         "opportunityDecay": {
           "scanAgeMinutes": 0,
           "halfLifeMinutes": 15,
-          "entryProximity": 1,
+          "entryProximity": 0,
           "freshnessMultiplier": 1,
-          "combinedMultiplier": 1,
+          "combinedMultiplier": 0.6,
           "expired": false
         },
         "portfolioOptimization": {
@@ -534,11 +290,10 @@
           "penalty": 0,
           "hardGateStillRequired": true
         },
-        "admissionState": "BEST_ACCEPTABLE_MICRO",
+        "admissionState": "SHADOW_ONLY",
         "hardGatesRemainAuthoritative": true
       },
-      "decisionScore": 67.15,
-      "decisionRank": 1,
+      "decisionScore": 91.27,
       "congressionalIntelligence": {
         "mode": "SHADOW_DIAGNOSTIC_ONLY",
         "matched": false,
@@ -559,7 +314,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -610,656 +365,6 @@
       }
     },
     {
-      "queueRank": 2,
-      "ticker": "CLMT",
-      "action": "WAIT_FOR_TRIGGER",
-      "queueRole": "PRIMARY",
-      "entryTier": "B",
-      "entryTierLabel": "BEST_ACCEPTABLE",
-      "entryTierSizeMultiplier": 0.25,
-      "tournamentScore": 54.1,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "setupType": null,
-      "historicalWinRate": 77,
-      "historicalSamples": 35,
-      "minimumEntry": 51.34,
-      "maximumEntry": 52.37,
-      "stop": 46.93,
-      "target1": 57.96,
-      "target2": 62.81,
-      "fundamentals": {
-        "label": "WEAK",
-        "coverage": 1,
-        "revenueGrowthPct": -10.8,
-        "latestAnnualNetIncome": 48100000,
-        "latestEquityEstimate": -466300000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
-      "recentFilings": [],
-      "fundamentalEligibility": false,
-      "adaptiveLearning": {
-        "matched": [],
-        "priorityScoreDelta": 0,
-        "positiveInfluenceCap": 0,
-        "sizeMultiplier": 1,
-        "blocked": false,
-        "globalSizeCap": 1,
-        "globalBlock": false,
-        "globalReasons": [],
-        "reasons": []
-      },
-      "adaptiveBaseTournamentScore": 54.1,
-      "adaptiveTournamentScore": 54.1,
-      "adaptiveSizeMultiplier": 0.25,
-      "adaptiveOriginalQueueRank": 3,
-      "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
-        "entryTier": "B",
-        "setupType": "STOCK_TREND",
-        "runtimeRegime": "TRENDING_DOWN",
-        "historical": {
-          "samples": 35,
-          "winRatePct": 77,
-          "rewardRisk": 2.6
-        },
-        "historicalEvidenceIsDiagnosticOnly": true,
-        "regimeDisabled": false,
-        "contradictoryShadow": false,
-        "negativeRealProbation": false,
-        "shadow": {
-          "scope": "SETUP_FALLBACK",
-          "samples": 0,
-          "winRatePct": null,
-          "averageR": null,
-          "realFillSamples": 0,
-          "shadowOnlySamples": 0,
-          "independenceKey": "decisionDate+symbol+setup+regime",
-          "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
-          "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
-        },
-        "real": {
-          "samples": 0,
-          "winRatePct": null,
-          "averageRealizedR": null
-        },
-        "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
-          "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
-          "minimumRealSamplesForSuspensionCheck": 8,
-          "minimumRealSamplesForFullAdmission": 15,
-          "minimumRealAverageRForFullAdmission": 0.1
-        },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
-      },
-      "seedLane": {
-        "eligible": false
-      },
-      "decisionIntelligence": {
-        "decisionScore": 63.35,
-        "rankBeforeOptimization": 2,
-        "eligibleAfterOverlay": true,
-        "eligibleForSeedLane": false,
-        "upstreamActionAllowed": true,
-        "setupDiagnostics": {
-          "setupType": "STOCK_TREND",
-          "technicalScore": 90.2,
-          "patternConfidencePct": 77,
-          "historicalSamples": 35,
-          "historicalWinRatePct": 77,
-          "rewardRisk": 2.6,
-          "backtestStatus": "SUPPORTED",
-          "warnings": [
-            "LIQUIDITY_UNKNOWN"
-          ]
-        },
-        "screener": {
-          "fundamentals": "FAIL",
-          "liquidity": "UNKNOWN",
-          "spreadPct": null,
-          "unknownIsNotAnOverride": true
-        },
-        "opportunityDecay": {
-          "scanAgeMinutes": 0,
-          "halfLifeMinutes": 15,
-          "entryProximity": 0.78,
-          "freshnessMultiplier": 1,
-          "combinedMultiplier": 0.912,
-          "expired": false
-        },
-        "portfolioOptimization": {
-          "maxCorrelationToHigherRanked": 0,
-          "penalty": 0,
-          "hardGateStillRequired": true
-        },
-        "admissionState": "BEST_ACCEPTABLE_MICRO",
-        "hardGatesRemainAuthoritative": true
-      },
-      "decisionScore": 63.35,
-      "decisionRank": 2,
-      "congressionalIntelligence": {
-        "mode": "SHADOW_DIAGNOSTIC_ONLY",
-        "matched": false,
-        "signal": null,
-        "rankingContribution": 0,
-        "liveInfluenceAllowed": false,
-        "explanation": "No recent matched disclosure in the current public-source cache.",
-        "hardGatesRemainAuthoritative": true
-      },
-      "unifiedSourceEvidence": {
-        "ticker": "CLMT",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_MARKET_AND_TECHNICAL",
-            "liveAuthority": "EXISTING_HARD_GATES"
-          },
-          {
-            "provider": "SEC_EDGAR",
-            "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
-            "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "sourceAgreementRule": "Corroboration raises data confidence only; duplicated facts never multiply the trading score.",
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
-        "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
-          "target1": 57.96,
-          "target2": 62.81
-        },
-        "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 46.93
-        },
-        "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
-        },
-        "risk": {
-          "overnightGapReviewRequired": true,
-          "unprotectedPositionAllowed": false
-        }
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_TRADING_MCP",
-        "assetClass": "STOCK",
-        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
-        "requirements": [
-          "exact symbol searchable and buyable in the authenticated Robinhood Agentic account",
-          "asset not restricted, halted, closing-only or unsupported",
-          "quantity and order type supported",
-          "non-margin buying power sufficient",
-          "current quote remains inside Teststock no-chase limits",
-          "no duplicate or conflicting open order exists",
-          "required protective exit path is supported"
-        ],
-        "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
-    },
-    {
-      "queueRank": 3,
-      "ticker": "NEO",
-      "action": "WAIT_FOR_TRIGGER",
-      "queueRole": "RESERVE",
-      "entryTier": "B",
-      "entryTierLabel": "BEST_ACCEPTABLE",
-      "entryTierSizeMultiplier": 0.25,
-      "tournamentScore": 52.9,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "setupType": null,
-      "historicalWinRate": 76,
-      "historicalSamples": 25,
-      "minimumEntry": 19.72,
-      "maximumEntry": 20.11,
-      "stop": 16.63,
-      "target1": 24.35,
-      "target2": 27.75,
-      "fundamentals": {
-        "label": "WEAK",
-        "coverage": 0.6666666666666666,
-        "revenueGrowthPct": null,
-        "latestAnnualNetIncome": -87968000,
-        "latestEquityEstimate": 902339000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
-      "recentFilings": [],
-      "fundamentalEligibility": false,
-      "adaptiveLearning": {
-        "matched": [],
-        "priorityScoreDelta": 0,
-        "positiveInfluenceCap": 0,
-        "sizeMultiplier": 1,
-        "blocked": false,
-        "globalSizeCap": 1,
-        "globalBlock": false,
-        "globalReasons": [],
-        "reasons": []
-      },
-      "adaptiveBaseTournamentScore": 52.9,
-      "adaptiveTournamentScore": 52.9,
-      "adaptiveSizeMultiplier": 0.25,
-      "adaptiveOriginalQueueRank": 4,
-      "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
-        "entryTier": "B",
-        "setupType": "STOCK_TREND",
-        "runtimeRegime": "TRENDING_DOWN",
-        "historical": {
-          "samples": 25,
-          "winRatePct": 76,
-          "rewardRisk": 2.6
-        },
-        "historicalEvidenceIsDiagnosticOnly": true,
-        "regimeDisabled": false,
-        "contradictoryShadow": false,
-        "negativeRealProbation": false,
-        "shadow": {
-          "scope": "SETUP_FALLBACK",
-          "samples": 0,
-          "winRatePct": null,
-          "averageR": null,
-          "realFillSamples": 0,
-          "shadowOnlySamples": 0,
-          "independenceKey": "decisionDate+symbol+setup+regime",
-          "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
-          "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
-        },
-        "real": {
-          "samples": 0,
-          "winRatePct": null,
-          "averageRealizedR": null
-        },
-        "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
-          "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
-          "minimumRealSamplesForSuspensionCheck": 8,
-          "minimumRealSamplesForFullAdmission": 15,
-          "minimumRealAverageRForFullAdmission": 0.1
-        },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
-      },
-      "seedLane": {
-        "eligible": false
-      },
-      "decisionIntelligence": {
-        "decisionScore": 61.78,
-        "rankBeforeOptimization": 3,
-        "eligibleAfterOverlay": true,
-        "eligibleForSeedLane": false,
-        "upstreamActionAllowed": true,
-        "setupDiagnostics": {
-          "setupType": "STOCK_TREND",
-          "technicalScore": 89.7,
-          "patternConfidencePct": 71.7,
-          "historicalSamples": 25,
-          "historicalWinRatePct": 76,
-          "rewardRisk": 2.6,
-          "backtestStatus": "LIMITED",
-          "warnings": [
-            "LIQUIDITY_UNKNOWN"
-          ]
-        },
-        "screener": {
-          "fundamentals": "FAIL",
-          "liquidity": "UNKNOWN",
-          "spreadPct": null,
-          "unknownIsNotAnOverride": true
-        },
-        "opportunityDecay": {
-          "scanAgeMinutes": 0,
-          "halfLifeMinutes": 15,
-          "entryProximity": 0,
-          "freshnessMultiplier": 1,
-          "combinedMultiplier": 0.6,
-          "expired": false
-        },
-        "portfolioOptimization": {
-          "maxCorrelationToHigherRanked": 0.052,
-          "penalty": 0,
-          "hardGateStillRequired": true
-        },
-        "admissionState": "BEST_ACCEPTABLE_MICRO",
-        "hardGatesRemainAuthoritative": true
-      },
-      "decisionScore": 61.78,
-      "decisionRank": 3,
-      "congressionalIntelligence": {
-        "mode": "SHADOW_DIAGNOSTIC_ONLY",
-        "matched": false,
-        "signal": null,
-        "rankingContribution": 0,
-        "liveInfluenceAllowed": false,
-        "explanation": "No recent matched disclosure in the current public-source cache.",
-        "hardGatesRemainAuthoritative": true
-      },
-      "unifiedSourceEvidence": {
-        "ticker": "NEO",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_MARKET_AND_TECHNICAL",
-            "liveAuthority": "EXISTING_HARD_GATES"
-          },
-          {
-            "provider": "SEC_EDGAR",
-            "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
-            "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "sourceAgreementRule": "Corroboration raises data confidence only; duplicated facts never multiply the trading score.",
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
-        "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
-          "target1": 24.35,
-          "target2": 27.75
-        },
-        "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 16.63
-        },
-        "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
-        },
-        "risk": {
-          "overnightGapReviewRequired": true,
-          "unprotectedPositionAllowed": false
-        }
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_TRADING_MCP",
-        "assetClass": "STOCK",
-        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
-        "requirements": [
-          "exact symbol searchable and buyable in the authenticated Robinhood Agentic account",
-          "asset not restricted, halted, closing-only or unsupported",
-          "quantity and order type supported",
-          "non-margin buying power sufficient",
-          "current quote remains inside Teststock no-chase limits",
-          "no duplicate or conflicting open order exists",
-          "required protective exit path is supported"
-        ],
-        "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
-    },
-    {
-      "queueRank": 4,
-      "ticker": "HAL",
-      "action": "WAIT_FOR_TRIGGER",
-      "queueRole": "PRIMARY",
-      "entryTier": "B",
-      "entryTierLabel": "BEST_ACCEPTABLE",
-      "entryTierSizeMultiplier": 0.25,
-      "tournamentScore": 52.2,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "setupType": null,
-      "historicalWinRate": 70,
-      "historicalSamples": 30,
-      "minimumEntry": 37.71,
-      "maximumEntry": 38.46,
-      "stop": 34.4,
-      "target1": 42.68,
-      "target2": 46.32,
-      "fundamentals": {
-        "label": "STRONG",
-        "coverage": 1,
-        "revenueGrowthPct": 19.8,
-        "latestAnnualNetIncome": 2638000000,
-        "latestEquityEstimate": 10548000000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
-      "recentFilings": [],
-      "fundamentalEligibility": true,
-      "adaptiveLearning": {
-        "matched": [],
-        "priorityScoreDelta": 0,
-        "positiveInfluenceCap": 0,
-        "sizeMultiplier": 1,
-        "blocked": false,
-        "globalSizeCap": 1,
-        "globalBlock": false,
-        "globalReasons": [],
-        "reasons": []
-      },
-      "adaptiveBaseTournamentScore": 52.2,
-      "adaptiveTournamentScore": 52.2,
-      "adaptiveSizeMultiplier": 0.25,
-      "adaptiveOriginalQueueRank": 2,
-      "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
-        "entryTier": "B",
-        "setupType": "STOCK_TREND",
-        "runtimeRegime": "TRENDING_DOWN",
-        "historical": {
-          "samples": 30,
-          "winRatePct": 70,
-          "rewardRisk": 2.6
-        },
-        "historicalEvidenceIsDiagnosticOnly": true,
-        "regimeDisabled": false,
-        "contradictoryShadow": false,
-        "negativeRealProbation": false,
-        "shadow": {
-          "scope": "SETUP_FALLBACK",
-          "samples": 0,
-          "winRatePct": null,
-          "averageR": null,
-          "realFillSamples": 0,
-          "shadowOnlySamples": 0,
-          "independenceKey": "decisionDate+symbol+setup+regime",
-          "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
-          "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
-        },
-        "real": {
-          "samples": 0,
-          "winRatePct": null,
-          "averageRealizedR": null
-        },
-        "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
-          "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
-          "minimumRealSamplesForSuspensionCheck": 8,
-          "minimumRealSamplesForFullAdmission": 15,
-          "minimumRealAverageRForFullAdmission": 0.1
-        },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
-      },
-      "seedLane": {
-        "eligible": false
-      },
-      "decisionIntelligence": {
-        "decisionScore": 60.55,
-        "rankBeforeOptimization": 4,
-        "eligibleAfterOverlay": true,
-        "eligibleForSeedLane": false,
-        "upstreamActionAllowed": true,
-        "setupDiagnostics": {
-          "setupType": "STOCK_TREND",
-          "technicalScore": 86.7,
-          "patternConfidencePct": 70,
-          "historicalSamples": 30,
-          "historicalWinRatePct": 70,
-          "rewardRisk": 2.6,
-          "backtestStatus": "SUPPORTED",
-          "warnings": [
-            "LIQUIDITY_UNKNOWN"
-          ]
-        },
-        "screener": {
-          "fundamentals": "PASS",
-          "liquidity": "UNKNOWN",
-          "spreadPct": null,
-          "unknownIsNotAnOverride": true
-        },
-        "opportunityDecay": {
-          "scanAgeMinutes": 0,
-          "halfLifeMinutes": 15,
-          "entryProximity": 0.653,
-          "freshnessMultiplier": 1,
-          "combinedMultiplier": 0.861,
-          "expired": false
-        },
-        "portfolioOptimization": {
-          "maxCorrelationToHigherRanked": 0.316,
-          "penalty": 0,
-          "hardGateStillRequired": true
-        },
-        "admissionState": "BEST_ACCEPTABLE_MICRO",
-        "hardGatesRemainAuthoritative": true
-      },
-      "decisionScore": 60.55,
-      "decisionRank": 4,
-      "congressionalIntelligence": {
-        "mode": "SHADOW_DIAGNOSTIC_ONLY",
-        "matched": false,
-        "signal": null,
-        "rankingContribution": 0,
-        "liveInfluenceAllowed": false,
-        "explanation": "No recent matched disclosure in the current public-source cache.",
-        "hardGatesRemainAuthoritative": true
-      },
-      "unifiedSourceEvidence": {
-        "ticker": "HAL",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_MARKET_AND_TECHNICAL",
-            "liveAuthority": "EXISTING_HARD_GATES"
-          },
-          {
-            "provider": "SEC_EDGAR",
-            "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
-            "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "sourceAgreementRule": "Corroboration raises data confidence only; duplicated facts never multiply the trading score.",
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "LONG_TERM",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "QUARTERS_TO_YEARS",
-        "entryEvidence": [
-          "strong covered SEC fundamentals",
-          "durable thesis recorded",
-          "valuation and concentration reviewed"
-        ],
-        "profitExit": {
-          "method": "VALUATION_THESIS_AND_GOAL_REVIEW",
-          "rules": [
-            "Trim when valuation becomes unsupported versus history, growth and peers.",
-            "Rebalance before one position breaches the existing concentration cap.",
-            "Allow gradual goal-based sales when the user defines a life milestone."
-          ]
-        },
-        "lossExit": {
-          "method": "THESIS_INVALIDATION_AND_CAPITAL_PROTECTION",
-          "rules": [
-            "Review material loss of competitive position, repeated negative revenue trend, balance-sheet deterioration and governance/event risk.",
-            "Do not use an unbounded market stop. Use alerts, approved stop-limit/protection, or manual review consistent with existing hard maximum-risk rules."
-          ]
-        },
-        "timeExit": {
-          "rule": "Quarterly review and after every material filing or thesis event."
-        },
-        "risk": {
-          "marketStopDefault": false,
-          "unprotectedPositionAllowed": false,
-          "concentrationCapMayNotIncrease": true
-        }
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_TRADING_MCP",
-        "assetClass": "STOCK",
-        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
-        "requirements": [
-          "exact symbol searchable and buyable in the authenticated Robinhood Agentic account",
-          "asset not restricted, halted, closing-only or unsupported",
-          "quantity and order type supported",
-          "non-margin buying power sufficient",
-          "current quote remains inside Teststock no-chase limits",
-          "no duplicate or conflicting open order exists",
-          "required protective exit path is supported"
-        ],
-        "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
-    }
-  ],
-  "researchFinalists": [
-    {
       "rank": 2,
       "ticker": "MT",
       "name": "ArcelorMittal",
@@ -1276,23 +381,8 @@
       "target2": 80.94,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 0,
-        "revenueGrowthPct": null,
-        "latestAnnualNetIncome": null,
-        "latestEquityEstimate": null,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
@@ -1314,7 +404,7 @@
         "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "PULLBACK",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 17,
           "winRatePct": 94,
@@ -1418,7 +508,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -1485,29 +575,9 @@
       "target2": 99.46,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 1,
-        "revenueGrowthPct": 3.6,
-        "latestAnnualNetIncome": 3676000000,
-        "latestEquityEstimate": 48256000000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
-      "recentFilings": [
-        {
-          "form": "8-K",
-          "filingDate": "2026-09-01"
-        }
-      ],
+      "fundamentals": null,
+      "corporateActions": null,
+      "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
         "matched": [],
@@ -1528,7 +598,7 @@
         "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "PULLBACK",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 17,
           "winRatePct": 88,
@@ -1643,7 +713,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           },
           {
@@ -1717,25 +787,10 @@
       "target2": 136.02,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "WEAK",
-        "coverage": 0.6666666666666666,
-        "revenueGrowthPct": null,
-        "latestAnnualNetIncome": -83985000,
-        "latestEquityEstimate": 716794000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
-      "fundamentalEligibility": false,
+      "fundamentalEligibility": null,
       "adaptiveLearning": {
         "matched": [],
         "priorityScoreDelta": 0,
@@ -1755,7 +810,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 28,
           "winRatePct": 79,
@@ -1811,10 +866,12 @@
           "historicalWinRatePct": 79,
           "rewardRisk": 2.61,
           "backtestStatus": "LIMITED",
-          "warnings": []
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
         },
         "screener": {
-          "fundamentals": "FAIL",
+          "fundamentals": "UNKNOWN",
           "liquidity": "PASS",
           "spreadPct": 0.007,
           "unknownIsNotAnOverride": true
@@ -1856,7 +913,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -1923,23 +980,8 @@
       "target2": 107.91,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 0,
-        "revenueGrowthPct": null,
-        "latestAnnualNetIncome": null,
-        "latestEquityEstimate": null,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
@@ -1961,7 +1003,7 @@
         "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "PULLBACK",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 15,
           "winRatePct": 87,
@@ -2065,7 +1107,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -2132,37 +1174,9 @@
       "target2": 86.05,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 1,
-        "revenueGrowthPct": 5552.1,
-        "latestAnnualNetIncome": -214529000,
-        "latestEquityEstimate": 1324805000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
-      "recentFilings": [
-        {
-          "form": "8-K",
-          "filingDate": "2026-09-01"
-        },
-        {
-          "form": "8-K",
-          "filingDate": "2026-08-28"
-        },
-        {
-          "form": "8-K",
-          "filingDate": "2026-08-19"
-        }
-      ],
+      "fundamentals": null,
+      "corporateActions": null,
+      "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
         "matched": [],
@@ -2183,7 +1197,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 25,
           "winRatePct": 80,
@@ -2286,7 +1300,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -2337,6 +1351,199 @@
       }
     },
     {
+      "rank": 9,
+      "ticker": "CLMT",
+      "name": "Calumet, Inc. Common Stock",
+      "setupType": "TREND",
+      "tournamentScore": 86.53,
+      "quality": 100,
+      "historicalWinRate": 77,
+      "historicalSamples": 35,
+      "rewardRisk": 2.6,
+      "spreadPct": 0.257,
+      "entry": 51.34,
+      "stop": 46.93,
+      "target1": 57.96,
+      "target2": 62.81,
+      "entryTier": null,
+      "entryTierLabel": null,
+      "fundamentals": null,
+      "corporateActions": null,
+      "recentFilings": [],
+      "fundamentalEligibility": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 86.53,
+      "adaptiveTournamentScore": 86.53,
+      "adaptiveSizeMultiplier": 1,
+      "profitabilityAdmission": {
+        "state": "ELITE_RUNTIME_ELIGIBLE",
+        "sizeMultiplier": 1,
+        "entryTier": "A",
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "historical": {
+          "samples": 35,
+          "winRatePct": 77,
+          "rewardRisk": 2.6
+        },
+        "historicalEvidenceIsDiagnosticOnly": true,
+        "regimeDisabled": false,
+        "contradictoryShadow": false,
+        "negativeRealProbation": false,
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 2,
+          "winRatePct": 0,
+          "averageR": -1,
+          "realFillSamples": 0,
+          "shadowOnlySamples": 2,
+          "independenceKey": "decisionDate+symbol+setup+regime",
+          "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
+          "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumIndependentShadowSamplesForMicro": 6,
+          "minimumIndependentShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "eliteARuntimeSizeMultiplier": 1,
+          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+      },
+      "seedLane": {
+        "eligible": false
+      },
+      "decisionIntelligence": {
+        "decisionScore": 86.05,
+        "rankBeforeOptimization": 9,
+        "eligibleAfterOverlay": false,
+        "eligibleForSeedLane": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 90.2,
+          "patternConfidencePct": 77,
+          "historicalSamples": 35,
+          "historicalWinRatePct": 77,
+          "rewardRisk": 2.6,
+          "backtestStatus": "SUPPORTED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0.257,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "ELITE_RUNTIME_ELIGIBLE",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 86.05,
+      "congressionalIntelligence": {
+        "mode": "SHADOW_DIAGNOSTIC_ONLY",
+        "matched": false,
+        "signal": null,
+        "rankingContribution": 0,
+        "liveInfluenceAllowed": false,
+        "explanation": "No recent matched disclosure in the current public-source cache.",
+        "hardGatesRemainAuthoritative": true
+      },
+      "unifiedSourceEvidence": {
+        "ticker": "CLMT",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_MARKET_AND_TECHNICAL",
+            "liveAuthority": "EXISTING_HARD_GATES"
+          },
+          {
+            "provider": "SEC_EDGAR",
+            "role": "FUNDAMENTALS_AND_FILINGS",
+            "available": false,
+            "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "sourceAgreementRule": "Corroboration raises data confidence only; duplicated facts never multiply the trading score.",
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "SWING_POSITION",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "existingHardStopAndRiskRemainAuthoritative": true,
+        "holdingWindow": "DAYS_TO_WEEKS",
+        "profitExit": {
+          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "target1": 57.96,
+          "target2": 62.81
+        },
+        "lossExit": {
+          "method": "EXISTING_PROTECTED_STOP",
+          "level": 46.93
+        },
+        "timeExit": {
+          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+        },
+        "risk": {
+          "overnightGapReviewRequired": true,
+          "unprotectedPositionAllowed": false
+        }
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "STOCK",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact symbol searchable and buyable in the authenticated Robinhood Agentic account",
+          "asset not restricted, halted, closing-only or unsupported",
+          "quantity and order type supported",
+          "non-margin buying power sufficient",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protective exit path is supported"
+        ],
+        "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
+      }
+    },
+    {
       "rank": 7,
       "ticker": "RIO",
       "name": "Rio Tinto plc",
@@ -2353,23 +1560,8 @@
       "target2": 110.58,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 0,
-        "revenueGrowthPct": null,
-        "latestAnnualNetIncome": null,
-        "latestEquityEstimate": null,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
@@ -2391,7 +1583,7 @@
         "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "PULLBACK",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 16,
           "winRatePct": 81,
@@ -2495,7 +1687,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -2546,6 +1738,392 @@
       }
     },
     {
+      "rank": 11,
+      "ticker": "NEO",
+      "name": "NeoGenomics, Inc. Common Stock",
+      "setupType": "TREND",
+      "tournamentScore": 86.2,
+      "quality": 100,
+      "historicalWinRate": 76,
+      "historicalSamples": 25,
+      "rewardRisk": 2.6,
+      "spreadPct": 0.17,
+      "entry": 19.72,
+      "stop": 16.63,
+      "target1": 24.35,
+      "target2": 27.75,
+      "entryTier": null,
+      "entryTierLabel": null,
+      "fundamentals": null,
+      "corporateActions": null,
+      "recentFilings": [],
+      "fundamentalEligibility": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 86.2,
+      "adaptiveTournamentScore": 86.2,
+      "adaptiveSizeMultiplier": 1,
+      "profitabilityAdmission": {
+        "state": "ELITE_RUNTIME_ELIGIBLE",
+        "sizeMultiplier": 1,
+        "entryTier": "A",
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "historical": {
+          "samples": 25,
+          "winRatePct": 76,
+          "rewardRisk": 2.6
+        },
+        "historicalEvidenceIsDiagnosticOnly": true,
+        "regimeDisabled": false,
+        "contradictoryShadow": false,
+        "negativeRealProbation": false,
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 2,
+          "winRatePct": 0,
+          "averageR": -1,
+          "realFillSamples": 0,
+          "shadowOnlySamples": 2,
+          "independenceKey": "decisionDate+symbol+setup+regime",
+          "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
+          "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumIndependentShadowSamplesForMicro": 6,
+          "minimumIndependentShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "eliteARuntimeSizeMultiplier": 1,
+          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+      },
+      "seedLane": {
+        "eligible": false
+      },
+      "decisionIntelligence": {
+        "decisionScore": 85.09,
+        "rankBeforeOptimization": 11,
+        "eligibleAfterOverlay": false,
+        "eligibleForSeedLane": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 89.7,
+          "patternConfidencePct": 71.7,
+          "historicalSamples": 25,
+          "historicalWinRatePct": 76,
+          "rewardRisk": 2.6,
+          "backtestStatus": "LIMITED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0.17,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "ELITE_RUNTIME_ELIGIBLE",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 85.09,
+      "congressionalIntelligence": {
+        "mode": "SHADOW_DIAGNOSTIC_ONLY",
+        "matched": false,
+        "signal": null,
+        "rankingContribution": 0,
+        "liveInfluenceAllowed": false,
+        "explanation": "No recent matched disclosure in the current public-source cache.",
+        "hardGatesRemainAuthoritative": true
+      },
+      "unifiedSourceEvidence": {
+        "ticker": "NEO",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_MARKET_AND_TECHNICAL",
+            "liveAuthority": "EXISTING_HARD_GATES"
+          },
+          {
+            "provider": "SEC_EDGAR",
+            "role": "FUNDAMENTALS_AND_FILINGS",
+            "available": false,
+            "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "sourceAgreementRule": "Corroboration raises data confidence only; duplicated facts never multiply the trading score.",
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "SWING_POSITION",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "existingHardStopAndRiskRemainAuthoritative": true,
+        "holdingWindow": "DAYS_TO_WEEKS",
+        "profitExit": {
+          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "target1": 24.35,
+          "target2": 27.75
+        },
+        "lossExit": {
+          "method": "EXISTING_PROTECTED_STOP",
+          "level": 16.63
+        },
+        "timeExit": {
+          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+        },
+        "risk": {
+          "overnightGapReviewRequired": true,
+          "unprotectedPositionAllowed": false
+        }
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "STOCK",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact symbol searchable and buyable in the authenticated Robinhood Agentic account",
+          "asset not restricted, halted, closing-only or unsupported",
+          "quantity and order type supported",
+          "non-margin buying power sufficient",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protective exit path is supported"
+        ],
+        "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
+      }
+    },
+    {
+      "rank": 8,
+      "ticker": "HAL",
+      "name": "Halliburton Company",
+      "setupType": "TREND",
+      "tournamentScore": 86.93,
+      "quality": 100,
+      "historicalWinRate": 70,
+      "historicalSamples": 30,
+      "rewardRisk": 2.6,
+      "spreadPct": 0.027,
+      "entry": 37.71,
+      "stop": 34.4,
+      "target1": 42.68,
+      "target2": 46.32,
+      "entryTier": null,
+      "entryTierLabel": null,
+      "fundamentals": null,
+      "corporateActions": null,
+      "recentFilings": [],
+      "fundamentalEligibility": null,
+      "adaptiveLearning": {
+        "matched": [],
+        "priorityScoreDelta": 0,
+        "positiveInfluenceCap": 0,
+        "sizeMultiplier": 1,
+        "blocked": false,
+        "globalSizeCap": 1,
+        "globalBlock": false,
+        "globalReasons": [],
+        "reasons": []
+      },
+      "adaptiveBaseTournamentScore": 86.93,
+      "adaptiveTournamentScore": 86.93,
+      "adaptiveSizeMultiplier": 1,
+      "profitabilityAdmission": {
+        "state": "ELITE_RUNTIME_ELIGIBLE",
+        "sizeMultiplier": 1,
+        "entryTier": "A",
+        "setupType": "TREND",
+        "runtimeRegime": "TRENDING_UP",
+        "historical": {
+          "samples": 30,
+          "winRatePct": 70,
+          "rewardRisk": 2.6
+        },
+        "historicalEvidenceIsDiagnosticOnly": true,
+        "regimeDisabled": false,
+        "contradictoryShadow": false,
+        "negativeRealProbation": false,
+        "shadow": {
+          "scope": "SETUP_FALLBACK",
+          "samples": 2,
+          "winRatePct": 0,
+          "averageR": -1,
+          "realFillSamples": 0,
+          "shadowOnlySamples": 2,
+          "independenceKey": "decisionDate+symbol+setup+regime",
+          "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
+          "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {
+          "minimumIndependentShadowSamplesForMicro": 6,
+          "minimumIndependentShadowSamples": 12,
+          "minimumShadowWinRatePct": 50,
+          "minimumShadowAverageR": 0.15,
+          "eliteARuntimeSizeMultiplier": 1,
+          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumRealSamplesForSuspensionCheck": 8,
+          "minimumRealSamplesForFullAdmission": 15,
+          "minimumRealAverageRForFullAdmission": 0.1
+        },
+        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+      },
+      "seedLane": {
+        "eligible": false
+      },
+      "decisionIntelligence": {
+        "decisionScore": 84.86,
+        "rankBeforeOptimization": 8,
+        "eligibleAfterOverlay": false,
+        "eligibleForSeedLane": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 86.7,
+          "patternConfidencePct": 70,
+          "historicalSamples": 30,
+          "historicalWinRatePct": 70,
+          "rewardRisk": 2.6,
+          "backtestStatus": "SUPPORTED",
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "PASS",
+          "spreadPct": 0.027,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "ELITE_RUNTIME_ELIGIBLE",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 84.86,
+      "congressionalIntelligence": {
+        "mode": "SHADOW_DIAGNOSTIC_ONLY",
+        "matched": false,
+        "signal": null,
+        "rankingContribution": 0,
+        "liveInfluenceAllowed": false,
+        "explanation": "No recent matched disclosure in the current public-source cache.",
+        "hardGatesRemainAuthoritative": true
+      },
+      "unifiedSourceEvidence": {
+        "ticker": "HAL",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_MARKET_AND_TECHNICAL",
+            "liveAuthority": "EXISTING_HARD_GATES"
+          },
+          {
+            "provider": "SEC_EDGAR",
+            "role": "FUNDAMENTALS_AND_FILINGS",
+            "available": false,
+            "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "sourceAgreementRule": "Corroboration raises data confidence only; duplicated facts never multiply the trading score.",
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "SWING_POSITION",
+        "classificationIsAdvisory": true,
+        "mayNotCreateEligibility": true,
+        "existingHardStopAndRiskRemainAuthoritative": true,
+        "holdingWindow": "DAYS_TO_WEEKS",
+        "profitExit": {
+          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "target1": 42.68,
+          "target2": 46.32
+        },
+        "lossExit": {
+          "method": "EXISTING_PROTECTED_STOP",
+          "level": 34.4
+        },
+        "timeExit": {
+          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+        },
+        "risk": {
+          "overnightGapReviewRequired": true,
+          "unprotectedPositionAllowed": false
+        }
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "STOCK",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact symbol searchable and buyable in the authenticated Robinhood Agentic account",
+          "asset not restricted, halted, closing-only or unsupported",
+          "quantity and order type supported",
+          "non-margin buying power sufficient",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protective exit path is supported"
+        ],
+        "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
+      }
+    },
+    {
       "rank": 15,
       "ticker": "VIRT",
       "name": "Virtu Financial, Inc. Class A",
@@ -2562,29 +2140,9 @@
       "target2": 86.83,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 1,
-        "revenueGrowthPct": -14,
-        "latestAnnualNetIncome": 142036000,
-        "latestEquityEstimate": 1487377000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
-      "recentFilings": [
-        {
-          "form": "8-K",
-          "filingDate": "2026-08-21"
-        }
-      ],
+      "fundamentals": null,
+      "corporateActions": null,
+      "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
         "matched": [],
@@ -2605,7 +2163,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 23,
           "winRatePct": 78,
@@ -2708,7 +2266,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -2775,25 +2333,10 @@
       "target2": 28.75,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "STRONG",
-        "coverage": 1,
-        "revenueGrowthPct": 46.4,
-        "latestAnnualNetIncome": 476306000,
-        "latestEquityEstimate": 10518519000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
-      "fundamentalEligibility": true,
+      "fundamentalEligibility": null,
       "adaptiveLearning": {
         "matched": [],
         "priorityScoreDelta": 0,
@@ -2813,7 +2356,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 26,
           "winRatePct": 69,
@@ -2869,10 +2412,12 @@
           "historicalWinRatePct": 69,
           "rewardRisk": 2.6,
           "backtestStatus": "LIMITED",
-          "warnings": []
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
         },
         "screener": {
-          "fundamentals": "PASS",
+          "fundamentals": "UNKNOWN",
           "liquidity": "PASS",
           "spreadPct": 0.042,
           "unknownIsNotAnOverride": true
@@ -2914,7 +2459,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -2981,23 +2526,8 @@
       "target2": 56.91,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 0,
-        "revenueGrowthPct": null,
-        "latestAnnualNetIncome": null,
-        "latestEquityEstimate": null,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
@@ -3019,7 +2549,7 @@
         "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "PULLBACK",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 18,
           "winRatePct": 72,
@@ -3134,7 +2664,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           },
           {
@@ -3208,23 +2738,8 @@
       "target2": 195.69,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 0.6666666666666666,
-        "revenueGrowthPct": 1.4,
-        "latestAnnualNetIncome": 365000000,
-        "latestEquityEstimate": null,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
@@ -3246,7 +2761,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 32,
           "winRatePct": 66,
@@ -3349,7 +2864,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -3416,23 +2931,8 @@
       "target2": 303.88,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 1,
-        "revenueGrowthPct": 4,
-        "latestAnnualNetIncome": 1358000000,
-        "latestEquityEstimate": 6067000000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
@@ -3454,7 +2954,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 27,
           "winRatePct": 70,
@@ -3557,7 +3057,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -3624,29 +3124,9 @@
       "target2": 117.79,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 1,
-        "revenueGrowthPct": -25.6,
-        "latestAnnualNetIncome": 417000000,
-        "latestEquityEstimate": 1283000000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
-      "recentFilings": [
-        {
-          "form": "8-K",
-          "filingDate": "2026-09-01"
-        }
-      ],
+      "fundamentals": null,
+      "corporateActions": null,
+      "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
         "matched": [],
@@ -3667,7 +3147,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 29,
           "winRatePct": 69,
@@ -3770,7 +3250,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -3837,30 +3317,10 @@
       "target2": 19.24,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "WEAK",
-        "coverage": 1,
-        "revenueGrowthPct": 6.8,
-        "latestAnnualNetIncome": -10929000,
-        "latestEquityEstimate": -122090000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
-      "recentFilings": [
-        {
-          "form": "8-K",
-          "filingDate": "2026-08-24"
-        }
-      ],
-      "fundamentalEligibility": false,
+      "fundamentals": null,
+      "corporateActions": null,
+      "recentFilings": [],
+      "fundamentalEligibility": null,
       "adaptiveLearning": {
         "matched": [],
         "priorityScoreDelta": 0,
@@ -3880,7 +3340,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 24,
           "winRatePct": 67,
@@ -3936,10 +3396,12 @@
           "historicalWinRatePct": 67,
           "rewardRisk": 2.6,
           "backtestStatus": "LIMITED",
-          "warnings": []
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
         },
         "screener": {
-          "fundamentals": "FAIL",
+          "fundamentals": "UNKNOWN",
           "liquidity": "PASS",
           "spreadPct": 0.074,
           "unknownIsNotAnOverride": true
@@ -3981,7 +3443,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -4048,23 +3510,8 @@
       "target2": 65.5,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 0,
-        "revenueGrowthPct": null,
-        "latestAnnualNetIncome": null,
-        "latestEquityEstimate": null,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
@@ -4086,7 +3533,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 26,
           "winRatePct": 65,
@@ -4189,7 +3636,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -4256,30 +3703,10 @@
       "target2": 77.27,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "STRONG",
-        "coverage": 1,
-        "revenueGrowthPct": 18,
-        "latestAnnualNetIncome": 4203000000,
-        "latestEquityEstimate": 21372000000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
-      "recentFilings": [
-        {
-          "form": "8-K",
-          "filingDate": "2026-08-31"
-        }
-      ],
-      "fundamentalEligibility": true,
+      "fundamentals": null,
+      "corporateActions": null,
+      "recentFilings": [],
+      "fundamentalEligibility": null,
       "adaptiveLearning": {
         "matched": [],
         "priorityScoreDelta": 0,
@@ -4299,7 +3726,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 29,
           "winRatePct": 62,
@@ -4355,10 +3782,12 @@
           "historicalWinRatePct": 62,
           "rewardRisk": 2.6,
           "backtestStatus": "LIMITED",
-          "warnings": []
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
         },
         "screener": {
-          "fundamentals": "PASS",
+          "fundamentals": "UNKNOWN",
           "liquidity": "PASS",
           "spreadPct": 0.017,
           "unknownIsNotAnOverride": true
@@ -4400,7 +3829,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -4467,25 +3896,10 @@
       "target2": 6.86,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "WEAK",
-        "coverage": 0.6666666666666666,
-        "revenueGrowthPct": null,
-        "latestAnnualNetIncome": -39226000,
-        "latestEquityEstimate": 668500000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
-      "fundamentalEligibility": false,
+      "fundamentalEligibility": null,
       "adaptiveLearning": {
         "matched": [],
         "priorityScoreDelta": 0,
@@ -4505,7 +3919,7 @@
         "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "PULLBACK",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 18,
           "winRatePct": 67,
@@ -4562,10 +3976,12 @@
           "historicalWinRatePct": 67,
           "rewardRisk": 2.64,
           "backtestStatus": "LIMITED",
-          "warnings": []
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
         },
         "screener": {
-          "fundamentals": "FAIL",
+          "fundamentals": "UNKNOWN",
           "liquidity": "PASS",
           "spreadPct": 0.152,
           "unknownIsNotAnOverride": true
@@ -4607,7 +4023,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -4674,23 +4090,8 @@
       "target2": 7.89,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 1,
-        "revenueGrowthPct": 9.8,
-        "latestAnnualNetIncome": -39238000,
-        "latestEquityEstimate": 174307000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
@@ -4712,7 +4113,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 16,
           "winRatePct": 69,
@@ -4815,7 +4216,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -4882,23 +4283,8 @@
       "target2": 17.25,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 0,
-        "revenueGrowthPct": null,
-        "latestAnnualNetIncome": null,
-        "latestEquityEstimate": null,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
@@ -4920,7 +4306,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 23,
           "winRatePct": 65,
@@ -5023,7 +4409,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -5090,23 +4476,8 @@
       "target2": 105.12,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 0,
-        "revenueGrowthPct": null,
-        "latestAnnualNetIncome": null,
-        "latestEquityEstimate": null,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
@@ -5128,7 +4499,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 28,
           "winRatePct": 61,
@@ -5231,7 +4602,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -5298,25 +4669,10 @@
       "target2": 76.87,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "WEAK",
-        "coverage": 0.3333333333333333,
-        "revenueGrowthPct": -6.3,
-        "latestAnnualNetIncome": null,
-        "latestEquityEstimate": null,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
-      "fundamentalEligibility": false,
+      "fundamentalEligibility": null,
       "adaptiveLearning": {
         "matched": [],
         "priorityScoreDelta": 0,
@@ -5336,7 +4692,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 21,
           "winRatePct": 62,
@@ -5392,10 +4748,12 @@
           "historicalWinRatePct": 62,
           "rewardRisk": 2.6,
           "backtestStatus": "LIMITED",
-          "warnings": []
+          "warnings": [
+            "FUNDAMENTALS_UNKNOWN"
+          ]
         },
         "screener": {
-          "fundamentals": "FAIL",
+          "fundamentals": "UNKNOWN",
           "liquidity": "PASS",
           "spreadPct": 0.051,
           "unknownIsNotAnOverride": true
@@ -5437,7 +4795,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -5504,23 +4862,8 @@
       "target2": 40.58,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 0,
-        "revenueGrowthPct": null,
-        "latestAnnualNetIncome": null,
-        "latestEquityEstimate": null,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
@@ -5542,7 +4885,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 21,
           "winRatePct": 62,
@@ -5645,7 +4988,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -5712,29 +5055,9 @@
       "target2": 7.24,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 0.6666666666666666,
-        "revenueGrowthPct": 10,
-        "latestAnnualNetIncome": -954000000,
-        "latestEquityEstimate": null,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
-      "recentFilings": [
-        {
-          "form": "8-K",
-          "filingDate": "2026-08-20"
-        }
-      ],
+      "fundamentals": null,
+      "corporateActions": null,
+      "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
         "matched": [],
@@ -5755,7 +5078,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 28,
           "winRatePct": 61,
@@ -5858,7 +5181,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -5925,23 +5248,8 @@
       "target2": 154.5,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 1,
-        "revenueGrowthPct": 37.3,
-        "latestAnnualNetIncome": -541000000,
-        "latestEquityEstimate": 7972000000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
@@ -5963,7 +5271,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 18,
           "winRatePct": 61,
@@ -6077,7 +5385,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           },
           {
@@ -6151,23 +5459,8 @@
       "target2": 362.46,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 1,
-        "revenueGrowthPct": -40.6,
-        "latestAnnualNetIncome": 9881000000,
-        "latestEquityEstimate": 10060000000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
@@ -6189,7 +5482,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 18,
           "winRatePct": 61,
@@ -6303,7 +5596,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           },
           {
@@ -6377,23 +5670,8 @@
       "target2": 74.12,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 0.6666666666666666,
-        "revenueGrowthPct": -11.9,
-        "latestAnnualNetIncome": 846074000,
-        "latestEquityEstimate": null,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
@@ -6415,7 +5693,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 18,
           "winRatePct": 61,
@@ -6518,7 +5796,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -6585,23 +5863,8 @@
       "target2": 48.05,
       "entryTier": null,
       "entryTierLabel": null,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 0.6666666666666666,
-        "revenueGrowthPct": -29.3,
-        "latestAnnualNetIncome": 818000000,
-        "latestEquityEstimate": null,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
+      "fundamentals": null,
+      "corporateActions": null,
       "recentFilings": [],
       "fundamentalEligibility": null,
       "adaptiveLearning": {
@@ -6623,7 +5886,7 @@
         "sizeMultiplier": 1,
         "entryTier": "A",
         "setupType": "TREND",
-        "runtimeRegime": "TRENDING_DOWN",
+        "runtimeRegime": "TRENDING_UP",
         "historical": {
           "samples": 21,
           "winRatePct": 62,
@@ -6726,7 +5989,7 @@
           {
             "provider": "SEC_EDGAR",
             "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
+            "available": false,
             "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
           }
         ],
@@ -6775,867 +6038,6 @@
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
       }
-    },
-    {
-      "queueRank": 1,
-      "ticker": "BNS",
-      "action": "AUTO_BUY_ELIGIBLE",
-      "queueRole": "PRIMARY",
-      "entryTier": "B",
-      "entryTierLabel": "BEST_ACCEPTABLE",
-      "entryTierSizeMultiplier": 0.25,
-      "tournamentScore": 56.5,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "setupType": null,
-      "historicalWinRate": 93,
-      "historicalSamples": 27,
-      "minimumEntry": 91.3,
-      "maximumEntry": 93.13,
-      "stop": 88.64,
-      "target1": 95.29,
-      "target2": 98.22,
-      "fundamentals": {
-        "label": "MIXED",
-        "coverage": 0,
-        "revenueGrowthPct": null,
-        "latestAnnualNetIncome": null,
-        "latestEquityEstimate": null,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
-      "recentFilings": [],
-      "fundamentalEligibility": null,
-      "adaptiveLearning": {
-        "matched": [],
-        "priorityScoreDelta": 0,
-        "positiveInfluenceCap": 0,
-        "sizeMultiplier": 1,
-        "blocked": false,
-        "globalSizeCap": 1,
-        "globalBlock": false,
-        "globalReasons": [],
-        "reasons": []
-      },
-      "adaptiveBaseTournamentScore": 56.5,
-      "adaptiveTournamentScore": 56.5,
-      "adaptiveSizeMultiplier": 0.25,
-      "adaptiveOriginalQueueRank": 1,
-      "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
-        "entryTier": "B",
-        "setupType": "STOCK_TREND",
-        "runtimeRegime": "TRENDING_DOWN",
-        "historical": {
-          "samples": 27,
-          "winRatePct": 93,
-          "rewardRisk": 2.6
-        },
-        "historicalEvidenceIsDiagnosticOnly": true,
-        "regimeDisabled": false,
-        "contradictoryShadow": false,
-        "negativeRealProbation": false,
-        "shadow": {
-          "scope": "SETUP_FALLBACK",
-          "samples": 0,
-          "winRatePct": null,
-          "averageR": null,
-          "realFillSamples": 0,
-          "shadowOnlySamples": 0,
-          "independenceKey": "decisionDate+symbol+setup+regime",
-          "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
-          "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
-        },
-        "real": {
-          "samples": 0,
-          "winRatePct": null,
-          "averageRealizedR": null
-        },
-        "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
-          "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
-          "minimumRealSamplesForSuspensionCheck": 8,
-          "minimumRealSamplesForFullAdmission": 15,
-          "minimumRealAverageRForFullAdmission": 0.1
-        },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
-      },
-      "seedLane": {
-        "eligible": false
-      },
-      "decisionIntelligence": {
-        "decisionScore": 67.15,
-        "rankBeforeOptimization": 1,
-        "eligibleAfterOverlay": true,
-        "eligibleForSeedLane": false,
-        "upstreamActionAllowed": true,
-        "setupDiagnostics": {
-          "setupType": "STOCK_TREND",
-          "technicalScore": 94.2,
-          "patternConfidencePct": 88.7,
-          "historicalSamples": 27,
-          "historicalWinRatePct": 93,
-          "rewardRisk": 2.6,
-          "backtestStatus": "LIMITED",
-          "warnings": [
-            "FUNDAMENTALS_UNKNOWN",
-            "LIQUIDITY_UNKNOWN"
-          ]
-        },
-        "screener": {
-          "fundamentals": "UNKNOWN",
-          "liquidity": "UNKNOWN",
-          "spreadPct": null,
-          "unknownIsNotAnOverride": true
-        },
-        "opportunityDecay": {
-          "scanAgeMinutes": 0,
-          "halfLifeMinutes": 15,
-          "entryProximity": 1,
-          "freshnessMultiplier": 1,
-          "combinedMultiplier": 1,
-          "expired": false
-        },
-        "portfolioOptimization": {
-          "maxCorrelationToHigherRanked": 0,
-          "penalty": 0,
-          "hardGateStillRequired": true
-        },
-        "admissionState": "BEST_ACCEPTABLE_MICRO",
-        "hardGatesRemainAuthoritative": true
-      },
-      "decisionScore": 67.15,
-      "decisionRank": 1,
-      "congressionalIntelligence": {
-        "mode": "SHADOW_DIAGNOSTIC_ONLY",
-        "matched": false,
-        "signal": null,
-        "rankingContribution": 0,
-        "liveInfluenceAllowed": false,
-        "explanation": "No recent matched disclosure in the current public-source cache.",
-        "hardGatesRemainAuthoritative": true
-      },
-      "unifiedSourceEvidence": {
-        "ticker": "BNS",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_MARKET_AND_TECHNICAL",
-            "liveAuthority": "EXISTING_HARD_GATES"
-          },
-          {
-            "provider": "SEC_EDGAR",
-            "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
-            "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "sourceAgreementRule": "Corroboration raises data confidence only; duplicated facts never multiply the trading score.",
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
-        "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
-          "target1": 95.29,
-          "target2": 98.22
-        },
-        "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 88.64
-        },
-        "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
-        },
-        "risk": {
-          "overnightGapReviewRequired": true,
-          "unprotectedPositionAllowed": false
-        }
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_TRADING_MCP",
-        "assetClass": "STOCK",
-        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
-        "requirements": [
-          "exact symbol searchable and buyable in the authenticated Robinhood Agentic account",
-          "asset not restricted, halted, closing-only or unsupported",
-          "quantity and order type supported",
-          "non-margin buying power sufficient",
-          "current quote remains inside Teststock no-chase limits",
-          "no duplicate or conflicting open order exists",
-          "required protective exit path is supported"
-        ],
-        "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
-    },
-    {
-      "queueRank": 2,
-      "ticker": "CLMT",
-      "action": "WAIT_FOR_TRIGGER",
-      "queueRole": "PRIMARY",
-      "entryTier": "B",
-      "entryTierLabel": "BEST_ACCEPTABLE",
-      "entryTierSizeMultiplier": 0.25,
-      "tournamentScore": 54.1,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "setupType": null,
-      "historicalWinRate": 77,
-      "historicalSamples": 35,
-      "minimumEntry": 51.34,
-      "maximumEntry": 52.37,
-      "stop": 46.93,
-      "target1": 57.96,
-      "target2": 62.81,
-      "fundamentals": {
-        "label": "WEAK",
-        "coverage": 1,
-        "revenueGrowthPct": -10.8,
-        "latestAnnualNetIncome": 48100000,
-        "latestEquityEstimate": -466300000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
-      "recentFilings": [],
-      "fundamentalEligibility": false,
-      "adaptiveLearning": {
-        "matched": [],
-        "priorityScoreDelta": 0,
-        "positiveInfluenceCap": 0,
-        "sizeMultiplier": 1,
-        "blocked": false,
-        "globalSizeCap": 1,
-        "globalBlock": false,
-        "globalReasons": [],
-        "reasons": []
-      },
-      "adaptiveBaseTournamentScore": 54.1,
-      "adaptiveTournamentScore": 54.1,
-      "adaptiveSizeMultiplier": 0.25,
-      "adaptiveOriginalQueueRank": 3,
-      "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
-        "entryTier": "B",
-        "setupType": "STOCK_TREND",
-        "runtimeRegime": "TRENDING_DOWN",
-        "historical": {
-          "samples": 35,
-          "winRatePct": 77,
-          "rewardRisk": 2.6
-        },
-        "historicalEvidenceIsDiagnosticOnly": true,
-        "regimeDisabled": false,
-        "contradictoryShadow": false,
-        "negativeRealProbation": false,
-        "shadow": {
-          "scope": "SETUP_FALLBACK",
-          "samples": 0,
-          "winRatePct": null,
-          "averageR": null,
-          "realFillSamples": 0,
-          "shadowOnlySamples": 0,
-          "independenceKey": "decisionDate+symbol+setup+regime",
-          "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
-          "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
-        },
-        "real": {
-          "samples": 0,
-          "winRatePct": null,
-          "averageRealizedR": null
-        },
-        "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
-          "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
-          "minimumRealSamplesForSuspensionCheck": 8,
-          "minimumRealSamplesForFullAdmission": 15,
-          "minimumRealAverageRForFullAdmission": 0.1
-        },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
-      },
-      "seedLane": {
-        "eligible": false
-      },
-      "decisionIntelligence": {
-        "decisionScore": 63.35,
-        "rankBeforeOptimization": 2,
-        "eligibleAfterOverlay": true,
-        "eligibleForSeedLane": false,
-        "upstreamActionAllowed": true,
-        "setupDiagnostics": {
-          "setupType": "STOCK_TREND",
-          "technicalScore": 90.2,
-          "patternConfidencePct": 77,
-          "historicalSamples": 35,
-          "historicalWinRatePct": 77,
-          "rewardRisk": 2.6,
-          "backtestStatus": "SUPPORTED",
-          "warnings": [
-            "LIQUIDITY_UNKNOWN"
-          ]
-        },
-        "screener": {
-          "fundamentals": "FAIL",
-          "liquidity": "UNKNOWN",
-          "spreadPct": null,
-          "unknownIsNotAnOverride": true
-        },
-        "opportunityDecay": {
-          "scanAgeMinutes": 0,
-          "halfLifeMinutes": 15,
-          "entryProximity": 0.78,
-          "freshnessMultiplier": 1,
-          "combinedMultiplier": 0.912,
-          "expired": false
-        },
-        "portfolioOptimization": {
-          "maxCorrelationToHigherRanked": 0,
-          "penalty": 0,
-          "hardGateStillRequired": true
-        },
-        "admissionState": "BEST_ACCEPTABLE_MICRO",
-        "hardGatesRemainAuthoritative": true
-      },
-      "decisionScore": 63.35,
-      "decisionRank": 2,
-      "congressionalIntelligence": {
-        "mode": "SHADOW_DIAGNOSTIC_ONLY",
-        "matched": false,
-        "signal": null,
-        "rankingContribution": 0,
-        "liveInfluenceAllowed": false,
-        "explanation": "No recent matched disclosure in the current public-source cache.",
-        "hardGatesRemainAuthoritative": true
-      },
-      "unifiedSourceEvidence": {
-        "ticker": "CLMT",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_MARKET_AND_TECHNICAL",
-            "liveAuthority": "EXISTING_HARD_GATES"
-          },
-          {
-            "provider": "SEC_EDGAR",
-            "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
-            "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "sourceAgreementRule": "Corroboration raises data confidence only; duplicated facts never multiply the trading score.",
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
-        "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
-          "target1": 57.96,
-          "target2": 62.81
-        },
-        "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 46.93
-        },
-        "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
-        },
-        "risk": {
-          "overnightGapReviewRequired": true,
-          "unprotectedPositionAllowed": false
-        }
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_TRADING_MCP",
-        "assetClass": "STOCK",
-        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
-        "requirements": [
-          "exact symbol searchable and buyable in the authenticated Robinhood Agentic account",
-          "asset not restricted, halted, closing-only or unsupported",
-          "quantity and order type supported",
-          "non-margin buying power sufficient",
-          "current quote remains inside Teststock no-chase limits",
-          "no duplicate or conflicting open order exists",
-          "required protective exit path is supported"
-        ],
-        "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
-    },
-    {
-      "queueRank": 3,
-      "ticker": "NEO",
-      "action": "WAIT_FOR_TRIGGER",
-      "queueRole": "RESERVE",
-      "entryTier": "B",
-      "entryTierLabel": "BEST_ACCEPTABLE",
-      "entryTierSizeMultiplier": 0.25,
-      "tournamentScore": 52.9,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "setupType": null,
-      "historicalWinRate": 76,
-      "historicalSamples": 25,
-      "minimumEntry": 19.72,
-      "maximumEntry": 20.11,
-      "stop": 16.63,
-      "target1": 24.35,
-      "target2": 27.75,
-      "fundamentals": {
-        "label": "WEAK",
-        "coverage": 0.6666666666666666,
-        "revenueGrowthPct": null,
-        "latestAnnualNetIncome": -87968000,
-        "latestEquityEstimate": 902339000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
-      "recentFilings": [],
-      "fundamentalEligibility": false,
-      "adaptiveLearning": {
-        "matched": [],
-        "priorityScoreDelta": 0,
-        "positiveInfluenceCap": 0,
-        "sizeMultiplier": 1,
-        "blocked": false,
-        "globalSizeCap": 1,
-        "globalBlock": false,
-        "globalReasons": [],
-        "reasons": []
-      },
-      "adaptiveBaseTournamentScore": 52.9,
-      "adaptiveTournamentScore": 52.9,
-      "adaptiveSizeMultiplier": 0.25,
-      "adaptiveOriginalQueueRank": 4,
-      "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
-        "entryTier": "B",
-        "setupType": "STOCK_TREND",
-        "runtimeRegime": "TRENDING_DOWN",
-        "historical": {
-          "samples": 25,
-          "winRatePct": 76,
-          "rewardRisk": 2.6
-        },
-        "historicalEvidenceIsDiagnosticOnly": true,
-        "regimeDisabled": false,
-        "contradictoryShadow": false,
-        "negativeRealProbation": false,
-        "shadow": {
-          "scope": "SETUP_FALLBACK",
-          "samples": 0,
-          "winRatePct": null,
-          "averageR": null,
-          "realFillSamples": 0,
-          "shadowOnlySamples": 0,
-          "independenceKey": "decisionDate+symbol+setup+regime",
-          "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
-          "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
-        },
-        "real": {
-          "samples": 0,
-          "winRatePct": null,
-          "averageRealizedR": null
-        },
-        "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
-          "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
-          "minimumRealSamplesForSuspensionCheck": 8,
-          "minimumRealSamplesForFullAdmission": 15,
-          "minimumRealAverageRForFullAdmission": 0.1
-        },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
-      },
-      "seedLane": {
-        "eligible": false
-      },
-      "decisionIntelligence": {
-        "decisionScore": 61.78,
-        "rankBeforeOptimization": 3,
-        "eligibleAfterOverlay": true,
-        "eligibleForSeedLane": false,
-        "upstreamActionAllowed": true,
-        "setupDiagnostics": {
-          "setupType": "STOCK_TREND",
-          "technicalScore": 89.7,
-          "patternConfidencePct": 71.7,
-          "historicalSamples": 25,
-          "historicalWinRatePct": 76,
-          "rewardRisk": 2.6,
-          "backtestStatus": "LIMITED",
-          "warnings": [
-            "LIQUIDITY_UNKNOWN"
-          ]
-        },
-        "screener": {
-          "fundamentals": "FAIL",
-          "liquidity": "UNKNOWN",
-          "spreadPct": null,
-          "unknownIsNotAnOverride": true
-        },
-        "opportunityDecay": {
-          "scanAgeMinutes": 0,
-          "halfLifeMinutes": 15,
-          "entryProximity": 0,
-          "freshnessMultiplier": 1,
-          "combinedMultiplier": 0.6,
-          "expired": false
-        },
-        "portfolioOptimization": {
-          "maxCorrelationToHigherRanked": 0.052,
-          "penalty": 0,
-          "hardGateStillRequired": true
-        },
-        "admissionState": "BEST_ACCEPTABLE_MICRO",
-        "hardGatesRemainAuthoritative": true
-      },
-      "decisionScore": 61.78,
-      "decisionRank": 3,
-      "congressionalIntelligence": {
-        "mode": "SHADOW_DIAGNOSTIC_ONLY",
-        "matched": false,
-        "signal": null,
-        "rankingContribution": 0,
-        "liveInfluenceAllowed": false,
-        "explanation": "No recent matched disclosure in the current public-source cache.",
-        "hardGatesRemainAuthoritative": true
-      },
-      "unifiedSourceEvidence": {
-        "ticker": "NEO",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_MARKET_AND_TECHNICAL",
-            "liveAuthority": "EXISTING_HARD_GATES"
-          },
-          {
-            "provider": "SEC_EDGAR",
-            "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
-            "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "sourceAgreementRule": "Corroboration raises data confidence only; duplicated facts never multiply the trading score.",
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
-        "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
-          "target1": 24.35,
-          "target2": 27.75
-        },
-        "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 16.63
-        },
-        "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
-        },
-        "risk": {
-          "overnightGapReviewRequired": true,
-          "unprotectedPositionAllowed": false
-        }
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_TRADING_MCP",
-        "assetClass": "STOCK",
-        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
-        "requirements": [
-          "exact symbol searchable and buyable in the authenticated Robinhood Agentic account",
-          "asset not restricted, halted, closing-only or unsupported",
-          "quantity and order type supported",
-          "non-margin buying power sufficient",
-          "current quote remains inside Teststock no-chase limits",
-          "no duplicate or conflicting open order exists",
-          "required protective exit path is supported"
-        ],
-        "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
-    },
-    {
-      "queueRank": 4,
-      "ticker": "HAL",
-      "action": "WAIT_FOR_TRIGGER",
-      "queueRole": "PRIMARY",
-      "entryTier": "B",
-      "entryTierLabel": "BEST_ACCEPTABLE",
-      "entryTierSizeMultiplier": 0.25,
-      "tournamentScore": 52.2,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "setupType": null,
-      "historicalWinRate": 70,
-      "historicalSamples": 30,
-      "minimumEntry": 37.71,
-      "maximumEntry": 38.46,
-      "stop": 34.4,
-      "target1": 42.68,
-      "target2": 46.32,
-      "fundamentals": {
-        "label": "STRONG",
-        "coverage": 1,
-        "revenueGrowthPct": 19.8,
-        "latestAnnualNetIncome": 2638000000,
-        "latestEquityEstimate": 10548000000,
-        "source": "SEC_COMPANYFACTS",
-        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
-      },
-      "corporateActions": {
-        "risk": "CLEAR",
-        "windowStart": "2026-08-18",
-        "windowEnd": "2026-10-16",
-        "events": [],
-        "source": "ALPACA_CORPORATE_ACTIONS",
-        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
-      },
-      "recentFilings": [],
-      "fundamentalEligibility": true,
-      "adaptiveLearning": {
-        "matched": [],
-        "priorityScoreDelta": 0,
-        "positiveInfluenceCap": 0,
-        "sizeMultiplier": 1,
-        "blocked": false,
-        "globalSizeCap": 1,
-        "globalBlock": false,
-        "globalReasons": [],
-        "reasons": []
-      },
-      "adaptiveBaseTournamentScore": 52.2,
-      "adaptiveTournamentScore": 52.2,
-      "adaptiveSizeMultiplier": 0.25,
-      "adaptiveOriginalQueueRank": 2,
-      "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
-        "entryTier": "B",
-        "setupType": "STOCK_TREND",
-        "runtimeRegime": "TRENDING_DOWN",
-        "historical": {
-          "samples": 30,
-          "winRatePct": 70,
-          "rewardRisk": 2.6
-        },
-        "historicalEvidenceIsDiagnosticOnly": true,
-        "regimeDisabled": false,
-        "contradictoryShadow": false,
-        "negativeRealProbation": false,
-        "shadow": {
-          "scope": "SETUP_FALLBACK",
-          "samples": 0,
-          "winRatePct": null,
-          "averageR": null,
-          "realFillSamples": 0,
-          "shadowOnlySamples": 0,
-          "independenceKey": "decisionDate+symbol+setup+regime",
-          "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
-          "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
-        },
-        "real": {
-          "samples": 0,
-          "winRatePct": null,
-          "averageRealizedR": null
-        },
-        "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
-          "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
-          "minimumRealSamplesForSuspensionCheck": 8,
-          "minimumRealSamplesForFullAdmission": 15,
-          "minimumRealAverageRForFullAdmission": 0.1
-        },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
-      },
-      "seedLane": {
-        "eligible": false
-      },
-      "decisionIntelligence": {
-        "decisionScore": 60.55,
-        "rankBeforeOptimization": 4,
-        "eligibleAfterOverlay": true,
-        "eligibleForSeedLane": false,
-        "upstreamActionAllowed": true,
-        "setupDiagnostics": {
-          "setupType": "STOCK_TREND",
-          "technicalScore": 86.7,
-          "patternConfidencePct": 70,
-          "historicalSamples": 30,
-          "historicalWinRatePct": 70,
-          "rewardRisk": 2.6,
-          "backtestStatus": "SUPPORTED",
-          "warnings": [
-            "LIQUIDITY_UNKNOWN"
-          ]
-        },
-        "screener": {
-          "fundamentals": "PASS",
-          "liquidity": "UNKNOWN",
-          "spreadPct": null,
-          "unknownIsNotAnOverride": true
-        },
-        "opportunityDecay": {
-          "scanAgeMinutes": 0,
-          "halfLifeMinutes": 15,
-          "entryProximity": 0.653,
-          "freshnessMultiplier": 1,
-          "combinedMultiplier": 0.861,
-          "expired": false
-        },
-        "portfolioOptimization": {
-          "maxCorrelationToHigherRanked": 0.316,
-          "penalty": 0,
-          "hardGateStillRequired": true
-        },
-        "admissionState": "BEST_ACCEPTABLE_MICRO",
-        "hardGatesRemainAuthoritative": true
-      },
-      "decisionScore": 60.55,
-      "decisionRank": 4,
-      "congressionalIntelligence": {
-        "mode": "SHADOW_DIAGNOSTIC_ONLY",
-        "matched": false,
-        "signal": null,
-        "rankingContribution": 0,
-        "liveInfluenceAllowed": false,
-        "explanation": "No recent matched disclosure in the current public-source cache.",
-        "hardGatesRemainAuthoritative": true
-      },
-      "unifiedSourceEvidence": {
-        "ticker": "HAL",
-        "sources": [
-          {
-            "provider": "ALPACA",
-            "role": "PRIMARY_MARKET_AND_TECHNICAL",
-            "liveAuthority": "EXISTING_HARD_GATES"
-          },
-          {
-            "provider": "SEC_EDGAR",
-            "role": "FUNDAMENTALS_AND_FILINGS",
-            "available": true,
-            "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
-          }
-        ],
-        "alternativeDataContribution": 0,
-        "sourceAgreementRule": "Corroboration raises data confidence only; duplicated facts never multiply the trading score.",
-        "hardGatesRemainAuthoritative": true
-      },
-      "timeHorizonPolicy": {
-        "classification": "LONG_TERM",
-        "classificationIsAdvisory": true,
-        "mayNotCreateEligibility": true,
-        "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "QUARTERS_TO_YEARS",
-        "entryEvidence": [
-          "strong covered SEC fundamentals",
-          "durable thesis recorded",
-          "valuation and concentration reviewed"
-        ],
-        "profitExit": {
-          "method": "VALUATION_THESIS_AND_GOAL_REVIEW",
-          "rules": [
-            "Trim when valuation becomes unsupported versus history, growth and peers.",
-            "Rebalance before one position breaches the existing concentration cap.",
-            "Allow gradual goal-based sales when the user defines a life milestone."
-          ]
-        },
-        "lossExit": {
-          "method": "THESIS_INVALIDATION_AND_CAPITAL_PROTECTION",
-          "rules": [
-            "Review material loss of competitive position, repeated negative revenue trend, balance-sheet deterioration and governance/event risk.",
-            "Do not use an unbounded market stop. Use alerts, approved stop-limit/protection, or manual review consistent with existing hard maximum-risk rules."
-          ]
-        },
-        "timeExit": {
-          "rule": "Quarterly review and after every material filing or thesis event."
-        },
-        "risk": {
-          "marketStopDefault": false,
-          "unprotectedPositionAllowed": false,
-          "concentrationCapMayNotIncrease": true
-        }
-      },
-      "brokerEligibility": {
-        "broker": "ROBINHOOD_TRADING_MCP",
-        "assetClass": "STOCK",
-        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
-        "researchEligible": true,
-        "liveOrderAllowed": false,
-        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
-        "requirements": [
-          "exact symbol searchable and buyable in the authenticated Robinhood Agentic account",
-          "asset not restricted, halted, closing-only or unsupported",
-          "quantity and order type supported",
-          "non-margin buying power sufficient",
-          "current quote remains inside Teststock no-chase limits",
-          "no duplicate or conflicting open order exists",
-          "required protective exit path is supported"
-        ],
-        "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
     }
   ],
   "adaptiveLearning": {
@@ -7646,7 +6048,7 @@
     "performanceState": "INSUFFICIENT_DATA",
     "source": "docs/data/adaptive-performance.json",
     "selfLearningStateSource": "docs/data/self-learning-state.json",
-    "currentRegime": "TRENDING_DOWN",
+    "currentRegime": "TRENDING_UP",
     "resolvedRealStockTrades": 0,
     "positiveInfluenceCap": 0,
     "dimensionTrust": {
