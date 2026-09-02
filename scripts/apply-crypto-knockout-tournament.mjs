@@ -8,7 +8,11 @@ const signal=await read(SIGNAL);
 const universe=await read(UNIVERSE);
 const ranked=(Array.isArray(universe.ranked)?universe.ranked:[]).filter(x=>String(x.symbol||'').endsWith('/USD'));
 const candidates=ranked.map((x,i)=>({rank:i+1,ticker:x.symbol,grade:x.setupGrade||'NO_TRADE',growthQuality:x.growthQuality??null,score:x.score??null,historicalWinRate:x.validation?.winRate??null,historicalSamples:x.validation?.samples??null,rewardRisk:x.rewardRisk2??x.rewardRisk1??null,confirm4h:Boolean(x.confirm4h),rsi4h:x.rsi4h??null,vwap4h:x.vwap4h??null,pullbackToSupportOrVwap:Boolean(x.pullbackToSupportOrVwap),momentumTurnedUp:Boolean(x.momentumTurnedUp),volumeConfirm:Boolean(x.volumeConfirm),btcTrendSupport:x.btcTrendSupport??null,dollarVolume20d:x.dollarVolume20d??null,dollarVolume24hReal:x.dollarVolume24hReal??null,entry:x.entry??null,stop:x.stop??null,target1:x.target1??null,target2:x.target2??null,robinhoodTradable:x.robinhoodTradable??null}));
-const qualified=candidates.filter(x=>x.grade==='A+'||x.grade==='A');
+// policy.btcContextRequiredForAltcoins below documents this gate but never
+// actually enforced it - every A/A+ candidate became "qualified" here
+// regardless of BTC trend, even on a day apply-probability-first-guards.mjs
+// had already forced the real crypto-plan to CASH over that same gate.
+const qualified=candidates.filter(x=>(x.grade==='A+'||x.grade==='A')&&(x.ticker==='BTC/USD'||x.btcTrendSupport===true));
 const champion=qualified[0]||null;
 const brokerExecution={
   status:'CLAUDE_ROBINHOOD_TRADING_MCP',
