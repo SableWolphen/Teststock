@@ -71,9 +71,18 @@ for(const budget of budgets){
   await write(file,plan);
 }
 
+// crypto-plan-*.json only ever carries its own top-10-by-score `ranked` slice,
+// which frequently omits BTC/USD entirely (it is the market's low-volatility
+// anchor, not usually a top opportunity) - looking for BTC there made the
+// bitcoin-context gate silently fail closed on most runs, blocking every
+// altcoin even when BTC's own trend was positive. crypto-universe.json's
+// top-level btcTrendSupport is computed once from BTC's own data regardless
+// of its opportunity ranking, so use that instead.
+const cryptoUniverse=await read(path.join(dataDir,'crypto-universe.json'));
+const btcPositive=cryptoUniverse?.btcTrendSupport===true;
 for(const budget of budgets){
   const file=path.join(dataDir,`crypto-plan-${budget}.json`),plan=await read(file);if(!plan||plan.error)continue;
-  const btc=(plan.ranked||[]).find(x=>x.symbol==='BTC/USD'),btcPositive=!!btc&&Number(btc.m20||0)>0&&Number(btc.price||0)>Number(btc.ma50||Infinity),original=Array.isArray(plan.allocations)?plan.allocations:[],final=[];
+  const original=Array.isArray(plan.allocations)?plan.allocations:[],final=[];
   for(const row of original){
     const samples=Number(row.validation?.samples||0),win=Number(row.validation?.winRate||0),avgMove=Number(row.validation?.avg20dMove||0),grade=row.setupGrade;
     const checks={samples:samples>=policy.crypto.minimumHistoricalSamples,winRate:grade==='A+'?win>=policy.crypto.aPlusMinWinRatePct:win>=policy.crypto.aMinWinRatePct,positiveHistoricalMove:!policy.crypto.requirePositiveHistoricalAverageMove||avgMove>0,bitcoinContext:row.symbol==='BTC/USD'||!policy.crypto.altcoinsRequirePositiveBitcoinTrend||btcPositive};if(!Object.values(checks).every(Boolean))continue;
