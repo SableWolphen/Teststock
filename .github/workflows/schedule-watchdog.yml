@@ -1,0 +1,82 @@
+name: Teststock scheduling watchdog
+
+# static-scan.yml, fast-opportunity-refresh.yml and trigger-monitor.yml each
+# carry their own `schedule:` cron, but GitHub's own schedule-event delivery
+# for a repository can silently go quiet for hours at a time - documented,
+# platform-side behavior that no workflow file can prevent on its own. On
+# 2026-09-02 all three went dark together from roughly 09:30 to 13:00 UTC
+# even though each has a distinct cron, while manual workflow_dispatch kept
+# working the entire time. This watchdog runs on its own independently
+# offset schedule and, whenever published data has gone stale, manually
+# re-dispatches whichever core workflow should have refreshed it. It never
+# calls the broker - it only re-fires the existing research/monitor
+# workflows, which stay the sole path to any execution decision.
+
+on:
+  schedule:
+    - cron: '4,19,34,49 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: teststock-watchdog
+  cancel-in-progress: false
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Re-dispatch static-scan.yml if published signal data has gone stale
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          generated_at=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('docs/signal.json','utf8')).generatedAt||'')}catch{console.log('')}")
+          if [ -z "$generated_at" ]; then
+            echo "No generatedAt in docs/signal.json; skipping"
+            exit 0
+          fi
+          age_min=$(node -e "console.log(Math.max(0, Math.round((Date.now()-Date.parse('$generated_at'))/60000)))")
+          echo "docs/signal.json is ${age_min} minutes old"
+          if [ "$age_min" -lt 20 ]; then
+            echo "Fresh enough; nothing to do"
+            exit 0
+          fi
+          if gh run list --workflow static-scan.yml --limit 10 --json status | jq -e 'any(.[]; .status=="queued" or .status=="in_progress")' >/dev/null; then
+            echo "A static-scan run is already queued or in progress; not duplicating it"
+            exit 0
+          fi
+          echo "Stale and nothing in flight; re-dispatching static-scan.yml"
+          gh workflow run static-scan.yml --ref main
+
+      - name: Re-dispatch trigger-monitor.yml if the trigger board has gone stale
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          published_at=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('docs/data/trigger-board.json','utf8')).publishedAt||'')}catch{console.log('')}")
+          if [ -z "$published_at" ]; then
+            echo "No publishedAt in docs/data/trigger-board.json; skipping"
+            exit 0
+          fi
+          age_min=$(node -e "console.log(Math.max(0, Math.round((Date.now()-Date.parse('$published_at'))/60000)))")
+          echo "docs/data/trigger-board.json is ${age_min} minutes old"
+          if [ "$age_min" -lt 15 ]; then
+            echo "Fresh enough; nothing to do"
+            exit 0
+          fi
+          if gh run list --workflow trigger-monitor.yml --limit 10 --json status | jq -e 'any(.[]; .status=="queued" or .status=="in_progress")' >/dev/null; then
+            echo "A trigger-monitor run is already queued or in progress; not duplicating it"
+            exit 0
+          fi
+          echo "Stale and nothing in flight; re-dispatching trigger-monitor.yml"
+          gh workflow run trigger-monitor.yml --ref main
