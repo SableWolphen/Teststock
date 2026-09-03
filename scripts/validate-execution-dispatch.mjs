@@ -51,6 +51,6 @@ if(dispatch.pendingAction?.trigger==='BUY_TRIGGER'&&automaticStockCandidates.len
 const seeds=dispatch.seedLaneCandidates||[];
 if(seeds.some(x=>!((x.assetClass==='STOCK'&&x.trigger==='SEED_LANE_BUY_TRIGGER')||(x.assetClass==='CRYPTO'&&x.trigger==='CRYPTO_SEED_LANE_BUY_TRIGGER')))) fail('invalid seed-lane candidate');
 if(seeds.some(x=>x.requiresPerOrderApproval!==false)) fail('seed-lane approval must be disabled in automatic mode');
-if(seeds.some(x=>Number(x.maxOrderUsd)!==5||x.existingRobinhoodCashOnly!==true||x.agentMayInitiateDeposits!==false||x.agentMayInitiateBankTransfers!==false||x.marginAllowed!==false||x.requiresBrokerResidentStop!==true)) fail('seed-lane funding or protection bounds');
+if(seeds.some(x=>Number(x.maxOrderUsd)!==20||x.existingRobinhoodCashOnly!==true||x.agentMayInitiateDeposits!==false||x.agentMayInitiateBankTransfers!==false||x.marginAllowed!==false||x.requiresBrokerResidentStop!==true)) fail('seed-lane funding or protection bounds');
 
 console.log(`Execution dispatch valid: ${dispatch.claudeShouldRun?'actionable':'idle'}; automatic stock candidates ${automaticStockCandidates.length}; seed candidates ${seeds.length}; max new buys ${max}.`);

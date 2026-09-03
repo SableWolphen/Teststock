@@ -55,7 +55,7 @@ for(const [i,x] of stockCandidates.entries()){
     else if(!signalFresh){status='REFRESHING_SIGNAL';reason='Current research generation is being refreshed. This candidate is display-only until a fresh generation arrives; no buy trigger may fire from aged research.';}
     else if(!(p>0)){status='PRICE_UNAVAILABLE';reason='Latest Alpaca stock price unavailable.';}
     else if(p>max){status='DO_NOT_CHASE';reason='Price is above maximumEntry.';}
-    else if(p>=min&&p<=max){status='SEED_LANE_BUY_TRIGGER';reason=`Automatic stock learning candidate is inside its buy zone. Capped at $${Number(x.seedLane?.maxOrderUsd||5)} using existing Robinhood cash only; every live guard and required protection still applies.`;}
+    else if(p>=min&&p<=max){status='SEED_LANE_BUY_TRIGGER';reason=`Automatic stock learning candidate is inside its buy zone. Capped at $${Number(x.seedLane?.maxOrderUsd||20)} using existing Robinhood cash only; every live guard and required protection still applies.`;}
   }
   else if(!admissionOk){status='BLOCKED_PROFITABILITY_ADMISSION';reason=`Profitability admission ${admission} cannot create live stock risk.`;}
   else if(!decisionEligible){status='BLOCKED_DECISION_INTELLIGENCE';reason='Decision-intelligence overlay did not pass; do not publish a buy trigger.';}
