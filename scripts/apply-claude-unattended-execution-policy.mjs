@@ -21,8 +21,8 @@ const policy={
     executionOwner:'CLAUDE',
     explicitApprovalRequired:false,
     automaticWhenFullyQualifiedAndBrokerPermits:true,
-    appliesTo:['STOCK_A','STOCK_B','STOCK_SEED'],
-    stockPriority:['A','B','SEED'],
+    appliesTo:['STOCK_A','STOCK_B','STOCK_SEED','STOCK_DAY_TRADE_SEED'],
+    stockPriority:['A','B','SEED','DAY_TRADE_SEED'],
     bTierUsesReducedEncodedSize:true,
     seedLaneUsesEncodedCap:true,
     requireRobinhoodTradingMcp:true,
@@ -44,7 +44,7 @@ const policy={
     explicitApprovalRequired:false,
     automaticWhenDetectedAndBrokerPermits:true,
     appliesTo:['STOCK','OPTION','CRYPTO'],
-    scope:['TRIGGER_1_STOP','TRIGGER_2_TARGET1','TRIGGER_3_TARGET2','CRYPTO_STOP','CRYPTO_TARGET','CRYPTO_TIME_EXIT','EMERGENCY_PROTECTION_EXIT']
+    scope:['TRIGGER_1_STOP','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_2_TARGET1','TRIGGER_3_TARGET2','CRYPTO_STOP','CRYPTO_TARGET','CRYPTO_TIME_EXIT','EMERGENCY_PROTECTION_EXIT']
   },
   brokerExecutionContract:{
     executor:'CLAUDE_ONLY',

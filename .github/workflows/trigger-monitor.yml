@@ -10,6 +10,9 @@ on:
     branches: [main]
     paths:
       - 'scripts/update-trigger-board.mjs'
+      - 'scripts/nyse-session.mjs'
+      - 'scripts/test-nyse-session.mjs'
+      - 'scripts/test-day-trade-dispatch.mjs'
       - 'scripts/build-execution-dispatch.mjs'
       - 'scripts/validate-execution-dispatch.mjs'
       - 'scripts/validate-trigger-board.mjs'
@@ -41,6 +44,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Test market-session safety logic
+        run: node --test scripts/test-*.mjs
 
       - name: Self-heal stale stock research during the regular session
         shell: bash

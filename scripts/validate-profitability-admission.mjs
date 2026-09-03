@@ -23,6 +23,8 @@ for(const x of t.liveQueue||[]){
   }
   if(x.entryTier==='B'&&!blocked&&Number(x.adaptiveSizeMultiplier)>.25)fail.push(`${x.ticker}: B above micro cap`);
   if(blocked&&x.action!=='PROFITABILITY_ADMISSION_BLOCK')fail.push(`${x.ticker}: block`);
+  if(x.seedLane?.eligible===true&&x.dayTradeSeedLane?.eligible===true)fail.push(`${x.ticker}: swing/day-trade overlap`);
+  if(x.dayTradeSeedLane?.eligible===true&&(x.entryTier!=='A'||a.state!=='SHADOW_ONLY'||a.regimeDisabled===true||a.contradictoryShadow===true||Number(x.dayTradeSeedLane.maxOrderUsd)!==20||x.dayTradeSeedLane.journalTag!=='dayTradeSeedLane:true'))fail.push(`${x.ticker}: invalid day-trade seed eligibility`);
 }
 if(s.generatorIntegrity?.traceableFeatures?.tieredStockProfitabilityAdmission!==true)fail.push('tiered admission integrity');
 if(s.generatorIntegrity?.traceableFeatures?.eliteARuntimeEligibility!==true)fail.push('A runtime integrity');

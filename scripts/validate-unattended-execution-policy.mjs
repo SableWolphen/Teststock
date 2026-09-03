@@ -24,7 +24,7 @@ if(p?.stockBuys?.explicitApprovalRequired!==false)fail.push('stock approval rule
 if(p?.stockBuys?.automaticWhenFullyQualifiedAndBrokerPermits!==true)fail.push('automatic stock rule');
 if(p?.stockBuys?.requireRobinhoodTradingMcp!==true)fail.push('stock MCP requirement');
 if(p?.stockBuys?.requireLiveBrokerRecheck!==true)fail.push('stock live broker recheck');
-if(!Array.isArray(p?.stockBuys?.appliesTo)||!p.stockBuys.appliesTo.includes('STOCK_A')||!p.stockBuys.appliesTo.includes('STOCK_B'))fail.push('stock buy scope');
+if(!Array.isArray(p?.stockBuys?.appliesTo)||!['STOCK_A','STOCK_B','STOCK_SEED','STOCK_DAY_TRADE_SEED'].every(x=>p.stockBuys.appliesTo.includes(x)))fail.push('stock buy scope');
 if(p?.crypto?.executionOwner!=='CLAUDE')fail.push('crypto execution owner');
 if(p?.crypto?.explicitApprovalRequired!==false)fail.push('crypto approval rule');
 if(p?.crypto?.automaticWhenFullyQualifiedAndBrokerPermits!==true)fail.push('crypto automatic rule');
@@ -38,6 +38,7 @@ if(p?.brokerExecutionContract?.duplicateProtectionRequired!==true)fail.push('dup
 if(p?.brokerExecutionContract?.reconcileByClientOrderId!==true)fail.push('client order reconciliation');
 if(p?.brokerExecutionContract?.neverAssumeFill!==true)fail.push('fill verification');
 if(p?.exits?.explicitApprovalRequired!==false||p?.exits?.automaticWhenDetectedAndBrokerPermits!==true)fail.push('automatic exit rule');
+if(!Array.isArray(p?.exits?.scope)||!p.exits.scope.includes('STOCK_DAY_TRADE_FORCED_EXIT'))fail.push('day-trade exit scope');
 if(!Array.isArray(p?.hardGuardsRemainMandatory)||p.hardGuardsRemainMandatory.length<10)fail.push('hard guards');
 if(p?.accountGuardrailSource?.source!=='CURRENT_RAW_MAIN_SIGNAL_ONLY')fail.push('guardrail source');
 if(p?.accountGuardrailSource?.legacyNinetyDollarPauseThresholdAllowed!==false)fail.push('legacy threshold');

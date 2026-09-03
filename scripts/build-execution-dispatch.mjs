@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises';
 
-const BOARD='docs/data/trigger-board.json';
-const SIGNAL='docs/signal.json';
-const OUT='docs/data/execution-dispatch.json';
+const BOARD=process.argv[2]||'docs/data/trigger-board.json';
+const SIGNAL=process.argv[3]||'docs/signal.json';
+const OUT=process.argv[4]||'docs/data/execution-dispatch.json';
 const read=async(f,x)=>{try{return JSON.parse(await fs.readFile(f,'utf8'));}catch{return x;}};
 const board=await read(BOARD,null);
 const signal=await read(SIGNAL,{});
@@ -14,15 +14,15 @@ const MAX_ENTRY_AGE_MS=10*60*1000;
 const publishedMax=Number(signal?.stockPlan?.policy?.maxConcurrentNewPositions??signal?.stockPlan?.opportunityExpansion?.maxConcurrentQualifiedStocks??signal?.tradeFrequencyGuard?.maxConcurrentPositions??4);
 const MAX_NEW_BUYS_PER_DISPATCH=Math.max(1,Math.min(4,Number.isFinite(publishedMax)?publishedMax:4));
 
-const priority={TRIGGER_1_STOP:100,TRIGGER_3_TARGET2:80,TRIGGER_2_TARGET1:70,BUY_TRIGGER:50};
-const actionMap={TRIGGER_1_STOP:'VERIFY_POSITION_AND_SELL_STOP',TRIGGER_3_TARGET2:'VERIFY_POSITION_AND_EXECUTE_TARGET2_OR_RUNNER',TRIGGER_2_TARGET1:'VERIFY_POSITION_AND_EXECUTE_TARGET1',BUY_TRIGGER:'VERIFY_LIVE_GUARDS_AND_EXECUTE_IF_STILL_ELIGIBLE'};
+const priority={TRIGGER_1_STOP:100,STOCK_DAY_TRADE_FORCED_EXIT:100,TRIGGER_3_TARGET2:80,TRIGGER_2_TARGET1:70,BUY_TRIGGER:50};
+const actionMap={TRIGGER_1_STOP:'VERIFY_POSITION_AND_SELL_STOP',STOCK_DAY_TRADE_FORCED_EXIT:'VERIFY_DAY_TRADE_POSITION_AND_EXIT_ALL_TESTSTOCK_QUANTITY',TRIGGER_3_TARGET2:'VERIFY_POSITION_AND_EXECUTE_TARGET2_OR_RUNNER',TRIGGER_2_TARGET1:'VERIFY_POSITION_AND_EXECUTE_TARGET1',BUY_TRIGGER:'VERIFY_LIVE_GUARDS_AND_EXECUTE_IF_STILL_ELIGIBLE'};
 const ageMs=value=>{const timestamp=Date.parse(value||'');return Number.isFinite(timestamp)?Math.max(0,now.getTime()-timestamp):Infinity;};
 const boardAgeMs=ageMs(board?.publishedAt);
 const boardHealthy=board?.monitorHealth==='OK'&&boardAgeMs<=MAX_BOARD_AGE_MS;
 const previousFingerprints=new Set(previous?.dispatchFingerprints||[previous?.pendingAction?.fingerprint].filter(Boolean));
 
 const candidates=(board?.events||[]).filter(e=>priority[e.trigger]&&!(e.trigger==='BUY_TRIGGER'&&e.assetClass!=='STOCK')).map(e=>{
-  const fingerprint=`${e.id}|${e.trigger}|${e.stateChangedAt}`;
+  const fingerprint=`${e.id}|${e.trigger}|${e.trigger==='STOCK_DAY_TRADE_FORCED_EXIT'?(board?.publishedAt||nowIso):e.stateChangedAt}`;
   const triggerAgeMs=ageMs(e.stateChangedAt);
   const isFresh=e.trigger!=='BUY_TRIGGER'||triggerAgeMs<=MAX_ENTRY_AGE_MS;
   const isNew=!previousFingerprints.has(fingerprint);
@@ -38,28 +38,31 @@ const pendingAction=selected?compact(selected):null;
 const automaticStockCandidates=hasExitEvent?[]:actionableCandidates.filter(x=>x.trigger==='BUY_TRIGGER').slice(0,MAX_NEW_BUYS_PER_DISPATCH).map(compact);
 const fallbackActions=selected?.trigger==='BUY_TRIGGER'?automaticStockCandidates.slice(1):[];
 
-const seedEvents=(board?.events||[]).filter(e=>(e.trigger==='SEED_LANE_BUY_TRIGGER'&&e.assetClass==='STOCK')||(e.trigger==='CRYPTO_SEED_LANE_BUY_TRIGGER'&&e.assetClass==='CRYPTO')).map(e=>{
+const seedEvents=(board?.events||[]).filter(e=>(e.trigger==='SEED_LANE_BUY_TRIGGER'&&e.assetClass==='STOCK')||(e.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'&&e.assetClass==='STOCK')||(e.trigger==='CRYPTO_SEED_LANE_BUY_TRIGGER'&&e.assetClass==='CRYPTO')).map(e=>{
   const fingerprint=`${e.id}|${e.trigger}|${e.stateChangedAt}`;
   const triggerAgeMs=ageMs(e.stateChangedAt);
   const isFresh=triggerAgeMs<=MAX_ENTRY_AGE_MS;
   const isNew=!previousFingerprints.has(fingerprint);
   return {...e,fingerprint,triggerAgeMs,isFresh,isNew,isActionable:boardHealthy&&isFresh&&isNew};
 });
-const compactSeed=e=>({
+const compactSeed=e=>{const lane=e.dayTradeSeedLane?.eligible===true?e.dayTradeSeedLane:e.seedLane;return ({
   fingerprint:e.fingerprint,assetClass:e.assetClass,ticker:e.ticker,trigger:e.trigger,
-  maxOrderUsd:Number(e.seedLane?.maxOrderUsd||5),
-  maxConcurrentPositions:Number(e.seedLane?.maxConcurrentPositions||(e.assetClass==='CRYPTO'?1:2)),
-  maxNewPositionsPerUtcDay:Number(e.seedLane?.maxNewPositionsPerUtcDay||1),
-  maxHoldingHours:e.assetClass==='CRYPTO'?Number(e.seedLane?.maxHoldingHours||8):null,
+  maxOrderUsd:Number(lane?.maxOrderUsd||5),
+  maxConcurrentPositions:Number(lane?.maxConcurrentPositions||(e.assetClass==='CRYPTO'?1:2)),
+  maxNewPositionsPerUtcDay:Number(lane?.maxNewPositionsPerUtcDay||1),
+  maxHoldingHours:e.assetClass==='CRYPTO'?Number(lane?.maxHoldingHours||8):null,
+  mustBeFlatBeforeMarketClose:e.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER',
+  entryCutoffMinutesBeforeClose:e.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'?Number(lane?.entryCutoffMinutesBeforeClose||30):null,
+  forcedExitStartMinutesBeforeClose:e.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'?Number(lane?.forcedExitStartMinutesBeforeClose||15):null,
   requiresPerOrderApproval:false,
   existingRobinhoodCashOnly:true,agentMayInitiateDeposits:false,agentMayInitiateBankTransfers:false,marginAllowed:false,
-  requiresBrokerResidentStop:e.seedLane?.requiresBrokerResidentStop===true,
+  requiresBrokerResidentStop:lane?.requiresBrokerResidentStop===true,
   requestedAction:'VERIFY_LIVE_GUARDS_CONCURRENCY_AND_EXECUTE_SEED_IF_STILL_ELIGIBLE',
   observedPrice:e.observedPrice,triggerStateChangedAt:e.stateChangedAt,
   minimumEntry:e.minimumEntry,maximumEntry:e.maximumEntry,stop:e.stop,target1:e.target1,target2:e.target2,
   reason:e.reason,
-  packet:`${e.ticker} | ${e.trigger} | observed ${e.observedPrice ?? 'UNKNOWN'} | capped at $${Number(e.seedLane?.maxOrderUsd||5)} existing Robinhood cash only | automatic after live recheck`
-});
+  packet:`${e.ticker} | ${e.trigger} | observed ${e.observedPrice ?? 'UNKNOWN'} | capped at $${Number(lane?.maxOrderUsd||5)} existing Robinhood cash only | automatic after live recheck`
+});};
 const seedLaneCandidates=hasExitEvent?[]:seedEvents.filter(e=>e.isActionable).map(compactSeed);
 
 const out={
@@ -67,7 +70,7 @@ const out={
   boardAgeMs:Number.isFinite(boardAgeMs)?boardAgeMs:null,maximumBoardAgeMs:MAX_BOARD_AGE_MS,
   monitorHealth:board?.monitorHealth||'UNAVAILABLE',dispatchHealth:boardHealthy?'OK':'FAIL_CLOSED_STALE_OR_UNHEALTHY_BOARD',
   claudeShouldRun:Boolean(pendingAction)||seedLaneCandidates.length>0,claudeShouldPollMarket:false,executionNeeded:permittedCandidates.length>0||seedLaneCandidates.length>0,
-  dispatchFingerprints:[...permittedCandidates.map(x=>x.fingerprint),...seedLaneCandidates.map(x=>x.fingerprint)],priorityOrder:['TRIGGER_1_STOP','TRIGGER_3_TARGET2','TRIGGER_2_TARGET1','BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','CRYPTO_SEED_LANE_BUY_TRIGGER'],
+  dispatchFingerprints:[...permittedCandidates.map(x=>x.fingerprint),...seedLaneCandidates.map(x=>x.fingerprint)],priorityOrder:['TRIGGER_1_STOP','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_3_TARGET2','TRIGGER_2_TARGET1','BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER','CRYPTO_SEED_LANE_BUY_TRIGGER'],
   pendingAction,automaticStockCandidates,approvalCandidates:[],approvalBatchId:null,fallbackActions,seedLaneCandidates,
   multiStockPolicy:{enabled:true,maximumAutomaticCandidatesPerDispatch:MAX_NEW_BUYS_PER_DISPATCH,automaticQualifiedEntries:true,userApprovalRequired:false,oneWinnerDoesNotBlockOtherQualifiedStocks:true,rule:'Claude may execute already-qualified current-generation stock candidates automatically in rank order. Each order still requires a fingerprint claim, immediate live guard recheck, sizing calculation and broker reconciliation. Recompute remaining portfolio capacity after every confirmed fill and never force all available slots to be filled.'},
   queuedActions:permittedCandidates.filter(x=>!x.isActionable).map(x=>({ticker:x.ticker,trigger:x.trigger,fingerprint:x.fingerprint,isNew:x.isNew,isFresh:x.isFresh})),

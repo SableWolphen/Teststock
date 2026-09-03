@@ -66,7 +66,7 @@ function apply(row){
   const blocked=['SHADOW_ONLY','LIVE_SUSPENDED'].includes(a.state);
   const baseSize=Number(row.adaptiveSizeMultiplier??row.adaptiveLearning?.sizeMultiplier??row.entryTierSizeMultiplier??1);
   const cappedSize=Math.min(baseSize,a.sizeMultiplier||0,row.entryTier==='B'?.25:1);
-  return {...row,profitabilityAdmission:a,adaptiveSizeMultiplier:cappedSize,action:blocked?'PROFITABILITY_ADMISSION_BLOCK':row.action,seedLane:{eligible:false}};
+  return {...row,profitabilityAdmission:a,adaptiveSizeMultiplier:cappedSize,action:blocked?'PROFITABILITY_ADMISSION_BLOCK':row.action,seedLane:{eligible:false},dayTradeSeedLane:{eligible:false}};
 }
 
 const live=(tournament.liveQueue||[]).map(apply);
@@ -94,9 +94,25 @@ if(seedLaneConfig.enabled===true){
   }
 }
 
+const swingSelectedTickers=new Set(live.filter(x=>x.seedLane?.eligible===true).map(x=>x.ticker));
+const dayTradeConfig=probabilityPolicy?.stocks?.dayTradeSeedLane||{enabled:false};
+if(dayTradeConfig.enabled===true){
+  const todayUtc=new Date().toISOString().slice(0,10);
+  const dayTrades=(realJournal.trades||[]).filter(x=>x.assetClass==='STOCK'&&x.dayTradeSeedLane===true);
+  const openTickers=new Set(dayTrades.filter(x=>x.outcome==='OPEN').map(x=>x.symbol));
+  const openedToday=dayTrades.filter(x=>String(x.entryFilledAt||'').slice(0,10)===todayUtc).length;
+  const maxConcurrent=Number(dayTradeConfig.maxConcurrentPositions||1);
+  const dailyRemaining=Math.max(0,Number(dayTradeConfig.maxNewPositionsPerUtcDay||1)-openedToday);
+  const availableSlots=dailyRemaining>0?Math.max(0,maxConcurrent-openTickers.size):0;
+  if(availableSlots>0){
+    const eligiblePool=live.filter(x=>x.entryTier==='A'&&x.profitabilityAdmission?.state==='SHADOW_ONLY'&&!x.profitabilityAdmission?.regimeDisabled&&!x.profitabilityAdmission?.contradictoryShadow&&!openTickers.has(x.ticker)&&!swingSelectedTickers.has(x.ticker)).sort((a,b)=>Number(a.queueRank??999)-Number(b.queueRank??999));
+    for(const chosen of eligiblePool.slice(0,availableSlots))chosen.dayTradeSeedLane={eligible:true,maxOrderUsd:Number(dayTradeConfig.maxOrderUsd||20),requiredEntryTier:dayTradeConfig.requiredEntryTier||'A',requiresPerOrderApproval:false,maxConcurrentPositions:maxConcurrent,maxNewPositionsPerUtcDay:Number(dayTradeConfig.maxNewPositionsPerUtcDay||1),currentOpenDayTradeSeedPositions:openTickers.size,openedDayTradeSeedPositionsToday:openedToday,existingRobinhoodCashOnly:true,agentMayInitiateDeposits:false,agentMayInitiateBankTransfers:false,marginAllowed:false,requiresBrokerResidentStop:dayTradeConfig.requiresBrokerResidentStop===true,mustBeFlatBeforeMarketClose:true,entryCutoffMinutesBeforeClose:Number(dayTradeConfig.entryCutoffMinutesBeforeClose||30),forcedExitStartMinutesBeforeClose:Number(dayTradeConfig.forcedExitStartMinutesBeforeClose||15),journalTag:'dayTradeSeedLane:true',rule:dayTradeConfig.rule};
+  }
+}
+
 tournament.profitabilityAdmissionPolicy={enabled:true,mode:'TIERED_A_NORMAL_B_MICRO_WITH_REAL_SUSPENSION',rule:'A-tier research winners no longer need to wait for a large forward-shadow sample before becoming runtime-eligible; they may use up to their already-encoded normal size only after every downstream Teststock and live Robinhood guard passes. B-tier best-acceptable stocks are capped at 25% micro-probation size. Disabled regimes, contradictory shadow evidence, or negative Robinhood-confirmed real-fill probation remain hard blocks. Historical/backtest evidence remains diagnostic and cannot override a failed live guard.'};
 const q=new Map(live.map(x=>[x.ticker||x.symbol,x]));
-signal.stockPlan=signal.stockPlan||{};signal.stockPlan.stockCandidateQueue=(signal.stockPlan.stockCandidateQueue||[]).map(x=>q.has(x.ticker)?{...x,profitabilityAdmission:q.get(x.ticker).profitabilityAdmission,adaptiveSizeMultiplier:q.get(x.ticker).adaptiveSizeMultiplier,action:q.get(x.ticker).action,seedLane:q.get(x.ticker).seedLane}:x);
+signal.stockPlan=signal.stockPlan||{};signal.stockPlan.stockCandidateQueue=(signal.stockPlan.stockCandidateQueue||[]).map(x=>q.has(x.ticker)?{...x,profitabilityAdmission:q.get(x.ticker).profitabilityAdmission,adaptiveSizeMultiplier:q.get(x.ticker).adaptiveSizeMultiplier,action:q.get(x.ticker).action,seedLane:q.get(x.ticker).seedLane,dayTradeSeedLane:q.get(x.ticker).dayTradeSeedLane}:x);
 signal.stockTournament={...(signal.stockTournament||{}),profitabilityAdmissionPolicy:tournament.profitabilityAdmissionPolicy,liveBuyChampion:tournament.liveBuyChampion,liveFallbackTickers:tournament.liveFallbacks.map(x=>x.ticker)};
 signal.generatorIntegrity={...(signal.generatorIntegrity||{}),traceableFeatures:{...(signal.generatorIntegrity?.traceableFeatures||{}),shadowFirstProfitabilityAdmission:false,tieredStockProfitabilityAdmission:true,eliteARuntimeEligibility:true,bTierMicroProbation:true}};
 signal.schemaVersion=Math.max(44,Number(signal.schemaVersion||0));
