@@ -1,23 +1,36 @@
 {
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "source": "TESTSTOCK_NON_LLM_TRIGGER_MONITOR",
-  "publishedAt": "2026-09-03T14:25:29.312Z",
+  "publishedAt": "2026-09-03T14:54:03.319Z",
   "monitorHealth": "OK",
   "monitorCadenceMinutes": 5,
   "priceSource": "ALPACA_MARKET_DATA",
   "claudeMarketPollingRequired": false,
   "siteAvailability": "24_7_PUBLIC_DASHBOARD",
-  "researchState": "ACTIVE",
-  "researchAgeMinutes": 0,
+  "researchState": "REFRESHING",
+  "researchAgeMinutes": 28.6,
+  "marketSession": {
+    "timeZone": "America/New_York",
+    "dateKey": "2026-09-03",
+    "minuteOfDay": 654,
+    "calendarAvailable": true,
+    "openMinute": 570,
+    "closeMinute": 960,
+    "regularSession": true,
+    "minutesToClose": 306,
+    "sessionEnded": false,
+    "entryAllowed": true,
+    "forcedExitDue": false
+  },
   "displayPolicy": "Never present aged research as an active trading signal. During refresh, keep the latest candidate visible as display-only and block new buy triggers until a fresh generation arrives.",
-  "stockSessionRule": "Stock entry eligibility can close with the market; the site and monitoring health remain independently visible.",
+  "stockSessionRule": "Same-day stock entries require an authoritative regular-session calendar and at least 30 minutes to close. Tagged same-day positions emit a forced exit from 15 minutes before close and after the session until confirmed flat.",
   "executionWakeBridge": {
     "status": "DISPATCH_PACKET_READY_FOR_AUTOMATIC_EXECUTOR",
     "note": "This monitor detects triggers without an LLM. The authorized Claude runner consumes the generated dispatch and is the sole Robinhood Trading MCP execution agent."
   },
   "watchlist": {
     "activePositions": 2,
-    "armingRule": "After a confirmed Robinhood buy, the execution agent must establish and verify the encoded protection through Robinhood. Unverified protection means no new seed risk."
+    "armingRule": "After a confirmed same-day buy, persist dayTradeSeedLane=true with the saved protection levels. Keep it ACTIVE until Robinhood confirms flat so forced exits continue to fire."
   },
   "executionNeeded": false,
   "buyCompetition": {
@@ -48,9 +61,25 @@
       "profitabilityAdmission": "ELITE_RUNTIME_ELIGIBLE",
       "decisionIntelligenceEligible": true,
       "decisionIntelligenceSeedEligible": false,
+      "decisionIntelligenceDayTradeSeedEligible": false,
       "seedLaneEligible": false,
       "seedLane": {
         "eligible": false
+      },
+      "dayTradeSeedLaneEligible": false,
+      "dayTradeSeedLane": null,
+      "marketSession": {
+        "timeZone": "America/New_York",
+        "dateKey": "2026-09-03",
+        "minuteOfDay": 654,
+        "calendarAvailable": true,
+        "openMinute": 570,
+        "closeMinute": 960,
+        "regularSession": true,
+        "minutesToClose": 306,
+        "sessionEnded": false,
+        "entryAllowed": true,
+        "forcedExitDue": false
       },
       "minimumEntry": 37.9,
       "maximumEntry": 38.66,
@@ -58,10 +87,10 @@
       "target1": 42.53,
       "target2": 45.93,
       "signalGeneratedAt": "2026-09-03T14:25:28.131Z",
-      "status": "WAIT_ENTRY",
-      "reason": "Price is outside the current buy zone.",
-      "observedPrice": 37.885,
-      "stateChangedAt": "2026-09-03T14:25:29.312Z"
+      "status": "REFRESHING_SIGNAL",
+      "reason": "Current research generation is being refreshed. This candidate is display-only until a fresh generation arrives; no buy trigger may fire from aged research.",
+      "observedPrice": 37.96,
+      "stateChangedAt": "2026-09-03T14:54:03.319Z"
     },
     {
       "id": "ENTRY:STOCK:BNS",
@@ -78,9 +107,25 @@
       "profitabilityAdmission": "ELITE_RUNTIME_ELIGIBLE",
       "decisionIntelligenceEligible": true,
       "decisionIntelligenceSeedEligible": false,
+      "decisionIntelligenceDayTradeSeedEligible": false,
       "seedLaneEligible": false,
       "seedLane": {
         "eligible": false
+      },
+      "dayTradeSeedLaneEligible": false,
+      "dayTradeSeedLane": null,
+      "marketSession": {
+        "timeZone": "America/New_York",
+        "dateKey": "2026-09-03",
+        "minuteOfDay": 654,
+        "calendarAvailable": true,
+        "openMinute": 570,
+        "closeMinute": 960,
+        "regularSession": true,
+        "minutesToClose": 306,
+        "sessionEnded": false,
+        "entryAllowed": true,
+        "forcedExitDue": false
       },
       "minimumEntry": 94.73,
       "maximumEntry": 96.62,
@@ -88,10 +133,10 @@
       "target1": 100.99,
       "target2": 105.57,
       "signalGeneratedAt": "2026-09-03T14:25:28.131Z",
-      "status": "WAIT_ENTRY",
-      "reason": "Price is outside the current buy zone.",
-      "observedPrice": 94.405,
-      "stateChangedAt": "2026-09-03T14:25:29.312Z"
+      "status": "REFRESHING_SIGNAL",
+      "reason": "Current research generation is being refreshed. This candidate is display-only until a fresh generation arrives; no buy trigger may fire from aged research.",
+      "observedPrice": 94.71,
+      "stateChangedAt": "2026-09-03T14:54:03.319Z"
     },
     {
       "id": "ENTRY:STOCK:VALE",
@@ -108,9 +153,25 @@
       "profitabilityAdmission": "ELITE_RUNTIME_ELIGIBLE",
       "decisionIntelligenceEligible": true,
       "decisionIntelligenceSeedEligible": false,
+      "decisionIntelligenceDayTradeSeedEligible": false,
       "seedLaneEligible": false,
       "seedLane": {
         "eligible": false
+      },
+      "dayTradeSeedLaneEligible": false,
+      "dayTradeSeedLane": null,
+      "marketSession": {
+        "timeZone": "America/New_York",
+        "dateKey": "2026-09-03",
+        "minuteOfDay": 654,
+        "calendarAvailable": true,
+        "openMinute": 570,
+        "closeMinute": 960,
+        "regularSession": true,
+        "minutesToClose": 306,
+        "sessionEnded": false,
+        "entryAllowed": true,
+        "forcedExitDue": false
       },
       "minimumEntry": 15.95,
       "maximumEntry": 16.27,
@@ -118,10 +179,10 @@
       "target1": 17.97,
       "target2": 19.46,
       "signalGeneratedAt": "2026-09-03T14:25:28.131Z",
-      "status": "WAIT_ENTRY",
-      "reason": "Price is outside the current buy zone.",
-      "observedPrice": 15.535,
-      "stateChangedAt": "2026-09-03T14:25:29.312Z"
+      "status": "REFRESHING_SIGNAL",
+      "reason": "Current research generation is being refreshed. This candidate is display-only until a fresh generation arrives; no buy trigger may fire from aged research.",
+      "observedPrice": 15.48,
+      "stateChangedAt": "2026-09-03T14:54:03.319Z"
     },
     {
       "id": "ENTRY:STOCK:IAG",
@@ -138,9 +199,25 @@
       "profitabilityAdmission": "ELITE_RUNTIME_ELIGIBLE",
       "decisionIntelligenceEligible": true,
       "decisionIntelligenceSeedEligible": false,
+      "decisionIntelligenceDayTradeSeedEligible": false,
       "seedLaneEligible": false,
       "seedLane": {
         "eligible": false
+      },
+      "dayTradeSeedLaneEligible": false,
+      "dayTradeSeedLane": null,
+      "marketSession": {
+        "timeZone": "America/New_York",
+        "dateKey": "2026-09-03",
+        "minuteOfDay": 654,
+        "calendarAvailable": true,
+        "openMinute": 570,
+        "closeMinute": 960,
+        "regularSession": true,
+        "minutesToClose": 306,
+        "sessionEnded": false,
+        "entryAllowed": true,
+        "forcedExitDue": false
       },
       "minimumEntry": 22.28,
       "maximumEntry": 22.73,
@@ -148,10 +225,10 @@
       "target1": 26.75,
       "target2": 30.03,
       "signalGeneratedAt": "2026-09-03T14:25:28.131Z",
-      "status": "WAIT_ENTRY",
-      "reason": "Price is outside the current buy zone.",
-      "observedPrice": 20.575,
-      "stateChangedAt": "2026-09-03T14:25:29.312Z"
+      "status": "REFRESHING_SIGNAL",
+      "reason": "Current research generation is being refreshed. This candidate is display-only until a fresh generation arrives; no buy trigger may fire from aged research.",
+      "observedPrice": 20.73,
+      "stateChangedAt": "2026-09-03T14:54:03.319Z"
     },
     {
       "id": "ENTRY:STOCK:VIRT",
@@ -168,9 +245,25 @@
       "profitabilityAdmission": "ELITE_RUNTIME_ELIGIBLE",
       "decisionIntelligenceEligible": true,
       "decisionIntelligenceSeedEligible": false,
+      "decisionIntelligenceDayTradeSeedEligible": false,
       "seedLaneEligible": false,
       "seedLane": {
         "eligible": false
+      },
+      "dayTradeSeedLaneEligible": false,
+      "dayTradeSeedLane": null,
+      "marketSession": {
+        "timeZone": "America/New_York",
+        "dateKey": "2026-09-03",
+        "minuteOfDay": 654,
+        "calendarAvailable": true,
+        "openMinute": 570,
+        "closeMinute": 960,
+        "regularSession": true,
+        "minutesToClose": 306,
+        "sessionEnded": false,
+        "entryAllowed": true,
+        "forcedExitDue": false
       },
       "minimumEntry": 68.27,
       "maximumEntry": 69.64,
@@ -178,10 +271,10 @@
       "target1": 79.86,
       "target2": 88.37,
       "signalGeneratedAt": "2026-09-03T14:25:28.131Z",
-      "status": "WAIT_ENTRY",
-      "reason": "Price is outside the current buy zone.",
-      "observedPrice": 64.605,
-      "stateChangedAt": "2026-09-03T14:25:29.312Z"
+      "status": "REFRESHING_SIGNAL",
+      "reason": "Current research generation is being refreshed. This candidate is display-only until a fresh generation arrives; no buy trigger may fire from aged research.",
+      "observedPrice": 64.85,
+      "stateChangedAt": "2026-09-03T14:54:03.319Z"
     },
     {
       "id": "ENTRY:STOCK:GGB",
@@ -198,9 +291,25 @@
       "profitabilityAdmission": "ELITE_RUNTIME_ELIGIBLE",
       "decisionIntelligenceEligible": true,
       "decisionIntelligenceSeedEligible": false,
+      "decisionIntelligenceDayTradeSeedEligible": false,
       "seedLaneEligible": false,
       "seedLane": {
         "eligible": false
+      },
+      "dayTradeSeedLaneEligible": false,
+      "dayTradeSeedLane": null,
+      "marketSession": {
+        "timeZone": "America/New_York",
+        "dateKey": "2026-09-03",
+        "minuteOfDay": 654,
+        "calendarAvailable": true,
+        "openMinute": 570,
+        "closeMinute": 960,
+        "regularSession": true,
+        "minutesToClose": 306,
+        "sessionEnded": false,
+        "entryAllowed": true,
+        "forcedExitDue": false
       },
       "minimumEntry": 5.03,
       "maximumEntry": 5.13,
@@ -208,10 +317,10 @@
       "target1": 5.62,
       "target2": 6.04,
       "signalGeneratedAt": "2026-09-03T14:25:28.131Z",
-      "status": "WAIT_ENTRY",
-      "reason": "Price is outside the current buy zone.",
-      "observedPrice": 4.94,
-      "stateChangedAt": "2026-09-03T14:25:29.312Z"
+      "status": "REFRESHING_SIGNAL",
+      "reason": "Current research generation is being refreshed. This candidate is display-only until a fresh generation arrives; no buy trigger may fire from aged research.",
+      "observedPrice": 4.93,
+      "stateChangedAt": "2026-09-03T14:54:03.319Z"
     },
     {
       "id": "ENTRY:STOCK:RIO",
@@ -228,9 +337,25 @@
       "profitabilityAdmission": "ELITE_RUNTIME_ELIGIBLE",
       "decisionIntelligenceEligible": true,
       "decisionIntelligenceSeedEligible": false,
+      "decisionIntelligenceDayTradeSeedEligible": false,
       "seedLaneEligible": false,
       "seedLane": {
         "eligible": false
+      },
+      "dayTradeSeedLaneEligible": false,
+      "dayTradeSeedLane": null,
+      "marketSession": {
+        "timeZone": "America/New_York",
+        "dateKey": "2026-09-03",
+        "minuteOfDay": 654,
+        "calendarAvailable": true,
+        "openMinute": 570,
+        "closeMinute": 960,
+        "regularSession": true,
+        "minutesToClose": 306,
+        "sessionEnded": false,
+        "entryAllowed": true,
+        "forcedExitDue": false
       },
       "minimumEntry": 106.61,
       "maximumEntry": 108.74,
@@ -238,10 +363,10 @@
       "target1": 116.12,
       "target2": 123.09,
       "signalGeneratedAt": "2026-09-03T14:25:28.131Z",
-      "status": "WAIT_ENTRY",
-      "reason": "Price is outside the current buy zone.",
-      "observedPrice": 103.085,
-      "stateChangedAt": "2026-09-03T14:25:29.312Z"
+      "status": "REFRESHING_SIGNAL",
+      "reason": "Current research generation is being refreshed. This candidate is display-only until a fresh generation arrives; no buy trigger may fire from aged research.",
+      "observedPrice": 103.275,
+      "stateChangedAt": "2026-09-03T14:54:03.319Z"
     },
     {
       "id": "POSITION:STOCK:RPRX",
@@ -249,6 +374,20 @@
       "assetClass": "STOCK",
       "ticker": "RPRX",
       "queueRank": 0,
+      "dayTradeSeedLane": false,
+      "marketSession": {
+        "timeZone": "America/New_York",
+        "dateKey": "2026-09-03",
+        "minuteOfDay": 654,
+        "calendarAvailable": true,
+        "openMinute": 570,
+        "closeMinute": 960,
+        "regularSession": true,
+        "minutesToClose": 306,
+        "sessionEnded": false,
+        "entryAllowed": true,
+        "forcedExitDue": false
+      },
       "stop": 58.59,
       "target1": 64.75,
       "target2": 67.84,
@@ -258,7 +397,7 @@
       "armedAt": "2026-08-20T14:39:59.052Z",
       "status": "HOLD",
       "reason": "No saved sell trigger reached.",
-      "observedPrice": 62.89,
+      "observedPrice": 63.32,
       "stateChangedAt": "2026-08-20T14:40:44.649Z"
     },
     {
@@ -267,6 +406,20 @@
       "assetClass": "STOCK",
       "ticker": "EQX",
       "queueRank": 0,
+      "dayTradeSeedLane": false,
+      "marketSession": {
+        "timeZone": "America/New_York",
+        "dateKey": "2026-09-03",
+        "minuteOfDay": 654,
+        "calendarAvailable": true,
+        "openMinute": 570,
+        "closeMinute": 960,
+        "regularSession": true,
+        "minutesToClose": 306,
+        "sessionEnded": false,
+        "entryAllowed": true,
+        "forcedExitDue": false
+      },
       "stop": 10.85,
       "target1": 17.25,
       "target2": 20.07,
@@ -276,14 +429,16 @@
       "armedAt": "2026-08-21T19:45:56.512Z",
       "status": "HOLD",
       "reason": "No saved sell trigger reached.",
-      "observedPrice": 12.805,
+      "observedPrice": 12.85,
       "stateChangedAt": "2026-08-21T19:46:42.556Z"
     }
   ],
   "errors": [],
   "triggerDefinitions": {
     "BUY_TRIGGER": "Qualified fresh entry zone reached; live broker checks still required.",
-    "SEED_LANE_BUY_TRIGGER": "An A-tier SHADOW_ONLY stock candidate reached its entry zone. Automatic through Claude Robinhood Trading MCP, capped at $5, existing cash only, and every other live guard remains mandatory.",
+    "SEED_LANE_BUY_TRIGGER": "An A-tier SHADOW_ONLY stock candidate reached its entry zone. Automatic through Claude Robinhood Trading MCP, capped at $20, existing cash only, and every other live guard remains mandatory.",
+    "STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER": "A non-overlapping A-tier same-day seed candidate reached its entry zone during the regular session with at least 30 minutes to close. Automatic through Claude Robinhood Trading MCP and capped at $20.",
+    "STOCK_DAY_TRADE_FORCED_EXIT": "A tagged same-day position must be reconciled and closed. This repeats from 15 minutes before close and after the session until Robinhood confirms flat.",
     "CRYPTO_SEED_LANE_BUY_TRIGGER": "An A/A+ crypto candidate reached its entry zone. Automatic through Claude Robinhood Trading MCP, capped at $5, existing cash only, one position at a time, and every other live guard remains mandatory.",
     "TRIGGER_1_STOP": "Stop/invalidation reached — verify position and sell protected quantity.",
     "TRIGGER_2_TARGET1": "Target 1 reached — execute validated first scale-out.",
