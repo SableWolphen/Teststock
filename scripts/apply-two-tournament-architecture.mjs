@@ -82,7 +82,7 @@ if(signal.claudeExecutionPolicy?.buys){
   signal.claudeExecutionPolicy.buys.appliesTo=['STOCK_A','STOCK_B','CRYPTO'];
   signal.claudeExecutionPolicy.buys.explicitApprovalRequired=false;
   signal.claudeExecutionPolicy.buys.automaticWhenFullyQualifiedAndBrokerPermits=true;
-  signal.claudeExecutionPolicy.buys.rule='For stocks and crypto, evaluate only current Teststock-qualified candidates in rank order. Require every current Teststock hard gate and every live Robinhood Trading MCP verification to pass immediately before submission. No manual approval is required. Do not invent a different symbol, exceed encoded size, chase price, duplicate an order, use margin/leverage, average down, or bypass required protection.';
+  signal.claudeExecutionPolicy.buys.rule='For stocks and crypto, evaluate only current Teststock-qualified candidates in rank order. Require every current Teststock hard gate and every live Robinhood Trading MCP verification to pass immediately before submission. No manual approval is required. A current A-tier stock may receive one bounded winning-position add-on under portfolioGuard.winningPositionAddOn; never duplicate a pending order, average down, widen a stop, invent a different symbol, exceed encoded size, chase price, use margin/leverage, or bypass required protection.';
 }
 
 signal.schemaVersion=Math.max(43,Number(signal.schemaVersion||0));

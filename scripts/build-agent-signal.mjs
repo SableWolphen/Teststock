@@ -175,8 +175,10 @@ const signal={
   portfolioGuard:{
     maxNewPositions:2,
     maxCryptoPositions:1,
-    noDuplicateExposure:true,
-    instructions:'Count existing positions and open orders before any new entry. Do not open more than two new Teststock positions in one run, do not hold more than one Teststock crypto position, and do not duplicate the same ticker/contract. Existing planned risk counts against every new trade.'
+    noDuplicateExposure:false,
+    noDuplicatePendingOrder:true,
+    winningPositionAddOn:{enabled:true,maxOrderUsd:20,maxAddOnsPerSymbolPerUtcDay:1,requiredEntryTier:'A',minimumUnrealizedGainPct:1,requiresFreshBuyTrigger:true,requiresCombinedRiskCapacity:true,requiresProtectionAtLeastAsTightAsExisting:true,averageDownAllowed:false,widenStopAllowed:false},
+    instructions:'Count existing positions and open orders before any entry. Do not open more than two new Teststock positions in one run or hold more than one Teststock crypto position. A fresh A-tier stock trigger may add at most $20 to an existing winning Teststock position once per symbol per UTC day, but only above the live average cost by at least 1%, with no equivalent pending order, adequate combined risk capacity, and protection preserved or tightened. Never average down. Existing planned risk counts against every trade.'
   },
   autopilot:{enabled:true,requiresPerOrderApproval:false,scope:'Dedicated Robinhood Agentic account only.'},
   assetClassRouting:{STOCK:'Use only stockPlan.stockOrders.',OPTION:'Use only stockPlan.eliteOption and only when its action is AUTO_BUY_ELIGIBLE.',CRYPTO:'Use only cryptoPlan.cryptoOrders. Never treat a crypto symbol as a stock or option.'},
