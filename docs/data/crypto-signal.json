@@ -1,6 +1,6 @@
 {
   "schemaVersion": 9,
-  "generatedAt": "2026-09-03T18:33:59.261Z",
+  "generatedAt": "2026-09-03T19:21:56.748Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -242,16 +242,29 @@
   "portfolioGuard": {
     "maxNewPositions": 2,
     "maxCryptoPositions": 1,
-    "noDuplicateExposure": true,
-    "instructions": "Count existing positions and open orders before any new entry. Do not open more than two new Teststock positions in one run, do not hold more than one Teststock crypto position, and do not duplicate the same ticker/contract. Existing planned risk counts against every new trade."
+    "noDuplicateExposure": false,
+    "noDuplicatePendingOrder": true,
+    "winningPositionAddOn": {
+      "enabled": true,
+      "maxOrderUsd": 20,
+      "maxAddOnsPerSymbolPerUtcDay": 1,
+      "requiredEntryTier": "A",
+      "minimumUnrealizedGainPct": 1,
+      "requiresFreshBuyTrigger": true,
+      "requiresCombinedRiskCapacity": true,
+      "requiresProtectionAtLeastAsTightAsExisting": true,
+      "averageDownAllowed": false,
+      "widenStopAllowed": false
+    },
+    "instructions": "Count existing positions and open orders before any entry. Do not open more than two new Teststock positions in one run or hold more than one Teststock crypto position. A fresh A-tier stock trigger may add at most $20 to an existing winning Teststock position once per symbol per UTC day, but only above the live average cost by at least 1%, with no equivalent pending order, adequate combined risk capacity, and protection preserved or tightened. Never average down. Existing planned risk counts against every trade."
   },
   "cryptoPlan": {
     "assetClass": "CRYPTO",
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-09-03T18:33:52.040Z",
-    "expiresAt": "2026-09-03T19:03:52.040Z",
+    "signalAsOf": "2026-09-03T19:21:49.029Z",
+    "expiresAt": "2026-09-03T19:51:49.029Z",
     "policy": {
       "researchMode": "ACTIVE_24_7_MORE_OPPORTUNITIES",
       "dataSource": "CRYPTO_COM_PUBLIC_API",
