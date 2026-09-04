@@ -51,6 +51,19 @@ jobs:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: node scripts/generate-static-picks.mjs
 
+      - name: Refresh every freshness-critical dependency
+        if: ${{ steps.market_window.outputs.stocks == 'true' }}
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+        run: |
+          # A publish attempt is one atomic generation. Never combine fresh stocks
+          # with crypto or entry-gate evidence left over from an earlier run.
+          node scripts/validate-entry-gates.mjs
+          node scripts/generate-crypto-picks.mjs
+          node scripts/update-crypto-shadow-ledger.mjs
+          node scripts/apply-crypto-profitability-admission.mjs
+
       - name: Re-rank cost-adjusted stock opportunities
         if: ${{ steps.market_window.outputs.stocks == 'true' }}
         run: |
@@ -63,7 +76,7 @@ jobs:
         if: ${{ steps.market_window.outputs.stocks == 'true' }}
         run: node scripts/build-adaptive-performance.mjs
 
-      - name: Rebuild and validate fresh stock signal using last deep-research artifacts
+      - name: Rebuild and validate one fresh stock and crypto generation
         if: ${{ steps.market_window.outputs.stocks == 'true' }}
         shell: bash
         env:
