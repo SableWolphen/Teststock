@@ -12,7 +12,7 @@ html=html.replace(
 
 html=html.replace(
   /function robinhoodCrossCheckLine\(lead\)\{.*?\}\nfunction renderCrypto\(\)/s,
-  `function runtimeBrokerLine(lead){if(!lead)return '';let auditAge=age(audit?.lastClaudeRun),fresh=auditAge!=null&&auditAge<=15,verified=fresh&&audit?.brokerVerified===true;if(verified)return \`<div class="whyline">Robinhood runtime verification · \\${auditAge}m ago: broker state was freshly verified by Claude through Robinhood Trading MCP. Every order still requires a new immediate pre-submit recheck.</div>\`;return '<div class="whyline"><b>Robinhood runtime check:</b> REQUIRED NOW — Claude re-fetches live price, tradability, buying power, positions, open orders, spread and duplicate state through Robinhood Trading MCP immediately before any order. No cached broker snapshot is accepted as current.</div>'}\nfunction renderCrypto()`
+  `function runtimeBrokerLine(lead){if(!lead)return '';let auditAge=age(audit?.lastClaudeRun),fresh=auditAge!=null&&auditAge<=15,verified=fresh&&audit?.brokerVerified===true;if(verified)return \`<div class="whyline">Robinhood runtime verification · \${auditAge}m ago: broker state was freshly verified by Claude through Robinhood Trading MCP. Every order still requires a new immediate pre-submit recheck.</div>\`;return '<div class="whyline"><b>Robinhood runtime check:</b> REQUIRED NOW — Claude re-fetches live price, tradability, buying power, positions, open orders, spread and duplicate state through Robinhood Trading MCP immediately before any order. No cached broker snapshot is accepted as current.</div>'}\nfunction renderCrypto()`
 );
 
 html=html.replace(
