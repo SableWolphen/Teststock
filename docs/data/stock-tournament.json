@@ -1,7 +1,7 @@
 {
   "schemaVersion": 8,
   "source": "TESTSTOCK_UP_TO_20000_STOCK_KNOCKOUT",
-  "generatedAt": "2026-09-06T13:35:26.195Z",
+  "generatedAt": "2026-09-06T15:01:40.986Z",
   "objective": "Continuously eliminate weaker candidates from every legitimate active/tradable U.S. operating-company stock available, capped at 20,000 symbols, then buy the best acceptable live survivor without waiting only for a perfect setup.",
   "policy": {
     "targetTournamentSize": 20000,
@@ -140,25 +140,43 @@
       "hardGatesRemainAuthoritative": true
     },
     "timeHorizonPolicy": {
-      "classification": "SWING_POSITION",
-      "classificationIsAdvisory": true,
+      "classification": "DAY_TRADE",
+      "classificationIsAdvisory": false,
+      "liveExecutionStyle": "DAY_TRADER_ONLY",
       "mayNotCreateEligibility": true,
       "existingHardStopAndRiskRemainAuthoritative": true,
-      "holdingWindow": "DAYS_TO_WEEKS",
+      "holdingWindow": "MINUTES_TO_SAME_SESSION",
+      "entryEvidence": [
+        "authoritative regular NYSE session is open",
+        "at least 30 minutes remain before the actual New York close",
+        "fresh live liquidity and spread pass",
+        "current price is inside the encoded entry zone and does not chase",
+        "intraday VWAP/support/resistance and momentum context remain valid"
+      ],
       "profitExit": {
-        "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+        "method": "INTRADAY_BRACKET_OR_OCO",
+        "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
         "target1": 230.98,
         "target2": 238.46
       },
       "lossExit": {
-        "method": "EXISTING_PROTECTED_STOP",
-        "level": 213.98
+        "method": "BROKER_PROTECTED_STOP",
+        "level": 213.98,
+        "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
       },
       "timeExit": {
-        "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+        "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+        "forcedExitMinutesBeforeClose": 15,
+        "newEntryCutoffMinutesBeforeClose": 30,
+        "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
       },
       "risk": {
-        "overnightGapReviewRequired": true,
+        "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+        "bracketRequired": true,
+        "overnightRiskAllowed": false,
+        "noMargin": true,
+        "noAverageDown": true,
+        "noChasing": true,
         "unprotectedPositionAllowed": false
       }
     },
@@ -356,25 +374,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 42.2,
           "target2": 46.23
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 33.05
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 33.05,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -569,25 +605,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 230.98,
           "target2": 238.46
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 213.98
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 213.98,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -781,25 +835,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 82.82,
           "target2": 95.04
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 55.04
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 55.04,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -993,25 +1065,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 83.51,
           "target2": 92.16
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 63.83
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 63.83,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -1205,25 +1295,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 91.29,
           "target2": 102.29
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 66.29
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 66.29,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -1417,25 +1525,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 82.83,
           "target2": 92.44
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 61.01
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 61.01,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -1629,25 +1755,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 17.97,
           "target2": 19.46
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 14.6
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 14.6,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -1839,25 +1983,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 270.53,
           "target2": 299.35
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 205.03
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 205.03,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -2049,25 +2211,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 125.05,
           "target2": 136.6
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 98.8
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 98.8,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -2259,25 +2439,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 65.56,
           "target2": 73.22
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 48.13
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 48.13,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -2489,25 +2687,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 289.88,
           "target2": 311.79
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 240.11
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 240.11,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -2714,25 +2930,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 110.73,
           "target2": 119.2
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 91.48
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 91.48,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -2924,25 +3158,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 15.62,
           "target2": 17.34
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 11.72
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 11.72,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -3136,25 +3388,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 162.51,
           "target2": 186.05
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 109.01
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 109.01,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -3347,25 +3617,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 234.51,
           "target2": 239.01
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 224.29
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 224.29,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -3557,38 +3845,44 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "LONG_TERM",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "QUARTERS_TO_YEARS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
         "entryEvidence": [
-          "strong covered SEC fundamentals",
-          "durable thesis recorded",
-          "valuation and concentration reviewed"
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "VALUATION_THESIS_AND_GOAL_REVIEW",
-          "rules": [
-            "Trim when valuation becomes unsupported versus history, growth and peers.",
-            "Rebalance before one position breaches the existing concentration cap.",
-            "Allow gradual goal-based sales when the user defines a life milestone."
-          ]
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "target1": 42.25,
+          "target2": 47.1
         },
         "lossExit": {
-          "method": "THESIS_INVALIDATION_AND_CAPITAL_PROTECTION",
-          "rules": [
-            "Review material loss of competitive position, repeated negative revenue trend, balance-sheet deterioration and governance/event risk.",
-            "Do not use an unbounded market stop. Use alerts, approved stop-limit/protection, or manual review consistent with existing hard maximum-risk rules."
-          ]
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 31.22,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Quarterly review and after every material filing or thesis event."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "marketStopDefault": false,
-          "unprotectedPositionAllowed": false,
-          "concentrationCapMayNotIncrease": true
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
         }
       },
       "brokerEligibility": {
@@ -3781,25 +4075,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 92.78,
           "target2": 101.62
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 72.71
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 72.71,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -3994,25 +4306,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 226.92,
           "target2": 233.67
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 211.57
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 211.57,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -4206,25 +4536,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 449.51,
           "target2": 487.87
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 362.34
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 362.34,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -4418,25 +4766,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 41.56,
           "target2": 46.03
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 31.38
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 31.38,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -4630,25 +4996,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 146.01,
           "target2": 156.1
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 123.09
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 123.09,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -4840,25 +5224,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 38.59,
           "target2": 42.34
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 30.06
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 30.06,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -5052,25 +5454,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 37.33,
           "target2": 40.67
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 29.76
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 29.76,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -5264,25 +5684,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 7.31,
           "target2": 8.1
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 5.54
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 5.54,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -5476,25 +5914,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 16.59,
           "target2": 17.64
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 14.22
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 14.22,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -5692,25 +6148,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 241.56,
           "target2": 253.03
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 215.48
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 215.48,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -5902,25 +6376,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 16.63,
           "target2": 18.67
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 12.01
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 12.01,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -6117,25 +6609,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 37.35,
           "target2": 41.9
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 27
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 27,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -6336,25 +6846,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 618.64,
           "target2": 656.41
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 532.79
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 532.79,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
@@ -6548,25 +7076,43 @@
         "hardGatesRemainAuthoritative": true
       },
       "timeHorizonPolicy": {
-        "classification": "SWING_POSITION",
-        "classificationIsAdvisory": true,
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "DAY_TRADER_ONLY",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
-        "holdingWindow": "DAYS_TO_WEEKS",
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 30 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid"
+        ],
         "profitExit": {
-          "method": "VALIDATED_TARGETS_AND_TRAILING_REVIEW",
+          "method": "INTRADAY_BRACKET_OR_OCO",
+          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 65.54,
           "target2": 69.57
         },
         "lossExit": {
-          "method": "EXISTING_PROTECTED_STOP",
-          "level": 56.39
+          "method": "BROKER_PROTECTED_STOP",
+          "level": 56.39,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "Exit when the setup expires, regime changes, or the validated time window ends."
+          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "forcedExitMinutesBeforeClose": 15,
+          "newEntryCutoffMinutesBeforeClose": 30,
+          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
         },
         "risk": {
-          "overnightGapReviewRequired": true,
+          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
           "unprotectedPositionAllowed": false
         }
       },
