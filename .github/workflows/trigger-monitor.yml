@@ -11,6 +11,7 @@ on:
       - 'scripts/update-trigger-board.mjs'
       - 'scripts/enforce-day-trader-trigger-policy.mjs'
       - 'scripts/apply-intraday-edge-overlay.mjs'
+      - 'scripts/rebuild-intraday-trigger-state.mjs'
       - 'scripts/validate-intraday-edge-overlay.mjs'
       - 'scripts/crypto-monitor-candidates.mjs'
       - 'scripts/test-crypto-monitoring.mjs'
@@ -100,6 +101,9 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/apply-intraday-edge-overlay.mjs
+
+      - name: Rebuild ranked trigger competition after intraday filtering
+        run: node scripts/rebuild-intraday-trigger-state.mjs
 
       - name: Validate intraday edge fail closed
         run: node scripts/validate-intraday-edge-overlay.mjs
