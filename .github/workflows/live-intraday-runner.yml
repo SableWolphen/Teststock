@@ -11,6 +11,8 @@ on:
     paths:
       - '.github/workflows/live-intraday-runner.yml'
       - 'scripts/run-live-intraday-cycle.sh'
+      - 'scripts/build-daytrader-intelligence.mjs'
+      - 'scripts/validate-daytrader-intelligence.mjs'
       - 'scripts/update-trigger-board.mjs'
       - 'scripts/enforce-day-trader-trigger-policy.mjs'
       - 'scripts/apply-intraday-edge-overlay.mjs'
@@ -47,6 +49,8 @@ jobs:
           command -v claude >/dev/null
           test -f .mcp.json
           test -f scripts/run-live-intraday-cycle.sh
+          test -f scripts/build-daytrader-intelligence.mjs
+          test -f scripts/validate-daytrader-intelligence.mjs
           test -f scripts/claude-executor-prompt.md
           echo 'Persistent Teststock runtime is present.'
 
@@ -66,9 +70,6 @@ jobs:
             started=$(date +%s)
             echo "=== Teststock fast intraday cycle $cycle at $(date -u +%FT%TZ) ==="
 
-            # Pull the newest validated strategy/signal generation before each
-            # local cycle. Generated local state may be discarded because the
-            # normal GitHub monitor remains the durable publication path.
             git fetch --quiet origin main
             git reset --hard --quiet origin/main
 
