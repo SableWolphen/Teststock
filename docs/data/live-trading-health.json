@@ -1,29 +1,43 @@
 {
-  "schemaVersion": 1,
-  "generatedAt": "2026-09-06T17:00:49.346Z",
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-06T18:05:01.801Z",
   "status": "DEGRADED",
   "newRiskPermission": "BLOCKED",
   "reasons": [
-    "stale: triggerAgeMinutes, intradayAgeMinutes",
+    "stale: signalAgeMinutes, triggerAgeMinutes, intradayAgeMinutes, daytraderAgeMinutes, qualityAgeMinutes",
     "risk/data circuit breaker"
   ],
   "freshness": {
-    "signalAgeMinutes": 6.201483333333333,
-    "triggerAgeMinutes": 6.1864333333333335,
-    "intradayAgeMinutes": 32.1447,
-    "daytraderAgeMinutes": 0.011483333333333333,
-    "qualityAgeMinutes": 0.0016666666666666668
+    "signalAgeMinutes": 70.40905,
+    "triggerAgeMinutes": 70.394,
+    "intradayAgeMinutes": 96.35226666666667,
+    "daytraderAgeMinutes": 64.21905,
+    "qualityAgeMinutes": 64.20923333333333
   },
   "circuitBreaker": "REDUCE_NEW_RISK",
   "drawdownRisk": "NORMAL",
   "dataWatchdog": "STOP_NEW_RISK",
+  "coverage": {
+    "stocks": {
+      "monitoring": "REGULAR_SESSION_ONLY",
+      "entryCutoffMinutes": 20,
+      "forcedExitMinutesBeforeClose": 10,
+      "rule": "Monitor continuously while the authoritative exchange session is open; never force a buy when the session or data gates fail."
+    },
+    "crypto": {
+      "monitoring": "24_7",
+      "rule": "Monitor continuously; broker availability, liquidity, freshness and risk gates still control entries."
+    }
+  },
   "brokerMcp": {
     "state": "VERIFY_AT_EXECUTION",
     "note": "Repository cannot prove live Robinhood MCP connectivity; Claude must verify on every execution run."
   },
   "runner": {
     "state": "WORKFLOW_RUNTIME_REQUIRED",
-    "note": "This snapshot proves local-cycle generation only when produced by the runner; GitHub job status remains authoritative for runner availability."
+    "schedule": "EVERY_5_MINUTES",
+    "cycleIntervalSeconds": 45,
+    "note": "GitHub job status is authoritative for runner availability; scheduled sessions retry every five minutes and active sessions cycle about every 45 seconds."
   },
   "positions": {
     "activeCount": 2,
