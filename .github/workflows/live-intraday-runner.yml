@@ -8,9 +8,9 @@ on:
         type: boolean
         default: false
   schedule:
-    # GitHub schedules the long-lived self-hosted session hourly. The job itself
-    # runs fast local cycles about every 45 seconds for ~55 minutes.
-    - cron: '0 * * * *'
+    # Request a session every five minutes for faster recovery. An active session
+    # continues its ~45-second cycles for ~55 minutes; the next session waits.
+    - cron: '2-57/5 * * * *'
   push:
     branches: [main]
     paths:
@@ -36,7 +36,7 @@ on:
 
 concurrency:
   group: live-teststock-intraday-runner
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -94,4 +94,4 @@ jobs:
             elapsed=$(( $(date +%s) - started ))
             if [ "$elapsed" -lt 45 ]; then sleep $((45-elapsed)); fi
           done
-          echo "Live intraday session completed; the next hourly session is the continuity/recovery handoff."
+          echo "Live intraday session completed; the next queued session is the continuity/recovery handoff."
