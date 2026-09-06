@@ -1,0 +1,82 @@
+name: Live Teststock intraday runner
+
+on:
+  workflow_dispatch:
+  schedule:
+    # GitHub schedules the long-lived self-hosted session hourly. The job itself
+    # runs fast local cycles about every 45 seconds for ~55 minutes.
+    - cron: '0 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/live-intraday-runner.yml'
+      - 'scripts/run-live-intraday-cycle.sh'
+      - 'scripts/update-trigger-board.mjs'
+      - 'scripts/enforce-day-trader-trigger-policy.mjs'
+      - 'scripts/apply-intraday-edge-overlay.mjs'
+      - 'scripts/rebuild-trigger-competition.mjs'
+      - 'scripts/validate-intraday-edge-overlay.mjs'
+      - 'scripts/build-execution-dispatch.mjs'
+      - 'scripts/claude-executor-prompt.md'
+      - '.mcp.json'
+
+concurrency:
+  group: live-teststock-intraday-runner
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    runs-on: [self-hosted, teststock-trader]
+    timeout-minutes: 58
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Verify persistent trading runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v node >/dev/null
+          command -v python >/dev/null
+          command -v claude >/dev/null
+          test -f .mcp.json
+          test -f scripts/run-live-intraday-cycle.sh
+          test -f scripts/claude-executor-prompt.md
+          echo 'Persistent Teststock runtime is present.'
+
+      - name: Run 45-second intraday decision loop
+        shell: bash
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PYTHONIOENCODING: utf-8
+        run: |
+          set -euo pipefail
+          end=$(( $(date +%s) + 3300 ))
+          cycle=0
+          while [ "$(date +%s)" -lt "$end" ]; do
+            cycle=$((cycle+1))
+            started=$(date +%s)
+            echo "=== Teststock fast intraday cycle $cycle at $(date -u +%FT%TZ) ==="
+
+            # Pull the newest validated strategy/signal generation before each
+            # local cycle. Generated local state may be discarded because the
+            # normal GitHub monitor remains the durable publication path.
+            git fetch --quiet origin main
+            git reset --hard --quiet origin/main
+
+            bash scripts/run-live-intraday-cycle.sh
+
+            elapsed=$(( $(date +%s) - started ))
+            if [ "$elapsed" -lt 45 ]; then
+              sleep $((45-elapsed))
+            fi
+          done
+          echo "Live intraday session completed; the next hourly session is the continuity/recovery handoff."
