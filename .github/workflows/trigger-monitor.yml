@@ -3,14 +3,15 @@ name: Monitor Teststock triggers
 on:
   workflow_dispatch:
   schedule:
-    # Offset from the five-minute Claude executor so it normally sees a trigger
-    # board refreshed a couple of minutes earlier.
+    # Refresh live entry/exit conditions every five minutes, offset from Claude.
     - cron: '2,7,12,17,22,27,32,37,42,47,52,57 * * * *'
   push:
     branches: [main]
     paths:
       - 'scripts/update-trigger-board.mjs'
       - 'scripts/enforce-day-trader-trigger-policy.mjs'
+      - 'scripts/apply-intraday-edge-overlay.mjs'
+      - 'scripts/validate-intraday-edge-overlay.mjs'
       - 'scripts/crypto-monitor-candidates.mjs'
       - 'scripts/test-crypto-monitoring.mjs'
       - 'scripts/nyse-session.mjs'
@@ -20,6 +21,7 @@ on:
       - 'scripts/validate-execution-dispatch.mjs'
       - 'scripts/validate-trigger-board.mjs'
       - 'docs/data/execution-watchlist.json'
+      - 'docs/data/adaptive-performance.json'
       - 'docs/signal.json'
       - 'docs/data/growth-plan-*.json'
       - 'docs/data/crypto-plan-*.json'
@@ -36,7 +38,7 @@ concurrency:
 jobs:
   monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -57,7 +59,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-
           dow=$(TZ=America/New_York date +%u)
           hour=$(TZ=America/New_York date +%H)
           minute=$(TZ=America/New_York date +%M)
@@ -69,26 +70,21 @@ jobs:
           fi
 
           if ! jq -e '
-            [
-              (.stockPlan.stockCandidateQueue // [])[],
-              (.stockPlan.stockOrders // [])[]
-            ]
+            [(.stockPlan.stockCandidateQueue // [])[],(.stockPlan.stockOrders // [])[]]
             | any(.action == "STALE_DO_NOT_TRADE")
           ' docs/signal.json >/dev/null; then
             echo "No stale stock candidates found."
             exit 0
           fi
 
-          echo "Stale stock research detected during the regular session."
-
           if gh run list --workflow static-scan.yml --limit 20 --json status \
             | jq -e 'any(.[]; .status == "queued" or .status == "in_progress")' >/dev/null; then
-            echo "A Refresh Teststock picks run is already queued or in progress; not duplicating it."
+            echo "A Refresh Teststock picks run is already queued or in progress."
             exit 0
           fi
 
           gh workflow run static-scan.yml --ref main
-          echo "Requested a fresh full Teststock scan. The stale candidate remains blocked until the refreshed generation passes every gate."
+          echo "Requested a fresh full Teststock scan; stale candidates remain blocked meanwhile."
 
       - name: Detect entry stop and profit triggers without an LLM
         env:
@@ -98,6 +94,15 @@ jobs:
 
       - name: Enforce day-trader session and flattening policy
         run: node scripts/enforce-day-trader-trigger-policy.mjs
+
+      - name: Refresh 1m and 5m intraday edge
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+        run: node scripts/apply-intraday-edge-overlay.mjs
+
+      - name: Validate intraday edge fail closed
+        run: node scripts/validate-intraday-edge-overlay.mjs
 
       - name: Validate trigger board fail closed
         run: node scripts/validate-trigger-board.mjs
@@ -114,11 +119,11 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/data/trigger-board.json docs/data/execution-dispatch.json
+          git add docs/data/trigger-board.json docs/data/intraday-edge.json docs/data/execution-dispatch.json
           if git diff --cached --quiet; then
             echo "No trigger-state change to publish"
           else
-            git commit -m "Update Teststock trigger and automatic execution dispatch"
+            git commit -m "Update Teststock intraday edge and execution dispatch"
             git pull --rebase -X theirs origin main
             git push
           fi
