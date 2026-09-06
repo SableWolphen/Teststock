@@ -40,8 +40,6 @@ try:
     with open('docs/data/trade-quality-intelligence.json', 'r', encoding='utf-8') as f:
         q=json.load(f)
     active=any(isinstance(p,dict) and p.get('status')=='ACTIVE' for p in (w.get('positions') or []))
-    # STOP_NEW_RISK never suppresses management/exits; Claude receives the state
-    # and refuses fresh entries while continuing reconciliation and exits.
     print('true' if d.get('claudeShouldRun') or active else 'false')
 except Exception:
     # Fail open to Claude; Claude itself remains fail-closed before new risk.
@@ -57,7 +55,7 @@ fi
 output_path="$(mktemp /tmp/teststock-fast-executor.XXXXXX.json)"
 trap 'rm -f "$output_path"' EXIT
 
-claude -p "$(cat scripts/claude-executor-prompt.md)" \
+claude -p "$(cat scripts/claude-executor-prompt.md scripts/claude-trade-quality-rules.md)" \
   --mcp-config .mcp.json \
   --allowedTools "Read,Glob,Grep,mcp__robinhood-trading" \
   --max-turns 16 \
