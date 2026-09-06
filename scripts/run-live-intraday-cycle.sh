@@ -17,7 +17,7 @@ node scripts/validate-trade-quality-engine.mjs
 node scripts/update-trigger-board.mjs
 node scripts/enforce-day-trader-trigger-policy.mjs
 node scripts/apply-intraday-edge-overlay.mjs
-node scripts/rebuild-trigger-competition.mjs
+node scripts/rebuild-intraday-trigger-state.mjs
 node scripts/validate-intraday-edge-overlay.mjs
 node scripts/validate-trigger-board.mjs
 node scripts/build-execution-dispatch.mjs
