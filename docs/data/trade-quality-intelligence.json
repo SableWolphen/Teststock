@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-06T15:55:56.941Z",
+  "source": "TESTSTOCK_TRADE_QUALITY_ENGINE",
+  "realTradeCoverage": {
+    "total": 2,
+    "resolved": 0,
+    "open": 2
+  },
+  "executionScorecard": {
+    "sampleSize": 0,
+    "averageEntrySlippagePct": null,
+    "averageExitSlippagePct": null,
+    "medianEntrySpreadPct": null,
+    "protectionVerifiedPct": 0,
+    "fillLatencyMs": null,
+    "protectionLatencyMs": null,
+    "authority": "ROBINHOOD_CONFIRMED_FIELDS_ONLY"
+  },
+  "maeMfe": {
+    "sampleSize": 0,
+    "averageMAER": null,
+    "averageMFER": null,
+    "averageMinutesToMFE": null,
+    "averageEdgeDecayMinutes": null,
+    "coverageState": "INSUFFICIENT_CAPTURE",
+    "source": "trade-replay.json",
+    "rule": "Replay uses historical 1m paths for Robinhood-confirmed resolved trades; it never rewrites broker fills or PnL."
+  },
+  "setupGovernance": [],
+  "timeDecay": {
+    "state": "INSUFFICIENT_EVIDENCE",
+    "bySession": [],
+    "replayAverageEdgeDecayMinutes": null,
+    "rule": "Raise thresholds or reduce size in weak time buckets only after sufficient reconciled/replay evidence."
+  },
+  "drawdownRisk": {
+    "state": "NORMAL",
+    "resolvedTrades": 0,
+    "recentSample": 0,
+    "recentAverageR": null,
+    "maxObservedClosedTradeDrawdownDollars": 0,
+    "maxConsecutiveLosses": 0,
+    "rule": "May only reduce risk. Restore normal risk after fresh positive evidence; never increase hard risk ceilings."
+  },
+  "riskOfRuin": {
+    "state": "INSUFFICIENT_REAL_TRADES",
+    "note": "Do not publish a precise ruin probability until enough independent real trades and stable sizing assumptions exist.",
+    "inputs": {
+      "resolvedTrades": 0,
+      "averageR": null,
+      "winRatePct": null,
+      "maxLossStreak": 0
+    }
+  },
+  "opportunityCost": [
+    {
+      "assetClass": "STOCK",
+      "rejectedCount": 0,
+      "evaluableRejected": 0,
+      "averageRejectedOutcomeR": null,
+      "state": "COLLECTING"
+    },
+    {
+      "assetClass": "CRYPTO",
+      "rejectedCount": 0,
+      "evaluableRejected": 0,
+      "averageRejectedOutcomeR": null,
+      "state": "COLLECTING"
+    }
+  ],
+  "replayEngine": {
+    "state": "AWAITING_RESOLVED_TRADES",
+    "generatedAt": "2026-09-06T15:53:57.990Z",
+    "sourceStatus": "OK",
+    "sampleSize": 0,
+    "outputs": [
+      "MAE/MFE",
+      "time-to-edge-decay",
+      "15/30/60m alternative exits"
+    ],
+    "rule": "Replay is research only; hypothetical outcomes are never written as real fills or PnL."
+  },
+  "parameterStability": {
+    "state": "REQUIRED_FOR_PROMOTION",
+    "rules": [
+      "No live promotion from a single best-fit threshold.",
+      "Challenger must remain positive under small stop/target/entry-threshold perturbations.",
+      "Require forward or holdout evidence; in-sample optimization alone is invalid.",
+      "A parameter change may reduce risk immediately but may not increase hard live-risk ceilings automatically."
+    ]
+  },
+  "brokerWatchdog": {
+    "state": "BROKER_RUNTIME_RECONCILIATION_REQUIRED",
+    "activeRepoPositions": 2,
+    "requirements": [
+      "fresh broker positions match Teststock attribution",
+      "fresh open orders reconciled by broker order id",
+      "buying power/account restriction state readable",
+      "no unknown duplicate working order",
+      "protection state verified after fill"
+    ],
+    "failureAction": "STOP_NEW_RISK_AND_RECONCILE; continue risk-reducing exits only"
+  },
+  "dataWatchdog": {
+    "state": "STOP_NEW_RISK",
+    "checks": [
+      {
+        "name": "daytrader-intelligence",
+        "ageMinutes": 0.01,
+        "maxAgeMinutes": 3,
+        "fresh": true
+      },
+      {
+        "name": "trigger-board",
+        "ageMinutes": 29811835.95,
+        "maxAgeMinutes": 3,
+        "fresh": false
+      },
+      {
+        "name": "signal",
+        "ageMinutes": 38.11,
+        "maxAgeMinutes": 30,
+        "fresh": false
+      }
+    ],
+    "rule": "Any required live-decision data that is stale, missing, contradictory, or unreadable blocks new risk. Exits remain allowed."
+  },
+  "chaosTesting": {
+    "requiredScenarios": [
+      "stale quote/feed",
+      "Alpaca timeout",
+      "Robinhood MCP unavailable",
+      "ambiguous order submission",
+      "partial fill",
+      "duplicate working order",
+      "spread shock",
+      "stock halt/resumption",
+      "early close",
+      "local/broker position mismatch",
+      "protection creation failure",
+      "runner restart mid-order"
+    ],
+    "liveRule": "Any unresolved chaos condition fails closed for new risk; reconcile exits/protection first."
+  },
+  "liquidityShockPolicy": {
+    "source": "daytrader-intelligence + live Robinhood quote",
+    "rule": "If spread/liquidity degrades materially between research and broker submission, skip new entry or exit risk using fastest supported risk-appropriate order. Never chase beyond maximum entry."
+  },
+  "haltResumptionPolicy": {
+    "rule": "A halt or uncertain resumption state blocks new entry. Previously open Teststock positions must be reconciled and managed when broker trading resumes."
+  },
+  "paperTwin": {
+    "enabled": true,
+    "authority": "SHADOW_ONLY",
+    "rule": "Run alternative entries/stops/targets beside live decisions; never mix simulated outcomes with Robinhood-confirmed journals."
+  },
+  "bestAlternativeAnalysis": {
+    "enabled": true,
+    "rule": "At each real entry/exit, preserve contemporaneous ranked alternatives so post-trade analysis can determine whether ranking or execution caused underperformance."
+  },
+  "healthDashboardContract": {
+    "fields": [
+      "runner freshness",
+      "Robinhood MCP connectivity",
+      "feed freshness",
+      "circuit breaker",
+      "active positions",
+      "aggregate stop risk",
+      "portfolio heat",
+      "top qualified setups",
+      "spread/slippage",
+      "execution latency",
+      "new-risk permission"
+    ]
+  },
+  "policy": "Optimize after-cost expectancy and execution quality, not trade count. Every learning layer may reorder, reduce, pause, retire or shadow a setup, but may never invent evidence, bypass live qualification, or increase the existing hard risk ceiling."
+}
