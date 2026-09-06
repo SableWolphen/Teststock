@@ -5,12 +5,19 @@ const DAY_TRADER_EFFECTIVE_AT='2026-09-06T15:00:00.000Z';
 
 const commonRotation={
   allowImmediateRotationAfterConfirmedExit:true,
+  fixedDailyEntryCountLimit:null,
+  fixedConcurrentPositionCountLimit:null,
+  fixedPerExecutorRunEntryCountLimit:null,
+  capacityMode:'DYNAMIC_RISK_CASH_AND_BROKER_LIMITED',
   cooldownAfterStopMinutes:20,
   sameSymbolReentryCooldownMinutes:30,
   consecutiveStopLossPause:{count:2,pauseMinutes:60},
   stopNewEntriesAfterStopLossExitsPerNyDay:3,
   existingDailyLossCapRemainsAuthoritative:true,
-  brokerAccountRestrictionsRemainAuthoritative:true
+  brokerAccountRestrictionsRemainAuthoritative:true,
+  portfolioHeatRemainsAuthoritative:true,
+  correlationLimitsRemainAuthoritative:true,
+  buyingPowerAndSettledFundsRemainAuthoritative:true
 };
 
 function stockPolicy(x){
@@ -48,12 +55,7 @@ function stockPolicy(x){
       newEntryCutoffMinutesBeforeClose:30,
       stalledTradeRule:'Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing.'
     },
-    rotation:{
-      ...commonRotation,
-      maxNewEntriesPerNyDay:6,
-      maxConcurrentPositions:2,
-      maxNewEntriesPerExecutorRun:2
-    },
+    rotation:{...commonRotation},
     risk:{
       accountRiskRule:'Existing Teststock cap remains authoritative; active day-trader mode never increases it.',
       bracketRequired:true,
@@ -95,12 +97,7 @@ function cryptoPolicy(x){
       maximumHoldingHours:4,
       expiredSetupRule:'Exit when the short-horizon thesis expires; never turn a failed intraday crypto trade into a multi-day hold.'
     },
-    rotation:{
-      ...commonRotation,
-      maxNewEntriesPerNyDay:4,
-      maxConcurrentPositions:1,
-      maxNewEntriesPerExecutorRun:1
-    },
+    rotation:{...commonRotation},
     risk:{
       noLeverage:true,
       noAverageDown:true,
@@ -135,7 +132,7 @@ market.timeHorizonPolicy={
   liveExecutionStyle:'ACTIVE_DAY_TRADER',
   dayTraderModeEffectiveAt:DAY_TRADER_EFFECTIVE_AT,
   classes:['DAY_TRADE'],
-  selection:'Every new live Teststock position is intraday. The system may rotate into another qualified setup after a broker-confirmed exit; it never trades merely to stay busy.',
+  selection:'Every new live Teststock position is intraday. There is no fixed stock or crypto trade-count quota; the system may rotate through every qualified setup that fits live cash, risk, correlation, broker and protection limits. It never trades merely to stay busy.',
   stocks:{
     regularSessionOnly:true,
     newEntryCutoffMinutesBeforeClose:30,
@@ -145,9 +142,10 @@ market.timeHorizonPolicy={
     defaultFlatBySessionEnd:true,
     overnightNewPositionsAllowed:false,
     bracketOrOcoRequired:true,
-    maxNewEntriesPerNyDay:6,
-    maxConcurrentPositions:2,
-    maxNewEntriesPerExecutorRun:2,
+    fixedDailyEntryCountLimit:null,
+    fixedConcurrentPositionCountLimit:null,
+    fixedPerExecutorRunEntryCountLimit:null,
+    capacityMode:'DYNAMIC_RISK_CASH_AND_BROKER_LIMITED',
     cooldownAfterStopMinutes:20,
     sameSymbolReentryCooldownMinutes:30,
     consecutiveStopLossPause:{count:2,pauseMinutes:60},
@@ -159,9 +157,10 @@ market.timeHorizonPolicy={
     softReviewAfterMinutes:45,
     maximumHoldingMinutes:240,
     maximumHoldingHours:4,
-    maxNewEntriesPerNyDay:4,
-    maxConcurrentPositions:1,
-    maxNewEntriesPerExecutorRun:1,
+    fixedDailyEntryCountLimit:null,
+    fixedConcurrentPositionCountLimit:null,
+    fixedPerExecutorRunEntryCountLimit:null,
+    capacityMode:'DYNAMIC_RISK_CASH_AND_BROKER_LIMITED',
     cooldownAfterStopMinutes:20,
     sameSymbolReentryCooldownMinutes:30,
     consecutiveStopLossPause:{count:2,pauseMinutes:60},
@@ -176,6 +175,9 @@ market.timeHorizonPolicy={
     allowImmediateRotationAfterConfirmedExit:true,
     existingDailyLossCapRemainsAuthoritative:true,
     brokerAccountRestrictionsRemainAuthoritative:true,
+    portfolioHeatRemainsAuthoritative:true,
+    correlationLimitsRemainAuthoritative:true,
+    buyingPowerAndSettledFundsRemainAuthoritative:true,
     noForcedTrades:true
   }
 };
@@ -188,4 +190,4 @@ await Promise.all([
   write('docs/signal.json',signal),
   write('docs/data/claude-signal.json',signal)
 ]);
-console.log(`Active day-trader mode applied: stocks=${stocks.liveQueue.length+stocks.researchFinalists.length}; crypto=${crypto.ranked.length}; stock max/day=6; crypto max/day=4`);
+console.log(`Active day-trader mode applied with no fixed trade-count quotas: stocks=${stocks.liveQueue.length+stocks.researchFinalists.length}; crypto=${crypto.ranked.length}; capacity is risk/cash/broker limited`);
