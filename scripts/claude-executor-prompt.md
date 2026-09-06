@@ -9,6 +9,7 @@ Read these repository files from the checked-out `main` branch before any broker
 - `docs/data/execution-dispatch.json`
 - `docs/data/trigger-board.json`
 - `docs/data/intraday-edge.json`
+- `docs/data/daytrader-intelligence.json`
 - `docs/data/execution-watchlist.json`
 - `docs/signal.json`
 - `docs/data/crypto-tournament.json`
@@ -40,6 +41,18 @@ For a new entry require a current `intradayEdge.status=FRESH` on the actionable 
 Use 1m/5m VWAP, relative volume, momentum acceleration, opening-range behavior, SPY/QQQ relative strength for stocks and BTC context for crypto as confirmation, not as permission to bypass qualification. In weak/risk-off regimes, be more selective with long entries and allow cash to win.
 
 Before every live entry, independently re-check through Robinhood the current price, tradability, spread, buying power, positions, open orders and duplicate state. If live spread/slippage destroys the positive expected edge implied by `costAdjustedEdge`, skip the trade. Never assume the Alpaca research quote equals the broker execution quote.
+
+## Live discovery, catalyst, liquidity and challenger intelligence
+
+Treat `docs/data/daytrader-intelligence.json` as a fast opportunity-discovery and risk-context layer. It may promote symbols into research consideration, reorder already-qualified trades, reduce size, or block new risk. It must never turn a discovery-only symbol into a broker order by itself.
+
+- `universe.promoteToResearch` identifies liquid/active stocks worth prioritizing in the next research generation. A `PROMOTE_TO_RESEARCH` row is not execution permission.
+- Prefer already-qualified stocks that also rank highly in live discovery when their catalyst, liquidity, spread and intraday edge remain favorable.
+- A high-risk/binary catalyst may reduce or block new long risk even if momentum is strong. Never infer a catalyst not present in the data.
+- If `circuitBreaker.state=REDUCE_NEW_RISK`, reduce sizing/selectivity within existing caps. If it is `STOP_NEW_RISK`, create no new positions until a later fresh cycle returns to an allowed state; continue managing/exiting existing positions.
+- Shadow challenger promotion is evidence-driven only. A challenger marked `PROMOTION_ELIGIBLE` may influence research/governance, but does not override current live eligibility or risk ceilings.
+- Use rejected-opportunity and missed-fill analytics only for learning. Never fabricate hypothetical fills or count unsubmitted trades as real results.
+- Time-of-day learning may reorder or suppress setups when sufficient Robinhood-confirmed evidence exists; it may never create eligibility.
 
 ## Profit protection and giveback control
 
@@ -90,7 +103,7 @@ Use opening-range breakout, VWAP momentum and relative-volume setups only when t
 
 Review open day trades after roughly 20 minutes if they are not progressing. Maximum intended holding time is 120 minutes, but all day-trader stock quantity must still be flat before the regular-session close. Begin forced-exit handling 10 minutes before close and keep reconciling until Robinhood confirms flat. Never turn a losing day trade into an overnight swing.
 
-Process qualified stock candidates in rank order, then use intraday adjusted score / cost-adjusted edge to break ties and continue while dynamic live capacity remains. After every fill or exit, recompute capacity before considering another candidate.
+Process qualified stock candidates in rank order, then use intraday adjusted score / cost-adjusted edge, live discovery rank, catalyst quality and liquidity quality to break ties. Continue while dynamic live capacity remains. After every fill or exit, recompute capacity before considering another candidate.
 
 ## Crypto
 
@@ -109,6 +122,8 @@ Continue through qualified crypto candidates while dynamic live capacity remains
 Only Robinhood-confirmed reconciled outcomes may influence live learning. Setup-specific buckets from `docs/data/adaptive-performance.json` may reorder already-qualified setups, reduce size, or temporarily block a weak pattern. They may not create eligibility or increase the existing maximum risk ceiling.
 
 Execution-quality learning should consider confirmed entry/exit slippage, time-to-fill and protection latency when available. If real execution quality for a setup deteriorates enough that expected edge is no longer positive after spread/slippage, skip or reduce that setup rather than trading it more often.
+
+Track results by setup and time-of-day bucket whenever the repository already has enough Robinhood-confirmed data to do so. Promote challenger logic only after its encoded minimum forward/real-fill evidence is satisfied; otherwise keep it shadow-only.
 
 ## Exits and reconciliation
 
