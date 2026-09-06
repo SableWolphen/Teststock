@@ -6,90 +6,36 @@ const now=new Date(),generatedAt=now.toISOString();
 const num=x=>Number(x),finite=x=>Number.isFinite(num(x));
 const avg=a=>{const x=a.filter(finite).map(num);return x.length?x.reduce((s,v)=>s+v,0)/x.length:null;};
 const median=a=>{const x=a.filter(finite).map(num).sort((a,b)=>a-b);return x.length?x[Math.floor(x.length/2)]:null;};
-const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const ageMin=t=>{const v=new Date(t||0).getTime();return Number.isFinite(v)?(Date.now()-v)/60000:Infinity;};
 
-const [stockJ,cryptoJ,adaptive,day,board,watch,signal,shadow,cryptoShadow]=await Promise.all([
-  read('docs/data/real-trade-journal.json',{}),
-  read('docs/data/crypto-real-trade-journal.json',{}),
-  read('docs/data/adaptive-performance.json',{}),
-  read('docs/data/daytrader-intelligence.json',{}),
-  read('docs/data/trigger-board.json',{}),
-  read('docs/data/execution-watchlist.json',{}),
-  read('docs/signal.json',{}),
-  read('docs/data/shadow-ledger.json',{}),
-  read('docs/data/crypto-shadow-ledger.json',{})
+const [stockJ,cryptoJ,day,board,watch,signal,shadow,cryptoShadow,replay]=await Promise.all([
+  read('docs/data/real-trade-journal.json',{}),read('docs/data/crypto-real-trade-journal.json',{}),read('docs/data/daytrader-intelligence.json',{}),read('docs/data/trigger-board.json',{}),read('docs/data/execution-watchlist.json',{}),read('docs/signal.json',{}),read('docs/data/shadow-ledger.json',{}),read('docs/data/crypto-shadow-ledger.json',{}),read('docs/data/trade-replay.json',{})
 ]);
-
 const trades=[...(stockJ.trades||[]),...(cryptoJ.trades||[])];
 const resolved=trades.filter(t=>t?.reconciledFromRobinhood===true&&['WIN','LOSS','FLAT'].includes(t.outcome)&&finite(t.realizedR));
 const open=trades.filter(t=>t?.reconciledFromRobinhood===true&&t.outcome==='OPEN');
-
-function sessionBucket(t){
-  if(t.entrySessionBucket&&t.entrySessionBucket!=='UNKNOWN')return t.entrySessionBucket;
-  const d=new Date(t.entryFilledAt||0);if(!Number.isFinite(d.getTime()))return 'UNKNOWN';
-  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',hour12:false}).format(d);
-  if(parts>='09:30'&&parts<'10:00')return 'OPEN_0_30';
-  if(parts>='10:00'&&parts<'11:30')return 'MORNING_30_120';
-  if(parts>='11:30'&&parts<'15:00')return 'MIDDAY';
-  if(parts>='15:00'&&parts<='16:00')return 'LATE_SESSION';
-  return 'EXTENDED';
-}
-function setup(t){return String(t.setupType||'UNKNOWN').toUpperCase();}
+function sessionBucket(t){if(t.entrySessionBucket&&t.entrySessionBucket!=='UNKNOWN')return t.entrySessionBucket;const d=new Date(t.entryFilledAt||0);if(!Number.isFinite(d.getTime()))return 'UNKNOWN';const p=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',hour12:false}).format(d);if(p>='09:30'&&p<'10:00')return'OPEN_0_30';if(p>='10:00'&&p<'11:30')return'MORNING_30_120';if(p>='11:30'&&p<'15:00')return'MIDDAY';if(p>='15:00'&&p<='16:00')return'LATE_SESSION';return'EXTENDED';}
+const setup=t=>String(t.setupType||'UNKNOWN').toUpperCase();
 function groupBy(xs,key){const m=new Map();for(const x of xs){const k=key(x);if(!m.has(k))m.set(k,[]);m.get(k).push(x);}return [...m.entries()].map(([key,rows])=>({key,rows}));}
-function stats(rows){const rs=rows.map(x=>num(x.realizedR)).filter(Number.isFinite);const wins=rs.filter(x=>x>0).length;return {n:rs.length,winRatePct:rs.length?Number((wins/rs.length*100).toFixed(1)):null,averageR:avg(rs),medianR:median(rs),profitFactorR:(()=>{const g=rs.filter(x=>x>0).reduce((s,v)=>s+v,0),l=Math.abs(rs.filter(x=>x<0).reduce((s,v)=>s+v,0));return l?Number((g/l).toFixed(3)):g>0?999:null;})()};}
-
+function stats(rows){const rs=rows.map(x=>num(x.realizedR)).filter(Number.isFinite),wins=rs.filter(x=>x>0).length;return{n:rs.length,winRatePct:rs.length?Number((wins/rs.length*100).toFixed(1)):null,averageR:avg(rs),medianR:median(rs),profitFactorR:(()=>{const g=rs.filter(x=>x>0).reduce((s,v)=>s+v,0),l=Math.abs(rs.filter(x=>x<0).reduce((s,v)=>s+v,0));return l?Number((g/l).toFixed(3)):g>0?999:null;})()};}
 const bySetup=groupBy(resolved,setup).map(g=>({setup:g.key,...stats(g.rows)}));
 const bySession=groupBy(resolved,sessionBucket).map(g=>({session:g.key,...stats(g.rows)}));
-
 const execRows=resolved.filter(t=>finite(t.adverseEntrySlippagePct)||finite(t.adverseExitSlippagePct)||finite(t.entrySpreadPctAtSubmission));
-const executionScorecard={
-  sampleSize:execRows.length,
-  averageEntrySlippagePct:avg(execRows.map(t=>t.adverseEntrySlippagePct)),
-  averageExitSlippagePct:avg(execRows.map(t=>t.adverseExitSlippagePct)),
-  medianEntrySpreadPct:median(execRows.map(t=>t.entrySpreadPctAtSubmission)),
-  protectionVerifiedPct:trades.length?Number((trades.filter(t=>t.protectiveExitVerified===true).length/trades.length*100).toFixed(1)):null,
-  fillLatencyMs:avg(resolved.map(t=>t.fillLatencyMs)),
-  protectionLatencyMs:avg(resolved.map(t=>t.protectionLatencyMs)),
-  authority:'ROBINHOOD_CONFIRMED_FIELDS_ONLY'
-};
-
-const maeMfeRows=resolved.filter(t=>finite(t.maximumAdverseExcursionR)||finite(t.maximumFavorableExcursionR));
-const maeMfe={sampleSize:maeMfeRows.length,averageMAER:avg(maeMfeRows.map(t=>t.maximumAdverseExcursionR)),averageMFER:avg(maeMfeRows.map(t=>t.maximumFavorableExcursionR)),coverageState:maeMfeRows.length>=10?'LEARNING_ACTIVE':'INSUFFICIENT_CAPTURE',rule:'Capture broker-confirmed/post-trade replay MAE/MFE. Never infer from missing data.'};
-
-const setupGovernance=bySetup.map(s=>({
-  ...s,
-  state:s.n>=30&&s.averageR!=null&&s.averageR<0?'RETIRE_LIVE_TO_SHADOW':s.n>=20&&s.averageR!=null&&s.averageR<0.05?'REDUCE_OR_PAUSE':s.n>=30&&s.averageR!=null&&s.averageR>0.15?'LIVE_EVIDENCE_POSITIVE':'COLLECT_MORE',
-  resurrectionRule:'A retired setup may return only after fresh forward-shadow/out-of-sample evidence is positive and live safety validation passes.'
-}));
-
-const pnlSeries=resolved.filter(t=>finite(t.realizedPnlDollars)&&t.finalExitAt).sort((a,b)=>new Date(a.finalExitAt)-new Date(b.finalExitAt));
-let equity=0,peak=0,maxDrawdown=0,lossStreak=0,maxLossStreak=0;
-for(const t of pnlSeries){equity+=num(t.realizedPnlDollars);peak=Math.max(peak,equity);maxDrawdown=Math.max(maxDrawdown,peak-equity);if(num(t.realizedPnlDollars)<0){lossStreak++;maxLossStreak=Math.max(maxLossStreak,lossStreak);}else lossStreak=0;}
-const recentR=resolved.slice(-20).map(t=>num(t.realizedR)).filter(Number.isFinite),recentAvg=avg(recentR);
-let adaptiveRiskState='NORMAL';
-if(recentR.length>=10&&recentAvg<0)adaptiveRiskState='REDUCE_NEW_RISK';
-if(recentR.length>=15&&recentAvg<=-0.25)adaptiveRiskState='STOP_NEW_RISK';
+const executionScorecard={sampleSize:execRows.length,averageEntrySlippagePct:avg(execRows.map(t=>t.adverseEntrySlippagePct)),averageExitSlippagePct:avg(execRows.map(t=>t.adverseExitSlippagePct)),medianEntrySpreadPct:median(execRows.map(t=>t.entrySpreadPctAtSubmission)),protectionVerifiedPct:trades.length?Number((trades.filter(t=>t.protectiveExitVerified===true).length/trades.length*100).toFixed(1)):null,fillLatencyMs:avg(resolved.map(t=>t.fillLatencyMs)),protectionLatencyMs:avg(resolved.map(t=>t.protectionLatencyMs)),authority:'ROBINHOOD_CONFIRMED_FIELDS_ONLY'};
+const replayRows=Array.isArray(replay.trades)?replay.trades:[];
+const maeMfe={sampleSize:replayRows.length,averageMAER:avg(replayRows.map(t=>t.maximumAdverseExcursionR)),averageMFER:avg(replayRows.map(t=>t.maximumFavorableExcursionR)),averageMinutesToMFE:avg(replayRows.map(t=>t.minutesToMFE)),averageEdgeDecayMinutes:avg(replayRows.map(t=>t.edgeDecayMinutes)),coverageState:replayRows.length>=10?'LEARNING_ACTIVE':'INSUFFICIENT_CAPTURE',source:'trade-replay.json',rule:'Replay uses historical 1m paths for Robinhood-confirmed resolved trades; it never rewrites broker fills or PnL.'};
+const setupGovernance=bySetup.map(s=>({...s,state:s.n>=30&&s.averageR!=null&&s.averageR<0?'RETIRE_LIVE_TO_SHADOW':s.n>=20&&s.averageR!=null&&s.averageR<0.05?'REDUCE_OR_PAUSE':s.n>=30&&s.averageR!=null&&s.averageR>0.15?'LIVE_EVIDENCE_POSITIVE':'COLLECT_MORE',resurrectionRule:'A retired setup may return only after fresh forward-shadow/out-of-sample evidence is positive and live safety validation passes.'}));
+const pnlSeries=resolved.filter(t=>finite(t.realizedPnlDollars)&&t.finalExitAt).sort((a,b)=>new Date(a.finalExitAt)-new Date(b.finalExitAt));let equity=0,peak=0,maxDrawdown=0,lossStreak=0,maxLossStreak=0;for(const t of pnlSeries){equity+=num(t.realizedPnlDollars);peak=Math.max(peak,equity);maxDrawdown=Math.max(maxDrawdown,peak-equity);if(num(t.realizedPnlDollars)<0){lossStreak++;maxLossStreak=Math.max(maxLossStreak,lossStreak);}else lossStreak=0;}
+const recentR=resolved.slice(-20).map(t=>num(t.realizedR)).filter(Number.isFinite),recentAvg=avg(recentR);let adaptiveRiskState='NORMAL';if(recentR.length>=10&&recentAvg<0)adaptiveRiskState='REDUCE_NEW_RISK';if(recentR.length>=15&&recentAvg<=-0.25)adaptiveRiskState='STOP_NEW_RISK';
 const drawdownRisk={state:adaptiveRiskState,resolvedTrades:resolved.length,recentSample:recentR.length,recentAverageR:recentAvg,maxObservedClosedTradeDrawdownDollars:maxDrawdown,maxConsecutiveLosses:maxLossStreak,rule:'May only reduce risk. Restore normal risk after fresh positive evidence; never increase hard risk ceilings.'};
-
-const fileChecks=[
-  ['daytrader-intelligence',day.generatedAt,3],['trigger-board',board.generatedAt||board.updatedAt,3],['signal',signal.generatedAt,30]
-].map(([name,t,max])=>({name,ageMinutes:Number(ageMin(t).toFixed(2)),maxAgeMinutes:max,fresh:ageMin(t)<=max}));
-const staleFiles=fileChecks.filter(x=>!x.fresh);
-const dataWatchdog={state:staleFiles.length?'STOP_NEW_RISK':'OK',checks:fileChecks,rule:'Any required live-decision data that is stale, missing, contradictory, or unreadable blocks new risk. Exits remain allowed.'};
-
-const activePositions=(watch.positions||[]).filter(x=>x?.status==='ACTIVE');
-const brokerWatchdog={state:'BROKER_RUNTIME_RECONCILIATION_REQUIRED',activeRepoPositions:activePositions.length,requirements:['fresh broker positions match Teststock attribution','fresh open orders reconciled by broker order id','buying power/account restriction state readable','no unknown duplicate working order','protection state verified after fill'],failureAction:'STOP_NEW_RISK_AND_RECONCILE; continue risk-reducing exits only'};
-
-const alt=(ledger,asset)=>{const rows=ledger?.rows||ledger?.trades||ledger?.entries||[];const rejected=rows.filter(x=>/REJECT|SKIP|BLOCK/i.test(String(x.status||x.decision||'')));const withOutcome=rejected.filter(x=>finite(x.forwardR)||finite(x.realizedR)||finite(x.shadowR));return {assetClass:asset,rejectedCount:rejected.length,evaluableRejected:withOutcome.length,averageRejectedOutcomeR:avg(withOutcome.map(x=>x.forwardR??x.shadowR??x.realizedR)),state:withOutcome.length>=20?'OPPORTUNITY_COST_LEARNING_ACTIVE':'COLLECTING'};};
+const fileChecks=[['daytrader-intelligence',day.generatedAt,3],['trigger-board',board.generatedAt||board.updatedAt,3],['signal',signal.generatedAt,30]].map(([name,t,max])=>({name,ageMinutes:Number(ageMin(t).toFixed(2)),maxAgeMinutes:max,fresh:ageMin(t)<=max}));const staleFiles=fileChecks.filter(x=>!x.fresh);const dataWatchdog={state:staleFiles.length?'STOP_NEW_RISK':'OK',checks:fileChecks,rule:'Any required live-decision data that is stale, missing, contradictory, or unreadable blocks new risk. Exits remain allowed.'};
+const activePositions=(watch.positions||[]).filter(x=>x?.status==='ACTIVE');const brokerWatchdog={state:'BROKER_RUNTIME_RECONCILIATION_REQUIRED',activeRepoPositions:activePositions.length,requirements:['fresh broker positions match Teststock attribution','fresh open orders reconciled by broker order id','buying power/account restriction state readable','no unknown duplicate working order','protection state verified after fill'],failureAction:'STOP_NEW_RISK_AND_RECONCILE; continue risk-reducing exits only'};
+const alt=(ledger,asset)=>{const rows=ledger?.rows||ledger?.trades||ledger?.entries||[],rejected=rows.filter(x=>/REJECT|SKIP|BLOCK/i.test(String(x.status||x.decision||''))),withOutcome=rejected.filter(x=>finite(x.forwardR)||finite(x.realizedR)||finite(x.shadowR));return{assetClass:asset,rejectedCount:rejected.length,evaluableRejected:withOutcome.length,averageRejectedOutcomeR:avg(withOutcome.map(x=>x.forwardR??x.shadowR??x.realizedR)),state:withOutcome.length>=20?'OPPORTUNITY_COST_LEARNING_ACTIVE':'COLLECTING'};};
 const opportunityCost=[alt(shadow,'STOCK'),alt(cryptoShadow,'CRYPTO')];
-
 const parameterStability={state:'REQUIRED_FOR_PROMOTION',rules:['No live promotion from a single best-fit threshold.','Challenger must remain positive under small stop/target/entry-threshold perturbations.','Require forward or holdout evidence; in-sample optimization alone is invalid.','A parameter change may reduce risk immediately but may not increase hard live-risk ceilings automatically.']};
-const replayEngine={state:'READY_FOR_ENRICHMENT',inputs:['Robinhood-confirmed fills/exits','1m historical bars','saved signal/stop/target/setup/regime'],outputs:['MAE/MFE','time-to-edge-decay','alternative exit outcomes','missed-opportunity comparison','best-alternative ranking'],rule:'Replay is research only; hypothetical outcomes are never written as real fills or PnL.'};
+const replayEngine={state:replayRows.length?'ACTIVE':'AWAITING_RESOLVED_TRADES',generatedAt:replay.generatedAt||null,sourceStatus:replay.status||'MISSING',sampleSize:replayRows.length,outputs:['MAE/MFE','time-to-edge-decay','15/30/60m alternative exits'],rule:'Replay is research only; hypothetical outcomes are never written as real fills or PnL.'};
 const chaosTesting={requiredScenarios:['stale quote/feed','Alpaca timeout','Robinhood MCP unavailable','ambiguous order submission','partial fill','duplicate working order','spread shock','stock halt/resumption','early close','local/broker position mismatch','protection creation failure','runner restart mid-order'],liveRule:'Any unresolved chaos condition fails closed for new risk; reconcile exits/protection first.'};
-const timeDecay={state:bySession.some(x=>x.n>=10)?'PARTIAL_EVIDENCE':'INSUFFICIENT_EVIDENCE',bySession,rule:'Raise thresholds or reduce size in weak time buckets only after sufficient reconciled evidence.'};
+const timeDecay={state:bySession.some(x=>x.n>=10)||replayRows.length>=10?'PARTIAL_EVIDENCE':'INSUFFICIENT_EVIDENCE',bySession,replayAverageEdgeDecayMinutes:maeMfe.averageEdgeDecayMinutes,rule:'Raise thresholds or reduce size in weak time buckets only after sufficient reconciled/replay evidence.'};
 const riskOfRuin={state:resolved.length>=30?'ESTIMABLE':'INSUFFICIENT_REAL_TRADES',note:'Do not publish a precise ruin probability until enough independent real trades and stable sizing assumptions exist.',inputs:{resolvedTrades:resolved.length,averageR:avg(resolved.map(t=>t.realizedR)),winRatePct:stats(resolved).winRatePct,maxLossStreak}};
-
 const out={schemaVersion:1,generatedAt,source:'TESTSTOCK_TRADE_QUALITY_ENGINE',realTradeCoverage:{total:trades.length,resolved:resolved.length,open:open.length},executionScorecard,maeMfe,setupGovernance,timeDecay,drawdownRisk,riskOfRuin,opportunityCost,replayEngine,parameterStability,brokerWatchdog,dataWatchdog,chaosTesting,liquidityShockPolicy:{source:'daytrader-intelligence + live Robinhood quote',rule:'If spread/liquidity degrades materially between research and broker submission, skip new entry or exit risk using fastest supported risk-appropriate order. Never chase beyond maximum entry.'},haltResumptionPolicy:{rule:'A halt or uncertain resumption state blocks new entry. Previously open Teststock positions must be reconciled and managed when broker trading resumes.'},paperTwin:{enabled:true,authority:'SHADOW_ONLY',rule:'Run alternative entries/stops/targets beside live decisions; never mix simulated outcomes with Robinhood-confirmed journals.'},bestAlternativeAnalysis:{enabled:true,rule:'At each real entry/exit, preserve contemporaneous ranked alternatives so post-trade analysis can determine whether ranking or execution caused underperformance.'},healthDashboardContract:{fields:['runner freshness','Robinhood MCP connectivity','feed freshness','circuit breaker','active positions','aggregate stop risk','portfolio heat','top qualified setups','spread/slippage','execution latency','new-risk permission']},policy:'Optimize after-cost expectancy and execution quality, not trade count. Every learning layer may reorder, reduce, pause, retire or shadow a setup, but may never invent evidence, bypass live qualification, or increase the existing hard risk ceiling.'};
-await write('docs/data/trade-quality-intelligence.json',out);
-console.log(`Trade quality engine: resolved=${resolved.length}, executionSamples=${execRows.length}, risk=${drawdownRisk.state}, data=${dataWatchdog.state}`);
+await write('docs/data/trade-quality-intelligence.json',out);console.log(`Trade quality engine: resolved=${resolved.length}, replay=${replayRows.length}, executionSamples=${execRows.length}, risk=${drawdownRisk.state}, data=${dataWatchdog.state}`);
