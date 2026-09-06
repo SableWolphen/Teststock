@@ -82,7 +82,39 @@
       "status": "WAIT_ENTRY",
       "reason": "Qualified crypto candidate remains under 24/7 monitoring below its current buy zone.",
       "observedPrice": 0.088548,
-      "stateChangedAt": "2026-09-06T15:01:41.785Z"
+      "stateChangedAt": "2026-09-06T15:01:41.785Z",
+      "intradayEdge": {
+        "status": "FRESH",
+        "generatedAt": "2026-09-06T15:33:55.180Z",
+        "setup": "WEAK_LONG_SETUP",
+        "price": 0.0886075,
+        "vwap": 0.088791144152117,
+        "aboveVwap": false,
+        "relVol": 0,
+        "momentum1mPct": -0.06654147846141267,
+        "momentum5mPct": -0.09302063366782853,
+        "momentumAcceleration": false,
+        "openingRange": null,
+        "orbBreakout": false,
+        "orbFailure": false,
+        "rangeHigh": 0.089009,
+        "rangeLow": 0.08799965,
+        "score": 27,
+        "regime": "WEAK_OR_REVERSING",
+        "costAdjustedEdge": 1.35,
+        "realFillLearningState": "UNKNOWN",
+        "executionCostNote": "Robinhood live spread/slippage check remains mandatory immediately before order.",
+        "profitProtection": {
+          "armAfterR": 0.75,
+          "trailAfterR": 1.25,
+          "neverWidenStop": true
+        },
+        "adaptiveSizing": {
+          "mode": "EDGE_WEIGHTED_WITHIN_EXISTING_RISK_CAP",
+          "multiplier": 0.25,
+          "mayNotIncreaseExistingRiskCap": true
+        }
+      }
     },
     {
       "id": "ENTRY:CRYPTO:MTD/USD",
@@ -122,7 +154,11 @@
       "status": "PRICE_UNAVAILABLE",
       "reason": "Latest Alpaca crypto price unavailable.",
       "observedPrice": null,
-      "stateChangedAt": "2026-09-06T15:01:41.785Z"
+      "stateChangedAt": "2026-09-06T15:01:41.785Z",
+      "intradayEdge": {
+        "status": "UNAVAILABLE_FAIL_CLOSED",
+        "generatedAt": "2026-09-06T15:33:55.180Z"
+      }
     },
     {
       "id": "ENTRY:CRYPTO:HBAR/USD",
@@ -162,7 +198,11 @@
       "status": "PRICE_UNAVAILABLE",
       "reason": "Latest Alpaca crypto price unavailable.",
       "observedPrice": null,
-      "stateChangedAt": "2026-09-06T15:01:41.785Z"
+      "stateChangedAt": "2026-09-06T15:01:41.785Z",
+      "intradayEdge": {
+        "status": "UNAVAILABLE_FAIL_CLOSED",
+        "generatedAt": "2026-09-06T15:33:55.180Z"
+      }
     },
     {
       "id": "ENTRY:CRYPTO:CROID/USD",
@@ -202,7 +242,11 @@
       "status": "PRICE_UNAVAILABLE",
       "reason": "Latest Alpaca crypto price unavailable.",
       "observedPrice": null,
-      "stateChangedAt": "2026-09-06T15:11:20.825Z"
+      "stateChangedAt": "2026-09-06T15:11:20.825Z",
+      "intradayEdge": {
+        "status": "UNAVAILABLE_FAIL_CLOSED",
+        "generatedAt": "2026-09-06T15:33:55.180Z"
+      }
     },
     {
       "id": "ENTRY:CRYPTO:SUI/USD",
@@ -242,7 +286,11 @@
       "status": "PRICE_UNAVAILABLE",
       "reason": "Latest Alpaca crypto price unavailable.",
       "observedPrice": null,
-      "stateChangedAt": "2026-09-06T15:01:41.785Z"
+      "stateChangedAt": "2026-09-06T15:01:41.785Z",
+      "intradayEdge": {
+        "status": "UNAVAILABLE_FAIL_CLOSED",
+        "generatedAt": "2026-09-06T15:33:55.180Z"
+      }
     },
     {
       "id": "ENTRY:CRYPTO:OP/USD",
@@ -282,7 +330,11 @@
       "status": "PRICE_UNAVAILABLE",
       "reason": "Latest Alpaca crypto price unavailable.",
       "observedPrice": null,
-      "stateChangedAt": "2026-09-06T15:01:41.785Z"
+      "stateChangedAt": "2026-09-06T15:01:41.785Z",
+      "intradayEdge": {
+        "status": "UNAVAILABLE_FAIL_CLOSED",
+        "generatedAt": "2026-09-06T15:33:55.180Z"
+      }
     },
     {
       "id": "POSITION:STOCK:RPRX",
@@ -356,5 +408,40 @@
     "TRIGGER_2_TARGET1": "Target 1 reached — execute validated first scale-out.",
     "TRIGGER_3_TARGET2": "Target 2 reached — execute validated exit/runner decision."
   },
-  "creditPolicy": "Alpaca/GitHub monitor prices. Claude should read the small dispatch packet first and avoid market/broker work when no action is needed."
+  "creditPolicy": "Alpaca/GitHub monitor prices. Claude should read the small dispatch packet first and avoid market/broker work when no action is needed.",
+  "dayTraderPolicy": {
+    "enabled": true,
+    "stocks": {
+      "regularSessionOnly": true,
+      "newEntryCutoffMinutesBeforeClose": 30,
+      "forcedExitMinutesBeforeClose": 15,
+      "overnightAllowed": false
+    },
+    "crypto": {
+      "intradayOnly": true,
+      "maximumHoldingHours": 8
+    },
+    "enforcedAt": "2026-09-06T15:33:55.135Z"
+  },
+  "intradayEngine": {
+    "schemaVersion": 1,
+    "generatedAt": "2026-09-06T15:33:55.180Z",
+    "status": "DEGRADED",
+    "errors": [
+      "crypto: b1.at is not a function"
+    ],
+    "features": [
+      "1m momentum",
+      "5m momentum",
+      "VWAP",
+      "relative volume",
+      "opening range breakout",
+      "momentum acceleration",
+      "range context",
+      "cost-adjusted edge",
+      "adaptive sizing",
+      "profit protection"
+    ],
+    "policy": "Intraday edge may block or reduce size but may never create eligibility by itself. Stale/unavailable data fails closed for new entries; exits remain prioritized."
+  }
 }
