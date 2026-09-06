@@ -103,7 +103,7 @@ Use opening-range breakout, VWAP momentum and relative-volume setups only when t
 
 Review open day trades after roughly 20 minutes if they are not progressing. Maximum intended holding time is 120 minutes, but all day-trader stock quantity must still be flat before the regular-session close. Begin forced-exit handling 10 minutes before close and keep reconciling until Robinhood confirms flat. Never turn a losing day trade into an overnight swing.
 
-Process qualified stock candidates in rank order, then use intraday adjusted score / cost-adjusted edge, live discovery rank, catalyst quality and liquidity quality to break ties. Continue while dynamic live capacity remains. After every fill or exit, recompute capacity before considering another candidate.
+Qualified stock entries are automatic; process them in rank order without requesting user approval, then use intraday adjusted score / cost-adjusted edge, live discovery rank, catalyst quality and liquidity quality to break ties. Continue while dynamic live capacity remains. After every fill or exit, recompute capacity before considering another candidate.
 
 ## Crypto
 
