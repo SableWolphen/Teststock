@@ -8,6 +8,16 @@ set -euo pipefail
 : "${ALPACA_API_KEY:?ALPACA_API_KEY is required}"
 : "${ALPACA_API_SECRET:?ALPACA_API_SECRET is required}"
 
+# Preserve executor dispatch fingerprints outside the git worktree so the hourly
+# runner's `git reset --hard origin/main` cannot erase local duplicate-prevention
+# state between 45-second cycles or between successive long-lived sessions.
+RUNTIME_STATE_DIR="${TESTSTOCK_RUNTIME_STATE_DIR:-$HOME/.teststock-runtime}"
+RUNTIME_DISPATCH_STATE="$RUNTIME_STATE_DIR/execution-dispatch.json"
+mkdir -p "$RUNTIME_STATE_DIR"
+if [[ -f "$RUNTIME_DISPATCH_STATE" ]]; then
+  cp "$RUNTIME_DISPATCH_STATE" docs/data/execution-dispatch.json
+fi
+
 node scripts/build-daytrader-intelligence.mjs
 node scripts/validate-daytrader-intelligence.mjs
 node scripts/build-trade-quality-engine.mjs
@@ -22,19 +32,43 @@ node scripts/validate-intraday-edge-overlay.mjs
 node scripts/validate-trigger-board.mjs
 node scripts/build-execution-dispatch.mjs
 node scripts/validate-execution-dispatch.mjs
+cp docs/data/execution-dispatch.json "$RUNTIME_DISPATCH_STATE"
 node scripts/build-live-trading-health.mjs
 
 should_run=$(python - <<'PY'
 import json
-try:
-    with open('docs/data/execution-dispatch.json', 'r', encoding='utf-8') as f: d=json.load(f)
-    with open('docs/data/execution-watchlist.json', 'r', encoding='utf-8') as f: w=json.load(f)
-    with open('docs/data/daytrader-intelligence.json', 'r', encoding='utf-8') as f: i=json.load(f)
-    with open('docs/data/trade-quality-intelligence.json', 'r', encoding='utf-8') as f: q=json.load(f)
-    active=any(isinstance(p,dict) and p.get('status')=='ACTIVE' for p in (w.get('positions') or []))
-    print('true' if d.get('claudeShouldRun') or active else 'false')
-except Exception:
-    print('true')
+from datetime import datetime, timezone
+
+def load(path, default):
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return default
+
+def age_minutes(value):
+    try:
+        dt=datetime.fromisoformat(str(value).replace('Z','+00:00'))
+        return max(0.0,(datetime.now(timezone.utc)-dt.astimezone(timezone.utc)).total_seconds()/60.0)
+    except Exception:
+        return float('inf')
+
+d=load('docs/data/execution-dispatch.json', {})
+w=load('docs/data/execution-watchlist.json', {})
+t=load('docs/data/crypto-tournament.json', {})
+a=load('docs/data/crypto-profitability-admission.json', {})
+
+active=any(isinstance(p,dict) and p.get('status')=='ACTIVE' for p in (w.get('positions') or []))
+
+# Normal crypto must be able to wake Claude even when there is no simultaneous
+# stock dispatch. Keep this fail-closed: only a fresh qualified champion whose
+# profitability-admission state permits live risk can wake the executor.
+crypto_admitted=a.get('state') in {'MICRO_PROBATION','PROBATION','LIVE_ADMITTED'} and float(a.get('sizeMultiplier') or 0)>0
+crypto_fresh=age_minutes(t.get('generatedAt')) <= 15
+crypto_candidate=isinstance(t.get('qualifiedChampion'), dict) and bool(t.get('qualifiedChampion',{}).get('ticker'))
+crypto_should_run=crypto_admitted and crypto_fresh and crypto_candidate
+
+print('true' if d.get('claudeShouldRun') or active or crypto_should_run else 'false')
 PY
 )
 
