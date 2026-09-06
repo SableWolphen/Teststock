@@ -27,6 +27,7 @@ node scripts/validate-intraday-edge-overlay.mjs
 node scripts/validate-trigger-board.mjs
 node scripts/build-execution-dispatch.mjs
 node scripts/validate-execution-dispatch.mjs
+node scripts/build-live-trading-health.mjs
 
 should_run=$(python - <<'PY'
 import json
