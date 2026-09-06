@@ -1,0 +1,61 @@
+name: Publish Teststock trading health
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '4,9,14,19,24,29,34,39,44,49,54,59 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/trading-health.yml'
+      - 'scripts/build-daytrader-intelligence.mjs'
+      - 'scripts/validate-daytrader-intelligence.mjs'
+      - 'scripts/build-trade-quality-engine.mjs'
+      - 'scripts/validate-trade-quality-engine.mjs'
+      - 'scripts/build-live-trading-health.mjs'
+      - 'docs/trading-health.html'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: teststock-trading-health
+  cancel-in-progress: true
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build health intelligence
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+        run: |
+          set -euo pipefail
+          node scripts/build-daytrader-intelligence.mjs
+          node scripts/validate-daytrader-intelligence.mjs
+          node scripts/build-trade-quality-engine.mjs
+          node scripts/validate-trade-quality-engine.mjs
+          node scripts/build-live-trading-health.mjs
+      - name: Publish health JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data/daytrader-intelligence.json docs/data/trade-quality-intelligence.json docs/data/live-trading-health.json
+          if git diff --cached --quiet; then
+            echo 'No health changes to publish.'
+          else
+            git commit -m 'Refresh Teststock trading health'
+            git pull --rebase -X theirs origin main
+            git push
+          fi
