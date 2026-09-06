@@ -1,18 +1,12 @@
-name: Claude Teststock executor
+name: Claude Teststock executor fallback
 
-# Event-driven: fires immediately after either upstream data workflow publishes
-# a fresh dispatch, instead of relying solely on the cron below. The schedule
-# is kept as a five-minute active-position management/reconciliation sweep.
+# Manual/emergency fallback only. Normal live execution now happens inside the
+# persistent self-hosted intraday runner so stale queued jobs cannot accumulate.
 on:
-  workflow_run:
-    workflows: ["Refresh Teststock picks", "Monitor Teststock triggers"]
-    types: [completed]
-  schedule:
-    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 concurrency:
-  group: claude-teststock-executor
+  group: claude-teststock-executor-fallback
   cancel-in-progress: false
 
 permissions:
@@ -20,12 +14,8 @@ permissions:
 
 jobs:
   execute:
-    if: >-
-      github.event_name != 'workflow_run' ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: [self-hosted, teststock-trader]
-    timeout-minutes: 4
-
+    timeout-minutes: 5
     steps:
       - name: Checkout latest Teststock main
         uses: actions/checkout@v5
@@ -44,47 +34,15 @@ jobs:
           test -f docs/data/execution-dispatch.json
           test -f docs/data/trigger-board.json
           test -f docs/data/execution-watchlist.json
-          test -f docs/data/crypto-tournament.json
-          echo 'Claude runtime and Teststock execution inputs are present.'
 
-      - name: Check whether execution or active-position management is required
-        id: dispatch_check
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Wake Claude when the dispatch has an action OR while Teststock has an
-          # ACTIVE position that needs five-minute broker reconciliation/day-trade
-          # management. On a parse/read error this deliberately fails open to
-          # Claude, whose own prompt still fails closed before creating risk.
-          should_run=$(python -c "
-          import json
-          try:
-              with open('docs/data/execution-dispatch.json', 'r', encoding='utf-8') as f:
-                  d = json.load(f)
-              with open('docs/data/execution-watchlist.json', 'r', encoding='utf-8') as f:
-                  w = json.load(f)
-              active = any(isinstance(p, dict) and p.get('status') == 'ACTIVE' for p in (w.get('positions') or []))
-              print('true' if d.get('claudeShouldRun') or active else 'false')
-          except Exception:
-              print('true')
-          " 2>/dev/null || echo true)
-          echo "should_run=$should_run" >> "$GITHUB_OUTPUT"
-          echo "Claude wake required=$should_run"
-
-      - name: No execution or position management required
-        if: steps.dispatch_check.outputs.should_run != 'true'
-        shell: bash
-        run: echo 'No actionable dispatch and no ACTIVE Teststock position; exiting without calling Robinhood.'
-
-      - name: Run Claude sole execution agent
-        if: steps.dispatch_check.outputs.should_run == 'true'
+      - name: Run one reconciled Claude execution cycle
         shell: bash
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PYTHONIOENCODING: utf-8
         run: |
           set -euo pipefail
-          output_path="$(mktemp /tmp/teststock-claude-executor.XXXXXX.json)"
+          output_path="$(mktemp /tmp/teststock-claude-fallback.XXXXXX.json)"
           trap 'rm -f "$output_path"' EXIT
           claude -p "$(cat scripts/claude-executor-prompt.md)" \
             --mcp-config .mcp.json \
@@ -92,14 +50,11 @@ jobs:
             --max-turns 16 \
             --output-format json \
             > "$output_path"
-
           python - "$output_path" <<'PY'
-          import json, sys
-          p=sys.argv[1]
-          with open(p,'r',encoding='utf-8') as f:
+          import json,sys
+          with open(sys.argv[1],'r',encoding='utf-8') as f:
               data=json.load(f)
+          print('Claude fallback executor completed.')
           result=data.get('result') if isinstance(data,dict) else None
-          print('Claude executor completed.')
-          if isinstance(result,str):
-              print(result[:1000])
+          if isinstance(result,str): print(result[:1000])
           PY
