@@ -85,34 +85,66 @@
       "stateChangedAt": "2026-09-06T15:01:41.785Z",
       "intradayEdge": {
         "status": "FRESH",
-        "generatedAt": "2026-09-06T15:33:55.180Z",
-        "setup": "WEAK_LONG_SETUP",
-        "price": 0.0886075,
+        "generatedAt": "2026-09-06T15:35:25.781Z",
+        "setup": "MIXED_INTRADAY",
+        "price": 0.0887328,
         "vwap": 0.088791144152117,
         "aboveVwap": false,
         "relVol": 0,
-        "momentum1mPct": -0.06654147846141267,
-        "momentum5mPct": -0.09302063366782853,
-        "momentumAcceleration": false,
+        "momentum1mPct": 0.141410151510879,
+        "momentum5mPct": 0.04825797722403102,
+        "momentumAcceleration": true,
         "openingRange": null,
         "orbBreakout": false,
         "orbFailure": false,
         "rangeHigh": 0.089009,
         "rangeLow": 0.08799965,
-        "score": 27,
-        "regime": "WEAK_OR_REVERSING",
-        "costAdjustedEdge": 1.35,
-        "realFillLearningState": "UNKNOWN",
-        "executionCostNote": "Robinhood live spread/slippage check remains mandatory immediately before order.",
+        "score": 37,
+        "regime": "MIXED",
+        "adjustedScore": 37,
+        "marketRegime": "UNKNOWN",
+        "relativeStrengthPct": null,
+        "benchmark5mMomentumPct": null,
+        "eventRisk": {
+          "raw": "UNKNOWN",
+          "high": false
+        },
+        "realFillLearning": {
+          "state": "INSUFFICIENT_DATA",
+          "bucket": null,
+          "executionQuality": {
+            "confirmedEntrySlippageSamples": 0,
+            "averageAdverseEntrySlippagePct": null,
+            "confirmedExitSlippageSamples": 0,
+            "averageAdverseExitSlippagePct": null,
+            "fillTimeSamples": 0,
+            "averageTimeToFillSeconds": null,
+            "protectionVerificationSamples": 0,
+            "protectiveExitVerificationRatePct": null,
+            "protectionLatencySamples": 0,
+            "averageProtectionLatencySeconds": null
+          }
+        },
+        "costAdjustedEdge": 1.85,
+        "executionCostNote": "Robinhood live spread/slippage check is mandatory immediately before order; expected edge must remain positive after current spread.",
         "profitProtection": {
-          "armAfterR": 0.75,
-          "trailAfterR": 1.25,
-          "neverWidenStop": true
+          "armAfterR": 0.6,
+          "moveStopTowardBreakevenAfterR": 0.8,
+          "trailAfterR": 1.1,
+          "neverWidenStop": true,
+          "protectWinnerBeforeGiveback": true
         },
         "adaptiveSizing": {
-          "mode": "EDGE_WEIGHTED_WITHIN_EXISTING_RISK_CAP",
+          "mode": "EDGE_AND_REAL_FILL_WEIGHTED_WITHIN_EXISTING_RISK_CAP",
           "multiplier": 0.25,
           "mayNotIncreaseExistingRiskCap": true
+        },
+        "regimeRouting": {
+          "preferred": [
+            "VWAP_TREND",
+            "MIXED_INTRADAY"
+          ],
+          "cashAllowed": true
         }
       }
     },
@@ -157,7 +189,7 @@
       "stateChangedAt": "2026-09-06T15:01:41.785Z",
       "intradayEdge": {
         "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-06T15:33:55.180Z"
+        "generatedAt": "2026-09-06T15:35:25.781Z"
       }
     },
     {
@@ -201,7 +233,7 @@
       "stateChangedAt": "2026-09-06T15:01:41.785Z",
       "intradayEdge": {
         "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-06T15:33:55.180Z"
+        "generatedAt": "2026-09-06T15:35:25.781Z"
       }
     },
     {
@@ -245,7 +277,7 @@
       "stateChangedAt": "2026-09-06T15:11:20.825Z",
       "intradayEdge": {
         "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-06T15:33:55.180Z"
+        "generatedAt": "2026-09-06T15:35:25.781Z"
       }
     },
     {
@@ -289,7 +321,7 @@
       "stateChangedAt": "2026-09-06T15:01:41.785Z",
       "intradayEdge": {
         "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-06T15:33:55.180Z"
+        "generatedAt": "2026-09-06T15:35:25.781Z"
       }
     },
     {
@@ -333,7 +365,7 @@
       "stateChangedAt": "2026-09-06T15:01:41.785Z",
       "intradayEdge": {
         "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-06T15:33:55.180Z"
+        "generatedAt": "2026-09-06T15:35:25.781Z"
       }
     },
     {
@@ -421,15 +453,20 @@
       "intradayOnly": true,
       "maximumHoldingHours": 8
     },
-    "enforcedAt": "2026-09-06T15:33:55.135Z"
+    "enforcedAt": "2026-09-06T15:35:25.728Z"
   },
   "intradayEngine": {
-    "schemaVersion": 1,
-    "generatedAt": "2026-09-06T15:33:55.180Z",
+    "schemaVersion": 2,
+    "generatedAt": "2026-09-06T15:35:25.781Z",
     "status": "DEGRADED",
     "errors": [
       "crypto: b1.at is not a function"
     ],
+    "benchmarks": {
+      "spy": null,
+      "qqq": null,
+      "btc": null
+    },
     "features": [
       "1m momentum",
       "5m momentum",
@@ -437,11 +474,23 @@
       "relative volume",
       "opening range breakout",
       "momentum acceleration",
-      "range context",
-      "cost-adjusted edge",
+      "SPY/QQQ relative strength",
+      "BTC context",
+      "market regime routing",
+      "event-risk suppression",
+      "setup-specific real-fill learning",
+      "execution-cost expectancy",
       "adaptive sizing",
       "profit protection"
     ],
-    "policy": "Intraday edge may block or reduce size but may never create eligibility by itself. Stale/unavailable data fails closed for new entries; exits remain prioritized."
+    "profitGivebackPolicy": {
+      "enabled": true,
+      "source": "ROBINHOOD_CONFIRMED_REALIZED_AND_UNREALIZED_PNL_AT_EXECUTION_TIME",
+      "reduceRiskAfterGivebackPct": 35,
+      "stopNewRiskAfterGivebackPct": 50,
+      "onlyWhenDayPnlPositive": true,
+      "note": "Executor must calculate from fresh broker-confirmed state; repository snapshots never invent PnL."
+    },
+    "policy": "Intraday edge may block, reorder, or reduce size but may never create eligibility or increase maximum risk. Stale/unavailable data fails closed for new entries; exits remain prioritized."
   }
 }
