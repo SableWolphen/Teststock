@@ -1,0 +1,13 @@
+import fs from 'node:fs/promises';
+const x=JSON.parse(await fs.readFile('docs/data/trade-quality-intelligence.json','utf8'));
+const die=m=>{throw new Error(`trade-quality validation failed: ${m}`)};
+if(x.schemaVersion!==1)die('schemaVersion');
+if(!x.generatedAt||!Number.isFinite(new Date(x.generatedAt).getTime()))die('generatedAt');
+for(const k of ['executionScorecard','maeMfe','setupGovernance','timeDecay','drawdownRisk','riskOfRuin','opportunityCost','replayEngine','parameterStability','brokerWatchdog','dataWatchdog','chaosTesting','paperTwin','bestAlternativeAnalysis','healthDashboardContract'])if(x[k]==null)die(`missing ${k}`);
+if(!['NORMAL','REDUCE_NEW_RISK','STOP_NEW_RISK'].includes(x.drawdownRisk.state))die('drawdown risk state');
+if(!['OK','STOP_NEW_RISK'].includes(x.dataWatchdog.state))die('data watchdog state');
+if(x.paperTwin.authority!=='SHADOW_ONLY')die('paper twin authority');
+if(!String(x.policy||'').includes('not trade count'))die('expectancy-not-count policy');
+if(!String(x.policy||'').includes('may never invent evidence'))die('evidence safety');
+if(!Array.isArray(x.chaosTesting.requiredScenarios)||x.chaosTesting.requiredScenarios.length<8)die('chaos scenarios');
+console.log('Trade quality engine validation passed.');
