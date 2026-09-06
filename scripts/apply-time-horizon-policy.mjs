@@ -1,13 +1,24 @@
 import fs from 'node:fs/promises';
 const read=async f=>JSON.parse(await fs.readFile(f,'utf8')),write=(f,x)=>fs.writeFile(f,JSON.stringify(x,null,2));
 const [signal,stocks,crypto,market]=await Promise.all(['docs/signal.json','docs/data/stock-tournament.json','docs/data/crypto-tournament.json','docs/data/market-intelligence.json'].map(read));
-const n=x=>Number(x);
+const DAY_TRADER_EFFECTIVE_AT='2026-09-06T15:00:00.000Z';
+
+const commonRotation={
+  allowImmediateRotationAfterConfirmedExit:true,
+  cooldownAfterStopMinutes:20,
+  sameSymbolReentryCooldownMinutes:30,
+  consecutiveStopLossPause:{count:2,pauseMinutes:60},
+  stopNewEntriesAfterStopLossExitsPerNyDay:3,
+  existingDailyLossCapRemainsAuthoritative:true,
+  brokerAccountRestrictionsRemainAuthoritative:true
+};
 
 function stockPolicy(x){
   return {
     classification:'DAY_TRADE',
     classificationIsAdvisory:false,
-    liveExecutionStyle:'DAY_TRADER_ONLY',
+    liveExecutionStyle:'ACTIVE_DAY_TRADER',
+    dayTraderModeEffectiveAt:DAY_TRADER_EFFECTIVE_AT,
     mayNotCreateEligibility:true,
     existingHardStopAndRiskRemainAuthoritative:true,
     holdingWindow:'MINUTES_TO_SAME_SESSION',
@@ -19,24 +30,32 @@ function stockPolicy(x){
       'intraday VWAP/support/resistance and momentum context remain valid'
     ],
     profitExit:{
-      method:'INTRADAY_BRACKET_OR_OCO',
-      targetRule:'Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.',
+      method:'INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED',
+      targetRule:'Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.',
       target1:x.target1??null,
       target2:x.target2??null
     },
     lossExit:{
-      method:'BROKER_PROTECTED_STOP',
+      method:'SUPPORTED_BROKER_PROTECTED_STOP',
       level:x.stop??null,
       placementRule:'Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid.'
     },
     timeExit:{
-      rule:'All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.',
+      rule:'Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.',
+      softReviewAfterMinutes:45,
+      maximumHoldingMinutes:180,
       forcedExitMinutesBeforeClose:15,
       newEntryCutoffMinutesBeforeClose:30,
-      stalledTradeRule:'Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing.'
+      stalledTradeRule:'Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing.'
+    },
+    rotation:{
+      ...commonRotation,
+      maxNewEntriesPerNyDay:6,
+      maxConcurrentPositions:2,
+      maxNewEntriesPerExecutorRun:2
     },
     risk:{
-      accountRiskRule:'Existing Teststock cap remains authoritative; day-trader mode never increases it.',
+      accountRiskRule:'Existing Teststock cap remains authoritative; active day-trader mode never increases it.',
       bracketRequired:true,
       overnightRiskAllowed:false,
       noMargin:true,
@@ -51,10 +70,11 @@ function cryptoPolicy(x){
   return {
     classification:'DAY_TRADE',
     classificationIsAdvisory:false,
-    liveExecutionStyle:'DAY_TRADER_ONLY_24_7',
+    liveExecutionStyle:'ACTIVE_DAY_TRADER_24_7',
+    dayTraderModeEffectiveAt:DAY_TRADER_EFFECTIVE_AT,
     mayNotCreateEligibility:true,
     existingHardStopAndRiskRemainAuthoritative:true,
-    holdingWindow:'INTRADAY_MAX_8_HOURS',
+    holdingWindow:'INTRADAY_MAX_4_HOURS',
     entryEvidence:[
       'fresh crypto tournament generation',
       'A or A+ qualification or separately authorized seed lane',
@@ -62,16 +82,24 @@ function cryptoPolicy(x){
       'fresh Robinhood MCP tradability, spread, buying power, position and duplicate-order checks'
     ],
     profitExit:{
-      method:'INTRADAY_LIMIT_TARGETS',
+      method:'INTRADAY_LIMIT_TARGETS_WHEN_SUPPORTED',
       target1:x.target1??null,
       target2:x.target2??null,
-      momentumRule:'Take or protect profit when short-horizon momentum fails even if a distant target has not printed.'
+      momentumRule:'Protect or take profit when short-horizon momentum fails even if a distant target has not printed.'
     },
-    lossExit:{method:'BROKER_PROTECTED_STOP',level:x.stop??null},
+    lossExit:{method:'SUPPORTED_BROKER_PROTECTED_STOP',level:x.stop??null},
     timeExit:{
-      rule:'Crypto has no closing bell, so every new Teststock crypto trade is capped to an intraday holding window and must be revalidated continuously.',
-      maximumHoldingHours:8,
+      rule:'Every Teststock crypto position opened on or after dayTraderModeEffectiveAt is an intraday trade and must be revalidated continuously.',
+      softReviewAfterMinutes:45,
+      maximumHoldingMinutes:240,
+      maximumHoldingHours:4,
       expiredSetupRule:'Exit when the short-horizon thesis expires; never turn a failed intraday crypto trade into a multi-day hold.'
+    },
+    rotation:{
+      ...commonRotation,
+      maxNewEntriesPerNyDay:4,
+      maxConcurrentPositions:1,
+      maxNewEntriesPerExecutorRun:1
     },
     risk:{
       noLeverage:true,
@@ -104,26 +132,51 @@ const ids=new Set((market.providers||[]).map(x=>x.id));for(const p of additions)
 market.generatedAt=new Date().toISOString();
 market.timeHorizonPolicy={
   enabled:true,
-  liveExecutionStyle:'DAY_TRADER_ONLY',
+  liveExecutionStyle:'ACTIVE_DAY_TRADER',
+  dayTraderModeEffectiveAt:DAY_TRADER_EFFECTIVE_AT,
   classes:['DAY_TRADE'],
-  selection:'Every new live Teststock position is intraday. Longer-term research may inform ranking but may not create an overnight live position.',
+  selection:'Every new live Teststock position is intraday. The system may rotate into another qualified setup after a broker-confirmed exit; it never trades merely to stay busy.',
   stocks:{
     regularSessionOnly:true,
     newEntryCutoffMinutesBeforeClose:30,
     forcedExitMinutesBeforeClose:15,
+    softReviewAfterMinutes:45,
+    maximumHoldingMinutes:180,
     defaultFlatBySessionEnd:true,
     overnightNewPositionsAllowed:false,
     bracketOrOcoRequired:true,
+    maxNewEntriesPerNyDay:6,
+    maxConcurrentPositions:2,
+    maxNewEntriesPerExecutorRun:2,
+    cooldownAfterStopMinutes:20,
+    sameSymbolReentryCooldownMinutes:30,
+    consecutiveStopLossPause:{count:2,pauseMinutes:60},
+    stopNewEntriesAfterStopLossExitsPerNyDay:3,
     maximumAccountRisk:'Existing Teststock cap; never increased for day trading.'
   },
   crypto:{
     market:'24_7',
-    maximumHoldingHours:8,
+    softReviewAfterMinutes:45,
+    maximumHoldingMinutes:240,
+    maximumHoldingHours:4,
+    maxNewEntriesPerNyDay:4,
+    maxConcurrentPositions:1,
+    maxNewEntriesPerExecutorRun:1,
+    cooldownAfterStopMinutes:20,
+    sameSymbolReentryCooldownMinutes:30,
+    consecutiveStopLossPause:{count:2,pauseMinutes:60},
+    stopNewEntriesAfterStopLossExitsPerNyDay:3,
     revalidateContinuously:true,
     noMultiDayConversion:true,
     noLeverage:true,
     noAverageDown:true,
     noChasing:true
+  },
+  rotationSafety:{
+    allowImmediateRotationAfterConfirmedExit:true,
+    existingDailyLossCapRemainsAuthoritative:true,
+    brokerAccountRestrictionsRemainAuthoritative:true,
+    noForcedTrades:true
   }
 };
 signal.timeHorizonPolicy=market.timeHorizonPolicy;
@@ -135,4 +188,4 @@ await Promise.all([
   write('docs/signal.json',signal),
   write('docs/data/claude-signal.json',signal)
 ]);
-console.log(`Day-trader mode applied: stocks=${stocks.liveQueue.length+stocks.researchFinalists.length}; crypto=${crypto.ranked.length}; all live horizons=DAY_TRADE`);
+console.log(`Active day-trader mode applied: stocks=${stocks.liveQueue.length+stocks.researchFinalists.length}; crypto=${crypto.ranked.length}; stock max/day=6; crypto max/day=4`);
