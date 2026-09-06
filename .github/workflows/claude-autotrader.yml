@@ -2,8 +2,7 @@ name: Claude Teststock executor
 
 # Event-driven: fires immediately after either upstream data workflow publishes
 # a fresh dispatch, instead of relying solely on the cron below. The schedule
-# is kept only as a backup/reconciliation sweep in case a workflow_run event
-# is ever missed.
+# is kept as a five-minute active-position management/reconciliation sweep.
 on:
   workflow_run:
     workflows: ["Refresh Teststock picks", "Monitor Teststock triggers"]
@@ -21,15 +20,9 @@ permissions:
 
 jobs:
   execute:
-    # Only react to a workflow_run that actually succeeded and published from
-    # main; never act on a failed/cancelled upstream run. Schedule and manual
-    # workflow_dispatch events always proceed.
     if: >-
       github.event_name != 'workflow_run' ||
       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
-    # A persistent self-hosted runner is required so Robinhood MCP OAuth can be
-    # authenticated once with `claude mcp ...` / `/mcp` and securely refreshed
-    # by Claude Code. Add the custom `teststock-trader` label only to that runner.
     runs-on: [self-hosted, teststock-trader]
     timeout-minutes: 4
 
@@ -49,49 +42,45 @@ jobs:
           test -f scripts/claude-executor-prompt.md
           test -f docs/signal.json
           test -f docs/data/execution-dispatch.json
+          test -f docs/data/trigger-board.json
+          test -f docs/data/execution-watchlist.json
           test -f docs/data/crypto-tournament.json
           echo 'Claude runtime and Teststock execution inputs are present.'
 
-      - name: Check whether the fresh dispatch requires execution
+      - name: Check whether execution or active-position management is required
         id: dispatch_check
         shell: bash
         run: |
           set -euo pipefail
-          # Cheap cost-saving pre-check only. Fails OPEN (defaults to running
-          # Claude) on any read/parse error, so a bug here can never silently
-          # suppress a real trigger the way the missed 5-minute cron did -
-          # Claude's own fail-closed reading of the dispatch is still the
-          # authoritative decision every time this step can't be certain.
+          # Wake Claude when the dispatch has an action OR while Teststock has an
+          # ACTIVE position that needs five-minute broker reconciliation/day-trade
+          # management. On a parse/read error this deliberately fails open to
+          # Claude, whose own prompt still fails closed before creating risk.
           should_run=$(python -c "
           import json
           try:
               with open('docs/data/execution-dispatch.json', 'r', encoding='utf-8') as f:
                   d = json.load(f)
-              print('true' if d.get('claudeShouldRun') else 'false')
+              with open('docs/data/execution-watchlist.json', 'r', encoding='utf-8') as f:
+                  w = json.load(f)
+              active = any(isinstance(p, dict) and p.get('status') == 'ACTIVE' for p in (w.get('positions') or []))
+              print('true' if d.get('claudeShouldRun') or active else 'false')
           except Exception:
               print('true')
           " 2>/dev/null || echo true)
           echo "should_run=$should_run" >> "$GITHUB_OUTPUT"
-          echo "Dispatch claudeShouldRun=$should_run"
+          echo "Claude wake required=$should_run"
 
-      - name: Dispatch does not require execution
+      - name: No execution or position management required
         if: steps.dispatch_check.outputs.should_run != 'true'
         shell: bash
-        run: echo 'claudeShouldRun is false; exiting without calling Robinhood.'
+        run: echo 'No actionable dispatch and no ACTIVE Teststock position; exiting without calling Robinhood.'
 
       - name: Run Claude sole execution agent
         if: steps.dispatch_check.outputs.should_run == 'true'
         shell: bash
         env:
-          # Optional on a self-hosted runner already authenticated to Claude.
-          # If you prefer API billing, store ANTHROPIC_API_KEY as a GitHub
-          # Actions secret; never commit it.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          # The self-hosted Windows runner's Python defaults stdout to the
-          # legacy cp1252 console codepage, which raises UnicodeEncodeError
-          # (and fails this whole step, after Claude's own run already
-          # completed) on a non-ASCII character such as an arrow in Claude's
-          # result text. Force UTF-8 stdio so printing the result can't crash.
           PYTHONIOENCODING: utf-8
         run: |
           set -euo pipefail
@@ -109,7 +98,6 @@ jobs:
           p=sys.argv[1]
           with open(p,'r',encoding='utf-8') as f:
               data=json.load(f)
-          # Keep logs intentionally small; never print MCP payloads/account data.
           result=data.get('result') if isinstance(data,dict) else None
           print('Claude executor completed.')
           if isinstance(result,str):
