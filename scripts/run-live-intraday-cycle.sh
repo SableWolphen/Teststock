@@ -8,6 +8,11 @@ set -euo pipefail
 : "${ALPACA_API_KEY:?ALPACA_API_KEY is required}"
 : "${ALPACA_API_SECRET:?ALPACA_API_SECRET is required}"
 
+# Discover today's liquid/active opportunity set, catalysts, liquidity state,
+# shadow-strategy evidence, rejected opportunities and portfolio/circuit context.
+node scripts/build-daytrader-intelligence.mjs
+node scripts/validate-daytrader-intelligence.mjs
+
 node scripts/update-trigger-board.mjs
 node scripts/enforce-day-trader-trigger-policy.mjs
 node scripts/apply-intraday-edge-overlay.mjs
@@ -24,7 +29,12 @@ try:
         d=json.load(f)
     with open('docs/data/execution-watchlist.json', 'r', encoding='utf-8') as f:
         w=json.load(f)
+    with open('docs/data/daytrader-intelligence.json', 'r', encoding='utf-8') as f:
+        i=json.load(f)
     active=any(isinstance(p,dict) and p.get('status')=='ACTIVE' for p in (w.get('positions') or []))
+    breaker=(i.get('circuitBreaker') or {}).get('state')
+    # A STOP_NEW_RISK breaker never suppresses management/exits; it simply gives
+    # Claude context to refuse fresh entries.
     print('true' if d.get('claudeShouldRun') or active else 'false')
 except Exception:
     # Fail open to Claude; Claude itself remains fail-closed before new risk.
