@@ -5,7 +5,7 @@ const age=t=>{const x=new Date(t||0).getTime();return Number.isFinite(x)?(Date.n
 const [q,d,b,i,w,s,dispatch]=await Promise.all([read('docs/data/trade-quality-intelligence.json',{}),read('docs/data/daytrader-intelligence.json',{}),read('docs/data/trigger-board.json',{}),read('docs/data/intraday-edge.json',{}),read('docs/data/execution-watchlist.json',{}),read('docs/signal.json',{}),read('docs/data/execution-dispatch.json',{})]);
 const active=(w.positions||[]).filter(x=>x?.status==='ACTIVE');
 const actionable=(b.events||[]).filter(Boolean);
-const freshness={signalAgeMinutes:age(s.generatedAt),triggerAgeMinutes:age(b.generatedAt||b.updatedAt),intradayAgeMinutes:age(i.generatedAt),daytraderAgeMinutes:age(d.generatedAt),qualityAgeMinutes:age(q.generatedAt)};
+const freshness={signalAgeMinutes:age(s.generatedAt),triggerAgeMinutes:age(b.publishedAt),intradayAgeMinutes:age(i.generatedAt),daytraderAgeMinutes:age(d.generatedAt),qualityAgeMinutes:age(q.generatedAt)};
 const stale=Object.entries(freshness).filter(([k,v])=>!Number.isFinite(v)||((k==='signalAgeMinutes'?30:3)<v)).map(([k])=>k);
 const breaker=d?.circuitBreaker?.state||'UNKNOWN',drawdown=q?.drawdownRisk?.state||'UNKNOWN',data=q?.dataWatchdog?.state||'UNKNOWN';
 let newRisk='ALLOWED';const reasons=[];
