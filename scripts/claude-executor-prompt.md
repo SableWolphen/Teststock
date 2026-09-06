@@ -90,6 +90,8 @@ Special seed/learning lanes retain their explicitly encoded small-dollar/concurr
 
 ## Stocks
 
+For normal stock entries, process qualified A-tier candidates first and then qualified B-tier candidates whenever live capacity remains, including after an A-tier fill. An A-tier fill does not itself block a B-tier entry. B-tier size must remain at or below the existing 25% normal-size cap, with every profitability-admission, account, freshness, price, risk and protection gate still mandatory. This replaces older fallback-only wording; it does not expand the separate A-only seed lanes.
+
 Every Teststock stock entry opened on or after `docs/signal.json.timeHorizonPolicy.dayTraderModeEffectiveAt` is a same-session day trade.
 
 Before every stock buy:
