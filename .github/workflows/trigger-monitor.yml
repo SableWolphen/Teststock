@@ -10,6 +10,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/update-trigger-board.mjs'
+      - 'scripts/enforce-day-trader-trigger-policy.mjs'
       - 'scripts/crypto-monitor-candidates.mjs'
       - 'scripts/test-crypto-monitoring.mjs'
       - 'scripts/nyse-session.mjs'
@@ -57,9 +58,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # A stale candidate is never tradable as-is. During the regular US
-          # stock session, request a fresh full scan so the candidate gets
-          # rebuilt from current data and can be re-evaluated from scratch.
           dow=$(TZ=America/New_York date +%u)
           hour=$(TZ=America/New_York date +%H)
           minute=$(TZ=America/New_York date +%M)
@@ -97,6 +95,9 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/update-trigger-board.mjs
+
+      - name: Enforce day-trader session and flattening policy
+        run: node scripts/enforce-day-trader-trigger-policy.mjs
 
       - name: Validate trigger board fail closed
         run: node scripts/validate-trigger-board.mjs
