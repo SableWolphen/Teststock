@@ -2,6 +2,11 @@ name: Live Teststock intraday runner
 
 on:
   workflow_dispatch:
+    inputs:
+      verify_only:
+        description: 'Verify runner startup without invoking the trading loop or broker tools'
+        type: boolean
+        default: false
   schedule:
     # GitHub schedules the long-lived self-hosted session hourly. The job itself
     # runs fast local cycles about every 45 seconds for ~55 minutes.
@@ -68,6 +73,7 @@ jobs:
           echo 'Persistent Teststock runtime, replay inputs and trade-quality engine are present.'
 
       - name: Run 45-second intraday decision loop
+        if: ${{ !inputs.verify_only }}
         shell: bash
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
