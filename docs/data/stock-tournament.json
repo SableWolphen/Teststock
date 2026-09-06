@@ -1,7 +1,7 @@
 {
   "schemaVersion": 8,
   "source": "TESTSTOCK_UP_TO_20000_STOCK_KNOCKOUT",
-  "generatedAt": "2026-09-06T15:01:40.986Z",
+  "generatedAt": "2026-09-06T15:11:19.865Z",
   "objective": "Continuously eliminate weaker candidates from every legitimate active/tradable U.S. operating-company stock available, capped at 20,000 symbols, then buy the best acceptable live survivor without waiting only for a perfect setup.",
   "policy": {
     "targetTournamentSize": 20000,
@@ -142,7 +142,8 @@
     "timeHorizonPolicy": {
       "classification": "DAY_TRADE",
       "classificationIsAdvisory": false,
-      "liveExecutionStyle": "DAY_TRADER_ONLY",
+      "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+      "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
       "mayNotCreateEligibility": true,
       "existingHardStopAndRiskRemainAuthoritative": true,
       "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -154,24 +155,41 @@
         "intraday VWAP/support/resistance and momentum context remain valid"
       ],
       "profitExit": {
-        "method": "INTRADAY_BRACKET_OR_OCO",
-        "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+        "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+        "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
         "target1": 230.98,
         "target2": 238.46
       },
       "lossExit": {
-        "method": "BROKER_PROTECTED_STOP",
+        "method": "SUPPORTED_BROKER_PROTECTED_STOP",
         "level": 213.98,
         "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
       },
       "timeExit": {
-        "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+        "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+        "softReviewAfterMinutes": 45,
+        "maximumHoldingMinutes": 180,
         "forcedExitMinutesBeforeClose": 15,
         "newEntryCutoffMinutesBeforeClose": 30,
-        "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+        "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+      },
+      "rotation": {
+        "allowImmediateRotationAfterConfirmedExit": true,
+        "cooldownAfterStopMinutes": 20,
+        "sameSymbolReentryCooldownMinutes": 30,
+        "consecutiveStopLossPause": {
+          "count": 2,
+          "pauseMinutes": 60
+        },
+        "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+        "existingDailyLossCapRemainsAuthoritative": true,
+        "brokerAccountRestrictionsRemainAuthoritative": true,
+        "maxNewEntriesPerNyDay": 6,
+        "maxConcurrentPositions": 2,
+        "maxNewEntriesPerExecutorRun": 2
       },
       "risk": {
-        "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+        "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
         "bracketRequired": true,
         "overnightRiskAllowed": false,
         "noMargin": true,
@@ -376,7 +394,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -388,24 +407,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 42.2,
           "target2": 46.23
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 33.05,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -607,7 +643,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -619,24 +656,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 230.98,
           "target2": 238.46
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 213.98,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -837,7 +891,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -849,24 +904,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 82.82,
           "target2": 95.04
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 55.04,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -1067,7 +1139,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -1079,24 +1152,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 83.51,
           "target2": 92.16
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 63.83,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -1297,7 +1387,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -1309,24 +1400,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 91.29,
           "target2": 102.29
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 66.29,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -1527,7 +1635,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -1539,24 +1648,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 82.83,
           "target2": 92.44
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 61.01,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -1757,7 +1883,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -1769,24 +1896,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 17.97,
           "target2": 19.46
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 14.6,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -1985,7 +2129,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -1997,24 +2142,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 270.53,
           "target2": 299.35
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 205.03,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -2213,7 +2375,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -2225,24 +2388,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 125.05,
           "target2": 136.6
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 98.8,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -2441,7 +2621,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -2453,24 +2634,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 65.56,
           "target2": 73.22
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 48.13,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -2689,7 +2887,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -2701,24 +2900,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 289.88,
           "target2": 311.79
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 240.11,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -2932,7 +3148,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -2944,24 +3161,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 110.73,
           "target2": 119.2
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 91.48,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -3160,7 +3394,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -3172,24 +3407,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 15.62,
           "target2": 17.34
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 11.72,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -3390,7 +3642,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -3402,24 +3655,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 162.51,
           "target2": 186.05
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 109.01,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -3619,7 +3889,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -3631,24 +3902,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 234.51,
           "target2": 239.01
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 224.29,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -3847,7 +4135,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -3859,24 +4148,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 42.25,
           "target2": 47.1
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 31.22,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -4077,7 +4383,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -4089,24 +4396,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 92.78,
           "target2": 101.62
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 72.71,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -4308,7 +4632,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -4320,24 +4645,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 226.92,
           "target2": 233.67
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 211.57,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -4538,7 +4880,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -4550,24 +4893,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 449.51,
           "target2": 487.87
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 362.34,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -4768,7 +5128,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -4780,24 +5141,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 41.56,
           "target2": 46.03
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 31.38,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -4998,7 +5376,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -5010,24 +5389,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 146.01,
           "target2": 156.1
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 123.09,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -5226,7 +5622,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -5238,24 +5635,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 38.59,
           "target2": 42.34
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 30.06,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -5456,7 +5870,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -5468,24 +5883,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 37.33,
           "target2": 40.67
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 29.76,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -5686,7 +6118,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -5698,24 +6131,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 7.31,
           "target2": 8.1
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 5.54,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -5916,7 +6366,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -5928,24 +6379,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 16.59,
           "target2": 17.64
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 14.22,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -6150,7 +6618,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -6162,24 +6631,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 241.56,
           "target2": 253.03
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 215.48,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -6378,7 +6864,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -6390,24 +6877,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 16.63,
           "target2": 18.67
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 12.01,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -6611,7 +7115,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -6623,24 +7128,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 37.35,
           "target2": 41.9
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 27,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -6848,7 +7370,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -6860,24 +7383,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 618.64,
           "target2": 656.41
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 532.79,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
@@ -7078,7 +7618,8 @@
       "timeHorizonPolicy": {
         "classification": "DAY_TRADE",
         "classificationIsAdvisory": false,
-        "liveExecutionStyle": "DAY_TRADER_ONLY",
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
         "mayNotCreateEligibility": true,
         "existingHardStopAndRiskRemainAuthoritative": true,
         "holdingWindow": "MINUTES_TO_SAME_SESSION",
@@ -7090,24 +7631,41 @@
           "intraday VWAP/support/resistance and momentum context remain valid"
         ],
         "profitExit": {
-          "method": "INTRADAY_BRACKET_OR_OCO",
-          "targetRule": "Use validated targets, but take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
+          "method": "INTRADAY_BRACKET_OR_OCO_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when the intraday setup loses momentum or confirmed resistance is reached.",
           "target1": 65.54,
           "target2": 69.57
         },
         "lossExit": {
-          "method": "BROKER_PROTECTED_STOP",
+          "method": "SUPPORTED_BROKER_PROTECTED_STOP",
           "level": 56.39,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
-          "rule": "All new Teststock stock positions are same-session trades and must be flat before the authoritative regular-session close.",
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 45,
+          "maximumHoldingMinutes": 180,
           "forcedExitMinutesBeforeClose": 15,
           "newEntryCutoffMinutesBeforeClose": 30,
-          "stalledTradeRule": "Exit or reduce when the intraday thesis fails to progress inside its expected window; never convert a losing day trade into an overnight swing."
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "cooldownAfterStopMinutes": 20,
+          "sameSymbolReentryCooldownMinutes": 30,
+          "consecutiveStopLossPause": {
+            "count": 2,
+            "pauseMinutes": 60
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": 3,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "maxNewEntriesPerNyDay": 6,
+          "maxConcurrentPositions": 2,
+          "maxNewEntriesPerExecutorRun": 2
         },
         "risk": {
-          "accountRiskRule": "Existing Teststock cap remains authoritative; day-trader mode never increases it.",
+          "accountRiskRule": "Existing Teststock cap remains authoritative; active day-trader mode never increases it.",
           "bracketRequired": true,
           "overnightRiskAllowed": false,
           "noMargin": true,
