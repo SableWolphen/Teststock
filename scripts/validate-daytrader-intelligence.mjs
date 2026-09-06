@@ -1,0 +1,15 @@
+import fs from 'node:fs/promises';
+const x=JSON.parse(await fs.readFile('docs/data/daytrader-intelligence.json','utf8'));
+const fail=[];
+if(x.schemaVersion!==1)fail.push('schemaVersion');
+if(x.source!=='TESTSTOCK_LIVE_DAYTRADER_INTELLIGENCE')fail.push('source');
+if(!x.generatedAt)fail.push('generatedAt');
+if(!x.policy?.includes('never directly creates broker execution eligibility'))fail.push('discovery authority');
+if(!['NORMAL','REDUCE_NEW_RISK','STOP_NEW_RISK'].includes(x.circuitBreaker?.state))fail.push('circuit breaker');
+if(x.circuitBreaker?.mayOnlyReduceRisk!==true)fail.push('breaker authority');
+for(const p of x.universe?.promoteToResearch||[])if(p.authority!=='DISCOVERY_ONLY_NOT_EXECUTION_ELIGIBILITY')fail.push(`${p.symbol}: invalid discovery authority`);
+for(const s of x.shadowChallengers||[])if(s.promotionState==='PROMOTION_ELIGIBLE'&&Number(s.sampleSize)<30)fail.push(`${s.setup}: promoted too early`);
+if(x.portfolioAllocation?.rule?.includes('never increases')===false)fail.push('allocation authority');
+if(x.timeOfDayLearning?.authority?.includes('may not create eligibility')!==true)fail.push('time-of-day authority');
+if(fail.length)throw new Error(`daytrader intelligence validation failed: ${[...new Set(fail)].join(', ')}`);
+console.log('daytrader intelligence validation passed');
