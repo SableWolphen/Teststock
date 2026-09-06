@@ -13,6 +13,12 @@ set -euo pipefail
 node scripts/build-daytrader-intelligence.mjs
 node scripts/validate-daytrader-intelligence.mjs
 
+# Build the execution-quality/risk-learning layer from Robinhood-confirmed journals
+# and shadow evidence. This may only reduce/reorder/pause risk; it never creates
+# eligibility or increases hard risk ceilings.
+node scripts/build-trade-quality-engine.mjs
+node scripts/validate-trade-quality-engine.mjs
+
 node scripts/update-trigger-board.mjs
 node scripts/enforce-day-trader-trigger-policy.mjs
 node scripts/apply-intraday-edge-overlay.mjs
@@ -31,10 +37,11 @@ try:
         w=json.load(f)
     with open('docs/data/daytrader-intelligence.json', 'r', encoding='utf-8') as f:
         i=json.load(f)
+    with open('docs/data/trade-quality-intelligence.json', 'r', encoding='utf-8') as f:
+        q=json.load(f)
     active=any(isinstance(p,dict) and p.get('status')=='ACTIVE' for p in (w.get('positions') or []))
-    breaker=(i.get('circuitBreaker') or {}).get('state')
-    # A STOP_NEW_RISK breaker never suppresses management/exits; it simply gives
-    # Claude context to refuse fresh entries.
+    # STOP_NEW_RISK never suppresses management/exits; Claude receives the state
+    # and refuses fresh entries while continuing reconciliation and exits.
     print('true' if d.get('claudeShouldRun') or active else 'false')
 except Exception:
     # Fail open to Claude; Claude itself remains fail-closed before new risk.
