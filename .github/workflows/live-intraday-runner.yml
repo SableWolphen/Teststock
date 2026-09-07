@@ -8,14 +8,13 @@ on:
         type: boolean
         default: false
   schedule:
-    # Request a session every five minutes for faster recovery. An active session
-    # continues its ~45-second cycles for ~55 minutes; the next session waits.
     - cron: '2-57/5 * * * *'
   push:
     branches: [main]
     paths:
       - '.github/workflows/live-intraday-runner.yml'
       - 'scripts/run-live-intraday-cycle.sh'
+      - 'scripts/run-background-learning.sh'
       - 'scripts/build-daytrader-intelligence.mjs'
       - 'scripts/validate-daytrader-intelligence.mjs'
       - 'scripts/build-real-fill-scorecard.mjs'
@@ -64,6 +63,7 @@ jobs:
           command -v claude >/dev/null
           test -f .mcp.json
           test -f scripts/run-live-intraday-cycle.sh
+          test -f scripts/run-background-learning.sh
           test -f scripts/build-daytrader-intelligence.mjs
           test -f scripts/validate-daytrader-intelligence.mjs
           test -f scripts/build-real-fill-scorecard.mjs
@@ -75,7 +75,8 @@ jobs:
           test -f scripts/claude-stock-rotation-rules.md
           test -f scripts/daytrader-profit-discipline.md
           test -f scripts/claude-executor-prompt.md
-          grep -q 'build-real-fill-scorecard.mjs' scripts/run-live-intraday-cycle.sh
+          grep -q 'learning-output' scripts/run-live-intraday-cycle.sh
+          grep -q 'BACKGROUND_LEARNING_REFRESHED' scripts/run-background-learning.sh
           grep -q 'real-fill-scorecard.json' scripts/claude-trade-quality-rules.md
           grep -q 'daytrader-profit-discipline.md' scripts/run-live-intraday-cycle.sh
           grep -q 'OPEN_DRIVE' scripts/daytrader-profit-discipline.md
@@ -83,7 +84,7 @@ jobs:
           grep -q 'POWER_HOUR' scripts/daytrader-profit-discipline.md
           node --test scripts/test-trade-quality-resilience.mjs scripts/test-runtime-diagnostics.mjs
           python scripts/test_executor_usage_gate.py
-          echo 'Persistent Teststock runtime, real-fill scorecard and trade-quality engine are present.'
+          echo 'Persistent Teststock trading and independent background-learning lanes are present.'
 
       - name: Verify Claude authentication without broker tools
         if: ${{ inputs.verify_only }}
@@ -102,7 +103,7 @@ jobs:
             > "$probe_dir/stdout.json" 2> "$probe_dir/stderr.txt" || probe_status=$?
           python scripts/record-executor-result.py "$probe_dir" "$probe_status"
 
-      - name: Run 45-second intraday decision loop
+      - name: Run concurrent trading and learning lanes
         if: ${{ !inputs.verify_only }}
         shell: bash
         env:
@@ -110,8 +111,17 @@ jobs:
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PYTHONIOENCODING: utf-8
+          TESTSTOCK_LEARNING_INTERVAL_SECONDS: 300
         run: |
           set -euo pipefail
+          bash scripts/run-background-learning.sh &
+          learner_pid=$!
+          cleanup() {
+            kill "$learner_pid" 2>/dev/null || true
+            wait "$learner_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT INT TERM
+
           end=$(( $(date +%s) + 3300 ))
           cycle=0
           while [ "$(date +%s)" -lt "$end" ]; do
@@ -124,4 +134,4 @@ jobs:
             elapsed=$(( $(date +%s) - started ))
             if [ "$elapsed" -lt 45 ]; then sleep $((45-elapsed)); fi
           done
-          echo "Live intraday session completed; the next queued session is the continuity/recovery handoff."
+          echo "Live intraday session completed; background learner stopped cleanly and next queued session takes over."
