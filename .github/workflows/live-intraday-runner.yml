@@ -23,6 +23,8 @@ on:
       - 'scripts/validate-trade-quality-engine.mjs'
       - 'scripts/build-live-trading-health.mjs'
       - 'scripts/claude-trade-quality-rules.md'
+      - 'scripts/claude-stock-rotation-rules.md'
+      - 'scripts/daytrader-profit-discipline.md'
       - 'scripts/test-trade-quality-resilience.mjs'
       - 'scripts/update-trigger-board.mjs'
       - 'scripts/enforce-day-trader-trigger-policy.mjs'
@@ -68,9 +70,15 @@ jobs:
           test -f scripts/validate-trade-quality-engine.mjs
           test -f scripts/build-live-trading-health.mjs
           test -f scripts/claude-trade-quality-rules.md
+          test -f scripts/claude-stock-rotation-rules.md
+          test -f scripts/daytrader-profit-discipline.md
           test -f scripts/claude-executor-prompt.md
-            node --test scripts/test-trade-quality-resilience.mjs scripts/test-runtime-diagnostics.mjs
-            python scripts/test_executor_usage_gate.py
+          grep -q 'daytrader-profit-discipline.md' scripts/run-live-intraday-cycle.sh
+          grep -q 'OPEN_DRIVE' scripts/daytrader-profit-discipline.md
+          grep -q 'MIDDAY' scripts/daytrader-profit-discipline.md
+          grep -q 'POWER_HOUR' scripts/daytrader-profit-discipline.md
+          node --test scripts/test-trade-quality-resilience.mjs scripts/test-runtime-diagnostics.mjs
+          python scripts/test_executor_usage_gate.py
           echo 'Persistent Teststock runtime, replay inputs and trade-quality engine are present.'
 
       - name: Verify Claude authentication without broker tools
