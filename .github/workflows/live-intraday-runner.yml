@@ -69,8 +69,25 @@ jobs:
           test -f scripts/build-live-trading-health.mjs
           test -f scripts/claude-trade-quality-rules.md
           test -f scripts/claude-executor-prompt.md
-          node --test scripts/test-trade-quality-resilience.mjs
+          node --test scripts/test-trade-quality-resilience.mjs scripts/test-runtime-diagnostics.mjs
           echo 'Persistent Teststock runtime, replay inputs and trade-quality engine are present.'
+
+      - name: Verify Claude authentication without broker tools
+        if: ${{ inputs.verify_only }}
+        shell: bash
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$HOME/.teststock-runtime/executor-diagnostics"
+          probe_dir="$(mktemp -d "$HOME/.teststock-runtime/executor-diagnostics/probe.XXXXXX")"
+          probe_status=0
+          claude -p "Reply with READY only. Do not take any actions." \
+            --tools "" --strict-mcp-config --mcp-config '{"mcpServers":{}}' \
+            --no-session-persistence --max-turns 1 --output-format json \
+            > "$probe_dir/stdout.json" 2> "$probe_dir/stderr.txt" || probe_status=$?
+          python scripts/record-executor-result.py "$probe_dir" "$probe_status"
 
       - name: Run 45-second intraday decision loop
         if: ${{ !inputs.verify_only }}

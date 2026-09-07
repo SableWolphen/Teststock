@@ -20,11 +20,12 @@ fi
 
 node scripts/build-daytrader-intelligence.mjs
 node scripts/validate-daytrader-intelligence.mjs
+# Refresh the board before judging its freshness for this cycle.
+node scripts/update-trigger-board.mjs
 node scripts/build-trade-quality-engine.mjs
 node scripts/apply-model-drift.mjs
 node scripts/validate-trade-quality-engine.mjs
 
-node scripts/update-trigger-board.mjs
 node scripts/enforce-day-trader-trigger-policy.mjs
 node scripts/apply-intraday-edge-overlay.mjs
 node scripts/rebuild-intraday-trigger-state.mjs
@@ -73,17 +74,16 @@ PY
 )
 
 if [[ "$should_run" != "true" ]]; then echo "FAST_CYCLE_NO_ACTION"; exit 0; fi
-output_path="$(mktemp /tmp/teststock-fast-executor.XXXXXX.json)"
-trap 'rm -f "$output_path"' EXIT
+umask 077
+mkdir -p "$RUNTIME_STATE_DIR/executor-diagnostics"
+diagnostic_dir="$(mktemp -d "$RUNTIME_STATE_DIR/executor-diagnostics/attempt.XXXXXX")"
+output_path="$diagnostic_dir/stdout.json"
+executor_status=0
 claude -p "$(cat scripts/claude-executor-prompt.md scripts/claude-trade-quality-rules.md)" \
   --mcp-config .mcp.json \
   --allowedTools "Read,Glob,Grep,mcp__robinhood-trading" \
   --max-turns 16 \
-  --output-format json > "$output_path"
-python - "$output_path" <<'PY'
-import json,sys
-with open(sys.argv[1],'r',encoding='utf-8') as f:data=json.load(f)
-result=data.get('result') if isinstance(data,dict) else None
-print('FAST_CYCLE_CLAUDE_COMPLETED')
-if isinstance(result,str):print(result[:1000])
-PY
+  --output-format json > "$output_path" 2> "$diagnostic_dir/stderr.txt" || executor_status=$?
+# Preserve private details locally; publish only a safe error category.
+# A failed attempt is not retried blindly: broker outcomes can be ambiguous.
+python scripts/record-executor-result.py "$diagnostic_dir" "$executor_status"
