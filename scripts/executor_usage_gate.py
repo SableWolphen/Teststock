@@ -30,8 +30,13 @@ def _save(path, data):
     os.replace(temporary, path)
 
 
-def reserve_wake(path, actionable=False, routine=False, urgent_exit=False, now=None):
+def reserve_wake(path, actionable=False, routine=False, now=None, *, urgent_exit=False):
     """Reserve one Claude wake if policy allows it.
+
+    Backward compatibility matters here: ``now`` remains the fourth positional
+    argument used by the test suite and any older callers. ``urgent_exit`` is
+    keyword-only so a timestamp can never be misinterpreted as permission to
+    bypass usage limits.
 
     urgent_exit: stop/forced/risk-reducing exit; never delayed by credit caps.
     actionable: fresh entry/other dispatch; rate/cap limited.
