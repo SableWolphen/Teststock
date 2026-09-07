@@ -17,13 +17,15 @@ class UsageGateTests(unittest.TestCase):
             results = [reserve_wake(path, False, True, t) for t in range(1000, 4600, 45)]
             self.assertEqual(sum(results), 4)
 
-    def test_events_bypass_cooldown_and_reset_routine_timer(self):
+    def test_entries_are_throttled_but_urgent_exits_bypass(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'usage.json'
             self.assertTrue(reserve_wake(path, False, True, 1000))
-            self.assertTrue(reserve_wake(path, True, False, 1045))
+            self.assertFalse(reserve_wake(path, True, False, 1045))
+            self.assertTrue(reserve_wake(path, True, False, 1120))
+            self.assertTrue(reserve_wake(path, False, False, 1130, urgent_exit=True))
             self.assertFalse(reserve_wake(path, False, True, 1900))
-            self.assertTrue(reserve_wake(path, False, True, 1945))
+            self.assertTrue(reserve_wake(path, False, True, 2020))
 
 
 if __name__ == '__main__':
