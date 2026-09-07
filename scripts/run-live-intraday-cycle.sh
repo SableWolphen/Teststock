@@ -22,6 +22,7 @@ node scripts/build-daytrader-intelligence.mjs
 node scripts/validate-daytrader-intelligence.mjs
 # Refresh the board before judging its freshness for this cycle.
 node scripts/update-trigger-board.mjs
+node scripts/build-real-fill-scorecard.mjs
 node scripts/build-trade-quality-engine.mjs
 node scripts/apply-model-drift.mjs
 node scripts/validate-trade-quality-engine.mjs
