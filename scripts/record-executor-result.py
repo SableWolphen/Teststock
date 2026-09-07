@@ -19,7 +19,7 @@ def record(directory, returncode):
         detail = (stdout + stderr).lower()
         if any(term in detail for term in ("invalid api key", "authentication_error", "not logged in", "unauthorized", "oauth token has expired")):
             category = "AUTHENTICATION"
-        elif any(term in detail for term in ("rate_limit", "rate limit", "usage limit", "credit balance")):
+        elif any(term in detail for term in ("rate_limit", "rate limit", "usage limit", "session limit", "credit balance")):
             category = "RATE_OR_USAGE_LIMIT"
         elif any(term in detail for term in ("max_turns", "max turns")):
             category = "TURN_LIMIT"

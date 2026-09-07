@@ -27,6 +27,7 @@ test('executor failure evidence survives and public logs exclude raw account det
    [{is_error:false,result:'private account details'},'',0,'COMPLETED'],
    [{is_error:true,result:'authentication_error private account details'},'',1,'AUTHENTICATION'],
    [{is_error:true,result:'max_turns private account details'},'',0,'TURN_LIMIT'],
+   [{is_error:true,result:"You've hit your session limit"},'',1,'RATE_OR_USAGE_LIMIT'],
    ['not json','private account details',1,'INVALID_OR_MISSING_OUTPUT']
  ]){
    const dir=await fs.mkdtemp(path.join(os.tmpdir(),'teststock-executor-'));
