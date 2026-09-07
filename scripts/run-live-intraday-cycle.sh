@@ -94,7 +94,7 @@ mkdir -p "$RUNTIME_STATE_DIR/executor-diagnostics"
 diagnostic_dir="$(mktemp -d "$RUNTIME_STATE_DIR/executor-diagnostics/attempt.XXXXXX")"
 output_path="$diagnostic_dir/stdout.json"
 executor_status=0
-claude -p "$(cat scripts/claude-executor-prompt.md scripts/claude-trade-quality-rules.md)" \
+claude -p "$(cat scripts/claude-executor-prompt.md scripts/claude-trade-quality-rules.md scripts/claude-stock-rotation-rules.md)" \
   --mcp-config .mcp.json \
   --allowedTools "Read,Glob,Grep,mcp__robinhood-trading" \
   --max-turns 16 \
