@@ -18,6 +18,7 @@ on:
       - 'scripts/run-live-intraday-cycle.sh'
       - 'scripts/build-daytrader-intelligence.mjs'
       - 'scripts/validate-daytrader-intelligence.mjs'
+      - 'scripts/build-real-fill-scorecard.mjs'
       - 'scripts/build-trade-quality-engine.mjs'
       - 'scripts/apply-model-drift.mjs'
       - 'scripts/validate-trade-quality-engine.mjs'
@@ -65,6 +66,7 @@ jobs:
           test -f scripts/run-live-intraday-cycle.sh
           test -f scripts/build-daytrader-intelligence.mjs
           test -f scripts/validate-daytrader-intelligence.mjs
+          test -f scripts/build-real-fill-scorecard.mjs
           test -f scripts/build-trade-quality-engine.mjs
           test -f scripts/apply-model-drift.mjs
           test -f scripts/validate-trade-quality-engine.mjs
@@ -73,13 +75,15 @@ jobs:
           test -f scripts/claude-stock-rotation-rules.md
           test -f scripts/daytrader-profit-discipline.md
           test -f scripts/claude-executor-prompt.md
+          grep -q 'build-real-fill-scorecard.mjs' scripts/run-live-intraday-cycle.sh
+          grep -q 'real-fill-scorecard.json' scripts/claude-trade-quality-rules.md
           grep -q 'daytrader-profit-discipline.md' scripts/run-live-intraday-cycle.sh
           grep -q 'OPEN_DRIVE' scripts/daytrader-profit-discipline.md
           grep -q 'MIDDAY' scripts/daytrader-profit-discipline.md
           grep -q 'POWER_HOUR' scripts/daytrader-profit-discipline.md
           node --test scripts/test-trade-quality-resilience.mjs scripts/test-runtime-diagnostics.mjs
           python scripts/test_executor_usage_gate.py
-          echo 'Persistent Teststock runtime, replay inputs and trade-quality engine are present.'
+          echo 'Persistent Teststock runtime, real-fill scorecard and trade-quality engine are present.'
 
       - name: Verify Claude authentication without broker tools
         if: ${{ inputs.verify_only }}
