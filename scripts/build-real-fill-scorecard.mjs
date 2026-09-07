@@ -1,11 +1,11 @@
 import fs from 'node:fs/promises';
 
+const stockPath=process.argv[2]||'docs/data/real-trade-journal.json';
+const cryptoPath=process.argv[3]||'docs/data/crypto-real-trade-journal.json';
+const outPath=process.argv[4]||'docs/data/real-fill-scorecard.json';
 const read=async(f,x={})=>{try{return JSON.parse(await fs.readFile(f,'utf8'));}catch{return x;}};
-const write=(f,x)=>fs.writeFile(f,JSON.stringify(x,null,2));
-const [stockJ,cryptoJ]=await Promise.all([
-  read('docs/data/real-trade-journal.json',{}),
-  read('docs/data/crypto-real-trade-journal.json',{})
-]);
+const write=async(f,x)=>{await fs.mkdir(new URL('.',`file://${process.cwd()}/${f}`).pathname,{recursive:true}).catch(()=>{});return fs.writeFile(f,JSON.stringify(x,null,2));};
+const [stockJ,cryptoJ]=await Promise.all([read(stockPath,{}),read(cryptoPath,{})]);
 const now=new Date().toISOString();
 const finite=x=>Number.isFinite(Number(x));
 const avg=a=>{const x=a.filter(finite).map(Number);return x.length?x.reduce((s,v)=>s+v,0)/x.length:null;};
@@ -29,7 +29,6 @@ function stats(rows){
   const entrySlip=avg(rows.map(x=>x.adverseEntrySlippagePct));
   const exitSlip=avg(rows.map(x=>x.adverseExitSlippagePct));
   const expectancy=avg(rs);
-  // Conservative shrinkage toward zero prevents tiny samples from dominating ranking.
   const shrunk=expectancy==null?null:Number((expectancy*(n/(n+12))).toFixed(4));
   let state='COLLECT_MORE';
   if(n>=20&&shrunk!=null&&shrunk<=-0.10) state='BLOCK_OR_SHADOW';
@@ -38,34 +37,11 @@ function stats(rows){
   else if(n>=8&&shrunk!=null&&shrunk>0) state='POSITIVE_EARLY';
   return {sampleSize:n,winRatePct:n?Number((wins/n*100).toFixed(1)):null,averageR:expectancy,medianR:median(rs),shrunkExpectancyR:shrunk,averageEntrySlippagePct:entrySlip,averageExitSlippagePct:exitSlip,state};
 }
-const dimensions={
-  setup:t=>key(t.setupType),
-  session:t=>session(t),
-  regime:t=>key(t.marketRegime||t.regime),
-  sector:t=>key(t.sector),
-  catalyst:t=>key(t.catalystType||t.catalystCategory),
-  assetClass:t=>key(t.assetClass)
-};
+const dimensions={setup:t=>key(t.setupType),session:t=>session(t),regime:t=>key(t.marketRegime||t.regime),sector:t=>key(t.sector),catalyst:t=>key(t.catalystType||t.catalystCategory),assetClass:t=>key(t.assetClass)};
 const scorecards={};
 for(const [name,fn] of Object.entries(dimensions)) scorecards[name]=group(trades,fn).map(g=>({[name]:g.key,...stats(g.rows)})).sort((a,b)=>(b.sampleSize||0)-(a.sampleSize||0));
-
-const combos=group(trades,t=>`${key(t.setupType)}|${session(t)}|${key(t.marketRegime||t.regime)}`).map(g=>{
-  const [setup,sessionBucket,regime]=g.key.split('|'); return {setup,session:sessionBucket,regime,...stats(g.rows)};
-}).filter(x=>x.sampleSize>=5).sort((a,b)=>(b.shrunkExpectancyR??-999)-(a.shrunkExpectancyR??-999));
-
-const out={
-  schemaVersion:1,generatedAt:now,source:'ROBINHOOD_RECONCILED_REAL_FILLS_ONLY',resolvedTrades:trades.length,
-  minimumEvidence:{positiveEarly:8,reduce:12,favorOrBlock:20,shrinkagePriorTrades:12},
-  scorecards,setupSessionRegime:combos,
-  livePolicy:{
-    authority:'RISK_REDUCING_AND_RANKING_ONLY',
-    favor:'May rank an already-qualified candidate ahead of another or retain normal encoded size; never increase the hard risk ceiling.',
-    positiveEarly:'May break ties among already-qualified candidates; no size increase.',
-    reduce:'Reduce size/selectivity or skip when alternatives with stronger real-fill evidence exist.',
-    blockOrShadow:'Block new live entries for that evidence bucket until fresh forward/out-of-sample evidence supports reconsideration.',
-    insufficient:'COLLECT_MORE is neutral. Missing fields or small samples never count as negative evidence.',
-    immutableRules:['Never create eligibility','Never increase hard risk ceilings','Never override stale-data, broker, spread, protection, daily-loss, account, or duplicate-order gates','Never treat hypothetical/shadow/backtest results as real fills']
-  }
-};
-await write('docs/data/real-fill-scorecard.json',out);
+const combos=group(trades,t=>`${key(t.setupType)}|${session(t)}|${key(t.marketRegime||t.regime)}`).map(g=>{const [setup,sessionBucket,regime]=g.key.split('|');return {setup,session:sessionBucket,regime,...stats(g.rows)};}).filter(x=>x.sampleSize>=5).sort((a,b)=>(b.shrunkExpectancyR??-999)-(a.shrunkExpectancyR??-999));
+const out={schemaVersion:1,generatedAt:now,source:'ROBINHOOD_RECONCILED_REAL_FILLS_ONLY',resolvedTrades:trades.length,minimumEvidence:{positiveEarly:8,reduce:12,favorOrBlock:20,shrinkagePriorTrades:12},scorecards,setupSessionRegime:combos,livePolicy:{authority:'RISK_REDUCING_AND_RANKING_ONLY',favor:'May rank an already-qualified candidate ahead of another or retain normal encoded size; never increase the hard risk ceiling.',positiveEarly:'May break ties among already-qualified candidates; no size increase.',reduce:'Reduce size/selectivity or skip when alternatives with stronger real-fill evidence exist.',blockOrShadow:'Block new live entries for that evidence bucket until fresh forward/out-of-sample evidence supports reconsideration.',insufficient:'COLLECT_MORE is neutral. Missing fields or small samples never count as negative evidence.',immutableRules:['Never create eligibility','Never increase hard risk ceilings','Never override stale-data, broker, spread, protection, daily-loss, account, or duplicate-order gates','Never treat hypothetical/shadow/backtest results as real fills']}};
+await fs.mkdir(outPath.split('/').slice(0,-1).join('/')||'.',{recursive:true});
+await fs.writeFile(outPath,JSON.stringify(out,null,2));
 console.log(`Real-fill scorecard: ${trades.length} reconciled resolved trades; ${combos.length} setup/session/regime buckets with >=5 samples.`);
