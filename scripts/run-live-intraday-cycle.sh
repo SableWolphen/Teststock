@@ -73,7 +73,17 @@ crypto_fresh=age_minutes(t.get('generatedAt')) <= 15
 crypto_candidate=isinstance(t.get('qualifiedChampion'), dict) and bool(t.get('qualifiedChampion',{}).get('ticker'))
 crypto_should_run=crypto_admitted and crypto_fresh and crypto_candidate
 
-allowed=reserve_wake(Path(sys.argv[1])/'executor-usage.json', bool(d.get('claudeShouldRun')), active or crypto_should_run)
+pending=d.get('pendingAction') if isinstance(d.get('pendingAction'), dict) else {}
+trigger=pending.get('trigger')
+urgent_exit=trigger in {'TRIGGER_1_STOP','STOCK_DAY_TRADE_FORCED_EXIT'}
+actionable=bool(d.get('claudeShouldRun'))
+routine=active or crypto_should_run
+allowed=reserve_wake(
+    Path(sys.argv[1])/'executor-usage.json',
+    actionable=actionable,
+    routine=routine,
+    urgent_exit=urgent_exit,
+)
 print('true' if allowed else 'false')
 PY
 )
