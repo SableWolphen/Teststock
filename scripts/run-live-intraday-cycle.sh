@@ -36,9 +36,13 @@ node scripts/validate-execution-dispatch.mjs
 cp docs/data/execution-dispatch.json "$RUNTIME_DISPATCH_STATE"
 node scripts/build-live-trading-health.mjs
 
-should_run=$(python - <<'PY'
+should_run=$(python - "$RUNTIME_STATE_DIR" <<'PY'
 import json
+import sys
 from datetime import datetime, timezone
+from pathlib import Path
+sys.path.insert(0, 'scripts')
+from executor_usage_gate import reserve_wake
 
 def load(path, default):
     try:
@@ -69,7 +73,8 @@ crypto_fresh=age_minutes(t.get('generatedAt')) <= 15
 crypto_candidate=isinstance(t.get('qualifiedChampion'), dict) and bool(t.get('qualifiedChampion',{}).get('ticker'))
 crypto_should_run=crypto_admitted and crypto_fresh and crypto_candidate
 
-print('true' if d.get('claudeShouldRun') or active or crypto_should_run else 'false')
+allowed=reserve_wake(Path(sys.argv[1])/'executor-usage.json', bool(d.get('claudeShouldRun')), active or crypto_should_run)
+print('true' if allowed else 'false')
 PY
 )
 
