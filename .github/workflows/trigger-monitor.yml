@@ -9,6 +9,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/update-trigger-board.mjs'
+      - 'scripts/normalize-trigger-board-policy.mjs'
       - 'scripts/enforce-day-trader-trigger-policy.mjs'
       - 'scripts/apply-intraday-edge-overlay.mjs'
       - 'scripts/rebuild-intraday-trigger-state.mjs'
@@ -92,6 +93,9 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/update-trigger-board.mjs
+
+      - name: Normalize authoritative stock sizing and timing policy
+        run: node scripts/normalize-trigger-board-policy.mjs
 
       - name: Enforce day-trader session and flattening policy
         run: node scripts/enforce-day-trader-trigger-policy.mjs
