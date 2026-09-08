@@ -23,12 +23,14 @@ const stockEntrySessionAllowed=e=>{
   return s.calendarAvailable===true&&s.regularSession===true&&s.entryAllowed===true&&Number(s.minutesToClose)>=STOCK_ENTRY_CUTOFF_MINUTES;
 };
 
-// IMPORTANT: a previously published dispatch is not proof that a broker order was
-// submitted or filled. Keep a still-current trigger dispatchable until live broker
-// reconciliation proves it is no longer actionable. Idempotency is enforced at the
-// executor by Robinhood order/position history and client-order reconciliation.
+// A published fingerprint is never proof of broker execution. Entry fingerprints stay
+// stable for the logical setup so duplicate prevention works. Exit fingerprints include
+// the board generation so an unresolved stop/forced-exit can wake the executor again on
+// the next fresh board; live Robinhood reconciliation must prove whether any quantity
+// remains before another exit order is submitted.
 const candidates=(board?.events||[]).filter(e=>priority[e.trigger]&&!(e.trigger==='BUY_TRIGGER'&&e.assetClass!=='STOCK')).map(e=>{
-  const fingerprint=`${e.id}|${e.trigger}|${e.stateChangedAt}`;
+  const exitRefreshKey=e.trigger==='BUY_TRIGGER'?'':`|${board?.publishedAt||nowIso}`;
+  const fingerprint=`${e.id}|${e.trigger}|${e.stateChangedAt}${exitRefreshKey}`;
   const triggerAgeMs=ageMs(e.stateChangedAt);
   const isFresh=e.trigger!=='BUY_TRIGGER'||triggerAgeMs<=MAX_ENTRY_AGE_MS;
   const sessionAllowed=stockEntrySessionAllowed(e);
