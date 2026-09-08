@@ -1,16 +1,8 @@
 name: Teststock scheduling watchdog
 
-# static-scan.yml, fast-opportunity-refresh.yml and trigger-monitor.yml each
-# carry their own `schedule:` cron, but GitHub's own schedule-event delivery
-# for a repository can silently go quiet for hours at a time - documented,
-# platform-side behavior that no workflow file can prevent on its own. On
-# 2026-09-02 all three went dark together from roughly 09:30 to 13:00 UTC
-# even though each has a distinct cron, while manual workflow_dispatch kept
-# working the entire time. This watchdog runs on its own independently
-# offset schedule and, whenever published data has gone stale, manually
-# re-dispatches whichever core workflow should have refreshed it. It never
-# calls the broker - it only re-fires the existing research/monitor
-# workflows, which stay the sole path to any execution decision.
+# GitHub schedule delivery can occasionally go quiet. This watchdog independently
+# re-dispatches stale research/monitor workflows and also ensures the long-running
+# self-hosted trading session is present without allowing an hourly queue backlog.
 
 on:
   schedule:
@@ -80,3 +72,28 @@ jobs:
           fi
           echo "Stale and nothing in flight; re-dispatching trigger-monitor.yml"
           gh workflow run trigger-monitor.yml --ref main
+
+      - name: Keep the live self-hosted trading session running
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          runs=$(gh run list --workflow live-intraday-runner.yml --limit 20 --json status,conclusion,createdAt,updatedAt)
+          if echo "$runs" | jq -e 'any(.[]; .status=="queued" or .status=="in_progress")' >/dev/null; then
+            echo "Live trading runner is already queued or in progress; nothing to do"
+            exit 0
+          fi
+          last_finished=$(echo "$runs" | jq -r '[.[] | select(.status=="completed") | .updatedAt] | map(select(.!=null)) | sort | last // empty')
+          if [ -z "$last_finished" ]; then
+            echo "No completed live-runner session found; dispatching one now"
+            gh workflow run live-intraday-runner.yml --ref main
+            exit 0
+          fi
+          age_min=$(node -e "console.log(Math.max(0, Math.round((Date.now()-Date.parse('$last_finished'))/60000)))")
+          echo "Most recent live-runner completion is ${age_min} minutes old"
+          if [ "$age_min" -ge 5 ]; then
+            echo "No live session is active; dispatching recovery session"
+            gh workflow run live-intraday-runner.yml --ref main
+          else
+            echo "A session just completed; hourly schedule will take over unless the next watchdog sees no active run"
+          fi
