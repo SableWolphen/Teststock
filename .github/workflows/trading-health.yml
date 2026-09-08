@@ -4,6 +4,12 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '4,9,14,19,24,29,34,39,44,49,54,59 * * * *'
+  workflow_run:
+    workflows:
+      - 'Refresh Teststock picks'
+      - 'Fast Teststock opportunity refresh'
+      - 'Monitor Teststock triggers'
+    types: [completed]
   push:
     branches: [main]
     paths:
@@ -25,6 +31,7 @@ concurrency:
 
 jobs:
   health:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
