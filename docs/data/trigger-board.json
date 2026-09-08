@@ -1,23 +1,23 @@
 {
   "schemaVersion": 6,
   "source": "TESTSTOCK_NON_LLM_TRIGGER_MONITOR",
-  "publishedAt": "2026-09-08T05:23:21.955Z",
+  "publishedAt": "2026-09-08T05:55:22.836Z",
   "monitorHealth": "OK",
   "monitorCadenceMinutes": 5,
   "priceSource": "ALPACA_MARKET_DATA",
   "claudeMarketPollingRequired": false,
   "siteAvailability": "24_7_PUBLIC_DASHBOARD",
-  "researchState": "REFRESHING",
-  "researchAgeMinutes": 57.3,
+  "researchState": "ACTIVE",
+  "researchAgeMinutes": 0,
   "marketSession": {
     "timeZone": "America/New_York",
     "dateKey": "2026-09-08",
-    "minuteOfDay": 83,
+    "minuteOfDay": 115,
     "calendarAvailable": true,
     "openMinute": 570,
     "closeMinute": 960,
     "regularSession": false,
-    "minutesToClose": 877,
+    "minutesToClose": 845,
     "sessionEnded": false,
     "entryAllowed": false,
     "forcedExitDue": true
@@ -32,7 +32,7 @@
     "activePositions": 2,
     "armingRule": "After a confirmed same-day buy, persist dayTradeSeedLane=true with the saved protection levels. Keep it ACTIVE until Robinhood confirms flat so forced exits continue to fire."
   },
-  "executionNeeded": false,
+  "executionNeeded": true,
   "buyCompetition": {
     "eligibleNow": 0,
     "best": null,
@@ -42,9 +42,53 @@
       "B"
     ],
     "candidateSource": "stockPlan.stockCandidateQueue + stockPlan.stockOrders",
-    "rule": "Already-qualified A stocks rank before B; within tier, fresh cost-adjusted intraday edge and adjusted score break ties. Intraday intelligence may block/reorder/reduce size but never create eligibility or raise risk."
+    "rule": "A/ELITE live stock triggers go first. After A-tier candidates, B/BEST_ACCEPTABLE may be executed at no more than 25% encoded normal size while live capacity remains, including after an A fill. Failed candidates fall through to the next eligible candidate in the same run. Never force a trade when all hard guards fail."
   },
-  "events": [],
+  "events": [
+    {
+      "id": "ENTRY:CRYPTO:DOGE/USD",
+      "assetClass": "CRYPTO",
+      "ticker": "DOGE/USD",
+      "trigger": "CRYPTO_SEED_LANE_BUY_TRIGGER",
+      "entryTier": null,
+      "entryTierLabel": null,
+      "entryTierSizeMultiplier": null,
+      "setupGrade": "A+",
+      "queueRank": 1,
+      "opportunityScore": 100,
+      "growthQuality": 100,
+      "rewardRisk": 5,
+      "profitabilityAdmission": "SHADOW_ONLY",
+      "qualificationSource": "CRYPTO_TOURNAMENT_QUALIFIED",
+      "tournamentGeneratedAt": "2026-09-08T05:55:21.706Z",
+      "decisionIntelligenceEligible": null,
+      "seedLane": {
+        "eligible": true,
+        "maxOrderUsd": 5,
+        "maxConcurrentPositions": 1,
+        "maxNewPositionsPerUtcDay": 1,
+        "maxHoldingHours": 8,
+        "maxStopLossesPerUtcDay": 2,
+        "requiresPerOrderApproval": false,
+        "requiresBrokerResidentStop": true,
+        "existingRobinhoodCashOnly": true,
+        "agentMayInitiateDeposits": false,
+        "agentMayInitiateBankTransfers": false,
+        "marginAllowed": false,
+        "executionLane": "CLAUDE_ROBINHOOD_TRADING_MCP"
+      },
+      "dayTradeSeedLane": null,
+      "marketSession": null,
+      "minimumEntry": 0.089961,
+      "maximumEntry": 0.09176022,
+      "stop": 0.088799,
+      "target1": 0.093446,
+      "target2": 0.095769,
+      "observedPrice": 0.0902215,
+      "stateChangedAt": "2026-09-08T05:55:22.836Z",
+      "reason": "Automatic qualified crypto candidate is inside its buy zone. Capped at $5 using existing Robinhood cash only and executed only through Claude Robinhood Trading MCP after every live guard passes."
+    }
+  ],
   "items": [
     {
       "id": "ENTRY:STOCK:TD",
@@ -73,12 +117,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-08",
-        "minuteOfDay": 83,
+        "minuteOfDay": 115,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": 877,
+        "minutesToClose": 845,
         "sessionEnded": false,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -88,15 +132,11 @@
       "stop": 118.6,
       "target1": 135.13,
       "target2": 142.4,
-      "signalGeneratedAt": "2026-09-08T05:23:20.967Z",
+      "signalGeneratedAt": "2026-09-08T05:55:21.208Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action MARKET_CLOSED_RECHECK is not eligible for monitoring.",
       "observedPrice": 121.64,
-      "stateChangedAt": "2026-09-08T00:45:59.473Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-08T05:21:21.447Z"
-      }
+      "stateChangedAt": "2026-09-08T00:45:59.473Z"
     },
     {
       "id": "ENTRY:STOCK:RY",
@@ -125,12 +165,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-08",
-        "minuteOfDay": 83,
+        "minuteOfDay": 115,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": 877,
+        "minutesToClose": 845,
         "sessionEnded": false,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -140,15 +180,11 @@
       "stop": 205.56,
       "target1": 235.73,
       "target2": 249.01,
-      "signalGeneratedAt": "2026-09-08T05:23:20.967Z",
+      "signalGeneratedAt": "2026-09-08T05:55:21.208Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action MARKET_CLOSED_RECHECK is not eligible for monitoring.",
       "observedPrice": 210.615,
-      "stateChangedAt": "2026-09-08T00:45:59.473Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-08T05:21:21.447Z"
-      }
+      "stateChangedAt": "2026-09-08T00:45:59.473Z"
     },
     {
       "id": "ENTRY:STOCK:NESR",
@@ -177,12 +213,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-08",
-        "minuteOfDay": 83,
+        "minuteOfDay": 115,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": 877,
+        "minutesToClose": 845,
         "sessionEnded": false,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -192,15 +228,11 @@
       "stop": 33.05,
       "target1": 42.2,
       "target2": 46.23,
-      "signalGeneratedAt": "2026-09-08T05:23:20.967Z",
+      "signalGeneratedAt": "2026-09-08T05:55:21.208Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action MARKET_CLOSED_RECHECK is not eligible for monitoring.",
       "observedPrice": 34.74,
-      "stateChangedAt": "2026-09-08T00:45:59.473Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-08T05:21:21.447Z"
-      }
+      "stateChangedAt": "2026-09-08T00:45:59.473Z"
     },
     {
       "id": "ENTRY:STOCK:ETON",
@@ -229,12 +261,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-08",
-        "minuteOfDay": 83,
+        "minuteOfDay": 115,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": 877,
+        "minutesToClose": 845,
         "sessionEnded": false,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -244,15 +276,11 @@
       "stop": 55.04,
       "target1": 82.82,
       "target2": 95.04,
-      "signalGeneratedAt": "2026-09-08T05:23:20.967Z",
+      "signalGeneratedAt": "2026-09-08T05:55:21.208Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action MARKET_CLOSED_RECHECK is not eligible for monitoring.",
       "observedPrice": 58.56,
-      "stateChangedAt": "2026-09-08T00:45:59.473Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-08T05:21:21.447Z"
-      }
+      "stateChangedAt": "2026-09-08T00:45:59.473Z"
     },
     {
       "id": "ENTRY:STOCK:ECO",
@@ -281,12 +309,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-08",
-        "minuteOfDay": 83,
+        "minuteOfDay": 115,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": 877,
+        "minutesToClose": 845,
         "sessionEnded": false,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -296,15 +324,11 @@
       "stop": 63.83,
       "target1": 83.51,
       "target2": 92.16,
-      "signalGeneratedAt": "2026-09-08T05:23:20.967Z",
+      "signalGeneratedAt": "2026-09-08T05:55:21.208Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action MARKET_CLOSED_RECHECK is not eligible for monitoring.",
       "observedPrice": 71.705,
-      "stateChangedAt": "2026-09-08T00:45:59.473Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-08T05:21:21.447Z"
-      }
+      "stateChangedAt": "2026-09-08T00:45:59.473Z"
     },
     {
       "id": "ENTRY:STOCK:PFG",
@@ -333,12 +357,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-08",
-        "minuteOfDay": 83,
+        "minuteOfDay": 115,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": 877,
+        "minutesToClose": 845,
         "sessionEnded": false,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -348,15 +372,11 @@
       "stop": 111.93,
       "target1": 134.08,
       "target2": 143.83,
-      "signalGeneratedAt": "2026-09-08T05:23:20.967Z",
+      "signalGeneratedAt": "2026-09-08T05:55:21.208Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action MARKET_CLOSED_RECHECK is not eligible for monitoring.",
       "observedPrice": 116.705,
-      "stateChangedAt": "2026-09-08T00:45:59.473Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-08T05:21:21.447Z"
-      }
+      "stateChangedAt": "2026-09-08T00:45:59.473Z"
     },
     {
       "id": "ENTRY:CRYPTO:DOGE/USD",
@@ -370,7 +390,7 @@
       "rewardRisk": 5,
       "profitabilityAdmission": "SHADOW_ONLY",
       "qualificationSource": "CRYPTO_TOURNAMENT_QUALIFIED",
-      "tournamentGeneratedAt": "2026-09-08T05:23:21.355Z",
+      "tournamentGeneratedAt": "2026-09-08T05:55:21.706Z",
       "seedLaneEligible": true,
       "seedLane": {
         "eligible": true,
@@ -387,16 +407,16 @@
         "marginAllowed": false,
         "executionLane": "CLAUDE_ROBINHOOD_TRADING_MCP"
       },
-      "minimumEntry": 0.090074,
-      "maximumEntry": 0.09187548000000001,
-      "stop": 0.088805,
-      "target1": 0.093881,
-      "target2": 0.096419,
-      "signalGeneratedAt": "2026-09-08T05:23:20.967Z",
-      "status": "WAIT_ENTRY",
-      "reason": "Qualified crypto candidate remains under 24/7 monitoring below its current buy zone.",
-      "observedPrice": 0.08981,
-      "stateChangedAt": "2026-09-08T05:23:21.955Z"
+      "minimumEntry": 0.089961,
+      "maximumEntry": 0.09176022,
+      "stop": 0.088799,
+      "target1": 0.093446,
+      "target2": 0.095769,
+      "signalGeneratedAt": "2026-09-08T05:55:21.208Z",
+      "status": "CRYPTO_SEED_LANE_BUY_TRIGGER",
+      "reason": "Automatic qualified crypto candidate is inside its buy zone. Capped at $5 using existing Robinhood cash only and executed only through Claude Robinhood Trading MCP after every live guard passes.",
+      "observedPrice": 0.0902215,
+      "stateChangedAt": "2026-09-08T05:55:22.836Z"
     },
     {
       "id": "ENTRY:CRYPTO:HBAR/USD",
@@ -410,7 +430,7 @@
       "rewardRisk": 5,
       "profitabilityAdmission": "SHADOW_ONLY",
       "qualificationSource": "CRYPTO_TOURNAMENT_QUALIFIED",
-      "tournamentGeneratedAt": "2026-09-08T05:23:21.355Z",
+      "tournamentGeneratedAt": "2026-09-08T05:55:21.706Z",
       "seedLaneEligible": true,
       "seedLane": {
         "eligible": true,
@@ -427,60 +447,16 @@
         "marginAllowed": false,
         "executionLane": "CLAUDE_ROBINHOOD_TRADING_MCP"
       },
-      "minimumEntry": 0.08166,
-      "maximumEntry": 0.0832932,
-      "stop": 0.080491,
-      "target1": 0.085168,
-      "target2": 0.087507,
-      "signalGeneratedAt": "2026-09-08T05:23:20.967Z",
+      "minimumEntry": 0.081432,
+      "maximumEntry": 0.08306064,
+      "stop": 0.08048,
+      "target1": 0.084287,
+      "target2": 0.086191,
+      "signalGeneratedAt": "2026-09-08T05:55:21.208Z",
       "status": "PRICE_UNAVAILABLE",
       "reason": "Latest Alpaca crypto price unavailable.",
       "observedPrice": null,
-      "stateChangedAt": "2026-09-08T05:21:20.459Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-08T05:21:21.447Z"
-      }
-    },
-    {
-      "id": "ENTRY:CRYPTO:ETH/USD",
-      "kind": "ENTRY",
-      "assetClass": "CRYPTO",
-      "ticker": "ETH/USD",
-      "setupGrade": "A+",
-      "queueRank": 16,
-      "opportunityScore": 97,
-      "growthQuality": 97,
-      "rewardRisk": 5,
-      "profitabilityAdmission": "SHADOW_ONLY",
-      "qualificationSource": "CRYPTO_TOURNAMENT_QUALIFIED",
-      "tournamentGeneratedAt": "2026-09-08T05:23:21.355Z",
-      "seedLaneEligible": true,
-      "seedLane": {
-        "eligible": true,
-        "maxOrderUsd": 5,
-        "maxConcurrentPositions": 1,
-        "maxNewPositionsPerUtcDay": 1,
-        "maxHoldingHours": 8,
-        "maxStopLossesPerUtcDay": 2,
-        "requiresPerOrderApproval": false,
-        "requiresBrokerResidentStop": true,
-        "existingRobinhoodCashOnly": true,
-        "agentMayInitiateDeposits": false,
-        "agentMayInitiateBankTransfers": false,
-        "marginAllowed": false,
-        "executionLane": "CLAUDE_ROBINHOOD_TRADING_MCP"
-      },
-      "minimumEntry": 2486.50308,
-      "maximumEntry": 2536.2331416,
-      "stop": 2471.562588,
-      "target1": 2531.324557,
-      "target2": 2561.205542,
-      "signalGeneratedAt": "2026-09-08T05:23:20.967Z",
-      "status": "WAIT_ENTRY",
-      "reason": "Qualified crypto candidate remains under 24/7 monitoring below its current buy zone.",
-      "observedPrice": 2477.98,
-      "stateChangedAt": "2026-09-08T04:24:04.131Z"
+      "stateChangedAt": "2026-09-08T05:21:20.459Z"
     },
     {
       "id": "ENTRY:CRYPTO:CRO/USD",
@@ -488,13 +464,13 @@
       "assetClass": "CRYPTO",
       "ticker": "CRO/USD",
       "setupGrade": "A",
-      "queueRank": 22,
-      "opportunityScore": 94,
-      "growthQuality": 94,
+      "queueRank": 21,
+      "opportunityScore": 95,
+      "growthQuality": 95,
       "rewardRisk": 5,
       "profitabilityAdmission": "SHADOW_ONLY",
       "qualificationSource": "CRYPTO_TOURNAMENT_QUALIFIED",
-      "tournamentGeneratedAt": "2026-09-08T05:23:21.355Z",
+      "tournamentGeneratedAt": "2026-09-08T05:55:21.706Z",
       "seedLaneEligible": true,
       "seedLane": {
         "eligible": true,
@@ -511,20 +487,16 @@
         "marginAllowed": false,
         "executionLane": "CLAUDE_ROBINHOOD_TRADING_MCP"
       },
-      "minimumEntry": 0.057815,
-      "maximumEntry": 0.0589713,
-      "stop": 0.057424,
-      "target1": 0.05899,
-      "target2": 0.059772,
-      "signalGeneratedAt": "2026-09-08T05:23:20.967Z",
+      "minimumEntry": 0.058186,
+      "maximumEntry": 0.05934972,
+      "stop": 0.057442,
+      "target1": 0.060417,
+      "target2": 0.061904,
+      "signalGeneratedAt": "2026-09-08T05:55:21.208Z",
       "status": "PRICE_UNAVAILABLE",
       "reason": "Latest Alpaca crypto price unavailable.",
       "observedPrice": null,
-      "stateChangedAt": "2026-09-08T05:21:20.459Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-08T05:21:21.447Z"
-      }
+      "stateChangedAt": "2026-09-08T05:21:20.459Z"
     },
     {
       "id": "POSITION:STOCK:RPRX",
@@ -536,12 +508,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-08",
-        "minuteOfDay": 83,
+        "minuteOfDay": 115,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": 877,
+        "minutesToClose": 845,
         "sessionEnded": false,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -568,12 +540,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-08",
-        "minuteOfDay": 83,
+        "minuteOfDay": 115,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": 877,
+        "minutesToClose": 845,
         "sessionEnded": false,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -602,58 +574,5 @@
     "TRIGGER_2_TARGET1": "Target 1 reached — execute validated first scale-out.",
     "TRIGGER_3_TARGET2": "Target 2 reached — execute validated exit/runner decision."
   },
-  "creditPolicy": "Alpaca/GitHub monitor prices. Claude should read the small dispatch packet first and avoid market/broker work when no action is needed.",
-  "dayTraderPolicy": {
-    "enabled": true,
-    "stocks": {
-      "regularSessionOnly": true,
-      "newEntryCutoffMinutesBeforeClose": 30,
-      "forcedExitMinutesBeforeClose": 15,
-      "overnightAllowed": false
-    },
-    "crypto": {
-      "intradayOnly": true,
-      "maximumHoldingHours": 8
-    },
-    "enforcedAt": "2026-09-08T05:21:21.400Z"
-  },
-  "intradayEngine": {
-    "schemaVersion": 2,
-    "generatedAt": "2026-09-08T05:21:21.447Z",
-    "status": "DEGRADED",
-    "errors": [
-      "crypto: b1.at is not a function",
-      "stocks: b1.at is not a function"
-    ],
-    "benchmarks": {
-      "spy": null,
-      "qqq": null,
-      "btc": null
-    },
-    "features": [
-      "1m momentum",
-      "5m momentum",
-      "VWAP",
-      "relative volume",
-      "opening range breakout",
-      "momentum acceleration",
-      "SPY/QQQ relative strength",
-      "BTC context",
-      "market regime routing",
-      "event-risk suppression",
-      "setup-specific real-fill learning",
-      "execution-cost expectancy",
-      "adaptive sizing",
-      "profit protection"
-    ],
-    "profitGivebackPolicy": {
-      "enabled": true,
-      "source": "ROBINHOOD_CONFIRMED_REALIZED_AND_UNREALIZED_PNL_AT_EXECUTION_TIME",
-      "reduceRiskAfterGivebackPct": 35,
-      "stopNewRiskAfterGivebackPct": 50,
-      "onlyWhenDayPnlPositive": true,
-      "note": "Executor must calculate from fresh broker-confirmed state; repository snapshots never invent PnL."
-    },
-    "policy": "Intraday edge may block, reorder, or reduce size but may never create eligibility or increase maximum risk. Stale/unavailable data fails closed for new entries; exits remain prioritized."
-  }
+  "creditPolicy": "Alpaca/GitHub monitor prices. Claude should read the small dispatch packet first and avoid market/broker work when no action is needed."
 }
