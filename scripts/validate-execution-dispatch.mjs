@@ -58,7 +58,7 @@ const seeds=dispatch.seedLaneCandidates||[];
 if(seeds.some(x=>!((x.assetClass==='STOCK'&&['SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'].includes(x.trigger))||(x.assetClass==='CRYPTO'&&x.trigger==='CRYPTO_SEED_LANE_BUY_TRIGGER')))) fail('invalid seed-lane candidate');
 if(seeds.some(x=>x.requiresPerOrderApproval!==false)) fail('seed-lane approval must be disabled in automatic mode');
 if(seeds.some(x=>Number(x.maxOrderUsd)!==(x.assetClass==='CRYPTO'?5:20)||x.existingRobinhoodCashOnly!==true||x.agentMayInitiateDeposits!==false||x.agentMayInitiateBankTransfers!==false||x.marginAllowed!==false||x.requiresBrokerResidentStop!==true)) fail('seed-lane funding or protection bounds');
-if(seeds.some(x=>x.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'&&(x.mustBeFlatBeforeMarketClose!==true||Number(x.entryCutoffMinutesBeforeClose)!==30||Number(x.forcedExitStartMinutesBeforeClose)!==15)))fail('day-trade seed timing bounds');
+if(seeds.some(x=>x.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'&&(x.mustBeFlatBeforeMarketClose!==true||Number(x.entryCutoffMinutesBeforeClose)!==20||Number(x.forcedExitStartMinutesBeforeClose)!==10)))fail('day-trade seed timing bounds');
 if(dispatch.pendingAction?.trigger==='STOCK_DAY_TRADE_FORCED_EXIT'&&Number(dispatch.pendingAction.priority)!==100)fail('day-trade forced exit priority');
 if((dispatch.priorityOrder||[]).indexOf('STOCK_DAY_TRADE_FORCED_EXIT')<0||(dispatch.priorityOrder||[]).indexOf('STOCK_DAY_TRADE_FORCED_EXIT')>1)fail('day-trade forced exit priority order');
 if(dispatch.pendingAction?.trigger==='STOCK_DAY_TRADE_FORCED_EXIT'&&(automaticStockCandidates.length||seeds.length))fail('day-trade forced exit must block buys');
