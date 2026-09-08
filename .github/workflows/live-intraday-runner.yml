@@ -8,7 +8,7 @@ on:
         type: boolean
         default: false
   schedule:
-    - cron: '2-57/5 * * * *'
+    - cron: '2 * * * *'
   push:
     branches: [main]
     paths:
@@ -32,6 +32,7 @@ on:
       - 'scripts/rebuild-intraday-trigger-state.mjs'
       - 'scripts/validate-intraday-edge-overlay.mjs'
       - 'scripts/build-execution-dispatch.mjs'
+      - 'scripts/validate-execution-dispatch.mjs'
       - 'scripts/claude-executor-prompt.md'
       - 'docs/data/trade-replay.json'
       - '.mcp.json'
@@ -134,4 +135,4 @@ jobs:
             elapsed=$(( $(date +%s) - started ))
             if [ "$elapsed" -lt 45 ]; then sleep $((45-elapsed)); fi
           done
-          echo "Live intraday session completed; background learner stopped cleanly and next queued session takes over."
+          echo "Live intraday session completed; background learner stopped cleanly. The hourly schedule or watchdog starts the next session without building a queue backlog."
