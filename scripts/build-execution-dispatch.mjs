@@ -10,12 +10,18 @@ const now=new Date();
 const nowIso=now.toISOString();
 const MAX_BOARD_AGE_MS=15*60*1000;
 const MAX_ENTRY_AGE_MS=10*60*1000;
+const STOCK_ENTRY_CUTOFF_MINUTES=20;
 
 const priority={TRIGGER_1_STOP:100,STOCK_DAY_TRADE_FORCED_EXIT:100,TRIGGER_3_TARGET2:80,TRIGGER_2_TARGET1:70,BUY_TRIGGER:50};
 const actionMap={TRIGGER_1_STOP:'VERIFY_POSITION_AND_SELL_STOP',STOCK_DAY_TRADE_FORCED_EXIT:'VERIFY_DAY_TRADE_POSITION_AND_EXIT_ALL_TESTSTOCK_QUANTITY',TRIGGER_3_TARGET2:'VERIFY_POSITION_AND_EXECUTE_TARGET2_OR_RUNNER',TRIGGER_2_TARGET1:'VERIFY_POSITION_AND_EXECUTE_TARGET1',BUY_TRIGGER:'VERIFY_LIVE_GUARDS_AND_EXECUTE_IF_STILL_ELIGIBLE'};
 const ageMs=value=>{const timestamp=Date.parse(value||'');return Number.isFinite(timestamp)?Math.max(0,now.getTime()-timestamp):Infinity;};
 const boardAgeMs=ageMs(board?.publishedAt);
 const boardHealthy=board?.monitorHealth==='OK'&&boardAgeMs<=MAX_BOARD_AGE_MS;
+const stockEntrySessionAllowed=e=>{
+  if(e?.trigger!=='BUY_TRIGGER'||e?.assetClass!=='STOCK')return true;
+  const s=e.marketSession||board?.marketSession||{};
+  return s.calendarAvailable===true&&s.regularSession===true&&s.entryAllowed===true&&Number(s.minutesToClose)>=STOCK_ENTRY_CUTOFF_MINUTES;
+};
 
 // IMPORTANT: a previously published dispatch is not proof that a broker order was
 // submitted or filled. Keep a still-current trigger dispatchable until live broker
@@ -25,7 +31,8 @@ const candidates=(board?.events||[]).filter(e=>priority[e.trigger]&&!(e.trigger=
   const fingerprint=`${e.id}|${e.trigger}|${e.stateChangedAt}`;
   const triggerAgeMs=ageMs(e.stateChangedAt);
   const isFresh=e.trigger!=='BUY_TRIGGER'||triggerAgeMs<=MAX_ENTRY_AGE_MS;
-  return {...e,fingerprint,priority:priority[e.trigger],requestedAction:actionMap[e.trigger],triggerAgeMs,expiresAt:e.trigger==='BUY_TRIGGER'?new Date(Date.parse(e.stateChangedAt)+MAX_ENTRY_AGE_MS).toISOString():null,isFresh,isNew:true,isActionable:boardHealthy&&isFresh};
+  const sessionAllowed=stockEntrySessionAllowed(e);
+  return {...e,fingerprint,priority:priority[e.trigger],requestedAction:actionMap[e.trigger],triggerAgeMs,expiresAt:e.trigger==='BUY_TRIGGER'?new Date(Date.parse(e.stateChangedAt)+MAX_ENTRY_AGE_MS).toISOString():null,isFresh,sessionAllowed,isNew:true,isActionable:boardHealthy&&isFresh&&sessionAllowed};
 }).sort((a,b)=>b.priority-a.priority||Number(a.queueRank||999)-Number(b.queueRank||999)||String(a.ticker).localeCompare(String(b.ticker)));
 
 const hasExitEvent=candidates.some(x=>x.trigger!=='BUY_TRIGGER');
@@ -41,17 +48,18 @@ const seedEvents=(board?.events||[]).filter(e=>(e.trigger==='SEED_LANE_BUY_TRIGG
   const fingerprint=`${e.id}|${e.trigger}|${e.stateChangedAt}`;
   const triggerAgeMs=ageMs(e.stateChangedAt);
   const isFresh=triggerAgeMs<=MAX_ENTRY_AGE_MS;
-  return {...e,fingerprint,triggerAgeMs,isFresh,isNew:true,isActionable:boardHealthy&&isFresh};
+  const stockSeedSessionAllowed=e.assetClass!=='STOCK'||stockEntrySessionAllowed({...e,trigger:'BUY_TRIGGER'});
+  return {...e,fingerprint,triggerAgeMs,isFresh,sessionAllowed:stockSeedSessionAllowed,isNew:true,isActionable:boardHealthy&&isFresh&&stockSeedSessionAllowed};
 });
 const compactSeed=e=>{const lane=e.dayTradeSeedLane?.eligible===true?e.dayTradeSeedLane:e.seedLane;return ({
   fingerprint:e.fingerprint,assetClass:e.assetClass,ticker:e.ticker,trigger:e.trigger,
   maxOrderUsd:Number(lane?.maxOrderUsd||5),
   maxConcurrentPositions:Number(lane?.maxConcurrentPositions||(e.assetClass==='CRYPTO'?1:2)),
   maxNewPositionsPerUtcDay:Number(lane?.maxNewPositionsPerUtcDay||1),
-  maxHoldingHours:e.assetClass==='CRYPTO'?Number(lane?.maxHoldingHours||8):null,
+  maxHoldingHours:e.assetClass==='CRYPTO'?Number(lane?.maxHoldingHours||3):null,
   mustBeFlatBeforeMarketClose:e.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER',
-  entryCutoffMinutesBeforeClose:e.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'?Number(lane?.entryCutoffMinutesBeforeClose||30):null,
-  forcedExitStartMinutesBeforeClose:e.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'?Number(lane?.forcedExitStartMinutesBeforeClose||15):null,
+  entryCutoffMinutesBeforeClose:e.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'?Number(lane?.entryCutoffMinutesBeforeClose||20):null,
+  forcedExitStartMinutesBeforeClose:e.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'?Number(lane?.forcedExitStartMinutesBeforeClose||10):null,
   requiresPerOrderApproval:false,
   existingRobinhoodCashOnly:true,agentMayInitiateDeposits:false,agentMayInitiateBankTransfers:false,marginAllowed:false,
   requiresBrokerResidentStop:lane?.requiresBrokerResidentStop===true,
@@ -68,13 +76,13 @@ const out={
   schemaVersion:4,source:'TESTSTOCK_EVENT_DISPATCH',generatedAt:nowIso,boardPublishedAt:board?.publishedAt||null,
   boardAgeMs:Number.isFinite(boardAgeMs)?boardAgeMs:null,maximumBoardAgeMs:MAX_BOARD_AGE_MS,
   monitorHealth:board?.monitorHealth||'UNAVAILABLE',dispatchHealth:boardHealthy?'OK':'FAIL_CLOSED_STALE_OR_UNHEALTHY_BOARD',
-  claudeShouldRun:Boolean(pendingAction)||seedLaneCandidates.length>0,claudeShouldPollMarket:false,executionNeeded:permittedCandidates.length>0||seedLaneCandidates.length>0,
-  dispatchFingerprints:[...permittedCandidates.map(x=>x.fingerprint),...seedLaneCandidates.map(x=>x.fingerprint)],priorityOrder:['TRIGGER_1_STOP','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_3_TARGET2','TRIGGER_2_TARGET1','BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER','CRYPTO_SEED_LANE_BUY_TRIGGER'],
+  claudeShouldRun:Boolean(pendingAction)||seedLaneCandidates.length>0,claudeShouldPollMarket:false,executionNeeded:actionableCandidates.length>0||seedLaneCandidates.length>0,
+  dispatchFingerprints:[...actionableCandidates.map(x=>x.fingerprint),...seedLaneCandidates.map(x=>x.fingerprint)],priorityOrder:['TRIGGER_1_STOP','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_3_TARGET2','TRIGGER_2_TARGET1','BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER','CRYPTO_SEED_LANE_BUY_TRIGGER'],
   pendingAction,automaticStockCandidates,approvalCandidates:[],approvalBatchId:null,fallbackActions,seedLaneCandidates,
   multiStockPolicy:{enabled:true,maximumAutomaticCandidatesPerDispatch:null,capacityMode:'DYNAMIC_RISK_CASH_AND_BROKER_LIMITED',automaticQualifiedEntries:true,userApprovalRequired:false,oneWinnerDoesNotBlockOtherQualifiedStocks:true,rule:'Expose every already-qualified current-generation stock candidate in rank order. Claude may execute as many as remain independently qualified after immediate broker rechecks and dynamic cash, portfolio-heat, correlation, account-floor and aggregate-stop-risk limits. Never force a trade.'},
-  queuedActions:permittedCandidates.filter(x=>!x.isActionable).map(x=>({ticker:x.ticker,trigger:x.trigger,fingerprint:x.fingerprint,isFresh:x.isFresh})),
+  queuedActions:permittedCandidates.filter(x=>!x.isActionable).map(x=>({ticker:x.ticker,trigger:x.trigger,fingerprint:x.fingerprint,isFresh:x.isFresh,sessionAllowed:x.sessionAllowed??true})),
   noActionInstruction:'If claudeShouldRun is false, stop immediately. Do not call Robinhood, research markets, or produce a long report.',
-  actionInstruction:'For every current trigger, reconcile Robinhood positions, open orders and recent order history before submission. Exit events always take priority and block every new buy for the run. For BUY_TRIGGER dispatches, process automaticStockCandidates in rank order without requesting user approval. Recheck each candidate independently immediately before submission; after every confirmed fill recompute cash, account floor, deployed capital, planned stop risk, correlation, portfolio heat, protection capability and broker/account restrictions. Skip any candidate that no longer qualifies. Seed-lane candidates remain automatic only within their encoded caps and protection requirements. A previously published fingerprint is not proof of execution. Reconcile ambiguous or partial results by original/client order ID and never blindly retry an uncertain submission.',
+  actionInstruction:'For every current trigger, reconcile Robinhood positions, open orders and recent order history before submission. Exit events always take priority and block every new buy for the run. Stock entries require authoritative regular-session status and at least 20 minutes to close both here and again at the broker-time recheck. For BUY_TRIGGER dispatches, process automaticStockCandidates in rank order without requesting user approval. Recheck each candidate independently immediately before submission; after every confirmed fill recompute cash, account floor, deployed capital, planned stop risk, correlation, portfolio heat, protection capability and broker/account restrictions. Skip any candidate that no longer qualifies. Seed-lane candidates remain automatic only within their encoded caps and protection requirements. A previously published fingerprint is not proof of execution. Reconcile ambiguous or partial results by original/client order ID and never blindly retry an uncertain submission.',
   consumerContract:{invokeOnlyWhen:'claudeShouldRun === true',atomicClaimKey:'candidate.fingerprint',maximumNewBuysPerDispatch:null,capacityMode:'DYNAMIC_RISK_CASH_AND_BROKER_LIMITED',approvalMode:'NONE_AUTOMATIC',userApprovalRequired:false,automaticQualifiedStocks:true,multipleConcurrentStocksAllowed:true,fallbackRule:'Process all already-qualified stock candidates in order. Failed candidates fall through. Confirmed fills dynamically reduce remaining capacity before the next candidate.',duplicateRule:'Before every order, reconcile current Robinhood positions, open orders and recent order history. One logical trigger may create at most one live broker entry; ambiguous submissions must be reconciled before any replacement.',retryRule:'After an ambiguous response, reconcile by original/client order ID and broker state. Never create a replacement order until the original is conclusively cancelled or rejected.',creditRule:'Use one Claude run for the ordered candidate sequence where practical. The runner usage gate limits repeated invocations; broker reconciliation prevents duplicate orders when a still-current trigger is redispatched.'},
   stockApprovalNotification:{needed:false,batchId:null,tickers:[],instruction:'Stock approval notifications are disabled because qualified stock entries are automatic.'},
   stopPriorityRule:'A stop event outranks profit targets and buys. When any exit event exists, do not evaluate or submit a new buy.',
