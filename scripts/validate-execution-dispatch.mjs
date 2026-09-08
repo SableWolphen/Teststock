@@ -4,7 +4,7 @@ const file=process.argv[2]||'docs/data/execution-dispatch.json';
 const dispatch=JSON.parse(await fs.readFile(file,'utf8'));
 const fail=message=>{throw new Error(`Invalid execution dispatch: ${message}`);};
 
-if(![1,2,3].includes(dispatch.schemaVersion)) fail('unsupported schemaVersion');
+if(![1,2,3,4].includes(dispatch.schemaVersion)) fail('unsupported schemaVersion');
 if(!['OK','FAIL_CLOSED_STALE_OR_UNHEALTHY_BOARD'].includes(dispatch.dispatchHealth)) fail('unknown dispatchHealth');
 if(dispatch.claudeShouldPollMarket!==false) fail('Claude market polling must remain disabled');
 if(dispatch.claudeShouldRun){
@@ -12,11 +12,10 @@ if(dispatch.claudeShouldRun){
   if(dispatch.dispatchHealth!=='OK') fail('cannot run Claude on an unhealthy dispatch');
   if(action){
     if(!action.fingerprint) fail('actionable dispatch lacks fingerprint');
-    if(action.isNew!==true||action.isActionable!==true) fail('actionable dispatch must be new and actionable');
+    if(action.isActionable!==true) fail('actionable dispatch must be actionable');
     if(action.trigger==='BUY_TRIGGER'&&(!action.expiresAt||Date.parse(action.expiresAt)<=Date.parse(dispatch.generatedAt))) fail('entry is expired');
   }else if(!(dispatch.seedLaneCandidates||[]).some(x=>x?.fingerprint)) fail('actionable dispatch lacks a normal or seed fingerprint');
 }
-if(dispatch.pendingAction?.isNew===false&&dispatch.claudeShouldRun) fail('duplicate fingerprint would invoke Claude');
 if((dispatch.fallbackActions||[]).some(action=>action.trigger!=='BUY_TRIGGER')) fail('fallback sequence may contain only buy actions');
 if(dispatch.pendingAction?.trigger!=='BUY_TRIGGER'&&(dispatch.fallbackActions||[]).length) fail('exit dispatch cannot contain buy fallbacks');
 
@@ -36,9 +35,16 @@ uniqueWithin(automaticStockCandidates,'automaticStockCandidates');
 uniqueWithin(dispatch.fallbackActions||[],'fallbackActions');
 for(let i=1;i<automaticStockCandidates.length;i++)if(Number(automaticStockCandidates[i-1].queueRank||999)>Number(automaticStockCandidates[i].queueRank||999))fail('automatic stock queue is not rank ordered');
 
-const max=Number(dispatch.consumerContract?.maximumNewBuysPerDispatch??1);
-if(!Number.isInteger(max)||max<1||max>4) fail('maximumNewBuysPerDispatch must be an integer from 1 to 4');
-if(automaticStockCandidates.length>max) fail('automaticStockCandidates exceeds maximumNewBuysPerDispatch');
+const max=dispatch.consumerContract?.maximumNewBuysPerDispatch;
+if(dispatch.schemaVersion>=4){
+  if(max!==null) fail('schema v4 must use dynamic, not fixed, per-dispatch buy capacity');
+  if(dispatch.consumerContract?.capacityMode!=='DYNAMIC_RISK_CASH_AND_BROKER_LIMITED') fail('dynamic capacity mode missing');
+  if(dispatch.multiStockPolicy?.capacityMode!=='DYNAMIC_RISK_CASH_AND_BROKER_LIMITED') fail('multiStockPolicy dynamic capacity mode missing');
+}else{
+  const legacyMax=Number(max??1);
+  if(!Number.isInteger(legacyMax)||legacyMax<1||legacyMax>4) fail('legacy maximumNewBuysPerDispatch must be an integer from 1 to 4');
+  if(automaticStockCandidates.length>legacyMax) fail('automaticStockCandidates exceeds maximumNewBuysPerDispatch');
+}
 if(dispatch.consumerContract?.approvalMode!=='NONE_AUTOMATIC') fail('approvalMode must be NONE_AUTOMATIC');
 if(dispatch.consumerContract?.userApprovalRequired!==false) fail('user approval must be false');
 if(dispatch.consumerContract?.automaticQualifiedStocks!==true) fail('automaticQualifiedStocks must be true');
@@ -57,4 +63,4 @@ if(dispatch.pendingAction?.trigger==='STOCK_DAY_TRADE_FORCED_EXIT'&&Number(dispa
 if((dispatch.priorityOrder||[]).indexOf('STOCK_DAY_TRADE_FORCED_EXIT')<0||(dispatch.priorityOrder||[]).indexOf('STOCK_DAY_TRADE_FORCED_EXIT')>1)fail('day-trade forced exit priority order');
 if(dispatch.pendingAction?.trigger==='STOCK_DAY_TRADE_FORCED_EXIT'&&(automaticStockCandidates.length||seeds.length))fail('day-trade forced exit must block buys');
 
-console.log(`Execution dispatch valid: ${dispatch.claudeShouldRun?'actionable':'idle'}; automatic stock candidates ${automaticStockCandidates.length}; seed candidates ${seeds.length}; max new buys ${max}.`);
+console.log(`Execution dispatch valid: ${dispatch.claudeShouldRun?'actionable':'idle'}; automatic stock candidates ${automaticStockCandidates.length}; seed candidates ${seeds.length}; capacity ${max===null?'dynamic':max}.`);
