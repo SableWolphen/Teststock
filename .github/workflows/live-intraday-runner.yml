@@ -129,8 +129,11 @@ jobs:
             cycle=$((cycle+1))
             started=$(date +%s)
             echo "=== Teststock fast intraday cycle $cycle at $(date -u +%FT%TZ) ==="
-            git fetch --quiet origin main
-            git reset --hard --quiet origin/main
+            if ! git fetch --quiet origin main; then
+              echo "git fetch failed this cycle (likely transient network); reusing current checkout"
+            elif ! git reset --hard --quiet origin/main; then
+              echo "git reset failed this cycle (likely transient network); reusing current checkout"
+            fi
             bash scripts/run-live-intraday-cycle.sh
             elapsed=$(( $(date +%s) - started ))
             if [ "$elapsed" -lt 45 ]; then sleep $((45-elapsed)); fi

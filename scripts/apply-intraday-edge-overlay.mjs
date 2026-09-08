@@ -64,7 +64,14 @@ const generatedAt=now.toISOString();
 for(const item of board.items||[]){
   if(item?.kind!=='ENTRY'||!item?.ticker)continue;
   const f=map.get(`${item.assetClass}:${item.ticker}`);
-  if(!f){item.intradayEdge={status:'UNAVAILABLE_FAIL_CLOSED',generatedAt};continue;}
+  if(!f){
+    item.intradayEdge={status:'UNAVAILABLE_FAIL_CLOSED',generatedAt};
+    if(['BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER','CRYPTO_SEED_LANE_BUY_TRIGGER'].includes(item.status)){
+      item.status='BLOCKED_INTRADAY_EDGE';
+      item.reason='Intraday edge blocked: 1m/5m market data was unavailable this cycle, so this candidate fails closed rather than trading on stale/missing edge.';
+    }
+    continue;
+  }
   const tag=setupTag(f),learn=adaptiveBucket(tag),meta=candidateMeta(item),evt=eventRisk(meta);
   let benchmark=null,relativeStrengthPct=null,marketRegime='UNKNOWN';
   if(item.assetClass==='STOCK'){
