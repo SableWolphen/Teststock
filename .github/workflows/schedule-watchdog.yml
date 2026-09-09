@@ -50,6 +50,29 @@ jobs:
           echo "Stale and nothing in flight; re-dispatching static-scan.yml"
           gh workflow run static-scan.yml --ref main
 
+      - name: Re-dispatch fast-opportunity-refresh.yml if the stock/crypto signal has gone stale
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          generated_at=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('docs/data/claude-signal.json','utf8')).generatedAt||'')}catch{console.log('')}")
+          if [ -z "$generated_at" ]; then
+            echo "No generatedAt in docs/data/claude-signal.json; skipping"
+            exit 0
+          fi
+          age_min=$(node -e "console.log(Math.max(0, Math.round((Date.now()-Date.parse('$generated_at'))/60000)))")
+          echo "docs/data/claude-signal.json is ${age_min} minutes old"
+          if [ "$age_min" -lt 20 ]; then
+            echo "Fresh enough; nothing to do"
+            exit 0
+          fi
+          if gh run list --workflow fast-opportunity-refresh.yml --limit 10 --json status | jq -e 'any(.[]; .status=="queued" or .status=="in_progress")' >/dev/null; then
+            echo "A fast-opportunity-refresh run is already queued or in progress; not duplicating it"
+            exit 0
+          fi
+          echo "Stale and nothing in flight; re-dispatching fast-opportunity-refresh.yml"
+          gh workflow run fast-opportunity-refresh.yml --ref main
+
       - name: Re-dispatch trigger-monitor.yml if the trigger board has gone stale
         env:
           GH_TOKEN: ${{ github.token }}
