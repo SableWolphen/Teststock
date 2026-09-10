@@ -1,29 +1,29 @@
 {
   "schemaVersion": 6,
   "source": "TESTSTOCK_NON_LLM_TRIGGER_MONITOR",
-  "publishedAt": "2026-09-10T21:14:09.314Z",
+  "publishedAt": "2026-09-10T22:28:06.456Z",
   "monitorHealth": "OK",
   "monitorCadenceMinutes": 5,
   "priceSource": "ALPACA_MARKET_DATA",
   "claudeMarketPollingRequired": false,
   "siteAvailability": "24_7_PUBLIC_DASHBOARD",
   "researchState": "ACTIVE",
-  "researchAgeMinutes": 9.7,
+  "researchAgeMinutes": 0,
   "marketSession": {
     "timeZone": "America/New_York",
     "dateKey": "2026-09-10",
-    "minuteOfDay": 1034,
+    "minuteOfDay": 1108,
     "calendarAvailable": true,
     "openMinute": 570,
     "closeMinute": 960,
     "regularSession": false,
-    "minutesToClose": -74,
+    "minutesToClose": -148,
     "sessionEnded": true,
     "entryAllowed": false,
     "forcedExitDue": true
   },
   "displayPolicy": "Never present aged research as an active trading signal. During refresh, keep the latest candidate visible as display-only and block new buy triggers until a fresh generation arrives.",
-  "stockSessionRule": "Same-day stock entries require an authoritative regular session and at least 20 minutes to close. Day-trader stock positions enter forced-exit handling from 10 minutes before close and remain there until broker-confirmed flat.",
+  "stockSessionRule": "Same-day stock entries require an authoritative regular-session calendar and at least 30 minutes to close. Tagged same-day positions emit a forced exit from 15 minutes before close and after the session until confirmed flat.",
   "executionWakeBridge": {
     "status": "DISPATCH_PACKET_READY_FOR_AUTOMATIC_EXECUTOR",
     "note": "This monitor detects triggers without an LLM. The authorized Claude runner consumes the generated dispatch and is the sole Robinhood Trading MCP execution agent."
@@ -42,7 +42,7 @@
       "B"
     ],
     "candidateSource": "stockPlan.stockCandidateQueue + stockPlan.stockOrders",
-    "rule": "Already-qualified A stocks rank before B; within tier, fresh cost-adjusted intraday edge and adjusted score break ties. Intraday intelligence may block/reorder/reduce size but never create eligibility or raise risk."
+    "rule": "A/ELITE live stock triggers go first. After A-tier candidates, B/BEST_ACCEPTABLE may be executed at no more than 25% encoded normal size while live capacity remains, including after an A fill. Failed candidates fall through to the next eligible candidate in the same run. Never force a trade when all hard guards fail."
   },
   "events": [],
   "items": [
@@ -56,12 +56,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-10",
-        "minuteOfDay": 1034,
+        "minuteOfDay": 1108,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": -74,
+        "minutesToClose": -148,
         "sessionEnded": true,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -88,12 +88,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-10",
-        "minuteOfDay": 1034,
+        "minuteOfDay": 1108,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": -74,
+        "minutesToClose": -148,
         "sessionEnded": true,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -122,55 +122,5 @@
     "TRIGGER_2_TARGET1": "Target 1 reached — execute validated first scale-out.",
     "TRIGGER_3_TARGET2": "Target 2 reached — execute validated exit/runner decision."
   },
-  "creditPolicy": "Alpaca/GitHub monitor prices. Claude should read the small dispatch packet first and avoid market/broker work when no action is needed.",
-  "dayTraderPolicy": {
-    "enabled": true,
-    "stocks": {
-      "regularSessionOnly": true,
-      "newEntryCutoffMinutesBeforeClose": 20,
-      "forcedExitMinutesBeforeClose": 10,
-      "overnightAllowed": false
-    },
-    "crypto": {
-      "intradayOnly": true,
-      "maximumHoldingHours": 3
-    },
-    "enforcedAt": "2026-09-10T21:14:09.941Z"
-  },
-  "intradayEngine": {
-    "schemaVersion": 2,
-    "generatedAt": "2026-09-10T21:14:09.990Z",
-    "status": "OK",
-    "errors": [],
-    "benchmarks": {
-      "spy": null,
-      "qqq": null,
-      "btc": null
-    },
-    "features": [
-      "1m momentum",
-      "5m momentum",
-      "VWAP",
-      "relative volume",
-      "opening range breakout",
-      "momentum acceleration",
-      "SPY/QQQ relative strength",
-      "BTC context",
-      "market regime routing",
-      "event-risk suppression",
-      "setup-specific real-fill learning",
-      "execution-cost expectancy",
-      "adaptive sizing",
-      "profit protection"
-    ],
-    "profitGivebackPolicy": {
-      "enabled": true,
-      "source": "ROBINHOOD_CONFIRMED_REALIZED_AND_UNREALIZED_PNL_AT_EXECUTION_TIME",
-      "reduceRiskAfterGivebackPct": 35,
-      "stopNewRiskAfterGivebackPct": 50,
-      "onlyWhenDayPnlPositive": true,
-      "note": "Executor must calculate from fresh broker-confirmed state; repository snapshots never invent PnL."
-    },
-    "policy": "Intraday edge may block, reorder, or reduce size but may never create eligibility or increase maximum risk. Stale/unavailable data fails closed for new entries; exits remain prioritized."
-  }
+  "creditPolicy": "Alpaca/GitHub monitor prices. Claude should read the small dispatch packet first and avoid market/broker work when no action is needed."
 }
