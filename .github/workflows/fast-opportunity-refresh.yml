@@ -136,7 +136,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Keep the fast refresh generation internally consistent all the way through
+          # the final intraday edge and execution packet. A fresh signal must never be
+          # published beside an old intraday-edge snapshot.
           node scripts/update-trigger-board.mjs
+          node scripts/normalize-trigger-board-policy.mjs
+          node scripts/enforce-day-trader-trigger-policy.mjs
+          node scripts/apply-intraday-edge-overlay.mjs
+          node scripts/rebuild-intraday-trigger-state.mjs
+          node scripts/validate-intraday-edge-overlay.mjs
           node scripts/validate-trigger-board.mjs
           node scripts/build-execution-dispatch.mjs
           node scripts/validate-execution-dispatch.mjs
@@ -147,6 +155,14 @@ jobs:
             echo "No fast-refresh changes to publish"
           else
             git commit -m "Fast refresh Teststock opportunities"
-            git pull --rebase -X theirs origin main
-            git push
+            for attempt in 1 2 3; do
+              git pull --rebase -X theirs origin main
+              if git push; then
+                exit 0
+              fi
+              echo "Push attempt $attempt failed; retrying transient GitHub failure..." >&2
+              sleep $((attempt * 3))
+            done
+            echo "Unable to publish fast refresh after 3 attempts." >&2
+            exit 1
           fi
