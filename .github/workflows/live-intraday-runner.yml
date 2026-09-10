@@ -125,6 +125,7 @@ jobs:
 
           end=$(( $(date +%s) + 3300 ))
           cycle=0
+          consecutive_cycle_failures=0
           while [ "$(date +%s)" -lt "$end" ]; do
             cycle=$((cycle+1))
             started=$(date +%s)
@@ -134,7 +135,20 @@ jobs:
             elif ! git reset --hard --quiet origin/main; then
               echo "git reset failed this cycle (likely transient network); reusing current checkout"
             fi
-            bash scripts/run-live-intraday-cycle.sh
+
+            if bash scripts/run-live-intraday-cycle.sh; then
+              consecutive_cycle_failures=0
+            else
+              rc=$?
+              consecutive_cycle_failures=$((consecutive_cycle_failures+1))
+              echo "::warning::Fast intraday cycle failed with exit code ${rc}; keeping the live session alive so the next gated cycle can recover safely."
+              echo "No blind broker retry is performed; the executor's next eligible wake must re-read broker state and reconcile first."
+              if [ "$consecutive_cycle_failures" -ge 3 ]; then
+                echo "::error::Three consecutive fast-cycle failures occurred. Stopping this session so the watchdog can launch a clean recovery run."
+                exit "$rc"
+              fi
+            fi
+
             elapsed=$(( $(date +%s) - started ))
             if [ "$elapsed" -lt 45 ]; then sleep $((45-elapsed)); fi
           done
