@@ -6,7 +6,9 @@ name: Teststock scheduling watchdog
 
 on:
   schedule:
-    - cron: '4,19,34,49 * * * *'
+    # Five-minute independent recovery cadence keeps freshness comfortably inside
+    # the trading health SLO without weakening any stale-data gate.
+    - cron: '1,6,11,16,21,26,31,36,41,46,51,56 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -15,7 +17,7 @@ permissions:
 
 concurrency:
   group: teststock-watchdog
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   watchdog:
@@ -34,12 +36,13 @@ jobs:
           set -euo pipefail
           generated_at=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('docs/signal.json','utf8')).generatedAt||'')}catch{console.log('')}")
           if [ -z "$generated_at" ]; then
-            echo "No generatedAt in docs/signal.json; skipping"
-            exit 0
+            echo "No generatedAt in docs/signal.json; dispatching static scan if idle"
+            age_min=9999
+          else
+            age_min=$(node -e "console.log(Math.max(0, Math.round((Date.now()-Date.parse('$generated_at'))/60000)))")
           fi
-          age_min=$(node -e "console.log(Math.max(0, Math.round((Date.now()-Date.parse('$generated_at'))/60000)))")
           echo "docs/signal.json is ${age_min} minutes old"
-          if [ "$age_min" -lt 20 ]; then
+          if [ "$age_min" -lt 15 ]; then
             echo "Fresh enough; nothing to do"
             exit 0
           fi
@@ -47,22 +50,25 @@ jobs:
             echo "A static-scan run is already queued or in progress; not duplicating it"
             exit 0
           fi
-          echo "Stale and nothing in flight; re-dispatching static-scan.yml"
+          echo "Signal is approaching its health limit and nothing is in flight; re-dispatching static-scan.yml"
           gh workflow run static-scan.yml --ref main
 
-      - name: Re-dispatch fast-opportunity-refresh.yml if the stock/crypto signal has gone stale
+      - name: Re-dispatch fast-opportunity-refresh.yml if the canonical signal has gone stale
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          generated_at=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('docs/data/claude-signal.json','utf8')).generatedAt||'')}catch{console.log('')}")
+          # docs/signal.json is the canonical stock+crypto trading signal. The old
+          # claude-signal.json path is legacy and could make the watchdog miss a stale
+          # executable signal entirely.
+          generated_at=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('docs/signal.json','utf8')).generatedAt||'')}catch{console.log('')}")
           if [ -z "$generated_at" ]; then
-            echo "No generatedAt in docs/data/claude-signal.json; skipping"
-            exit 0
+            age_min=9999
+          else
+            age_min=$(node -e "console.log(Math.max(0, Math.round((Date.now()-Date.parse('$generated_at'))/60000)))")
           fi
-          age_min=$(node -e "console.log(Math.max(0, Math.round((Date.now()-Date.parse('$generated_at'))/60000)))")
-          echo "docs/data/claude-signal.json is ${age_min} minutes old"
-          if [ "$age_min" -lt 20 ]; then
+          echo "canonical docs/signal.json is ${age_min} minutes old"
+          if [ "$age_min" -lt 12 ]; then
             echo "Fresh enough; nothing to do"
             exit 0
           fi
@@ -70,31 +76,48 @@ jobs:
             echo "A fast-opportunity-refresh run is already queued or in progress; not duplicating it"
             exit 0
           fi
-          echo "Stale and nothing in flight; re-dispatching fast-opportunity-refresh.yml"
+          echo "Canonical signal is aging; dispatching fast-opportunity-refresh.yml"
           gh workflow run fast-opportunity-refresh.yml --ref main
 
-      - name: Re-dispatch trigger-monitor.yml if the trigger board has gone stale
+      - name: Re-dispatch trigger-monitor.yml if trigger or intraday state is stale
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          published_at=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('docs/data/trigger-board.json','utf8')).publishedAt||'')}catch{console.log('')}")
-          if [ -z "$published_at" ]; then
-            echo "No publishedAt in docs/data/trigger-board.json; skipping"
-            exit 0
-          fi
-          age_min=$(node -e "console.log(Math.max(0, Math.round((Date.now()-Date.parse('$published_at'))/60000)))")
-          echo "docs/data/trigger-board.json is ${age_min} minutes old"
-          if [ "$age_min" -lt 15 ]; then
-            echo "Fresh enough; nothing to do"
+          trigger_at=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('docs/data/trigger-board.json','utf8')).publishedAt||'')}catch{console.log('')}")
+          intraday_at=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('docs/data/intraday-edge.json','utf8')).generatedAt||'')}catch{console.log('')}")
+          trigger_age=$(node -e "const t=Date.parse('$trigger_at'); console.log(Number.isFinite(t)?Math.max(0,Math.round((Date.now()-t)/60000)):9999)")
+          intraday_age=$(node -e "const t=Date.parse('$intraday_at'); console.log(Number.isFinite(t)?Math.max(0,Math.round((Date.now()-t)/60000)):9999)")
+          echo "trigger-board age=${trigger_age}m intraday-edge age=${intraday_age}m"
+          if [ "$trigger_age" -lt 8 ] && [ "$intraday_age" -lt 10 ]; then
+            echo "Trigger and intraday state are fresh enough"
             exit 0
           fi
           if gh run list --workflow trigger-monitor.yml --limit 10 --json status | jq -e 'any(.[]; .status=="queued" or .status=="in_progress")' >/dev/null; then
             echo "A trigger-monitor run is already queued or in progress; not duplicating it"
             exit 0
           fi
-          echo "Stale and nothing in flight; re-dispatching trigger-monitor.yml"
+          echo "Trigger/intraday state is aging; re-dispatching trigger-monitor.yml"
           gh workflow run trigger-monitor.yml --ref main
+
+      - name: Re-dispatch trading-health.yml if health publication is stale
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          generated_at=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('docs/data/live-trading-health.json','utf8')).generatedAt||'')}catch{console.log('')}")
+          age_min=$(node -e "const t=Date.parse('$generated_at'); console.log(Number.isFinite(t)?Math.max(0,Math.round((Date.now()-t)/60000)):9999)")
+          echo "live-trading-health age=${age_min}m"
+          if [ "$age_min" -lt 8 ]; then
+            echo "Health publication is fresh enough"
+            exit 0
+          fi
+          if gh run list --workflow trading-health.yml --limit 10 --json status | jq -e 'any(.[]; .status=="queued" or .status=="in_progress")' >/dev/null; then
+            echo "A trading-health run is already queued or in progress; not duplicating it"
+            exit 0
+          fi
+          echo "Health state is aging; dispatching trading-health.yml"
+          gh workflow run trading-health.yml --ref main
 
       - name: Keep the live self-hosted trading session running
         env:
@@ -118,5 +141,5 @@ jobs:
             echo "No live session is active; dispatching recovery session"
             gh workflow run live-intraday-runner.yml --ref main
           else
-            echo "A session just completed; hourly schedule will take over unless the next watchdog sees no active run"
+            echo "A session just completed; scheduled/watchdog recovery will take over if needed"
           fi
