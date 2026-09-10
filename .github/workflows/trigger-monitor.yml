@@ -35,7 +35,9 @@ permissions:
 
 concurrency:
   group: trigger-monitor
-  cancel-in-progress: true
+  # Do not cancel a nearly-finished refresh just because the next 5-minute tick arrived.
+  # Finishing one coherent generation is safer than repeatedly starving publication.
+  cancel-in-progress: false
 
 jobs:
   monitor:
@@ -68,25 +70,18 @@ jobs:
 
           if [ "$dow" -lt 1 ] || [ "$dow" -gt 5 ] || [ "$minute_of_day" -lt 570 ] || [ "$minute_of_day" -ge 960 ]; then
             echo "Outside regular US stock session; no stale-stock refresh request needed."
-            exit 0
-          fi
-
-          if ! jq -e '
+          elif ! jq -e '
             [(.stockPlan.stockCandidateQueue // [])[],(.stockPlan.stockOrders // [])[]]
             | any(.action == "STALE_DO_NOT_TRADE")
           ' docs/signal.json >/dev/null; then
             echo "No stale stock candidates found."
-            exit 0
-          fi
-
-          if gh run list --workflow static-scan.yml --limit 20 --json status \
+          elif gh run list --workflow static-scan.yml --limit 20 --json status \
             | jq -e 'any(.[]; .status == "queued" or .status == "in_progress")' >/dev/null; then
             echo "A Refresh Teststock picks run is already queued or in progress."
-            exit 0
+          else
+            gh workflow run static-scan.yml --ref main
+            echo "Requested a fresh full Teststock scan; stale candidates remain blocked meanwhile."
           fi
-
-          gh workflow run static-scan.yml --ref main
-          echo "Requested a fresh full Teststock scan; stale candidates remain blocked meanwhile."
 
       - name: Detect entry stop and profit triggers without an LLM
         env:
@@ -132,6 +127,14 @@ jobs:
             echo "No trigger-state change to publish"
           else
             git commit -m "Update Teststock intraday edge and execution dispatch"
-            git pull --rebase -X theirs origin main
-            git push
+            for attempt in 1 2 3; do
+              git pull --rebase -X theirs origin main
+              if git push; then
+                exit 0
+              fi
+              echo "Push attempt $attempt failed; retrying transient GitHub failure..." >&2
+              sleep $((attempt * 3))
+            done
+            echo "Unable to publish trigger state after 3 attempts." >&2
+            exit 1
           fi
