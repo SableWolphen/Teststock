@@ -27,7 +27,7 @@ permissions:
 
 concurrency:
   group: teststock-trading-health
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   health:
@@ -42,6 +42,39 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Self-heal stale intraday execution state
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          stale=$(node - <<'NODE'
+          const fs=require('fs');
+          try {
+            const x=JSON.parse(fs.readFileSync('docs/data/intraday-edge.json','utf8'));
+            const t=Date.parse(x.generatedAt||'');
+            const age=Number.isFinite(t)?(Date.now()-t)/60000:Infinity;
+            process.stdout.write(age>12?'yes':'no');
+          } catch { process.stdout.write('yes'); }
+          NODE
+          )
+          if [ "$stale" = "yes" ]; then
+            echo "Intraday edge is stale or missing; rebuilding the complete trigger/edge/dispatch generation before health evaluation."
+            node scripts/update-trigger-board.mjs
+            node scripts/normalize-trigger-board-policy.mjs
+            node scripts/enforce-day-trader-trigger-policy.mjs
+            node scripts/apply-intraday-edge-overlay.mjs
+            node scripts/rebuild-intraday-trigger-state.mjs
+            node scripts/validate-intraday-edge-overlay.mjs
+            node scripts/validate-trigger-board.mjs
+            node scripts/build-execution-dispatch.mjs
+            node scripts/validate-execution-dispatch.mjs
+          else
+            echo "Intraday edge is fresh; no recovery rebuild needed."
+          fi
+
       - name: Build health intelligence
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
@@ -54,17 +87,32 @@ jobs:
           node scripts/apply-model-drift.mjs
           node scripts/validate-trade-quality-engine.mjs
           node scripts/build-live-trading-health.mjs
-      - name: Publish health JSON
+
+      - name: Publish health and any recovered execution state
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/data/daytrader-intelligence.json docs/data/trade-quality-intelligence.json docs/data/live-trading-health.json
+          git add \
+            docs/data/daytrader-intelligence.json \
+            docs/data/trade-quality-intelligence.json \
+            docs/data/live-trading-health.json \
+            docs/data/trigger-board.json \
+            docs/data/intraday-edge.json \
+            docs/data/execution-dispatch.json
           if git diff --cached --quiet; then
             echo 'No health changes to publish.'
           else
             git commit -m 'Refresh Teststock trading health'
-            git pull --rebase -X theirs origin main
-            git push
+            for attempt in 1 2 3; do
+              git pull --rebase -X theirs origin main
+              if git push; then
+                exit 0
+              fi
+              echo "Push attempt $attempt failed; retrying transient GitHub failure..." >&2
+              sleep $((attempt * 3))
+            done
+            echo "Unable to publish trading health after 3 attempts." >&2
+            exit 1
           fi
