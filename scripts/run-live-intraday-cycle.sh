@@ -120,8 +120,10 @@ diagnostic_dir="$(mktemp -d "$RUNTIME_STATE_DIR/executor-diagnostics/attempt.XXX
 output_path="$diagnostic_dir/stdout.json"
 executor_status=0
 claude -p "$(cat scripts/claude-executor-prompt.md scripts/claude-trade-quality-rules.md scripts/claude-stock-rotation-rules.md scripts/daytrader-profit-discipline.md)" \
+  --strict-mcp-config \
   --mcp-config .mcp.json \
   --allowedTools "Read,Glob,Grep,mcp__robinhood-trading" \
+  --no-session-persistence \
   --max-turns 16 \
   --output-format json > "$output_path" 2> "$diagnostic_dir/stderr.txt" || executor_status=$?
 python scripts/record-executor-result.py "$diagnostic_dir" "$executor_status"
