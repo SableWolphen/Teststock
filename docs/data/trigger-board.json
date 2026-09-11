@@ -1,29 +1,29 @@
 {
   "schemaVersion": 6,
   "source": "TESTSTOCK_NON_LLM_TRIGGER_MONITOR",
-  "publishedAt": "2026-09-11T18:35:26.962Z",
+  "publishedAt": "2026-09-11T18:36:37.496Z",
   "monitorHealth": "OK",
   "monitorCadenceMinutes": 5,
   "priceSource": "ALPACA_MARKET_DATA",
   "claudeMarketPollingRequired": false,
   "siteAvailability": "24_7_PUBLIC_DASHBOARD",
-  "researchState": "REFRESHING",
-  "researchAgeMinutes": 39.9,
+  "researchState": "ACTIVE",
+  "researchAgeMinutes": 0,
   "marketSession": {
     "timeZone": "America/New_York",
     "dateKey": "2026-09-11",
-    "minuteOfDay": 875,
+    "minuteOfDay": 876,
     "calendarAvailable": true,
     "openMinute": 570,
     "closeMinute": 960,
     "regularSession": true,
-    "minutesToClose": 85,
+    "minutesToClose": 84,
     "sessionEnded": false,
     "entryAllowed": true,
     "forcedExitDue": false
   },
   "displayPolicy": "Never present aged research as an active trading signal. During refresh, keep the latest candidate visible as display-only and block new buy triggers until a fresh generation arrives.",
-  "stockSessionRule": "Same-day stock entries require an authoritative regular-session calendar and at least 30 minutes to close. Tagged same-day positions emit a forced exit from 15 minutes before close and after the session until confirmed flat.",
+  "stockSessionRule": "Same-day stock entries require an authoritative regular session and at least 20 minutes to close. Day-trader stock positions enter forced-exit handling from 10 minutes before close and remain there until broker-confirmed flat.",
   "executionWakeBridge": {
     "status": "DISPATCH_PACKET_READY_FOR_AUTOMATIC_EXECUTOR",
     "note": "This monitor detects triggers without an LLM. The authorized Claude runner consumes the generated dispatch and is the sole Robinhood Trading MCP execution agent."
@@ -42,7 +42,7 @@
       "B"
     ],
     "candidateSource": "stockPlan.stockCandidateQueue + stockPlan.stockOrders",
-    "rule": "A/ELITE live stock triggers go first. After A-tier candidates, B/BEST_ACCEPTABLE may be executed at no more than 25% encoded normal size while live capacity remains, including after an A fill. Failed candidates fall through to the next eligible candidate in the same run. Never force a trade when all hard guards fail."
+    "rule": "Already-qualified A stocks rank before B; within tier, fresh cost-adjusted intraday edge and adjusted score break ties. Intraday intelligence may block/reorder/reduce size but never create eligibility or raise risk."
   },
   "events": [
     {
@@ -67,12 +67,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-11",
-        "minuteOfDay": 875,
+        "minuteOfDay": 876,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": true,
-        "minutesToClose": 85,
+        "minutesToClose": 84,
         "sessionEnded": false,
         "entryAllowed": true,
         "forcedExitDue": false
@@ -82,396 +82,13 @@
       "stop": 58.59,
       "target1": 64.75,
       "target2": 67.84,
-      "observedPrice": 58.5,
+      "observedPrice": 58.48,
       "stateChangedAt": "2026-09-11T18:35:26.962Z",
+      "intradayEdge": null,
       "reason": "Saved stop/invalidation reached. Claude should verify the live position and execute the supported sell immediately when permitted."
     }
   ],
   "items": [
-    {
-      "id": "ENTRY:STOCK:ROIV",
-      "kind": "ENTRY",
-      "assetClass": "STOCK",
-      "ticker": "ROIV",
-      "entryTier": "A",
-      "entryTierLabel": "ELITE",
-      "entryTierSizeMultiplier": 1,
-      "queueRank": 1,
-      "opportunityScore": 65.31,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "profitabilityAdmission": "SHADOW_ONLY",
-      "decisionIntelligenceEligible": false,
-      "decisionIntelligenceSeedEligible": false,
-      "decisionIntelligenceDayTradeSeedEligible": false,
-      "seedLaneEligible": false,
-      "seedLane": {
-        "eligible": false
-      },
-      "dayTradeSeedLaneEligible": false,
-      "dayTradeSeedLane": {
-        "eligible": false
-      },
-      "marketSession": {
-        "timeZone": "America/New_York",
-        "dateKey": "2026-09-11",
-        "minuteOfDay": 875,
-        "calendarAvailable": true,
-        "openMinute": 570,
-        "closeMinute": 960,
-        "regularSession": true,
-        "minutesToClose": 85,
-        "sessionEnded": false,
-        "entryAllowed": true,
-        "forcedExitDue": false
-      },
-      "minimumEntry": 42.41,
-      "maximumEntry": 43.26,
-      "stop": 37.02,
-      "target1": 50.49,
-      "target2": 56.42,
-      "signalGeneratedAt": "2026-09-11T18:35:25.813Z",
-      "status": "BLOCKED_UPSTREAM",
-      "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
-      "observedPrice": 41.405,
-      "stateChangedAt": "2026-09-11T18:35:26.962Z"
-    },
-    {
-      "id": "ENTRY:STOCK:ASX",
-      "kind": "ENTRY",
-      "assetClass": "STOCK",
-      "ticker": "ASX",
-      "entryTier": "A",
-      "entryTierLabel": "ELITE",
-      "entryTierSizeMultiplier": 1,
-      "queueRank": 2,
-      "opportunityScore": 64.82,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "profitabilityAdmission": "SHADOW_ONLY",
-      "decisionIntelligenceEligible": false,
-      "decisionIntelligenceSeedEligible": false,
-      "decisionIntelligenceDayTradeSeedEligible": false,
-      "seedLaneEligible": false,
-      "seedLane": {
-        "eligible": false
-      },
-      "dayTradeSeedLaneEligible": false,
-      "dayTradeSeedLane": {
-        "eligible": false
-      },
-      "marketSession": {
-        "timeZone": "America/New_York",
-        "dateKey": "2026-09-11",
-        "minuteOfDay": 875,
-        "calendarAvailable": true,
-        "openMinute": 570,
-        "closeMinute": 960,
-        "regularSession": true,
-        "minutesToClose": 85,
-        "sessionEnded": false,
-        "entryAllowed": true,
-        "forcedExitDue": false
-      },
-      "minimumEntry": 41.29,
-      "maximumEntry": 42.12,
-      "stop": 37.83,
-      "target1": 46.48,
-      "target2": 50.29,
-      "signalGeneratedAt": "2026-09-11T18:35:25.813Z",
-      "status": "BLOCKED_UPSTREAM",
-      "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
-      "observedPrice": 39.635,
-      "stateChangedAt": "2026-09-11T18:35:26.962Z"
-    },
-    {
-      "id": "ENTRY:STOCK:MU",
-      "kind": "ENTRY",
-      "assetClass": "STOCK",
-      "ticker": "MU",
-      "entryTier": "A",
-      "entryTierLabel": "ELITE",
-      "entryTierSizeMultiplier": 1,
-      "queueRank": 3,
-      "opportunityScore": 63.84,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "profitabilityAdmission": "SHADOW_ONLY",
-      "decisionIntelligenceEligible": false,
-      "decisionIntelligenceSeedEligible": false,
-      "decisionIntelligenceDayTradeSeedEligible": false,
-      "seedLaneEligible": false,
-      "seedLane": {
-        "eligible": false
-      },
-      "dayTradeSeedLaneEligible": false,
-      "dayTradeSeedLane": {
-        "eligible": false
-      },
-      "marketSession": {
-        "timeZone": "America/New_York",
-        "dateKey": "2026-09-11",
-        "minuteOfDay": 875,
-        "calendarAvailable": true,
-        "openMinute": 570,
-        "closeMinute": 960,
-        "regularSession": true,
-        "minutesToClose": 85,
-        "sessionEnded": false,
-        "entryAllowed": true,
-        "forcedExitDue": false
-      },
-      "minimumEntry": 1040.3,
-      "maximumEntry": 1061.11,
-      "stop": 917.37,
-      "target1": 1224.69,
-      "target2": 1359.92,
-      "signalGeneratedAt": "2026-09-11T18:35:25.813Z",
-      "status": "BLOCKED_UPSTREAM",
-      "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
-      "observedPrice": 976.685,
-      "stateChangedAt": "2026-09-11T18:35:26.962Z"
-    },
-    {
-      "id": "ENTRY:STOCK:BNS",
-      "kind": "ENTRY",
-      "assetClass": "STOCK",
-      "ticker": "BNS",
-      "entryTier": "A",
-      "entryTierLabel": "ELITE",
-      "entryTierSizeMultiplier": 1,
-      "queueRank": 4,
-      "opportunityScore": 63.88,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "profitabilityAdmission": "SHADOW_ONLY",
-      "decisionIntelligenceEligible": false,
-      "decisionIntelligenceSeedEligible": false,
-      "decisionIntelligenceDayTradeSeedEligible": false,
-      "seedLaneEligible": false,
-      "seedLane": {
-        "eligible": false
-      },
-      "dayTradeSeedLaneEligible": false,
-      "dayTradeSeedLane": {
-        "eligible": false
-      },
-      "marketSession": {
-        "timeZone": "America/New_York",
-        "dateKey": "2026-09-11",
-        "minuteOfDay": 875,
-        "calendarAvailable": true,
-        "openMinute": 570,
-        "closeMinute": 960,
-        "regularSession": true,
-        "minutesToClose": 85,
-        "sessionEnded": false,
-        "entryAllowed": true,
-        "forcedExitDue": false
-      },
-      "minimumEntry": 93.56,
-      "maximumEntry": 95.43,
-      "stop": 90.94,
-      "target1": 97.49,
-      "target2": 100.37,
-      "signalGeneratedAt": "2026-09-11T18:35:25.813Z",
-      "status": "BLOCKED_UPSTREAM",
-      "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
-      "observedPrice": 93.56,
-      "stateChangedAt": "2026-09-11T18:35:26.962Z"
-    },
-    {
-      "id": "ENTRY:STOCK:NAT",
-      "kind": "ENTRY",
-      "assetClass": "STOCK",
-      "ticker": "NAT",
-      "entryTier": "A",
-      "entryTierLabel": "ELITE",
-      "entryTierSizeMultiplier": 1,
-      "queueRank": 5,
-      "opportunityScore": 63.1,
-      "growthQuality": 100,
-      "rewardRisk": 2.59,
-      "profitabilityAdmission": "SHADOW_ONLY",
-      "decisionIntelligenceEligible": false,
-      "decisionIntelligenceSeedEligible": false,
-      "decisionIntelligenceDayTradeSeedEligible": false,
-      "seedLaneEligible": false,
-      "seedLane": {
-        "eligible": false
-      },
-      "dayTradeSeedLaneEligible": false,
-      "dayTradeSeedLane": {
-        "eligible": false
-      },
-      "marketSession": {
-        "timeZone": "America/New_York",
-        "dateKey": "2026-09-11",
-        "minuteOfDay": 875,
-        "calendarAvailable": true,
-        "openMinute": 570,
-        "closeMinute": 960,
-        "regularSession": true,
-        "minutesToClose": 85,
-        "sessionEnded": false,
-        "entryAllowed": true,
-        "forcedExitDue": false
-      },
-      "minimumEntry": 7.48,
-      "maximumEntry": 7.63,
-      "stop": 6.74,
-      "target1": 8.59,
-      "target2": 9.4,
-      "signalGeneratedAt": "2026-09-11T18:35:25.813Z",
-      "status": "BLOCKED_UPSTREAM",
-      "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
-      "observedPrice": 7.33,
-      "stateChangedAt": "2026-09-11T18:35:26.962Z"
-    },
-    {
-      "id": "ENTRY:STOCK:VLO",
-      "kind": "ENTRY",
-      "assetClass": "STOCK",
-      "ticker": "VLO",
-      "entryTier": "A",
-      "entryTierLabel": "ELITE",
-      "entryTierSizeMultiplier": 1,
-      "queueRank": 6,
-      "opportunityScore": 62.51,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "profitabilityAdmission": "SHADOW_ONLY",
-      "decisionIntelligenceEligible": false,
-      "decisionIntelligenceSeedEligible": false,
-      "decisionIntelligenceDayTradeSeedEligible": false,
-      "seedLaneEligible": false,
-      "seedLane": {
-        "eligible": false
-      },
-      "dayTradeSeedLaneEligible": false,
-      "dayTradeSeedLane": {
-        "eligible": false
-      },
-      "marketSession": {
-        "timeZone": "America/New_York",
-        "dateKey": "2026-09-11",
-        "minuteOfDay": 875,
-        "calendarAvailable": true,
-        "openMinute": 570,
-        "closeMinute": 960,
-        "regularSession": true,
-        "minutesToClose": 85,
-        "sessionEnded": false,
-        "entryAllowed": true,
-        "forcedExitDue": false
-      },
-      "minimumEntry": 398.46,
-      "maximumEntry": 406.43,
-      "stop": 359.34,
-      "target1": 457.14,
-      "target2": 500.17,
-      "signalGeneratedAt": "2026-09-11T18:35:25.813Z",
-      "status": "BLOCKED_UPSTREAM",
-      "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
-      "observedPrice": 392.045,
-      "stateChangedAt": "2026-09-11T18:35:26.962Z"
-    },
-    {
-      "id": "ENTRY:STOCK:NOK",
-      "kind": "ENTRY",
-      "assetClass": "STOCK",
-      "ticker": "NOK",
-      "entryTier": "A",
-      "entryTierLabel": "ELITE",
-      "entryTierSizeMultiplier": 1,
-      "queueRank": 7,
-      "opportunityScore": 62.43,
-      "growthQuality": 100,
-      "rewardRisk": 2.59,
-      "profitabilityAdmission": "SHADOW_ONLY",
-      "decisionIntelligenceEligible": false,
-      "decisionIntelligenceSeedEligible": false,
-      "decisionIntelligenceDayTradeSeedEligible": false,
-      "seedLaneEligible": false,
-      "seedLane": {
-        "eligible": false
-      },
-      "dayTradeSeedLaneEligible": false,
-      "dayTradeSeedLane": {
-        "eligible": false
-      },
-      "marketSession": {
-        "timeZone": "America/New_York",
-        "dateKey": "2026-09-11",
-        "minuteOfDay": 875,
-        "calendarAvailable": true,
-        "openMinute": 570,
-        "closeMinute": 960,
-        "regularSession": true,
-        "minutesToClose": 85,
-        "sessionEnded": false,
-        "entryAllowed": true,
-        "forcedExitDue": false
-      },
-      "minimumEntry": 11.13,
-      "maximumEntry": 11.35,
-      "stop": 10.34,
-      "target1": 12.32,
-      "target2": 13.18,
-      "signalGeneratedAt": "2026-09-11T18:35:25.813Z",
-      "status": "BLOCKED_UPSTREAM",
-      "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
-      "observedPrice": 11.065,
-      "stateChangedAt": "2026-09-11T18:35:26.962Z"
-    },
-    {
-      "id": "ENTRY:STOCK:HAL",
-      "kind": "ENTRY",
-      "assetClass": "STOCK",
-      "ticker": "HAL",
-      "entryTier": "A",
-      "entryTierLabel": "ELITE",
-      "entryTierSizeMultiplier": 1,
-      "queueRank": 8,
-      "opportunityScore": 62.02,
-      "growthQuality": 100,
-      "rewardRisk": 2.6,
-      "profitabilityAdmission": "SHADOW_ONLY",
-      "decisionIntelligenceEligible": false,
-      "decisionIntelligenceSeedEligible": false,
-      "decisionIntelligenceDayTradeSeedEligible": false,
-      "seedLaneEligible": false,
-      "seedLane": {
-        "eligible": false
-      },
-      "dayTradeSeedLaneEligible": false,
-      "dayTradeSeedLane": {
-        "eligible": false
-      },
-      "marketSession": {
-        "timeZone": "America/New_York",
-        "dateKey": "2026-09-11",
-        "minuteOfDay": 875,
-        "calendarAvailable": true,
-        "openMinute": 570,
-        "closeMinute": 960,
-        "regularSession": true,
-        "minutesToClose": 85,
-        "sessionEnded": false,
-        "entryAllowed": true,
-        "forcedExitDue": false
-      },
-      "minimumEntry": 37.98,
-      "maximumEntry": 38.74,
-      "stop": 34.17,
-      "target1": 43.69,
-      "target2": 47.89,
-      "signalGeneratedAt": "2026-09-11T18:35:25.813Z",
-      "status": "BLOCKED_UPSTREAM",
-      "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
-      "observedPrice": 35.74,
-      "stateChangedAt": "2026-09-11T18:35:26.962Z"
-    },
     {
       "id": "POSITION:STOCK:RPRX",
       "kind": "POSITION",
@@ -482,12 +99,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-11",
-        "minuteOfDay": 875,
+        "minuteOfDay": 876,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": true,
-        "minutesToClose": 85,
+        "minutesToClose": 84,
         "sessionEnded": false,
         "entryAllowed": true,
         "forcedExitDue": false
@@ -501,7 +118,7 @@
       "armedAt": "2026-08-20T14:39:59.052Z",
       "status": "TRIGGER_1_STOP",
       "reason": "Saved stop/invalidation reached. Claude should verify the live position and execute the supported sell immediately when permitted.",
-      "observedPrice": 58.5,
+      "observedPrice": 58.48,
       "stateChangedAt": "2026-09-11T18:35:26.962Z"
     },
     {
@@ -514,12 +131,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-11",
-        "minuteOfDay": 875,
+        "minuteOfDay": 876,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": true,
-        "minutesToClose": 85,
+        "minutesToClose": 84,
         "sessionEnded": false,
         "entryAllowed": true,
         "forcedExitDue": false
@@ -533,7 +150,7 @@
       "armedAt": "2026-08-21T19:45:56.512Z",
       "status": "HOLD",
       "reason": "No saved sell trigger reached.",
-      "observedPrice": 12.32,
+      "observedPrice": 12.315,
       "stateChangedAt": "2026-08-21T19:46:42.556Z"
     }
   ],
@@ -548,5 +165,55 @@
     "TRIGGER_2_TARGET1": "Target 1 reached — execute validated first scale-out.",
     "TRIGGER_3_TARGET2": "Target 2 reached — execute validated exit/runner decision."
   },
-  "creditPolicy": "Alpaca/GitHub monitor prices. Claude should read the small dispatch packet first and avoid market/broker work when no action is needed."
+  "creditPolicy": "Alpaca/GitHub monitor prices. Claude should read the small dispatch packet first and avoid market/broker work when no action is needed.",
+  "dayTraderPolicy": {
+    "enabled": true,
+    "stocks": {
+      "regularSessionOnly": true,
+      "newEntryCutoffMinutesBeforeClose": 20,
+      "forcedExitMinutesBeforeClose": 10,
+      "overnightAllowed": false
+    },
+    "crypto": {
+      "intradayOnly": true,
+      "maximumHoldingHours": 3
+    },
+    "enforcedAt": "2026-09-11T18:36:38.085Z"
+  },
+  "intradayEngine": {
+    "schemaVersion": 2,
+    "generatedAt": "2026-09-11T18:36:38.118Z",
+    "status": "OK",
+    "errors": [],
+    "benchmarks": {
+      "spy": null,
+      "qqq": null,
+      "btc": null
+    },
+    "features": [
+      "1m momentum",
+      "5m momentum",
+      "VWAP",
+      "relative volume",
+      "opening range breakout",
+      "momentum acceleration",
+      "SPY/QQQ relative strength",
+      "BTC context",
+      "market regime routing",
+      "event-risk suppression",
+      "setup-specific real-fill learning",
+      "execution-cost expectancy",
+      "adaptive sizing",
+      "profit protection"
+    ],
+    "profitGivebackPolicy": {
+      "enabled": true,
+      "source": "ROBINHOOD_CONFIRMED_REALIZED_AND_UNREALIZED_PNL_AT_EXECUTION_TIME",
+      "reduceRiskAfterGivebackPct": 35,
+      "stopNewRiskAfterGivebackPct": 50,
+      "onlyWhenDayPnlPositive": true,
+      "note": "Executor must calculate from fresh broker-confirmed state; repository snapshots never invent PnL."
+    },
+    "policy": "Intraday edge may block, reorder, or reduce size but may never create eligibility or increase maximum risk. Stale/unavailable data fails closed for new entries; exits remain prioritized."
+  }
 }
