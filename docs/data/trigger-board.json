@@ -1,7 +1,7 @@
 {
   "schemaVersion": 6,
   "source": "TESTSTOCK_NON_LLM_TRIGGER_MONITOR",
-  "publishedAt": "2026-09-11T23:22:52.762Z",
+  "publishedAt": "2026-09-11T23:26:04.878Z",
   "monitorHealth": "OK",
   "monitorCadenceMinutes": 5,
   "priceSource": "ALPACA_MARKET_DATA",
@@ -12,18 +12,18 @@
   "marketSession": {
     "timeZone": "America/New_York",
     "dateKey": "2026-09-11",
-    "minuteOfDay": 1162,
+    "minuteOfDay": 1166,
     "calendarAvailable": true,
     "openMinute": 570,
     "closeMinute": 960,
     "regularSession": false,
-    "minutesToClose": -202,
+    "minutesToClose": -206,
     "sessionEnded": true,
     "entryAllowed": false,
     "forcedExitDue": true
   },
   "displayPolicy": "Never present aged research as an active trading signal. During refresh, keep the latest candidate visible as display-only and block new buy triggers until a fresh generation arrives.",
-  "stockSessionRule": "Same-day stock entries require an authoritative regular session and at least 20 minutes to close. Day-trader stock positions enter forced-exit handling from 10 minutes before close and remain there until broker-confirmed flat.",
+  "stockSessionRule": "Same-day stock entries require an authoritative regular-session calendar and at least 30 minutes to close. Tagged same-day positions emit a forced exit from 15 minutes before close and after the session until confirmed flat.",
   "executionWakeBridge": {
     "status": "DISPATCH_PACKET_READY_FOR_AUTOMATIC_EXECUTOR",
     "note": "This monitor detects triggers without an LLM. The authorized Claude runner consumes the generated dispatch and is the sole Robinhood Trading MCP execution agent."
@@ -42,7 +42,7 @@
       "B"
     ],
     "candidateSource": "stockPlan.stockCandidateQueue + stockPlan.stockOrders",
-    "rule": "Already-qualified A stocks rank before B; within tier, fresh cost-adjusted intraday edge and adjusted score break ties. Intraday intelligence may block/reorder/reduce size but never create eligibility or raise risk."
+    "rule": "A/ELITE live stock triggers go first. After A-tier candidates, B/BEST_ACCEPTABLE may be executed at no more than 25% encoded normal size while live capacity remains, including after an A fill. Failed candidates fall through to the next eligible candidate in the same run. Never force a trade when all hard guards fail."
   },
   "events": [],
   "items": [
@@ -73,12 +73,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-11",
-        "minuteOfDay": 1162,
+        "minuteOfDay": 1166,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": -202,
+        "minutesToClose": -206,
         "sessionEnded": true,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -88,75 +88,11 @@
       "stop": 282.98,
       "target1": 479.38,
       "target2": 565.8,
-      "signalGeneratedAt": "2026-09-11T22:42:24.126Z",
+      "signalGeneratedAt": "2026-09-11T23:26:03.741Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
       "observedPrice": 305.35,
-      "stateChangedAt": "2026-09-11T22:02:00.066Z",
-      "intradayEdge": {
-        "status": "FRESH",
-        "generatedAt": "2026-09-11T23:22:53.401Z",
-        "setup": "VWAP_MOMENTUM_CONTINUATION",
-        "price": 305.35,
-        "vwap": 305.2093677129219,
-        "aboveVwap": true,
-        "relVol": 3.5704222517409328,
-        "momentum1mPct": 0.1311690441055946,
-        "momentum5mPct": 0.19688269073010467,
-        "momentumAcceleration": true,
-        "openingRange": null,
-        "orbBreakout": false,
-        "orbFailure": false,
-        "rangeHigh": 307.02,
-        "rangeLow": 303.225,
-        "score": 90,
-        "regime": "MOMENTUM_TREND",
-        "adjustedScore": 84,
-        "marketRegime": "RISK_OFF_WEAK",
-        "relativeStrengthPct": 0.2126,
-        "benchmark5mMomentumPct": -0.015699819452075214,
-        "eventRisk": {
-          "raw": "UNKNOWN",
-          "high": false
-        },
-        "realFillLearning": {
-          "state": "INSUFFICIENT_DATA",
-          "bucket": null,
-          "executionQuality": {
-            "confirmedEntrySlippageSamples": 0,
-            "averageAdverseEntrySlippagePct": null,
-            "confirmedExitSlippageSamples": 0,
-            "averageAdverseExitSlippagePct": null,
-            "fillTimeSamples": 0,
-            "averageTimeToFillSeconds": null,
-            "protectionVerificationSamples": 0,
-            "protectiveExitVerificationRatePct": null,
-            "protectionLatencySamples": 0,
-            "averageProtectionLatencySeconds": null
-          }
-        },
-        "costAdjustedEdge": 2.184,
-        "executionCostNote": "Robinhood live spread/slippage check is mandatory immediately before order; expected edge must remain positive after current spread.",
-        "profitProtection": {
-          "armAfterR": 0.6,
-          "moveStopTowardBreakevenAfterR": 0.8,
-          "trailAfterR": 1.1,
-          "neverWidenStop": true,
-          "protectWinnerBeforeGiveback": true
-        },
-        "adaptiveSizing": {
-          "mode": "EDGE_AND_REAL_FILL_WEIGHTED_WITHIN_EXISTING_RISK_CAP",
-          "multiplier": 1,
-          "mayNotIncreaseExistingRiskCap": true
-        },
-        "regimeRouting": {
-          "preferred": [
-            "VWAP_TREND",
-            "MIXED_INTRADAY"
-          ],
-          "cashAllowed": true
-        }
-      }
+      "stateChangedAt": "2026-09-11T22:02:00.066Z"
     },
     {
       "id": "ENTRY:STOCK:ROIV",
@@ -185,12 +121,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-11",
-        "minuteOfDay": 1162,
+        "minuteOfDay": 1166,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": -202,
+        "minutesToClose": -206,
         "sessionEnded": true,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -200,75 +136,11 @@
       "stop": 36.99,
       "target1": 50.54,
       "target2": 56.5,
-      "signalGeneratedAt": "2026-09-11T22:42:24.126Z",
+      "signalGeneratedAt": "2026-09-11T23:26:03.741Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
       "observedPrice": 40.82,
-      "stateChangedAt": "2026-09-11T22:02:00.066Z",
-      "intradayEdge": {
-        "status": "FRESH",
-        "generatedAt": "2026-09-11T23:22:53.401Z",
-        "setup": "WEAK_LONG_SETUP",
-        "price": 40.82,
-        "vwap": 41.01169806320082,
-        "aboveVwap": false,
-        "relVol": 3.848760292348968,
-        "momentum1mPct": 0,
-        "momentum5mPct": -0.43902439024390283,
-        "momentumAcceleration": false,
-        "openingRange": null,
-        "orbBreakout": false,
-        "orbFailure": false,
-        "rangeHigh": 41.195,
-        "rangeLow": 40.805,
-        "score": 51,
-        "regime": "MIXED",
-        "adjustedScore": 40,
-        "marketRegime": "RISK_OFF_WEAK",
-        "relativeStrengthPct": -0.4233,
-        "benchmark5mMomentumPct": -0.015699819452075214,
-        "eventRisk": {
-          "raw": "UNKNOWN",
-          "high": false
-        },
-        "realFillLearning": {
-          "state": "INSUFFICIENT_DATA",
-          "bucket": null,
-          "executionQuality": {
-            "confirmedEntrySlippageSamples": 0,
-            "averageAdverseEntrySlippagePct": null,
-            "confirmedExitSlippageSamples": 0,
-            "averageAdverseExitSlippagePct": null,
-            "fillTimeSamples": 0,
-            "averageTimeToFillSeconds": null,
-            "protectionVerificationSamples": 0,
-            "protectiveExitVerificationRatePct": null,
-            "protectionLatencySamples": 0,
-            "averageProtectionLatencySeconds": null
-          }
-        },
-        "costAdjustedEdge": 1.04,
-        "executionCostNote": "Robinhood live spread/slippage check is mandatory immediately before order; expected edge must remain positive after current spread.",
-        "profitProtection": {
-          "armAfterR": 0.6,
-          "moveStopTowardBreakevenAfterR": 0.8,
-          "trailAfterR": 1.1,
-          "neverWidenStop": true,
-          "protectWinnerBeforeGiveback": true
-        },
-        "adaptiveSizing": {
-          "mode": "EDGE_AND_REAL_FILL_WEIGHTED_WITHIN_EXISTING_RISK_CAP",
-          "multiplier": 0.25,
-          "mayNotIncreaseExistingRiskCap": true
-        },
-        "regimeRouting": {
-          "preferred": [
-            "VWAP_TREND",
-            "MIXED_INTRADAY"
-          ],
-          "cashAllowed": true
-        }
-      }
+      "stateChangedAt": "2026-09-11T22:02:00.066Z"
     },
     {
       "id": "ENTRY:STOCK:ARMK",
@@ -297,12 +169,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-11",
-        "minuteOfDay": 1162,
+        "minuteOfDay": 1166,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": -202,
+        "minutesToClose": -206,
         "sessionEnded": true,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -312,75 +184,11 @@
       "stop": 57.24,
       "target1": 70.09,
       "target2": 75.74,
-      "signalGeneratedAt": "2026-09-11T22:42:24.126Z",
+      "signalGeneratedAt": "2026-09-11T23:26:03.741Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
       "observedPrice": 58.59,
-      "stateChangedAt": "2026-09-11T22:02:00.066Z",
-      "intradayEdge": {
-        "status": "FRESH",
-        "generatedAt": "2026-09-11T23:22:53.401Z",
-        "setup": "MIXED_INTRADAY",
-        "price": 58.59,
-        "vwap": 58.72014252558917,
-        "aboveVwap": false,
-        "relVol": 3.104389888692396,
-        "momentum1mPct": 0.059772863120155506,
-        "momentum5mPct": 0.1025115325474113,
-        "momentumAcceleration": true,
-        "openingRange": null,
-        "orbBreakout": false,
-        "orbFailure": false,
-        "rangeHigh": 58.865,
-        "rangeLow": 58.45,
-        "score": 67,
-        "regime": "MIXED",
-        "adjustedScore": 60,
-        "marketRegime": "RISK_OFF_WEAK",
-        "relativeStrengthPct": 0.1182,
-        "benchmark5mMomentumPct": -0.015699819452075214,
-        "eventRisk": {
-          "raw": "UNKNOWN",
-          "high": false
-        },
-        "realFillLearning": {
-          "state": "INSUFFICIENT_DATA",
-          "bucket": null,
-          "executionQuality": {
-            "confirmedEntrySlippageSamples": 0,
-            "averageAdverseEntrySlippagePct": null,
-            "confirmedExitSlippageSamples": 0,
-            "averageAdverseExitSlippagePct": null,
-            "fillTimeSamples": 0,
-            "averageTimeToFillSeconds": null,
-            "protectionVerificationSamples": 0,
-            "protectiveExitVerificationRatePct": null,
-            "protectionLatencySamples": 0,
-            "averageProtectionLatencySeconds": null
-          }
-        },
-        "costAdjustedEdge": 1.56,
-        "executionCostNote": "Robinhood live spread/slippage check is mandatory immediately before order; expected edge must remain positive after current spread.",
-        "profitProtection": {
-          "armAfterR": 0.6,
-          "moveStopTowardBreakevenAfterR": 0.8,
-          "trailAfterR": 1.1,
-          "neverWidenStop": true,
-          "protectWinnerBeforeGiveback": true
-        },
-        "adaptiveSizing": {
-          "mode": "EDGE_AND_REAL_FILL_WEIGHTED_WITHIN_EXISTING_RISK_CAP",
-          "multiplier": 1,
-          "mayNotIncreaseExistingRiskCap": true
-        },
-        "regimeRouting": {
-          "preferred": [
-            "VWAP_TREND",
-            "MIXED_INTRADAY"
-          ],
-          "cashAllowed": true
-        }
-      }
+      "stateChangedAt": "2026-09-11T22:02:00.066Z"
     },
     {
       "id": "ENTRY:STOCK:BNS",
@@ -409,12 +217,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-11",
-        "minuteOfDay": 1162,
+        "minuteOfDay": 1166,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": -202,
+        "minutesToClose": -206,
         "sessionEnded": true,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -424,75 +232,11 @@
       "stop": 90.88,
       "target1": 97.43,
       "target2": 100.31,
-      "signalGeneratedAt": "2026-09-11T22:42:24.126Z",
+      "signalGeneratedAt": "2026-09-11T23:26:03.741Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
       "observedPrice": 93.495,
-      "stateChangedAt": "2026-09-11T22:02:00.066Z",
-      "intradayEdge": {
-        "status": "FRESH",
-        "generatedAt": "2026-09-11T23:22:53.401Z",
-        "setup": "VWAP_TREND",
-        "price": 93.495,
-        "vwap": 93.42584229756136,
-        "aboveVwap": true,
-        "relVol": 3.8349794535361545,
-        "momentum1mPct": -0.0267322497861322,
-        "momentum5mPct": 0.0053481655792220195,
-        "momentumAcceleration": false,
-        "openingRange": null,
-        "orbBreakout": false,
-        "orbFailure": false,
-        "rangeHigh": 93.695,
-        "rangeLow": 93.365,
-        "score": 80,
-        "regime": "MOMENTUM_TREND",
-        "adjustedScore": 72,
-        "marketRegime": "RISK_OFF_WEAK",
-        "relativeStrengthPct": 0.021,
-        "benchmark5mMomentumPct": -0.015699819452075214,
-        "eventRisk": {
-          "raw": "UNKNOWN",
-          "high": false
-        },
-        "realFillLearning": {
-          "state": "INSUFFICIENT_DATA",
-          "bucket": null,
-          "executionQuality": {
-            "confirmedEntrySlippageSamples": 0,
-            "averageAdverseEntrySlippagePct": null,
-            "confirmedExitSlippageSamples": 0,
-            "averageAdverseExitSlippagePct": null,
-            "fillTimeSamples": 0,
-            "averageTimeToFillSeconds": null,
-            "protectionVerificationSamples": 0,
-            "protectiveExitVerificationRatePct": null,
-            "protectionLatencySamples": 0,
-            "averageProtectionLatencySeconds": null
-          }
-        },
-        "costAdjustedEdge": 1.872,
-        "executionCostNote": "Robinhood live spread/slippage check is mandatory immediately before order; expected edge must remain positive after current spread.",
-        "profitProtection": {
-          "armAfterR": 0.6,
-          "moveStopTowardBreakevenAfterR": 0.8,
-          "trailAfterR": 1.1,
-          "neverWidenStop": true,
-          "protectWinnerBeforeGiveback": true
-        },
-        "adaptiveSizing": {
-          "mode": "EDGE_AND_REAL_FILL_WEIGHTED_WITHIN_EXISTING_RISK_CAP",
-          "multiplier": 1,
-          "mayNotIncreaseExistingRiskCap": true
-        },
-        "regimeRouting": {
-          "preferred": [
-            "VWAP_TREND",
-            "MIXED_INTRADAY"
-          ],
-          "cashAllowed": true
-        }
-      }
+      "stateChangedAt": "2026-09-11T22:02:00.066Z"
     },
     {
       "id": "ENTRY:STOCK:NEOG",
@@ -521,12 +265,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-11",
-        "minuteOfDay": 1162,
+        "minuteOfDay": 1166,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": -202,
+        "minutesToClose": -206,
         "sessionEnded": true,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -536,75 +280,11 @@
       "stop": 11.31,
       "target1": 13.76,
       "target2": 14.84,
-      "signalGeneratedAt": "2026-09-11T22:42:24.126Z",
+      "signalGeneratedAt": "2026-09-11T23:26:03.741Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
       "observedPrice": 11.77,
-      "stateChangedAt": "2026-09-11T22:02:00.066Z",
-      "intradayEdge": {
-        "status": "FRESH",
-        "generatedAt": "2026-09-11T23:22:53.401Z",
-        "setup": "WEAK_LONG_SETUP",
-        "price": 11.77,
-        "vwap": 11.81237674421073,
-        "aboveVwap": false,
-        "relVol": 5.545402807638802,
-        "momentum1mPct": -0.25423728813560587,
-        "momentum5mPct": -0.2964845404489602,
-        "momentumAcceleration": false,
-        "openingRange": null,
-        "orbBreakout": false,
-        "orbFailure": false,
-        "rangeHigh": 11.86,
-        "rangeLow": 11.765,
-        "score": 50,
-        "regime": "MIXED",
-        "adjustedScore": 40,
-        "marketRegime": "RISK_OFF_WEAK",
-        "relativeStrengthPct": -0.2808,
-        "benchmark5mMomentumPct": -0.015699819452075214,
-        "eventRisk": {
-          "raw": "UNKNOWN",
-          "high": false
-        },
-        "realFillLearning": {
-          "state": "INSUFFICIENT_DATA",
-          "bucket": null,
-          "executionQuality": {
-            "confirmedEntrySlippageSamples": 0,
-            "averageAdverseEntrySlippagePct": null,
-            "confirmedExitSlippageSamples": 0,
-            "averageAdverseExitSlippagePct": null,
-            "fillTimeSamples": 0,
-            "averageTimeToFillSeconds": null,
-            "protectionVerificationSamples": 0,
-            "protectiveExitVerificationRatePct": null,
-            "protectionLatencySamples": 0,
-            "averageProtectionLatencySeconds": null
-          }
-        },
-        "costAdjustedEdge": 1.04,
-        "executionCostNote": "Robinhood live spread/slippage check is mandatory immediately before order; expected edge must remain positive after current spread.",
-        "profitProtection": {
-          "armAfterR": 0.6,
-          "moveStopTowardBreakevenAfterR": 0.8,
-          "trailAfterR": 1.1,
-          "neverWidenStop": true,
-          "protectWinnerBeforeGiveback": true
-        },
-        "adaptiveSizing": {
-          "mode": "EDGE_AND_REAL_FILL_WEIGHTED_WITHIN_EXISTING_RISK_CAP",
-          "multiplier": 0.25,
-          "mayNotIncreaseExistingRiskCap": true
-        },
-        "regimeRouting": {
-          "preferred": [
-            "VWAP_TREND",
-            "MIXED_INTRADAY"
-          ],
-          "cashAllowed": true
-        }
-      }
+      "stateChangedAt": "2026-09-11T22:02:00.066Z"
     },
     {
       "id": "ENTRY:STOCK:KEYS",
@@ -633,12 +313,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-11",
-        "minuteOfDay": 1162,
+        "minuteOfDay": 1166,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": -202,
+        "minutesToClose": -206,
         "sessionEnded": true,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -648,75 +328,11 @@
       "stop": 327.65,
       "target1": 422.38,
       "target2": 464.05,
-      "signalGeneratedAt": "2026-09-11T22:42:24.126Z",
+      "signalGeneratedAt": "2026-09-11T23:26:03.741Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
       "observedPrice": 338.99,
-      "stateChangedAt": "2026-09-11T22:02:00.066Z",
-      "intradayEdge": {
-        "status": "FRESH",
-        "generatedAt": "2026-09-11T23:22:53.401Z",
-        "setup": "VWAP_TREND",
-        "price": 338.99,
-        "vwap": 337.89806232958745,
-        "aboveVwap": true,
-        "relVol": 2.39038189533239,
-        "momentum1mPct": -0.038334512856808,
-        "momentum5mPct": 0.15955089378048015,
-        "momentumAcceleration": false,
-        "openingRange": null,
-        "orbBreakout": false,
-        "orbFailure": false,
-        "rangeHigh": 339.12,
-        "rangeLow": 337.14,
-        "score": 84,
-        "regime": "MOMENTUM_TREND",
-        "adjustedScore": 77,
-        "marketRegime": "RISK_OFF_WEAK",
-        "relativeStrengthPct": 0.1753,
-        "benchmark5mMomentumPct": -0.015699819452075214,
-        "eventRisk": {
-          "raw": "UNKNOWN",
-          "high": false
-        },
-        "realFillLearning": {
-          "state": "INSUFFICIENT_DATA",
-          "bucket": null,
-          "executionQuality": {
-            "confirmedEntrySlippageSamples": 0,
-            "averageAdverseEntrySlippagePct": null,
-            "confirmedExitSlippageSamples": 0,
-            "averageAdverseExitSlippagePct": null,
-            "fillTimeSamples": 0,
-            "averageTimeToFillSeconds": null,
-            "protectionVerificationSamples": 0,
-            "protectiveExitVerificationRatePct": null,
-            "protectionLatencySamples": 0,
-            "averageProtectionLatencySeconds": null
-          }
-        },
-        "costAdjustedEdge": 2.002,
-        "executionCostNote": "Robinhood live spread/slippage check is mandatory immediately before order; expected edge must remain positive after current spread.",
-        "profitProtection": {
-          "armAfterR": 0.6,
-          "moveStopTowardBreakevenAfterR": 0.8,
-          "trailAfterR": 1.1,
-          "neverWidenStop": true,
-          "protectWinnerBeforeGiveback": true
-        },
-        "adaptiveSizing": {
-          "mode": "EDGE_AND_REAL_FILL_WEIGHTED_WITHIN_EXISTING_RISK_CAP",
-          "multiplier": 1,
-          "mayNotIncreaseExistingRiskCap": true
-        },
-        "regimeRouting": {
-          "preferred": [
-            "VWAP_TREND",
-            "MIXED_INTRADAY"
-          ],
-          "cashAllowed": true
-        }
-      }
+      "stateChangedAt": "2026-09-11T22:02:00.066Z"
     },
     {
       "id": "ENTRY:STOCK:MUFG",
@@ -745,12 +361,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-11",
-        "minuteOfDay": 1162,
+        "minuteOfDay": 1166,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": -202,
+        "minutesToClose": -206,
         "sessionEnded": true,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -760,75 +376,11 @@
       "stop": 22.86,
       "target1": 26.24,
       "target2": 27.72,
-      "signalGeneratedAt": "2026-09-11T22:42:24.126Z",
+      "signalGeneratedAt": "2026-09-11T23:26:03.741Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
       "observedPrice": 23.88,
-      "stateChangedAt": "2026-09-11T22:02:00.066Z",
-      "intradayEdge": {
-        "status": "FRESH",
-        "generatedAt": "2026-09-11T23:22:53.401Z",
-        "setup": "WEAK_LONG_SETUP",
-        "price": 23.88,
-        "vwap": 23.887143889475585,
-        "aboveVwap": false,
-        "relVol": 2.4597441381815246,
-        "momentum1mPct": -0.04185851820845965,
-        "momentum5mPct": -0.04185851820845965,
-        "momentumAcceleration": false,
-        "openingRange": null,
-        "orbBreakout": false,
-        "orbFailure": false,
-        "rangeHigh": 23.9,
-        "rangeLow": 23.86,
-        "score": 57,
-        "regime": "MIXED",
-        "adjustedScore": 49,
-        "marketRegime": "RISK_OFF_WEAK",
-        "relativeStrengthPct": -0.0262,
-        "benchmark5mMomentumPct": -0.015699819452075214,
-        "eventRisk": {
-          "raw": "UNKNOWN",
-          "high": false
-        },
-        "realFillLearning": {
-          "state": "INSUFFICIENT_DATA",
-          "bucket": null,
-          "executionQuality": {
-            "confirmedEntrySlippageSamples": 0,
-            "averageAdverseEntrySlippagePct": null,
-            "confirmedExitSlippageSamples": 0,
-            "averageAdverseExitSlippagePct": null,
-            "fillTimeSamples": 0,
-            "averageTimeToFillSeconds": null,
-            "protectionVerificationSamples": 0,
-            "protectiveExitVerificationRatePct": null,
-            "protectionLatencySamples": 0,
-            "averageProtectionLatencySeconds": null
-          }
-        },
-        "costAdjustedEdge": 1.274,
-        "executionCostNote": "Robinhood live spread/slippage check is mandatory immediately before order; expected edge must remain positive after current spread.",
-        "profitProtection": {
-          "armAfterR": 0.6,
-          "moveStopTowardBreakevenAfterR": 0.8,
-          "trailAfterR": 1.1,
-          "neverWidenStop": true,
-          "protectWinnerBeforeGiveback": true
-        },
-        "adaptiveSizing": {
-          "mode": "EDGE_AND_REAL_FILL_WEIGHTED_WITHIN_EXISTING_RISK_CAP",
-          "multiplier": 0.25,
-          "mayNotIncreaseExistingRiskCap": true
-        },
-        "regimeRouting": {
-          "preferred": [
-            "VWAP_TREND",
-            "MIXED_INTRADAY"
-          ],
-          "cashAllowed": true
-        }
-      }
+      "stateChangedAt": "2026-09-11T22:02:00.066Z"
     },
     {
       "id": "ENTRY:STOCK:PBF",
@@ -857,12 +409,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-11",
-        "minuteOfDay": 1162,
+        "minuteOfDay": 1166,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": -202,
+        "minutesToClose": -206,
         "sessionEnded": true,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -872,75 +424,11 @@
       "stop": 73.31,
       "target1": 95.69,
       "target2": 105.53,
-      "signalGeneratedAt": "2026-09-11T22:42:24.126Z",
+      "signalGeneratedAt": "2026-09-11T23:26:03.741Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
       "observedPrice": 78.37,
-      "stateChangedAt": "2026-09-11T22:02:00.066Z",
-      "intradayEdge": {
-        "status": "FRESH",
-        "generatedAt": "2026-09-11T23:22:53.401Z",
-        "setup": "MIXED_INTRADAY",
-        "price": 78.37,
-        "vwap": 79.03622613417413,
-        "aboveVwap": false,
-        "relVol": 6.906470786138836,
-        "momentum1mPct": 0.025526483726889815,
-        "momentum5mPct": 0.2943434860506855,
-        "momentumAcceleration": false,
-        "openingRange": null,
-        "orbBreakout": false,
-        "orbFailure": false,
-        "rangeHigh": 78.68,
-        "rangeLow": 77.605,
-        "score": 59,
-        "regime": "MIXED",
-        "adjustedScore": 53,
-        "marketRegime": "RISK_OFF_WEAK",
-        "relativeStrengthPct": 0.31,
-        "benchmark5mMomentumPct": -0.015699819452075214,
-        "eventRisk": {
-          "raw": "UNKNOWN",
-          "high": false
-        },
-        "realFillLearning": {
-          "state": "INSUFFICIENT_DATA",
-          "bucket": null,
-          "executionQuality": {
-            "confirmedEntrySlippageSamples": 0,
-            "averageAdverseEntrySlippagePct": null,
-            "confirmedExitSlippageSamples": 0,
-            "averageAdverseExitSlippagePct": null,
-            "fillTimeSamples": 0,
-            "averageTimeToFillSeconds": null,
-            "protectionVerificationSamples": 0,
-            "protectiveExitVerificationRatePct": null,
-            "protectionLatencySamples": 0,
-            "averageProtectionLatencySeconds": null
-          }
-        },
-        "costAdjustedEdge": 1.378,
-        "executionCostNote": "Robinhood live spread/slippage check is mandatory immediately before order; expected edge must remain positive after current spread.",
-        "profitProtection": {
-          "armAfterR": 0.6,
-          "moveStopTowardBreakevenAfterR": 0.8,
-          "trailAfterR": 1.1,
-          "neverWidenStop": true,
-          "protectWinnerBeforeGiveback": true
-        },
-        "adaptiveSizing": {
-          "mode": "EDGE_AND_REAL_FILL_WEIGHTED_WITHIN_EXISTING_RISK_CAP",
-          "multiplier": 0.6,
-          "mayNotIncreaseExistingRiskCap": true
-        },
-        "regimeRouting": {
-          "preferred": [
-            "VWAP_TREND",
-            "MIXED_INTRADAY"
-          ],
-          "cashAllowed": true
-        }
-      }
+      "stateChangedAt": "2026-09-11T22:02:00.066Z"
     },
     {
       "id": "POSITION:STOCK:EQX",
@@ -952,12 +440,12 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-11",
-        "minuteOfDay": 1162,
+        "minuteOfDay": 1166,
         "calendarAvailable": true,
         "openMinute": 570,
         "closeMinute": 960,
         "regularSession": false,
-        "minutesToClose": -202,
+        "minutesToClose": -206,
         "sessionEnded": true,
         "entryAllowed": false,
         "forcedExitDue": true
@@ -986,61 +474,5 @@
     "TRIGGER_2_TARGET1": "Target 1 reached — execute validated first scale-out.",
     "TRIGGER_3_TARGET2": "Target 2 reached — execute validated exit/runner decision."
   },
-  "creditPolicy": "Alpaca/GitHub monitor prices. Claude should read the small dispatch packet first and avoid market/broker work when no action is needed.",
-  "dayTraderPolicy": {
-    "enabled": true,
-    "stocks": {
-      "regularSessionOnly": true,
-      "newEntryCutoffMinutesBeforeClose": 20,
-      "forcedExitMinutesBeforeClose": 10,
-      "overnightAllowed": false
-    },
-    "crypto": {
-      "intradayOnly": true,
-      "maximumHoldingHours": 3
-    },
-    "enforcedAt": "2026-09-11T23:22:53.377Z"
-  },
-  "intradayEngine": {
-    "schemaVersion": 2,
-    "generatedAt": "2026-09-11T23:22:53.401Z",
-    "status": "OK",
-    "errors": [],
-    "benchmarks": {
-      "spy": {
-        "score": 23,
-        "momentum5mPct": -0.015699819452075214
-      },
-      "qqq": {
-        "score": 34,
-        "momentum5mPct": 0.002797281042821176
-      },
-      "btc": null
-    },
-    "features": [
-      "1m momentum",
-      "5m momentum",
-      "VWAP",
-      "relative volume",
-      "opening range breakout",
-      "momentum acceleration",
-      "SPY/QQQ relative strength",
-      "BTC context",
-      "market regime routing",
-      "event-risk suppression",
-      "setup-specific real-fill learning",
-      "execution-cost expectancy",
-      "adaptive sizing",
-      "profit protection"
-    ],
-    "profitGivebackPolicy": {
-      "enabled": true,
-      "source": "ROBINHOOD_CONFIRMED_REALIZED_AND_UNREALIZED_PNL_AT_EXECUTION_TIME",
-      "reduceRiskAfterGivebackPct": 35,
-      "stopNewRiskAfterGivebackPct": 50,
-      "onlyWhenDayPnlPositive": true,
-      "note": "Executor must calculate from fresh broker-confirmed state; repository snapshots never invent PnL."
-    },
-    "policy": "Intraday edge may block, reorder, or reduce size but may never create eligibility or increase maximum risk. Stale/unavailable data fails closed for new entries; exits remain prioritized."
-  }
+  "creditPolicy": "Alpaca/GitHub monitor prices. Claude should read the small dispatch packet first and avoid market/broker work when no action is needed."
 }
