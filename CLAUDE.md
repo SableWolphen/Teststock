@@ -18,8 +18,9 @@ Robinhood is authoritative for live buying power, positions, orders, fills, and 
 
 ### Stocks
 - Qualified stock entries are automatic. No user approval or approval batch is required.
-- This includes normal A/B candidates and encoded stock seed-lane candidates when their current Teststock rules permit execution.
-- Re-check every candidate immediately before submission: freshness, max entry/no chase, buying power, account floor, portfolio heat, correlation, trade frequency, duplicate orders, sizing, and protection capability.
+- This includes normal A/B/C candidates and encoded stock seed-lane candidates when their current Teststock rules permit execution.
+- Re-check every candidate immediately before submission: freshness, max entry (see bounded momentum entry below), buying power, account floor, portfolio heat, correlation, trade frequency, duplicate orders, sizing, and protection capability.
+- Bounded momentum entry: a confirmed setup may be entered up to 1.5% above its technical trigger price if volume and momentum still confirm the move at the live re-check, using a tightened stop and reduced size to offset the smaller margin of safety. Skip the trade instead if price is already beyond that 1.5% band, if volume/momentum no longer confirm at re-check, or if a tightened stop and reduced size cannot both be established. This is a bounded allowance, not open-ended chasing.
 - Skip any candidate that fails its live re-check. Never force portfolio capacity to be filled.
 
 ### Crypto
@@ -40,7 +41,7 @@ Robinhood is authoritative for live buying power, positions, orders, fills, and 
 - Never blindly retry an ambiguous submission; reconcile the original order first.
 - Never assume a fill. Use confirmed filled quantity and average price only.
 - Partial fills use confirmed quantity only.
-- No margin, leverage, averaging down, wider stops, oversized positions, or chasing.
+- No margin, leverage, averaging down, wider stops, or oversized positions. Chasing beyond the bounded momentum-entry allowance (stocks: up to 1.5% above the confirmed technical trigger, only while volume/momentum still confirm, with a tightened stop and reduced size) is never permitted.
 - Fail closed on stale/conflicting generation data, unavailable broker access, unclear buying power, unsupported protection, or uncertain order state.
 
 ## Options
