@@ -74,6 +74,25 @@ const finalists=(tournament.researchFinalists||[]).map(apply);
 const buyable=live.filter(x=>x.action==='AUTO_BUY_ELIGIBLE'&&!['SHADOW_ONLY','LIVE_SUSPENDED'].includes(x.profitabilityAdmission?.state));
 tournament.liveQueue=live;tournament.researchFinalists=finalists;tournament.liveBuyChampion=buyable[0]||null;tournament.liveFallbacks=buyable.slice(1);
 
+// New-listing cohort-gated candidates (2026-09-11): a same-stock historical backtest cannot
+// evaluate a genuinely new listing, so these compete only for the existing stocks.seedLane cap
+// below -- never a separate or larger budget -- and are ranked after every normal tournament
+// candidate so a same-stock-validated candidate always wins the shared slot first. Disabled
+// entirely whenever the cross-sectional cohort evidence is missing or below its own sample bar.
+const newListingFile=await read('docs/data/new-listing-live-candidates.json',{enabled:false,candidates:[]});
+if(newListingFile.enabled===true){
+  const existingTickers=new Set(live.map(x=>x.ticker||x.symbol));
+  const newListingRows=(newListingFile.candidates||[]).filter(c=>c.symbol&&!existingTickers.has(c.symbol)).map((c,i)=>({
+    ticker:c.symbol,entryTier:'A',setupType:c.setupType,growthQuality:0,rewardRisk:Number(c.rewardRisk||0),
+    minimumEntry:Number(c.minimumEntry),maximumEntry:Number(c.maximumEntry),stop:Number(c.stop),target1:Number(c.target1),target2:Number(c.target2),
+    queueRank:900+i,action:'PROFITABILITY_ADMISSION_BLOCK',adaptiveSizeMultiplier:0,
+    profitabilityAdmission:{state:'SHADOW_ONLY',sizeMultiplier:0,entryTier:'A',setupType:c.setupType,runtimeRegime:'UNKNOWN',historical:{samples:0,winRatePct:null,rewardRisk:Number(c.rewardRisk||0)},historicalEvidenceIsDiagnosticOnly:true,regimeDisabled:false,contradictoryShadow:false,negativeRealProbation:false,shadow:{scope:'NEW_LISTING_COHORT',samples:Number(c.cohortSetupSamples||0),winRatePct:c.cohortSetupWinRatePct??null,averageR:null,realFillSamples:0,shadowOnlySamples:0},real:{samples:0,winRatePct:null,averageRealizedR:null},thresholds:{},reason:'New-listing cross-sectional cohort evidence only; never treated as same-stock validated. Eligible only for the shared stock seed-lane cap.'},
+    seedLane:{eligible:false},dayTradeSeedLane:{eligible:false},
+    newListingCohortEvidence:{setupType:c.setupType,samples:c.cohortSetupSamples,winRatePct:c.cohortSetupWinRatePct,avgForwardReturnPct:c.cohortSetupAvgForwardReturnPct,cohortGeneratedAt:newListingFile.cohortGeneratedAt}
+  }));
+  live.push(...newListingRows);
+}
+
 // Retain the legacy $5 A-tier seed lane as a fail-closed fallback for any future upstream path that
 // still emits a safe A candidate as SHADOW_ONLY. In the current tiered policy, normal safe A rows
 // become ELITE_RUNTIME_ELIGIBLE before this point, so this lane is normally dormant.
@@ -112,7 +131,11 @@ if(dayTradeConfig.enabled===true){
 
 tournament.profitabilityAdmissionPolicy={enabled:true,mode:'TIERED_A_NORMAL_B_MICRO_WITH_REAL_SUSPENSION',rule:'A-tier research winners no longer need to wait for a large forward-shadow sample before becoming runtime-eligible; they may use up to their already-encoded normal size only after every downstream Teststock and live Robinhood guard passes. B-tier best-acceptable stocks are capped at 25% micro-probation size. Disabled regimes, contradictory shadow evidence, or negative Robinhood-confirmed real-fill probation remain hard blocks. Historical/backtest evidence remains diagnostic and cannot override a failed live guard.'};
 const q=new Map(live.map(x=>[x.ticker||x.symbol,x]));
-signal.stockPlan=signal.stockPlan||{};signal.stockPlan.stockCandidateQueue=(signal.stockPlan.stockCandidateQueue||[]).map(x=>q.has(x.ticker)?{...x,profitabilityAdmission:q.get(x.ticker).profitabilityAdmission,adaptiveSizeMultiplier:q.get(x.ticker).adaptiveSizeMultiplier,action:q.get(x.ticker).action,seedLane:q.get(x.ticker).seedLane,dayTradeSeedLane:q.get(x.ticker).dayTradeSeedLane}:x);
+signal.stockPlan=signal.stockPlan||{};
+const existingQueue=(signal.stockPlan.stockCandidateQueue||[]).map(x=>q.has(x.ticker)?{...x,profitabilityAdmission:q.get(x.ticker).profitabilityAdmission,adaptiveSizeMultiplier:q.get(x.ticker).adaptiveSizeMultiplier,action:q.get(x.ticker).action,seedLane:q.get(x.ticker).seedLane,dayTradeSeedLane:q.get(x.ticker).dayTradeSeedLane}:x);
+const existingQueueTickers=new Set(existingQueue.map(x=>x.ticker));
+const newListingQueueRows=live.filter(x=>x.newListingCohortEvidence&&!existingQueueTickers.has(x.ticker)).slice(0,Math.max(0,15-existingQueue.length)).map(x=>({ticker:x.ticker,minimumEntry:x.minimumEntry,maximumEntry:x.maximumEntry,stop:x.stop,target1:x.target1,target2:x.target2,setupType:x.setupType,growthQuality:x.growthQuality,rewardRisk:x.rewardRisk,entryTier:x.entryTier,profitabilityAdmission:x.profitabilityAdmission,adaptiveSizeMultiplier:x.adaptiveSizeMultiplier,action:x.action,seedLane:x.seedLane,dayTradeSeedLane:x.dayTradeSeedLane,newListingCohortEvidence:x.newListingCohortEvidence,queueRole:'RESERVE'}));
+signal.stockPlan.stockCandidateQueue=[...existingQueue,...newListingQueueRows].map((x,i)=>({...x,queueRank:i+1,queueRole:x.queueRole||'RESERVE'}));
 signal.stockTournament={...(signal.stockTournament||{}),profitabilityAdmissionPolicy:tournament.profitabilityAdmissionPolicy,liveBuyChampion:tournament.liveBuyChampion,liveFallbackTickers:tournament.liveFallbacks.map(x=>x.ticker)};
 signal.generatorIntegrity={...(signal.generatorIntegrity||{}),traceableFeatures:{...(signal.generatorIntegrity?.traceableFeatures||{}),shadowFirstProfitabilityAdmission:false,tieredStockProfitabilityAdmission:true,eliteARuntimeEligibility:true,bTierMicroProbation:true}};
 signal.schemaVersion=Math.max(44,Number(signal.schemaVersion||0));
