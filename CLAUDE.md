@@ -28,6 +28,7 @@ Robinhood is authoritative for live buying power, positions, orders, fills, and 
 - No user approval is required for a qualified crypto entry or risk-reducing crypto exit.
 - Execute through the connected Robinhood Trading MCP/runtime, not a GitHub-side order script.
 - Manage only Teststock-attributable quantity. Never adopt, cancel, or sell unrelated manual holdings/orders.
+- Bounded momentum entry: a confirmed crypto setup may be entered up to 1.5% above its technical trigger price if volume and momentum still confirm the move at the live re-check, using a tightened stop and reduced size to offset the smaller margin of safety. Skip the trade instead if price is already beyond that 1.5% band, if volume/momentum no longer confirm at re-check, or if a tightened stop and reduced size cannot both be established. This is a bounded allowance, not open-ended chasing, and it does not override the separate crypto profitability-admission gate — an entry still must be fully qualified and admitted before this allowance can apply.
 
 ### Exits and protection
 - Risk-reducing exits and validated profit-taking are automatic for stocks, options, and crypto when current policy permits them.
@@ -41,7 +42,7 @@ Robinhood is authoritative for live buying power, positions, orders, fills, and 
 - Never blindly retry an ambiguous submission; reconcile the original order first.
 - Never assume a fill. Use confirmed filled quantity and average price only.
 - Partial fills use confirmed quantity only.
-- No margin, leverage, averaging down, wider stops, or oversized positions. Chasing beyond the bounded momentum-entry allowance (stocks: up to 1.5% above the confirmed technical trigger, only while volume/momentum still confirm, with a tightened stop and reduced size) is never permitted.
+- No margin, leverage, averaging down, wider stops, or oversized positions. Chasing beyond the bounded momentum-entry allowance (up to 1.5% above the confirmed technical trigger for stocks or crypto, only while volume/momentum still confirm, with a tightened stop and reduced size) is never permitted.
 - Fail closed on stale/conflicting generation data, unavailable broker access, unclear buying power, unsupported protection, or uncertain order state.
 
 ## Options
