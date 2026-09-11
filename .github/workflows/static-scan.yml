@@ -52,6 +52,7 @@ on:
       - 'scripts/apply-two-tournament-architecture.mjs'
       - 'scripts/validate-two-tournament-architecture.mjs'
       - 'scripts/update-shadow-ledger.mjs'
+      - 'scripts/build-new-listing-cohort-validation.mjs'
       - 'scripts/augment-signal-safety.mjs'
       - 'scripts/apply-fractional-protection-policy.mjs'
       - 'scripts/apply-exit-policy-validation.mjs'
@@ -193,6 +194,13 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/update-shadow-ledger.mjs
+
+      - name: Build cross-sectional new-listing cohort validation
+        if: ${{ steps.scan_window.outputs.stocks == 'true' && steps.scan_window.outputs.deep == 'true' }}
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+        run: node scripts/build-new-listing-cohort-validation.mjs
 
       - name: Build adaptive performance from Robinhood-confirmed real fills
         run: node scripts/build-adaptive-performance.mjs
