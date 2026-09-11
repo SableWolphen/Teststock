@@ -17,7 +17,7 @@ if(!s.entryGateRobustness?.secondHoldoutStart||!s.entryGateRobustness?.secondHol
 if(!s.entryGateRobustness?.regimeEntryProfiles)fail.push('regime entry profiles');
 if(Number(s.tradeFrequencyGuard?.maxNewPositionsPerSevenDays||0)<7)fail.push('multi-position weekly capacity');
 if(Number(s.tradeFrequencyGuard?.maxNewPositionsPerDay||0)>4)fail.push('daily position cap too high');
-if(Number(s.portfolioGuard?.maxConcurrentTeststockPositions||0)>4)fail.push('concurrent portfolio cap too high');
+if(Number(s.portfolioGuard?.maxConcurrentTeststockPositions||0)>8)fail.push('concurrent portfolio cap too high');
 const addOn=s.portfolioGuard?.winningPositionAddOn;if(s.portfolioGuard?.noDuplicateExposure!==false||s.portfolioGuard?.noDuplicatePendingOrder!==true||addOn?.enabled!==true||Number(addOn?.maxOrderUsd)!==20||Number(addOn?.maxAddOnsPerSymbolPerUtcDay)!==1||addOn?.requiredEntryTier!=='A'||Number(addOn?.minimumUnrealizedGainPct)!==1||addOn?.requiresFreshBuyTrigger!==true||addOn?.requiresCombinedRiskCapacity!==true||addOn?.requiresProtectionAtLeastAsTightAsExisting!==true||addOn?.averageDownAllowed!==false||addOn?.widenStopAllowed!==false)fail.push('winning-position add-on bounds');
 if(Number(s.executionQuality?.maxStockSpreadPct||99)>.35)fail.push('stock spread cap');
 if(!s.executionQuality?.gapRiskGuard?.enabled)fail.push('gap-risk guard');

@@ -5,7 +5,7 @@ const budgets=[50,100,200,500];
 const dataDir=path.resolve('docs/data');
 const read=async(f,x=null)=>{try{return JSON.parse(await fs.readFile(f,'utf8'));}catch{return x;}};
 const round=(n,d=2)=>Number(Number(n||0).toFixed(d));
-const MAX_CONCURRENT=4;
+const MAX_CONCURRENT=8;
 const MAX_QUEUE=24;
 const MIN_VISIBLE=8;
 
