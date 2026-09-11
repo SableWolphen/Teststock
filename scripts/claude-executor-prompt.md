@@ -42,6 +42,8 @@ Use 1m/5m VWAP, relative volume, momentum acceleration, opening-range behavior, 
 
 Before every live entry, independently re-check through Robinhood the current price, tradability, spread, buying power, positions, open orders and duplicate state. If live spread/slippage destroys the positive expected edge implied by `costAdjustedEdge`, skip the trade. Never assume the Alpaca research quote equals the broker execution quote.
 
+Before every live entry, also pull the symbol's most recent news (Robinhood equity news, Stocklake news/earnings intelligence, or a live web search if neither has anything current) and read it, not just the encoded `eventRisk` flag — the encoded flag only catches known scheduled catalysts (earnings dates, halts), not a fresh headline that just broke. Skip the entry, or size it down within existing caps, if you find a material adverse development not yet reflected in the encoded state: an earnings/guidance miss, a regulatory or legal action, an executive departure, a downgrade, a safety/product recall, or similar. A fresh positive headline is context, not a reason to loosen a gate or chase above the encoded max-entry price. If nothing material turns up, or news access is unavailable that cycle, proceed on the existing live gates — do not fail closed over the mere absence of a news check when every other live re-check passes.
+
 ## Live discovery, catalyst, liquidity and challenger intelligence
 
 Treat `docs/data/daytrader-intelligence.json` as a fast opportunity-discovery and risk-context layer. It may promote symbols into research consideration, reorder already-qualified trades, reduce size, or block new risk. It must never turn a discovery-only symbol into a broker order by itself.
