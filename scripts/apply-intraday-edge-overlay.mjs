@@ -87,7 +87,7 @@ for(const item of board.items||[]){
   adjustedScore=clamp(Math.round(adjustedScore),0,100);
   const edge=costAdjustedEdge(item,{...f,score:adjustedScore},learn);
   const learnedSize=finite(learn?.sizeMultiplier)?clamp(num(learn.sizeMultiplier),0.25,1):1;
-  const strong=adjustedScore>=65&&edge>=1.3&&(!finite(f.relVol)||f.relVol>=0.9)&&!evt.high&&learn?.temporaryBlock!==true;
+  const strong=adjustedScore>=55&&edge>=1.0&&(!finite(f.relVol)||f.relVol>=0.7)&&!evt.high&&learn?.temporaryBlock!==true;
   const weak=adjustedScore<40||tag==='WEAK_LONG_SETUP'||evt.high||learn?.temporaryBlock===true;
   const sizeMultiplier=weak?0.25:strong?learnedSize:Math.min(0.6,learnedSize);
   item.intradayEdge={status:'FRESH',generatedAt,setup:tag,...f,adjustedScore,marketRegime,relativeStrengthPct,benchmark5mMomentumPct:benchmark?.momentum5mPct??null,eventRisk:evt,realFillLearning:{state:adaptive?.performanceState||adaptive?.status||'UNKNOWN',bucket:learn,executionQuality:adaptive?.executionQuality||null},costAdjustedEdge:edge,executionCostNote:'Robinhood live spread/slippage check is mandatory immediately before order; expected edge must remain positive after current spread.',profitProtection:{armAfterR:0.6,moveStopTowardBreakevenAfterR:0.8,trailAfterR:1.1,neverWidenStop:true,protectWinnerBeforeGiveback:true},adaptiveSizing:{mode:'EDGE_AND_REAL_FILL_WEIGHTED_WITHIN_EXISTING_RISK_CAP',multiplier:sizeMultiplier,mayNotIncreaseExistingRiskCap:true},regimeRouting:{preferred:marketRegime.includes('RISK_ON')||marketRegime.includes('TREND')?['OPENING_RANGE_BREAKOUT','VWAP_MOMENTUM_CONTINUATION','VWAP_TREND']:['VWAP_TREND','MIXED_INTRADAY'],cashAllowed:true}};
