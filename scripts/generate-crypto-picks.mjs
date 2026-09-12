@@ -179,7 +179,16 @@ function candidate(m,cal,intraday,btcTrend){const entry=m.price*1.002,intradaySt
 // four RSI/pullback/momentum/volume conditions regardless of what fourHourSetup() computed, which
 // would have made the 2026-08-23 3-of-4 relaxation a no-op. See fourHourSetup() for the actual
 // (trend-required AND 3-of-4-confirmations) logic.
-function grade(x){const samples=Number(x.validation?.samples||0),win=Number(x.validation?.winRate||0),historyAPlus=samples<10||win>=56,historyA=samples<6||win>=50,btcOk=x.symbol==='BTC/USD'||x.btcTrendSupport===true,intradayOk=x.confirm4h===true;if(x.growthQuality>=92&&x.score>=86&&intradayOk&&historyAPlus&&x.atrPct<=11&&btcOk&&x.dollarVolume24hReal>=2_000_000)return'A+';if(x.growthQuality>=84&&x.score>=78&&intradayOk&&historyA&&x.atrPct<=12&&btcOk&&x.dollarVolume24hReal>=250_000)return'A';return'NO_TRADE';}
+// A+ evidence fix (2026-09-12): historyAPlus previously read `samples<10||win>=56` -- a coin with
+// FEWER than 10 calibration samples auto-passed the win-rate bar with zero evidence, instead of
+// failing closed. Live crypto shadow-ledger data confirmed the damage: across 1,425 resolved
+// trades, accepted A-tier setups ran 65.5% win rate / +2.27 avg R (genuinely good), while accepted
+// A+ setups -- the larger-size, "more elite" tier this bypass fed -- ran 6.9% win rate / -0.73 avg
+// R (102 of 131 accepted trades, dragging the whole accepted pool net negative and actually below
+// the rejected pool's own +0.11 avg R). A+ is supposed to demand MORE proof for its bigger size
+// (45% allocation vs 30%, wider stop budget), not skip the check when data is thin. Now requires
+// real sample-backed evidence; A-tier's own bypass is left as-is since its real performance is fine.
+function grade(x){const samples=Number(x.validation?.samples||0),win=Number(x.validation?.winRate||0),historyAPlus=samples>=10&&win>=56,historyA=samples<6||win>=50,btcOk=x.symbol==='BTC/USD'||x.btcTrendSupport===true,intradayOk=x.confirm4h===true;if(x.growthQuality>=92&&x.score>=86&&intradayOk&&historyAPlus&&x.atrPct<=11&&btcOk&&x.dollarVolume24hReal>=2_000_000)return'A+';if(x.growthQuality>=84&&x.score>=78&&intradayOk&&historyA&&x.atrPct<=12&&btcOk&&x.dollarVolume24hReal>=250_000)return'A';return'NO_TRADE';}
 
 const {universe,discoveryError,discoveryDebug}=await discoverUniverse();
 const symbols=universe.map(u=>u.symbol);
