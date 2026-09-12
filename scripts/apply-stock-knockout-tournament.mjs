@@ -42,6 +42,7 @@ const researchFinalists=top.map((x,i)=>({
   fundamentals:enrichmentByTicker.get(x.symbol||x.ticker)?.fundamentals||null,
   corporateActions:enrichmentByTicker.get(x.symbol||x.ticker)?.corporateActions||null,
   recentFilings:enrichmentByTicker.get(x.symbol||x.ticker)?.recentFilings||[],
+  newsCatalyst:enrichmentByTicker.get(x.symbol||x.ticker)?.newsCatalyst||null,
   fundamentalEligibility:enrichmentByTicker.get(x.symbol||x.ticker)?.fundamentals?.label==='STRONG'?true:enrichmentByTicker.get(x.symbol||x.ticker)?.fundamentals?.label==='WEAK'?false:null
 })).sort((a,b)=>b.tournamentScore-a.tournamentScore||a.rank-b.rank).map((x,i)=>({...x,rank:i+1}));
 const liveQueue=queue.map((x,i)=>({
@@ -52,6 +53,7 @@ const liveQueue=queue.map((x,i)=>({
   fundamentals:enrichmentByTicker.get(x.ticker)?.fundamentals||null,
   corporateActions:enrichmentByTicker.get(x.ticker)?.corporateActions||null,
   recentFilings:enrichmentByTicker.get(x.ticker)?.recentFilings||[],
+  newsCatalyst:enrichmentByTicker.get(x.ticker)?.newsCatalyst||null,
   fundamentalEligibility:enrichmentByTicker.get(x.ticker)?.fundamentals?.label==='STRONG'?true:enrichmentByTicker.get(x.ticker)?.fundamentals?.label==='WEAK'?false:null
 })).sort((a,b)=>(a.entryTier==='A'?0:1)-(b.entryTier==='A'?0:1)||a.queueRank-b.queueRank||b.tournamentScore-a.tournamentScore);
 const buyable=liveQueue.filter(x=>x.action==='AUTO_BUY_ELIGIBLE');

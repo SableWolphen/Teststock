@@ -37,6 +37,12 @@ function enrich(row,index,selected){
   const liquidityPass=spread==null?null:spread<=Number(signal.executionQuality?.maxStockSpreadPct??.5);
   const fundamental=row.fundamentalEligibility??row.fundamentals?.eligible??plan.fundamentalEligibility??null;
   const screener={fundamentals:fundamental===false?'FAIL':fundamental===true?'PASS':'UNKNOWN',liquidity:liquidityPass===false?'FAIL':liquidityPass===true?'PASS':'UNKNOWN',spreadPct:spread??null,unknownIsNotAnOverride:true};
+  // News catalyst (2026-09-12): diagnostic keyword-based signal from enrich-stock-finalists.mjs,
+  // never a hard eligibility gate on its own (regex sentiment on headlines isn't trustworthy enough
+  // for that) -- it only nudges ranking and surfaces a warning. The live pre-trade news check
+  // remains the authoritative safety gate before any actual order.
+  const news=row.newsCatalyst??plan.newsCatalyst??null;
+  const newsPenalty=news?(news.binaryRisk&&news.sentimentHint==='NEGATIVE'?15:news.sentimentHint==='NEGATIVE'?8:0):0;
   const quote=finite(plan.scanPrice,row.scanPrice,row.observedPrice);
   const min=finite(row.minimumEntry,plan.minimumEntry,row.entry),max=finite(row.maximumEntry,plan.maximumEntry,row.entry);
   let proximity=0;
@@ -46,13 +52,13 @@ function enrich(row,index,selected){
   const corr=correlationPenalty(ticker,selected);
   const confidence=patternConfidence==null?technical:technical*.6+patternConfidence*.4;
   const base=finite(row.adaptiveTournamentScore,row.tournamentScore,quality,0);
-  const decisionScore=round(base*.7+confidence*.3-corr.penalty-(liquidityPass===false?20:0));
+  const decisionScore=round(base*.7+confidence*.3-corr.penalty-newsPenalty-(liquidityPass===false?20:0));
   const admission=row.profitabilityAdmission?.state||'UNKNOWN';
   const upstreamActionAllowed=['AUTO_BUY_ELIGIBLE','WAIT_FOR_TRIGGER'].includes(String(row.action||''));
   const eligible=upstreamActionAllowed&&!['SHADOW_ONLY','LIVE_SUSPENDED'].includes(admission)&&liquidityPass!==false&&!opportunityDecay.expired;
   const eligibleForSeedLane=row.seedLane?.eligible===true;
   const eligibleForDayTradeSeedLane=row.dayTradeSeedLane?.eligible===true;
-  const diagnostics={setupType:setup,technicalScore:round(technical,1),patternConfidencePct:patternConfidence,historicalSamples:Number(histN||0),historicalWinRatePct:histWin??null,rewardRisk:rr,backtestStatus:Number(histN)>=30?'SUPPORTED':Number(histN)>=12?'LIMITED':'SPARSE',warnings:[...(Number(histN)<12?['SPARSE_SETUP_BACKTEST']:[]),...(patternConfidence==null?['PATTERN_CONFIDENCE_UNKNOWN']:[]),...(fundamental==null?['FUNDAMENTALS_UNKNOWN']:[]),...(spread==null?['LIQUIDITY_UNKNOWN']:[]) ]};
+  const diagnostics={setupType:setup,technicalScore:round(technical,1),patternConfidencePct:patternConfidence,historicalSamples:Number(histN||0),historicalWinRatePct:histWin??null,rewardRisk:rr,backtestStatus:Number(histN)>=30?'SUPPORTED':Number(histN)>=12?'LIMITED':'SPARSE',newsCatalyst:news,warnings:[...(Number(histN)<12?['SPARSE_SETUP_BACKTEST']:[]),...(patternConfidence==null?['PATTERN_CONFIDENCE_UNKNOWN']:[]),...(fundamental==null?['FUNDAMENTALS_UNKNOWN']:[]),...(spread==null?['LIQUIDITY_UNKNOWN']:[]),...(news==null?['NEWS_UNAVAILABLE']:[]),...(news?.sentimentHint==='NEGATIVE'?['NEGATIVE_NEWS_CATALYST']:[]) ]};
   return {...row,decisionIntelligence:{decisionScore,rankBeforeOptimization:index+1,eligibleAfterOverlay:eligible,eligibleForSeedLane,eligibleForDayTradeSeedLane,upstreamActionAllowed,setupDiagnostics:diagnostics,screener,opportunityDecay,portfolioOptimization:corr,admissionState:admission,hardGatesRemainAuthoritative:true},decisionScore,action:upstreamActionAllowed&&!eligible?'DECISION_INTELLIGENCE_BLOCK':row.action};
 }
 
