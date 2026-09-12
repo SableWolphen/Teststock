@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import {fetchAlpacaNews,fetchPerSymbolNews,classifyCatalyst} from './news-catalyst.mjs';
 
 // Reuses the cross-sectional cohort evidence from build-new-listing-cohort-validation.mjs to let
 // CURRENT genuine new listings (still inside their first ~90 trading days) compete for the
@@ -98,21 +99,17 @@ for(const symbol of symbols){
 candidates.sort((a,b)=>b.dollarVolume-a.dollarVolume);
 const chosen=candidates.slice(0,MAX_CANDIDATES);
 
-// News catalyst (2026-09-12): these candidates bypass enrich-stock-finalists.mjs entirely (they
-// come from a separate cohort-gated pool, not the main tournament), so they'd otherwise carry no
-// news signal at all into stockCandidateQueue. Diagnostic only, same as the main pipeline's
-// enrichment -- never a hard gate here either.
+// News catalyst (2026-09-12, widened to multi-source 2026-09-12): these candidates bypass
+// enrich-stock-finalists.mjs entirely (they come from a separate cohort-gated pool, not the main
+// tournament), so they'd otherwise carry no news signal at all into stockCandidateQueue. Same
+// multi-source aggregation (Alpaca, Google News RSS, Yahoo Finance search) as the main pipeline --
+// see news-catalyst.mjs for source coverage/limits. Diagnostic only, never a hard gate here either.
 if(chosen.length){
-  let newsArticles=[];
-  try{const x=await getRetry(`https://data.alpaca.markets/v1beta1/news?symbols=${encodeURIComponent(chosen.map(c=>c.symbol).join(','))}&limit=50&sort=desc`);newsArticles=x?.news||[];}
-  catch(e){console.warn(`New-listing news enrichment unavailable; continuing without it: ${e.message}`);}
+  const symbolsChosen=chosen.map(c=>c.symbol);
+  const alpacaArticles=await fetchAlpacaNews(symbolsChosen,headers);
+  const perSymbolArticles=await fetchPerSymbolNews(symbolsChosen);
   for(const c of chosen){
-    const recent=newsArticles.filter(n=>(n.symbols||[]).includes(c.symbol)&&Date.now()-new Date(n.created_at||n.updated_at||0).getTime()<=72*3600e3);
-    const text=recent.map(n=>String(n.headline||'')).join(' ').toLowerCase();
-    const binary=/bankrupt|chapter 11|halt|offering|secondary offering|fda|merger|acquisition|earnings|guidance|lawsuit|sec investigation/.test(text);
-    const positive=/beats|raises guidance|approval|contract|record revenue|buyback/.test(text);
-    const negative=/misses|cuts guidance|offering|bankrupt|investigation|halt/.test(text);
-    c.newsCatalyst={articleCount:recent.length,windowHours:72,binaryRisk:binary,sentimentHint:recent.length?(positive&&!negative?'POSITIVE':negative&&!positive?'NEGATIVE':'MIXED_OR_UNKNOWN'):'NO_RECENT_NEWS',headlines:recent.slice(0,3).map(n=>({headline:n.headline||null,createdAt:n.created_at||null,source:n.source||null})),source:'ALPACA_NEWS',note:'Keyword-based diagnostic only; never a hard eligibility gate. A live pre-trade news check still applies before any order.'};
+    c.newsCatalyst=classifyCatalyst(c.symbol,[...alpacaArticles,...(perSymbolArticles.get(c.symbol)||[])]);
   }
 }
 const report={
