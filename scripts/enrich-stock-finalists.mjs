@@ -12,7 +12,14 @@ const round=(n,d=2)=>Number(Number(n||0).toFixed(d));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 const broad=await read('docs/data/broad-stock-universe.json',{});
-const symbols=[...new Set((broad.topCandidates||[]).map(x=>x.symbol).filter(Boolean))].slice(0,40);
+// Union with the previous cycle's actual candidate queue (2026-09-12): broad.topCandidates.slice(0,40)
+// alone missed real current liveQueue/stockCandidateQueue tickers that didn't happen to rank in the
+// top 40 by this stage's own score -- confirmed live (COHR/ARMK/ROG showed NEWS_UNAVAILABLE despite
+// being actively held/queued). growth-plan-500.json for THIS run doesn't exist yet at this pipeline
+// stage, but last cycle's queue is a reliable proxy since the same names usually persist run to run.
+const priorPlan=await read('docs/data/growth-plan-500.json',{});
+const priorQueueSymbols=[...(priorPlan.qualifiedCandidateQueue||[]),...(priorPlan.allocations||[])].map(x=>x.symbol||x.ticker).filter(Boolean);
+const symbols=[...new Set([...(broad.topCandidates||[]).map(x=>x.symbol).filter(Boolean).slice(0,40),...priorQueueSymbols])].slice(0,60);
 if(!symbols.length){console.log('No broad finalists to enrich');process.exit(0);}
 
 // News enrichment (2026-09-12): a growthQuality/reward-risk score alone can't see a headline that
