@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
+import {fetchAlpacaNews,fetchPerSymbolNews,classifyCatalyst} from './news-catalyst.mjs';
 
 const key=process.env.ALPACA_API_KEY||process.env.APCA_API_KEY_ID;
 const secret=process.env.ALPACA_API_SECRET||process.env.APCA_API_SECRET_KEY;
@@ -22,29 +23,19 @@ const priorQueueSymbols=[...(priorPlan.qualifiedCandidateQueue||[]),...(priorPla
 const symbols=[...new Set([...(broad.topCandidates||[]).map(x=>x.symbol).filter(Boolean).slice(0,40),...priorQueueSymbols])].slice(0,60);
 if(!symbols.length){console.log('No broad finalists to enrich');process.exit(0);}
 
-// News enrichment (2026-09-12): a growthQuality/reward-risk score alone can't see a headline that
-// just broke. Fetches recent Alpaca news for every finalist being enriched here -- the same
-// symbols that flow into stock-tournament.json's researchFinalists/liveQueue -- so a fresh
-// material catalyst is visible before this candidate is even ranked, not only at the live
-// pre-trade check. Diagnostic only: never blocks eligibility by itself (crude keyword matching on
-// headlines is not trustworthy enough for a hard automated gate) -- it feeds decision-intelligence
-// as a warning/score input, same as the SEC fundamentals enrichment below.
-const chunks=(a,n)=>Array.from({length:Math.ceil(a.length/n)},(_,i)=>a.slice(i*n,(i+1)*n));
-let newsArticles=[];
-for(const batch of chunks(symbols,25)){
-  try{const x=await getJson(`https://data.alpaca.markets/v1beta1/news?symbols=${encodeURIComponent(batch.join(','))}&limit=50&sort=desc`,alpacaHeaders);newsArticles=[...newsArticles,...(x?.news||[])];}
-  catch(e){console.warn(`News enrichment unavailable for batch [${batch.join(',')}]; continuing fail-closed at runtime: ${e.message}`);}
-}
-const NEWS_WINDOW_MS=72*3600e3;
-function newsFor(symbol){return newsArticles.filter(n=>(n.symbols||[]).includes(symbol));}
-function catalystFor(symbol){
-  const recent=newsFor(symbol).filter(n=>Date.now()-new Date(n.created_at||n.updated_at||0).getTime()<=NEWS_WINDOW_MS);
-  const text=recent.map(n=>String(n.headline||'')).join(' ').toLowerCase();
-  const binary=/bankrupt|chapter 11|halt|offering|secondary offering|fda|merger|acquisition|earnings|guidance|lawsuit|sec investigation/.test(text);
-  const positive=/beats|raises guidance|approval|contract|record revenue|buyback/.test(text);
-  const negative=/misses|cuts guidance|offering|bankrupt|investigation|halt/.test(text);
-  return {articleCount:recent.length,windowHours:72,binaryRisk:binary,sentimentHint:recent.length?(positive&&!negative?'POSITIVE':negative&&!positive?'NEGATIVE':'MIXED_OR_UNKNOWN'):'NO_RECENT_NEWS',headlines:recent.slice(0,3).map(n=>({headline:n.headline||null,createdAt:n.created_at||null,source:n.source||null})),source:'ALPACA_NEWS',note:'Keyword-based diagnostic only; never a hard eligibility gate. A live pre-trade news check still applies before any order.'};
-}
+// News enrichment (2026-09-12, widened to multi-source 2026-09-12): a growthQuality/reward-risk
+// score alone can't see a headline that just broke. Fetches recent news for every finalist being
+// enriched here -- the same symbols that flow into stock-tournament.json's
+// researchFinalists/liveQueue -- from every source reachable without a new paid credential (Alpaca,
+// Google News RSS, Yahoo Finance search; see news-catalyst.mjs for why X/Twitter and
+// Robinhood/Stocklake news are NOT fetched here) so a fresh material catalyst is visible before
+// this candidate is even ranked, not only at the live pre-trade check. Diagnostic only: never
+// blocks eligibility by itself (crude keyword matching on headlines is not trustworthy enough for
+// a hard automated gate) -- it feeds decision-intelligence as a warning/score input, same as the
+// SEC fundamentals enrichment below.
+const alpacaArticles=await fetchAlpacaNews(symbols,alpacaHeaders);
+const perSymbolArticles=await fetchPerSymbolNews(symbols);
+function catalystFor(symbol){return classifyCatalyst(symbol,[...alpacaArticles,...(perSymbolArticles.get(symbol)||[])]);}
 
 let tickerMap={};
 if(secUA){try{tickerMap=await getJson('https://www.sec.gov/files/company_tickers.json',{'User-Agent':secUA,'Accept-Encoding':'gzip, deflate'});}catch(e){console.warn('SEC ticker map unavailable; continuing without SEC fundamentals:',e.message);}}
@@ -66,7 +57,7 @@ for(const symbol of symbols){const meta=byTicker.get(symbol),events=caBySymbol.g
   enriched[symbol]={fundamentals,corporateActions,recentFilings,filingRisk,newsCatalyst:catalystFor(symbol),earnings:{status:'UNKNOWN',note:'No reliable scheduled earnings calendar is available in this pipeline; runtime event checks must remain fail-closed when earnings timing is unknown.'}};
 }
 
-for(const budget of [50,100,200,500]){const file=`docs/data/latest-${budget}.json`,data=await read(file);if(!data)continue;data.recommendations=(data.recommendations||[]).map(r=>enriched[r.symbol]?{...r,...enriched[r.symbol]}:r);data.finalistEnrichment={generatedAt:new Date().toISOString(),symbolsEnriched:Object.keys(enriched).length,sources:['SEC company facts/submissions when available','Alpaca corporate actions when available'],earningsCalendar:'UNKNOWN_FAIL_CLOSED'};await fs.writeFile(file,JSON.stringify(data,null,2));}
+for(const budget of [50,100,200,500]){const file=`docs/data/latest-${budget}.json`,data=await read(file);if(!data)continue;data.recommendations=(data.recommendations||[]).map(r=>enriched[r.symbol]?{...r,...enriched[r.symbol]}:r);data.finalistEnrichment={generatedAt:new Date().toISOString(),symbolsEnriched:Object.keys(enriched).length,sources:['SEC company facts/submissions when available','Alpaca corporate actions when available','News: Alpaca, Google News RSS, Yahoo Finance search (best-effort, diagnostic only)'],earningsCalendar:'UNKNOWN_FAIL_CLOSED'};await fs.writeFile(file,JSON.stringify(data,null,2));}
 if(Array.isArray(broad.topCandidates))broad.topCandidates=broad.topCandidates.map(r=>enriched[r.symbol]?{...r,...enriched[r.symbol]}:r);broad.finalistEnrichment={generatedAt:new Date().toISOString(),symbolsEnriched:Object.keys(enriched).length};await fs.writeFile('docs/data/broad-stock-universe.json',JSON.stringify(broad,null,2));
 console.log(`Enriched ${Object.keys(enriched).length} stock finalists; unavailable sources remain UNKNOWN instead of breaking the scan.`);
 
