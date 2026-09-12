@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import {fetchAlpacaNews,fetchPerSymbolNews,classifyCatalyst} from './news-catalyst.mjs';
 
 const SIGNAL='docs/signal.json';
 const BROAD='docs/data/broad-stock-universe.json';
@@ -56,6 +57,29 @@ const liveQueue=queue.map((x,i)=>({
   newsCatalyst:enrichmentByTicker.get(x.ticker)?.newsCatalyst||null,
   fundamentalEligibility:enrichmentByTicker.get(x.ticker)?.fundamentals?.label==='STRONG'?true:enrichmentByTicker.get(x.ticker)?.fundamentals?.label==='WEAK'?false:null
 })).sort((a,b)=>(a.entryTier==='A'?0:1)-(b.entryTier==='A'?0:1)||a.queueRank-b.queueRank||b.tournamentScore-a.tournamentScore);
+
+// News backfill (2026-09-12): enrich-stock-finalists.mjs runs before THIS cycle's growth plan is
+// finalized, so a ticker promoted into liveQueue/researchFinalists only by this run's own
+// optimize-growth-plan.mjs (not present in the prior cycle either) reaches here with no
+// newsCatalyst at all -- confirmed live (COHR/ARMK/ROG still missing it even after widening the
+// enrichment symbol list to include last cycle's queue). Backfill news for just the tickers still
+// missing it here, where the actual final queue is known -- this list is normally 0-3 tickers, so
+// the extra API cost is small even with per-symbol Google/Yahoo lookups.
+const missingNewsTickers=[...new Set([...researchFinalists,...liveQueue].filter(x=>!x.newsCatalyst).map(x=>x.ticker).filter(Boolean))];
+if(missingNewsTickers.length){
+  const alpacaKey=process.env.ALPACA_API_KEY||process.env.APCA_API_KEY_ID,alpacaSecret=process.env.ALPACA_API_SECRET||process.env.APCA_API_SECRET_KEY;
+  if(alpacaKey&&alpacaSecret){
+    try{
+      const alpacaHeaders={'APCA-API-KEY-ID':alpacaKey,'APCA-API-SECRET-KEY':alpacaSecret};
+      const [backfillAlpaca,backfillPerSymbol]=await Promise.all([fetchAlpacaNews(missingNewsTickers,alpacaHeaders),fetchPerSymbolNews(missingNewsTickers)]);
+      const backfilled=new Map(missingNewsTickers.map(t=>[t,classifyCatalyst(t,[...backfillAlpaca,...(backfillPerSymbol.get(t)||[])])]));
+      for(const row of researchFinalists)if(!row.newsCatalyst&&backfilled.has(row.ticker))row.newsCatalyst=backfilled.get(row.ticker);
+      for(const row of liveQueue)if(!row.newsCatalyst&&backfilled.has(row.ticker))row.newsCatalyst=backfilled.get(row.ticker);
+      console.log(`News backfill: ${missingNewsTickers.length} ticker(s) missing from the main enrichment pass (${missingNewsTickers.join(',')}) backfilled here.`);
+    }catch(e){console.warn(`News backfill unavailable; continuing with those tickers unenriched: ${e.message}`);}
+  }else console.warn('Alpaca credentials unavailable; skipping news backfill for tickers missed by the main enrichment pass.');
+}
+
 const buyable=liveQueue.filter(x=>x.action==='AUTO_BUY_ELIGIBLE');
 const champion=buyable[0]||null;
 const researchChampion=researchFinalists[0]||null;
