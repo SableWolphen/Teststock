@@ -1,7 +1,7 @@
 {
   "schemaVersion": 8,
   "source": "TESTSTOCK_UP_TO_20000_STOCK_KNOCKOUT",
-  "generatedAt": "2026-09-12T01:25:40.238Z",
+  "generatedAt": "2026-09-12T01:49:06.097Z",
   "objective": "Continuously eliminate weaker candidates from every legitimate active/tradable U.S. operating-company stock available, capped at 20,000 symbols, then buy the best acceptable live survivor without waiting only for a perfect setup.",
   "policy": {
     "targetTournamentSize": 20000,
@@ -2051,6 +2051,729 @@
         "lossExit": {
           "method": "FAST_SUPPORTED_PROTECTED_EXIT",
           "level": 327.65,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
+        },
+        "timeExit": {
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 20,
+          "maximumHoldingMinutes": 120,
+          "forcedExitMinutesBeforeClose": 10,
+          "newEntryCutoffMinutesBeforeClose": 20,
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup quickly rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "fixedDailyEntryCountLimit": null,
+          "fixedConcurrentPositionCountLimit": null,
+          "fixedPerExecutorRunEntryCountLimit": null,
+          "capacityMode": "DYNAMIC_RISK_CASH_AND_BROKER_LIMITED",
+          "cooldownAfterStopMinutes": 5,
+          "consecutiveStopLossPause": {
+            "count": 3,
+            "pauseMinutes": 20
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": null,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "portfolioHeatRemainsAuthoritative": true,
+          "correlationLimitsRemainAuthoritative": true,
+          "buyingPowerAndSettledFundsRemainAuthoritative": true,
+          "orderExecution": {
+            "entryPreference": "MARKETABLE_LIMIT_WHEN_SUPPORTED",
+            "exitPreference": "FASTEST_SUPPORTED_RISK_APPROPRIATE_ORDER",
+            "stalePassiveOrderSeconds": 45,
+            "allowCancelReplaceAfterBrokerReconciliation": true,
+            "neverBlindRetry": true
+          },
+          "sameSymbolReentryCooldownMinutes": null,
+          "maximumEntriesPerSymbolPerNyDay": 1,
+          "sameDayStockReentryAllowed": false,
+          "distinctStockRotationRequired": true,
+          "partialFillTopUpAsNewEntryAllowed": false
+        },
+        "risk": {
+          "accountRiskRule": "Existing Teststock cap remains authoritative; easier execution never increases risk.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        }
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "STOCK",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact symbol searchable and buyable in the authenticated Robinhood Agentic account",
+          "asset not restricted, halted, closing-only or unsupported",
+          "quantity and order type supported",
+          "non-margin buying power sufficient",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protective exit path is supported"
+        ],
+        "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
+      }
+    },
+    {
+      "ticker": "SPCX",
+      "entryTier": "A",
+      "setupType": "PULLBACK",
+      "growthQuality": 0,
+      "rewardRisk": 2.5,
+      "minimumEntry": 150.39,
+      "maximumEntry": 152.66,
+      "stop": 144.94,
+      "target1": 160.45,
+      "target2": 166.66,
+      "queueRank": 900,
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "entryTier": "A",
+        "setupType": "PULLBACK",
+        "runtimeRegime": "UNKNOWN",
+        "historical": {
+          "samples": 0,
+          "winRatePct": null,
+          "rewardRisk": 2.5
+        },
+        "historicalEvidenceIsDiagnosticOnly": true,
+        "regimeDisabled": false,
+        "contradictoryShadow": false,
+        "negativeRealProbation": false,
+        "shadow": {
+          "scope": "NEW_LISTING_COHORT",
+          "samples": 339,
+          "winRatePct": 57.5,
+          "averageR": null,
+          "realFillSamples": 0,
+          "shadowOnlySamples": 0
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {},
+        "reason": "New-listing cross-sectional cohort evidence only; never treated as same-stock validated. Eligible only for the shared stock seed-lane cap."
+      },
+      "seedLane": {
+        "eligible": true,
+        "maxOrderUsd": 20,
+        "requiredEntryTier": "A",
+        "requiresPerOrderApproval": false,
+        "maxConcurrentPositions": 2,
+        "maxNewPositionsPerUtcDay": 1,
+        "currentOpenSeedPositions": 0,
+        "openedSeedPositionsToday": 0,
+        "existingRobinhoodCashOnly": true,
+        "agentMayInitiateDeposits": false,
+        "agentMayInitiateBankTransfers": false,
+        "marginAllowed": false,
+        "requiresBrokerResidentStop": true,
+        "rotatesToNextCandidateAfterStop": true,
+        "rule": "User-authorized automatic stock learning lane. It may bypass only the forward profitability-admission wait at a fixed $20 ceiling. Every research, freshness, entry-zone, no-chase, decision-intelligence, buying-power, account-floor, portfolio, duplicate-order and protection gate remains mandatory. LIVE_SUSPENDED and contradictory shadow evidence never qualify."
+      },
+      "dayTradeSeedLane": {
+        "eligible": false
+      },
+      "newListingCohortEvidence": {
+        "setupType": "PULLBACK",
+        "samples": 339,
+        "winRatePct": 57.5,
+        "avgForwardReturnPct": 3.28,
+        "cohortGeneratedAt": "2026-09-12T01:47:58.533Z"
+      },
+      "decisionIntelligence": {
+        "decisionScore": 8.4,
+        "rankBeforeOptimization": 8,
+        "eligibleAfterOverlay": false,
+        "eligibleForSeedLane": true,
+        "eligibleForDayTradeSeedLane": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "PULLBACK",
+          "technicalScore": 28,
+          "patternConfidencePct": null,
+          "historicalSamples": 0,
+          "historicalWinRatePct": null,
+          "rewardRisk": 2.5,
+          "backtestStatus": "SPARSE",
+          "warnings": [
+            "SPARSE_SETUP_BACKTEST",
+            "PATTERN_CONFIDENCE_UNKNOWN",
+            "FUNDAMENTALS_UNKNOWN",
+            "LIQUIDITY_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "UNKNOWN",
+          "spreadPct": null,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 8.4,
+      "decisionRank": 8,
+      "congressionalIntelligence": {
+        "mode": "SHADOW_DIAGNOSTIC_ONLY",
+        "matched": false,
+        "signal": null,
+        "rankingContribution": 0,
+        "liveInfluenceAllowed": false,
+        "explanation": "No recent matched disclosure in the current public-source cache.",
+        "hardGatesRemainAuthoritative": true
+      },
+      "unifiedSourceEvidence": {
+        "ticker": "SPCX",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_MARKET_AND_TECHNICAL",
+            "liveAuthority": "EXISTING_HARD_GATES"
+          },
+          {
+            "provider": "SEC_EDGAR",
+            "role": "FUNDAMENTALS_AND_FILINGS",
+            "available": false,
+            "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "sourceAgreementRule": "Corroboration raises data confidence only; duplicated facts never multiply the trading score.",
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
+        "mayNotCreateEligibility": true,
+        "existingHardStopAndRiskRemainAuthoritative": true,
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 20 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid",
+          "no prior Teststock buy fill for this ticker in the current New York trading day"
+        ],
+        "profitExit": {
+          "method": "INTRADAY_FAST_EXIT_OR_BRACKET_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when momentum fades or resistance is reached.",
+          "target1": 160.45,
+          "target2": 166.66
+        },
+        "lossExit": {
+          "method": "FAST_SUPPORTED_PROTECTED_EXIT",
+          "level": 144.94,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
+        },
+        "timeExit": {
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 20,
+          "maximumHoldingMinutes": 120,
+          "forcedExitMinutesBeforeClose": 10,
+          "newEntryCutoffMinutesBeforeClose": 20,
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup quickly rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "fixedDailyEntryCountLimit": null,
+          "fixedConcurrentPositionCountLimit": null,
+          "fixedPerExecutorRunEntryCountLimit": null,
+          "capacityMode": "DYNAMIC_RISK_CASH_AND_BROKER_LIMITED",
+          "cooldownAfterStopMinutes": 5,
+          "consecutiveStopLossPause": {
+            "count": 3,
+            "pauseMinutes": 20
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": null,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "portfolioHeatRemainsAuthoritative": true,
+          "correlationLimitsRemainAuthoritative": true,
+          "buyingPowerAndSettledFundsRemainAuthoritative": true,
+          "orderExecution": {
+            "entryPreference": "MARKETABLE_LIMIT_WHEN_SUPPORTED",
+            "exitPreference": "FASTEST_SUPPORTED_RISK_APPROPRIATE_ORDER",
+            "stalePassiveOrderSeconds": 45,
+            "allowCancelReplaceAfterBrokerReconciliation": true,
+            "neverBlindRetry": true
+          },
+          "sameSymbolReentryCooldownMinutes": null,
+          "maximumEntriesPerSymbolPerNyDay": 1,
+          "sameDayStockReentryAllowed": false,
+          "distinctStockRotationRequired": true,
+          "partialFillTopUpAsNewEntryAllowed": false
+        },
+        "risk": {
+          "accountRiskRule": "Existing Teststock cap remains authoritative; easier execution never increases risk.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        }
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "STOCK",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact symbol searchable and buyable in the authenticated Robinhood Agentic account",
+          "asset not restricted, halted, closing-only or unsupported",
+          "quantity and order type supported",
+          "non-margin buying power sufficient",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protective exit path is supported"
+        ],
+        "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
+      }
+    },
+    {
+      "ticker": "HONA",
+      "entryTier": "A",
+      "setupType": "PULLBACK",
+      "growthQuality": 0,
+      "rewardRisk": 2.5,
+      "minimumEntry": 157.47,
+      "maximumEntry": 159.84,
+      "stop": 149.37,
+      "target1": 171.59,
+      "target2": 180.48,
+      "queueRank": 901,
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "entryTier": "A",
+        "setupType": "PULLBACK",
+        "runtimeRegime": "UNKNOWN",
+        "historical": {
+          "samples": 0,
+          "winRatePct": null,
+          "rewardRisk": 2.5
+        },
+        "historicalEvidenceIsDiagnosticOnly": true,
+        "regimeDisabled": false,
+        "contradictoryShadow": false,
+        "negativeRealProbation": false,
+        "shadow": {
+          "scope": "NEW_LISTING_COHORT",
+          "samples": 339,
+          "winRatePct": 57.5,
+          "averageR": null,
+          "realFillSamples": 0,
+          "shadowOnlySamples": 0
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {},
+        "reason": "New-listing cross-sectional cohort evidence only; never treated as same-stock validated. Eligible only for the shared stock seed-lane cap."
+      },
+      "seedLane": {
+        "eligible": true,
+        "maxOrderUsd": 20,
+        "requiredEntryTier": "A",
+        "requiresPerOrderApproval": false,
+        "maxConcurrentPositions": 2,
+        "maxNewPositionsPerUtcDay": 1,
+        "currentOpenSeedPositions": 0,
+        "openedSeedPositionsToday": 0,
+        "existingRobinhoodCashOnly": true,
+        "agentMayInitiateDeposits": false,
+        "agentMayInitiateBankTransfers": false,
+        "marginAllowed": false,
+        "requiresBrokerResidentStop": true,
+        "rotatesToNextCandidateAfterStop": true,
+        "rule": "User-authorized automatic stock learning lane. It may bypass only the forward profitability-admission wait at a fixed $20 ceiling. Every research, freshness, entry-zone, no-chase, decision-intelligence, buying-power, account-floor, portfolio, duplicate-order and protection gate remains mandatory. LIVE_SUSPENDED and contradictory shadow evidence never qualify."
+      },
+      "dayTradeSeedLane": {
+        "eligible": false
+      },
+      "newListingCohortEvidence": {
+        "setupType": "PULLBACK",
+        "samples": 339,
+        "winRatePct": 57.5,
+        "avgForwardReturnPct": 3.28,
+        "cohortGeneratedAt": "2026-09-12T01:47:58.533Z"
+      },
+      "decisionIntelligence": {
+        "decisionScore": 8.4,
+        "rankBeforeOptimization": 9,
+        "eligibleAfterOverlay": false,
+        "eligibleForSeedLane": true,
+        "eligibleForDayTradeSeedLane": false,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "PULLBACK",
+          "technicalScore": 28,
+          "patternConfidencePct": null,
+          "historicalSamples": 0,
+          "historicalWinRatePct": null,
+          "rewardRisk": 2.5,
+          "backtestStatus": "SPARSE",
+          "warnings": [
+            "SPARSE_SETUP_BACKTEST",
+            "PATTERN_CONFIDENCE_UNKNOWN",
+            "FUNDAMENTALS_UNKNOWN",
+            "LIQUIDITY_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "UNKNOWN",
+          "spreadPct": null,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 8.4,
+      "decisionRank": 9,
+      "congressionalIntelligence": {
+        "mode": "SHADOW_DIAGNOSTIC_ONLY",
+        "matched": false,
+        "signal": null,
+        "rankingContribution": 0,
+        "liveInfluenceAllowed": false,
+        "explanation": "No recent matched disclosure in the current public-source cache.",
+        "hardGatesRemainAuthoritative": true
+      },
+      "unifiedSourceEvidence": {
+        "ticker": "HONA",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_MARKET_AND_TECHNICAL",
+            "liveAuthority": "EXISTING_HARD_GATES"
+          },
+          {
+            "provider": "SEC_EDGAR",
+            "role": "FUNDAMENTALS_AND_FILINGS",
+            "available": false,
+            "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "sourceAgreementRule": "Corroboration raises data confidence only; duplicated facts never multiply the trading score.",
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
+        "mayNotCreateEligibility": true,
+        "existingHardStopAndRiskRemainAuthoritative": true,
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 20 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid",
+          "no prior Teststock buy fill for this ticker in the current New York trading day"
+        ],
+        "profitExit": {
+          "method": "INTRADAY_FAST_EXIT_OR_BRACKET_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when momentum fades or resistance is reached.",
+          "target1": 171.59,
+          "target2": 180.48
+        },
+        "lossExit": {
+          "method": "FAST_SUPPORTED_PROTECTED_EXIT",
+          "level": 149.37,
+          "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
+        },
+        "timeExit": {
+          "rule": "Every Teststock stock position opened on or after dayTraderModeEffectiveAt is a same-session trade and must be flat before the authoritative regular-session close.",
+          "softReviewAfterMinutes": 20,
+          "maximumHoldingMinutes": 120,
+          "forcedExitMinutesBeforeClose": 10,
+          "newEntryCutoffMinutesBeforeClose": 20,
+          "stalledTradeRule": "Exit a stalled or invalidated intraday setup quickly rather than waiting for a distant target; never convert a losing day trade into an overnight swing."
+        },
+        "rotation": {
+          "allowImmediateRotationAfterConfirmedExit": true,
+          "fixedDailyEntryCountLimit": null,
+          "fixedConcurrentPositionCountLimit": null,
+          "fixedPerExecutorRunEntryCountLimit": null,
+          "capacityMode": "DYNAMIC_RISK_CASH_AND_BROKER_LIMITED",
+          "cooldownAfterStopMinutes": 5,
+          "consecutiveStopLossPause": {
+            "count": 3,
+            "pauseMinutes": 20
+          },
+          "stopNewEntriesAfterStopLossExitsPerNyDay": null,
+          "existingDailyLossCapRemainsAuthoritative": true,
+          "brokerAccountRestrictionsRemainAuthoritative": true,
+          "portfolioHeatRemainsAuthoritative": true,
+          "correlationLimitsRemainAuthoritative": true,
+          "buyingPowerAndSettledFundsRemainAuthoritative": true,
+          "orderExecution": {
+            "entryPreference": "MARKETABLE_LIMIT_WHEN_SUPPORTED",
+            "exitPreference": "FASTEST_SUPPORTED_RISK_APPROPRIATE_ORDER",
+            "stalePassiveOrderSeconds": 45,
+            "allowCancelReplaceAfterBrokerReconciliation": true,
+            "neverBlindRetry": true
+          },
+          "sameSymbolReentryCooldownMinutes": null,
+          "maximumEntriesPerSymbolPerNyDay": 1,
+          "sameDayStockReentryAllowed": false,
+          "distinctStockRotationRequired": true,
+          "partialFillTopUpAsNewEntryAllowed": false
+        },
+        "risk": {
+          "accountRiskRule": "Existing Teststock cap remains authoritative; easier execution never increases risk.",
+          "bracketRequired": true,
+          "overnightRiskAllowed": false,
+          "noMargin": true,
+          "noAverageDown": true,
+          "noChasing": true,
+          "unprotectedPositionAllowed": false
+        }
+      },
+      "brokerEligibility": {
+        "broker": "ROBINHOOD_TRADING_MCP",
+        "assetClass": "STOCK",
+        "status": "CLAUDE_RUNTIME_VERIFICATION_REQUIRED",
+        "researchEligible": true,
+        "liveOrderAllowed": false,
+        "verificationMoment": "IMMEDIATELY_BEFORE_SUBMISSION",
+        "requirements": [
+          "exact symbol searchable and buyable in the authenticated Robinhood Agentic account",
+          "asset not restricted, halted, closing-only or unsupported",
+          "quantity and order type supported",
+          "non-margin buying power sufficient",
+          "current quote remains inside Teststock no-chase limits",
+          "no duplicate or conflicting open order exists",
+          "required protective exit path is supported"
+        ],
+        "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
+      }
+    },
+    {
+      "ticker": "CBRS",
+      "entryTier": "A",
+      "setupType": "TREND",
+      "growthQuality": 0,
+      "rewardRisk": 2.5,
+      "minimumEntry": 190.87,
+      "maximumEntry": 193.75,
+      "stop": 186.08,
+      "target1": 200.46,
+      "target2": 206.21,
+      "queueRank": 902,
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
+      "adaptiveSizeMultiplier": 0,
+      "profitabilityAdmission": {
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
+        "entryTier": "A",
+        "setupType": "TREND",
+        "runtimeRegime": "UNKNOWN",
+        "historical": {
+          "samples": 0,
+          "winRatePct": null,
+          "rewardRisk": 2.5
+        },
+        "historicalEvidenceIsDiagnosticOnly": true,
+        "regimeDisabled": false,
+        "contradictoryShadow": false,
+        "negativeRealProbation": false,
+        "shadow": {
+          "scope": "NEW_LISTING_COHORT",
+          "samples": 564,
+          "winRatePct": 55,
+          "averageR": null,
+          "realFillSamples": 0,
+          "shadowOnlySamples": 0
+        },
+        "real": {
+          "samples": 0,
+          "winRatePct": null,
+          "averageRealizedR": null
+        },
+        "thresholds": {},
+        "reason": "New-listing cross-sectional cohort evidence only; never treated as same-stock validated. Eligible only for the shared stock seed-lane cap."
+      },
+      "seedLane": {
+        "eligible": false
+      },
+      "dayTradeSeedLane": {
+        "eligible": true,
+        "maxOrderUsd": 20,
+        "requiredEntryTier": "A",
+        "requiresPerOrderApproval": false,
+        "maxConcurrentPositions": 3,
+        "maxNewPositionsPerUtcDay": 3,
+        "currentOpenDayTradeSeedPositions": 0,
+        "openedDayTradeSeedPositionsToday": 0,
+        "existingRobinhoodCashOnly": true,
+        "agentMayInitiateDeposits": false,
+        "agentMayInitiateBankTransfers": false,
+        "marginAllowed": false,
+        "requiresBrokerResidentStop": true,
+        "mustBeFlatBeforeMarketClose": true,
+        "entryCutoffMinutesBeforeClose": 30,
+        "forcedExitStartMinutesBeforeClose": 15,
+        "journalTag": "dayTradeSeedLane:true",
+        "rule": "User-authorized same-day stock seed lane. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 30 minutes to close, and requires repeated forced-exit dispatches from 15 minutes before close until Robinhood confirms the position is flat."
+      },
+      "newListingCohortEvidence": {
+        "setupType": "TREND",
+        "samples": 564,
+        "winRatePct": 55,
+        "avgForwardReturnPct": 5.21,
+        "cohortGeneratedAt": "2026-09-12T01:47:58.533Z"
+      },
+      "decisionIntelligence": {
+        "decisionScore": 8.4,
+        "rankBeforeOptimization": 10,
+        "eligibleAfterOverlay": false,
+        "eligibleForSeedLane": false,
+        "eligibleForDayTradeSeedLane": true,
+        "upstreamActionAllowed": false,
+        "setupDiagnostics": {
+          "setupType": "TREND",
+          "technicalScore": 28,
+          "patternConfidencePct": null,
+          "historicalSamples": 0,
+          "historicalWinRatePct": null,
+          "rewardRisk": 2.5,
+          "backtestStatus": "SPARSE",
+          "warnings": [
+            "SPARSE_SETUP_BACKTEST",
+            "PATTERN_CONFIDENCE_UNKNOWN",
+            "FUNDAMENTALS_UNKNOWN",
+            "LIQUIDITY_UNKNOWN"
+          ]
+        },
+        "screener": {
+          "fundamentals": "UNKNOWN",
+          "liquidity": "UNKNOWN",
+          "spreadPct": null,
+          "unknownIsNotAnOverride": true
+        },
+        "opportunityDecay": {
+          "scanAgeMinutes": 0,
+          "halfLifeMinutes": 15,
+          "entryProximity": 0,
+          "freshnessMultiplier": 1,
+          "combinedMultiplier": 0.6,
+          "expired": false
+        },
+        "portfolioOptimization": {
+          "maxCorrelationToHigherRanked": 0,
+          "penalty": 0,
+          "hardGateStillRequired": true
+        },
+        "admissionState": "SHADOW_ONLY",
+        "hardGatesRemainAuthoritative": true
+      },
+      "decisionScore": 8.4,
+      "decisionRank": 10,
+      "congressionalIntelligence": {
+        "mode": "SHADOW_DIAGNOSTIC_ONLY",
+        "matched": false,
+        "signal": null,
+        "rankingContribution": 0,
+        "liveInfluenceAllowed": false,
+        "explanation": "No recent matched disclosure in the current public-source cache.",
+        "hardGatesRemainAuthoritative": true
+      },
+      "unifiedSourceEvidence": {
+        "ticker": "CBRS",
+        "sources": [
+          {
+            "provider": "ALPACA",
+            "role": "PRIMARY_MARKET_AND_TECHNICAL",
+            "liveAuthority": "EXISTING_HARD_GATES"
+          },
+          {
+            "provider": "SEC_EDGAR",
+            "role": "FUNDAMENTALS_AND_FILINGS",
+            "available": false,
+            "liveAuthority": "EXISTING_FUNDAMENTAL_EVENT_GATES"
+          }
+        ],
+        "alternativeDataContribution": 0,
+        "sourceAgreementRule": "Corroboration raises data confidence only; duplicated facts never multiply the trading score.",
+        "hardGatesRemainAuthoritative": true
+      },
+      "timeHorizonPolicy": {
+        "classification": "DAY_TRADE",
+        "classificationIsAdvisory": false,
+        "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+        "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
+        "mayNotCreateEligibility": true,
+        "existingHardStopAndRiskRemainAuthoritative": true,
+        "holdingWindow": "MINUTES_TO_SAME_SESSION",
+        "entryEvidence": [
+          "authoritative regular NYSE session is open",
+          "at least 20 minutes remain before the actual New York close",
+          "fresh live liquidity and spread pass",
+          "current price is inside the encoded entry zone and does not chase",
+          "intraday VWAP/support/resistance and momentum context remain valid",
+          "no prior Teststock buy fill for this ticker in the current New York trading day"
+        ],
+        "profitExit": {
+          "method": "INTRADAY_FAST_EXIT_OR_BRACKET_WHEN_SUPPORTED",
+          "targetRule": "Use validated targets, but protect or take profit sooner when momentum fades or resistance is reached.",
+          "target1": 200.46,
+          "target2": 206.21
+        },
+        "lossExit": {
+          "method": "FAST_SUPPORTED_PROTECTED_EXIT",
+          "level": 186.08,
           "placementRule": "Never widen the encoded stop. Tightening is allowed only when it reduces risk and remains technically valid."
         },
         "timeExit": {
