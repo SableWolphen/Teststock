@@ -1,7 +1,7 @@
 {
   "schemaVersion": 6,
   "source": "TESTSTOCK_NON_LLM_TRIGGER_MONITOR",
-  "publishedAt": "2026-09-13T00:51:06.122Z",
+  "publishedAt": "2026-09-13T01:04:33.103Z",
   "monitorHealth": "OK",
   "monitorCadenceMinutes": 5,
   "priceSource": "ALPACA_MARKET_DATA",
@@ -12,7 +12,7 @@
   "marketSession": {
     "timeZone": "America/New_York",
     "dateKey": "2026-09-12",
-    "minuteOfDay": 1251,
+    "minuteOfDay": 1264,
     "calendarAvailable": false,
     "regularSession": false,
     "minutesToClose": null,
@@ -21,7 +21,7 @@
     "forcedExitDue": true
   },
   "displayPolicy": "Never present aged research as an active trading signal. During refresh, keep the latest candidate visible as display-only and block new buy triggers until a fresh generation arrives.",
-  "stockSessionRule": "Same-day stock entries require an authoritative regular session and at least 20 minutes to close. Day-trader stock positions enter forced-exit handling from 10 minutes before close and remain there until broker-confirmed flat.",
+  "stockSessionRule": "Same-day stock entries require an authoritative regular-session calendar and at least 30 minutes to close. Tagged same-day positions emit a forced exit from 15 minutes before close and after the session until confirmed flat.",
   "executionWakeBridge": {
     "status": "DISPATCH_PACKET_READY_FOR_AUTOMATIC_EXECUTOR",
     "note": "This monitor detects triggers without an LLM. The authorized Claude runner consumes the generated dispatch and is the sole Robinhood Trading MCP execution agent."
@@ -30,7 +30,7 @@
     "activePositions": 1,
     "armingRule": "After a confirmed same-day buy, persist dayTradeSeedLane=true with the saved protection levels. Keep it ACTIVE until Robinhood confirms flat so forced exits continue to fire."
   },
-  "executionNeeded": false,
+  "executionNeeded": true,
   "buyCompetition": {
     "eligibleNow": 0,
     "best": null,
@@ -40,9 +40,124 @@
       "B"
     ],
     "candidateSource": "stockPlan.stockCandidateQueue + stockPlan.stockOrders",
-    "rule": "Already-qualified A stocks rank before B; within tier, fresh cost-adjusted intraday edge and adjusted score break ties. Intraday intelligence may block/reorder/reduce size but never create eligibility or raise risk."
+    "rule": "A/ELITE live stock triggers go first. After A-tier candidates, B/BEST_ACCEPTABLE may be executed at no more than 25% encoded normal size while live capacity remains, including after an A fill. Failed candidates fall through to the next eligible candidate in the same run. Never force a trade when all hard guards fail."
   },
-  "events": [],
+  "events": [
+    {
+      "id": "ENTRY:STOCK:SPCX",
+      "assetClass": "STOCK",
+      "ticker": "SPCX",
+      "trigger": "SEED_LANE_BUY_TRIGGER",
+      "entryTier": "A",
+      "entryTierLabel": "ELITE",
+      "entryTierSizeMultiplier": 1,
+      "setupGrade": null,
+      "queueRank": 8,
+      "opportunityScore": 8.4,
+      "growthQuality": 0,
+      "rewardRisk": 2.5,
+      "profitabilityAdmission": "SHADOW_ONLY",
+      "qualificationSource": null,
+      "tournamentGeneratedAt": null,
+      "decisionIntelligenceEligible": false,
+      "seedLane": {
+        "eligible": true,
+        "maxOrderUsd": 20,
+        "requiredEntryTier": "A",
+        "requiresPerOrderApproval": false,
+        "maxConcurrentPositions": 2,
+        "maxNewPositionsPerUtcDay": 1,
+        "currentOpenSeedPositions": 0,
+        "openedSeedPositionsToday": 0,
+        "existingRobinhoodCashOnly": true,
+        "agentMayInitiateDeposits": false,
+        "agentMayInitiateBankTransfers": false,
+        "marginAllowed": false,
+        "requiresBrokerResidentStop": true,
+        "rotatesToNextCandidateAfterStop": true,
+        "rule": "User-authorized automatic stock learning lane. It may bypass only the forward profitability-admission wait at a fixed $20 ceiling. Every research, freshness, entry-zone, no-chase, decision-intelligence, buying-power, account-floor, portfolio, duplicate-order and protection gate remains mandatory. LIVE_SUSPENDED and contradictory shadow evidence never qualify."
+      },
+      "dayTradeSeedLane": {
+        "eligible": false
+      },
+      "marketSession": {
+        "timeZone": "America/New_York",
+        "dateKey": "2026-09-12",
+        "minuteOfDay": 1264,
+        "calendarAvailable": false,
+        "regularSession": false,
+        "minutesToClose": null,
+        "sessionEnded": true,
+        "entryAllowed": false,
+        "forcedExitDue": true
+      },
+      "minimumEntry": 150.39,
+      "maximumEntry": 152.66,
+      "stop": 144.94,
+      "target1": 160.45,
+      "target2": 166.66,
+      "observedPrice": 150.9,
+      "stateChangedAt": "2026-09-13T01:04:33.103Z",
+      "reason": "Automatic stock learning candidate is inside its buy zone. Capped at $20 using existing Robinhood cash only; every live guard and required protection still applies."
+    },
+    {
+      "id": "ENTRY:STOCK:HONA",
+      "assetClass": "STOCK",
+      "ticker": "HONA",
+      "trigger": "SEED_LANE_BUY_TRIGGER",
+      "entryTier": "A",
+      "entryTierLabel": "ELITE",
+      "entryTierSizeMultiplier": 1,
+      "setupGrade": null,
+      "queueRank": 9,
+      "opportunityScore": 8.4,
+      "growthQuality": 0,
+      "rewardRisk": 2.5,
+      "profitabilityAdmission": "SHADOW_ONLY",
+      "qualificationSource": null,
+      "tournamentGeneratedAt": null,
+      "decisionIntelligenceEligible": false,
+      "seedLane": {
+        "eligible": true,
+        "maxOrderUsd": 20,
+        "requiredEntryTier": "A",
+        "requiresPerOrderApproval": false,
+        "maxConcurrentPositions": 2,
+        "maxNewPositionsPerUtcDay": 1,
+        "currentOpenSeedPositions": 0,
+        "openedSeedPositionsToday": 0,
+        "existingRobinhoodCashOnly": true,
+        "agentMayInitiateDeposits": false,
+        "agentMayInitiateBankTransfers": false,
+        "marginAllowed": false,
+        "requiresBrokerResidentStop": true,
+        "rotatesToNextCandidateAfterStop": true,
+        "rule": "User-authorized automatic stock learning lane. It may bypass only the forward profitability-admission wait at a fixed $20 ceiling. Every research, freshness, entry-zone, no-chase, decision-intelligence, buying-power, account-floor, portfolio, duplicate-order and protection gate remains mandatory. LIVE_SUSPENDED and contradictory shadow evidence never qualify."
+      },
+      "dayTradeSeedLane": {
+        "eligible": false
+      },
+      "marketSession": {
+        "timeZone": "America/New_York",
+        "dateKey": "2026-09-12",
+        "minuteOfDay": 1264,
+        "calendarAvailable": false,
+        "regularSession": false,
+        "minutesToClose": null,
+        "sessionEnded": true,
+        "entryAllowed": false,
+        "forcedExitDue": true
+      },
+      "minimumEntry": 157.47,
+      "maximumEntry": 159.84,
+      "stop": 149.37,
+      "target1": 171.59,
+      "target2": 180.48,
+      "observedPrice": 158.26,
+      "stateChangedAt": "2026-09-13T01:04:33.103Z",
+      "reason": "Automatic stock learning candidate is inside its buy zone. Capped at $20 using existing Robinhood cash only; every live guard and required protection still applies."
+    }
+  ],
   "items": [
     {
       "id": "ENTRY:STOCK:COHR",
@@ -71,7 +186,7 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-12",
-        "minuteOfDay": 1251,
+        "minuteOfDay": 1264,
         "calendarAvailable": false,
         "regularSession": false,
         "minutesToClose": null,
@@ -84,15 +199,11 @@
       "stop": 282.98,
       "target1": 479.38,
       "target2": 565.8,
-      "signalGeneratedAt": "2026-09-13T00:51:04.870Z",
+      "signalGeneratedAt": "2026-09-13T01:04:31.865Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
       "observedPrice": 305.35,
-      "stateChangedAt": "2026-09-11T22:02:00.066Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-13T00:51:19.797Z"
-      }
+      "stateChangedAt": "2026-09-11T22:02:00.066Z"
     },
     {
       "id": "ENTRY:STOCK:BNS",
@@ -121,7 +232,7 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-12",
-        "minuteOfDay": 1251,
+        "minuteOfDay": 1264,
         "calendarAvailable": false,
         "regularSession": false,
         "minutesToClose": null,
@@ -134,15 +245,11 @@
       "stop": 90.88,
       "target1": 97.43,
       "target2": 100.31,
-      "signalGeneratedAt": "2026-09-13T00:51:04.870Z",
+      "signalGeneratedAt": "2026-09-13T01:04:31.865Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
       "observedPrice": 93.495,
-      "stateChangedAt": "2026-09-11T22:02:00.066Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-13T00:51:19.797Z"
-      }
+      "stateChangedAt": "2026-09-11T22:02:00.066Z"
     },
     {
       "id": "ENTRY:STOCK:ROIV",
@@ -171,7 +278,7 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-12",
-        "minuteOfDay": 1251,
+        "minuteOfDay": 1264,
         "calendarAvailable": false,
         "regularSession": false,
         "minutesToClose": null,
@@ -184,15 +291,11 @@
       "stop": 36.99,
       "target1": 50.54,
       "target2": 56.5,
-      "signalGeneratedAt": "2026-09-13T00:51:04.870Z",
+      "signalGeneratedAt": "2026-09-13T01:04:31.865Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
       "observedPrice": 40.82,
-      "stateChangedAt": "2026-09-11T22:02:00.066Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-13T00:51:19.797Z"
-      }
+      "stateChangedAt": "2026-09-11T22:02:00.066Z"
     },
     {
       "id": "ENTRY:STOCK:TD",
@@ -221,7 +324,7 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-12",
-        "minuteOfDay": 1251,
+        "minuteOfDay": 1264,
         "calendarAvailable": false,
         "regularSession": false,
         "minutesToClose": null,
@@ -234,15 +337,11 @@
       "stop": 118.29,
       "target1": 124.86,
       "target2": 127.76,
-      "signalGeneratedAt": "2026-09-13T00:51:04.870Z",
+      "signalGeneratedAt": "2026-09-13T01:04:31.865Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
       "observedPrice": 120.92,
-      "stateChangedAt": "2026-09-12T01:24:49.480Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-13T00:51:19.797Z"
-      }
+      "stateChangedAt": "2026-09-12T01:24:49.480Z"
     },
     {
       "id": "ENTRY:STOCK:ROG",
@@ -271,7 +370,7 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-12",
-        "minuteOfDay": 1251,
+        "minuteOfDay": 1264,
         "calendarAvailable": false,
         "regularSession": false,
         "minutesToClose": null,
@@ -284,15 +383,11 @@
       "stop": 129.5,
       "target1": 169.92,
       "target2": 187.71,
-      "signalGeneratedAt": "2026-09-13T00:51:04.870Z",
+      "signalGeneratedAt": "2026-09-13T01:04:31.865Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
       "observedPrice": 135.89,
-      "stateChangedAt": "2026-09-12T01:24:49.480Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-13T00:51:19.797Z"
-      }
+      "stateChangedAt": "2026-09-12T01:24:49.480Z"
     },
     {
       "id": "ENTRY:STOCK:KEYS",
@@ -321,7 +416,7 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-12",
-        "minuteOfDay": 1251,
+        "minuteOfDay": 1264,
         "calendarAvailable": false,
         "regularSession": false,
         "minutesToClose": null,
@@ -334,15 +429,11 @@
       "stop": 327.65,
       "target1": 422.38,
       "target2": 464.05,
-      "signalGeneratedAt": "2026-09-13T00:51:04.870Z",
+      "signalGeneratedAt": "2026-09-13T01:04:31.865Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
       "observedPrice": 338.99,
-      "stateChangedAt": "2026-09-11T22:02:00.066Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-13T00:51:19.797Z"
-      }
+      "stateChangedAt": "2026-09-11T22:02:00.066Z"
     },
     {
       "id": "ENTRY:STOCK:ARMK",
@@ -371,7 +462,7 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-12",
-        "minuteOfDay": 1251,
+        "minuteOfDay": 1264,
         "calendarAvailable": false,
         "regularSession": false,
         "minutesToClose": null,
@@ -384,15 +475,11 @@
       "stop": 57.24,
       "target1": 70.09,
       "target2": 75.74,
-      "signalGeneratedAt": "2026-09-13T00:51:04.870Z",
+      "signalGeneratedAt": "2026-09-13T01:04:31.865Z",
       "status": "BLOCKED_UPSTREAM",
       "reason": "Candidate action PROFITABILITY_ADMISSION_BLOCK is not eligible for monitoring.",
       "observedPrice": 58.59,
-      "stateChangedAt": "2026-09-11T22:02:00.066Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-13T00:51:19.797Z"
-      }
+      "stateChangedAt": "2026-09-11T22:02:00.066Z"
     },
     {
       "id": "ENTRY:STOCK:SPCX",
@@ -435,7 +522,7 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-12",
-        "minuteOfDay": 1251,
+        "minuteOfDay": 1264,
         "calendarAvailable": false,
         "regularSession": false,
         "minutesToClose": null,
@@ -448,15 +535,11 @@
       "stop": 144.94,
       "target1": 160.45,
       "target2": 166.66,
-      "signalGeneratedAt": "2026-09-13T00:51:04.870Z",
-      "status": "DAY_TRADE_MARKET_CLOSED",
-      "reason": "Day-trader mode permits new stock entries only during the authoritative regular NYSE session.",
+      "signalGeneratedAt": "2026-09-13T01:04:31.865Z",
+      "status": "SEED_LANE_BUY_TRIGGER",
+      "reason": "Automatic stock learning candidate is inside its buy zone. Capped at $20 using existing Robinhood cash only; every live guard and required protection still applies.",
       "observedPrice": 150.9,
-      "stateChangedAt": "2026-09-13T00:51:06.122Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-13T00:51:19.797Z"
-      }
+      "stateChangedAt": "2026-09-13T01:04:33.103Z"
     },
     {
       "id": "ENTRY:STOCK:HONA",
@@ -499,7 +582,7 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-12",
-        "minuteOfDay": 1251,
+        "minuteOfDay": 1264,
         "calendarAvailable": false,
         "regularSession": false,
         "minutesToClose": null,
@@ -512,15 +595,11 @@
       "stop": 149.37,
       "target1": 171.59,
       "target2": 180.48,
-      "signalGeneratedAt": "2026-09-13T00:51:04.870Z",
-      "status": "DAY_TRADE_MARKET_CLOSED",
-      "reason": "Day-trader mode permits new stock entries only during the authoritative regular NYSE session.",
+      "signalGeneratedAt": "2026-09-13T01:04:31.865Z",
+      "status": "SEED_LANE_BUY_TRIGGER",
+      "reason": "Automatic stock learning candidate is inside its buy zone. Capped at $20 using existing Robinhood cash only; every live guard and required protection still applies.",
       "observedPrice": 158.26,
-      "stateChangedAt": "2026-09-13T00:51:06.122Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-13T00:51:19.797Z"
-      }
+      "stateChangedAt": "2026-09-13T01:04:33.103Z"
     },
     {
       "id": "ENTRY:STOCK:CBRS",
@@ -558,15 +637,15 @@
         "marginAllowed": false,
         "requiresBrokerResidentStop": true,
         "mustBeFlatBeforeMarketClose": true,
-        "entryCutoffMinutesBeforeClose": 20,
-        "forcedExitStartMinutesBeforeClose": 10,
+        "entryCutoffMinutesBeforeClose": 30,
+        "forcedExitStartMinutesBeforeClose": 15,
         "journalTag": "dayTradeSeedLane:true",
         "rule": "User-authorized same-day stock seed lane. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 30 minutes to close, and requires repeated forced-exit dispatches from 15 minutes before close until Robinhood confirms the position is flat."
       },
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-12",
-        "minuteOfDay": 1251,
+        "minuteOfDay": 1264,
         "calendarAvailable": false,
         "regularSession": false,
         "minutesToClose": null,
@@ -579,15 +658,11 @@
       "stop": 186.08,
       "target1": 200.46,
       "target2": 206.21,
-      "signalGeneratedAt": "2026-09-13T00:51:04.870Z",
+      "signalGeneratedAt": "2026-09-13T01:04:31.865Z",
       "status": "DAY_TRADE_SESSION_UNVERIFIED",
       "reason": "Authoritative NYSE session data is unavailable; same-day entry fails closed.",
       "observedPrice": 191.83,
-      "stateChangedAt": "2026-09-13T00:27:38.120Z",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-13T00:51:19.797Z"
-      }
+      "stateChangedAt": "2026-09-13T00:27:38.120Z"
     },
     {
       "id": "POSITION:STOCK:EQX",
@@ -599,7 +674,7 @@
       "marketSession": {
         "timeZone": "America/New_York",
         "dateKey": "2026-09-12",
-        "minuteOfDay": 1251,
+        "minuteOfDay": 1264,
         "calendarAvailable": false,
         "regularSession": false,
         "minutesToClose": null,
@@ -631,57 +706,5 @@
     "TRIGGER_2_TARGET1": "Target 1 reached — execute validated first scale-out.",
     "TRIGGER_3_TARGET2": "Target 2 reached — execute validated exit/runner decision."
   },
-  "creditPolicy": "Alpaca/GitHub monitor prices. Claude should read the small dispatch packet first and avoid market/broker work when no action is needed.",
-  "dayTraderPolicy": {
-    "enabled": true,
-    "stocks": {
-      "regularSessionOnly": true,
-      "newEntryCutoffMinutesBeforeClose": 20,
-      "forcedExitMinutesBeforeClose": 10,
-      "overnightAllowed": false
-    },
-    "crypto": {
-      "intradayOnly": true,
-      "maximumHoldingHours": 3
-    },
-    "enforcedAt": "2026-09-13T00:51:19.769Z"
-  },
-  "intradayEngine": {
-    "schemaVersion": 2,
-    "generatedAt": "2026-09-13T00:51:19.797Z",
-    "status": "DEGRADED",
-    "errors": [
-      "stocks: b1.at is not a function"
-    ],
-    "benchmarks": {
-      "spy": null,
-      "qqq": null,
-      "btc": null
-    },
-    "features": [
-      "1m momentum",
-      "5m momentum",
-      "VWAP",
-      "relative volume",
-      "opening range breakout",
-      "momentum acceleration",
-      "SPY/QQQ relative strength",
-      "BTC context",
-      "market regime routing",
-      "event-risk suppression",
-      "setup-specific real-fill learning",
-      "execution-cost expectancy",
-      "adaptive sizing",
-      "profit protection"
-    ],
-    "profitGivebackPolicy": {
-      "enabled": true,
-      "source": "ROBINHOOD_CONFIRMED_REALIZED_AND_UNREALIZED_PNL_AT_EXECUTION_TIME",
-      "reduceRiskAfterGivebackPct": 35,
-      "stopNewRiskAfterGivebackPct": 50,
-      "onlyWhenDayPnlPositive": true,
-      "note": "Executor must calculate from fresh broker-confirmed state; repository snapshots never invent PnL."
-    },
-    "policy": "Intraday edge may block, reorder, or reduce size but may never create eligibility or increase maximum risk. Stale/unavailable data fails closed for new entries; exits remain prioritized."
-  }
+  "creditPolicy": "Alpaca/GitHub monitor prices. Claude should read the small dispatch packet first and avoid market/broker work when no action is needed."
 }
