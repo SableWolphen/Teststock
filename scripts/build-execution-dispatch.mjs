@@ -15,6 +15,12 @@ const STOCK_ENTRY_CUTOFF_MINUTES=20;
 const priority={TRIGGER_1_STOP:100,STOCK_DAY_TRADE_FORCED_EXIT:100,TRIGGER_3_TARGET2:80,TRIGGER_2_TARGET1:70,BUY_TRIGGER:50};
 const actionMap={TRIGGER_1_STOP:'VERIFY_POSITION_AND_SELL_STOP',STOCK_DAY_TRADE_FORCED_EXIT:'VERIFY_DAY_TRADE_POSITION_AND_EXIT_ALL_TESTSTOCK_QUANTITY',TRIGGER_3_TARGET2:'VERIFY_POSITION_AND_EXECUTE_TARGET2_OR_RUNNER',TRIGGER_2_TARGET1:'VERIFY_POSITION_AND_EXECUTE_TARGET1',BUY_TRIGGER:'VERIFY_LIVE_GUARDS_AND_EXECUTE_IF_STILL_ELIGIBLE'};
 const ageMs=value=>{const timestamp=Date.parse(value||'');return Number.isFinite(timestamp)?Math.max(0,now.getTime()-timestamp):Infinity;};
+const latestFreshnessAnchor=e=>{
+  const values=[e?.stateChangedAt,e?.intradayEdge?.generatedAt].map(v=>({v,t:Date.parse(v||'')})).filter(x=>Number.isFinite(x.t));
+  if(!values.length)return null;
+  values.sort((a,b)=>b.t-a.t);
+  return values[0].v;
+};
 const boardAgeMs=ageMs(board?.publishedAt);
 const boardHealthy=board?.monitorHealth==='OK'&&boardAgeMs<=MAX_BOARD_AGE_MS;
 const stockEntrySessionAllowed=e=>{
@@ -24,34 +30,45 @@ const stockEntrySessionAllowed=e=>{
 };
 
 // A published fingerprint is never proof of broker execution. Entry fingerprints stay
-// stable for the logical setup so duplicate prevention works. Exit fingerprints include
-// the board generation so an unresolved stop/forced-exit can wake the executor again on
-// the next fresh board; live Robinhood reconciliation must prove whether any quantity
-// remains before another exit order is submitted.
+// stable for the logical setup so duplicate prevention works. Freshness is anchored to
+// the newest trustworthy entry confirmation: either the setup state transition or the
+// freshly rebuilt intraday-edge overlay. This prevents an otherwise-valid setup from
+// becoming undispatchable solely because it first entered the zone >10 minutes ago while
+// current price/edge evidence is still being refreshed every cycle.
+// Exit fingerprints include the board generation so an unresolved stop/forced-exit can
+// wake the executor again on the next fresh board; live Robinhood reconciliation must
+// prove whether any quantity remains before another exit order is submitted.
 const candidates=(board?.events||[]).filter(e=>priority[e.trigger]&&!(e.trigger==='BUY_TRIGGER'&&e.assetClass!=='STOCK')).map(e=>{
   const exitRefreshKey=e.trigger==='BUY_TRIGGER'?'':`|${board?.publishedAt||nowIso}`;
   const fingerprint=`${e.id}|${e.trigger}|${e.stateChangedAt}${exitRefreshKey}`;
-  const triggerAgeMs=ageMs(e.stateChangedAt);
+  const freshnessAnchor=latestFreshnessAnchor(e);
+  const triggerAgeMs=ageMs(freshnessAnchor);
   const isFresh=e.trigger!=='BUY_TRIGGER'||triggerAgeMs<=MAX_ENTRY_AGE_MS;
   const sessionAllowed=stockEntrySessionAllowed(e);
-  return {...e,fingerprint,priority:priority[e.trigger],requestedAction:actionMap[e.trigger],triggerAgeMs,expiresAt:e.trigger==='BUY_TRIGGER'?new Date(Date.parse(e.stateChangedAt)+MAX_ENTRY_AGE_MS).toISOString():null,isFresh,sessionAllowed,isNew:true,isActionable:boardHealthy&&isFresh&&sessionAllowed};
+  return {...e,fingerprint,priority:priority[e.trigger],requestedAction:actionMap[e.trigger],triggerAgeMs,freshnessAnchor,expiresAt:e.trigger==='BUY_TRIGGER'&&freshnessAnchor?new Date(Date.parse(freshnessAnchor)+MAX_ENTRY_AGE_MS).toISOString():null,isFresh,sessionAllowed,isNew:true,isActionable:boardHealthy&&isFresh&&sessionAllowed};
 }).sort((a,b)=>b.priority-a.priority||Number(a.queueRank||999)-Number(b.queueRank||999)||String(a.ticker).localeCompare(String(b.ticker)));
 
 const hasExitEvent=candidates.some(x=>x.trigger!=='BUY_TRIGGER');
 const permittedCandidates=hasExitEvent?candidates.filter(x=>x.trigger!=='BUY_TRIGGER'):candidates;
 const actionableCandidates=permittedCandidates.filter(x=>x.isActionable);
 const selected=actionableCandidates[0]||null;
-const compact=x=>({fingerprint:x.fingerprint,isNew:true,isActionable:x.isActionable,priority:x.priority,assetClass:x.assetClass,ticker:x.ticker,trigger:x.trigger,entryTier:x.entryTier??null,entryTierLabel:x.entryTierLabel??null,entryTierSizeMultiplier:x.entryTierSizeMultiplier??null,queueRank:x.queueRank??null,queueRole:x.queueRole??null,profitabilityAdmission:x.profitabilityAdmission??null,decisionIntelligenceEligible:x.decisionIntelligenceEligible??null,requestedAction:x.requestedAction,observedPrice:x.observedPrice,triggerStateChangedAt:x.stateChangedAt,triggerAgeMs:x.triggerAgeMs,expiresAt:x.expiresAt,reason:x.reason,packet:`${x.ticker} | ${x.trigger} | observed ${x.observedPrice ?? 'UNKNOWN'} | ${x.requestedAction}`});
+const compact=x=>({fingerprint:x.fingerprint,isNew:true,isActionable:x.isActionable,priority:x.priority,assetClass:x.assetClass,ticker:x.ticker,trigger:x.trigger,entryTier:x.entryTier??null,entryTierLabel:x.entryTierLabel??null,entryTierSizeMultiplier:x.entryTierSizeMultiplier??null,queueRank:x.queueRank??null,queueRole:x.queueRole??null,profitabilityAdmission:x.profitabilityAdmission??null,decisionIntelligenceEligible:x.decisionIntelligenceEligible??null,requestedAction:x.requestedAction,observedPrice:x.observedPrice,triggerStateChangedAt:x.stateChangedAt,freshnessAnchor:x.freshnessAnchor??null,triggerAgeMs:x.triggerAgeMs,expiresAt:x.expiresAt,reason:x.reason,packet:`${x.ticker} | ${x.trigger} | observed ${x.observedPrice ?? 'UNKNOWN'} | ${x.requestedAction}`});
 const pendingAction=selected?compact(selected):null;
 const automaticStockCandidates=hasExitEvent?[]:actionableCandidates.filter(x=>x.trigger==='BUY_TRIGGER').map(compact);
 const fallbackActions=selected?.trigger==='BUY_TRIGGER'?automaticStockCandidates.slice(1):[];
 
-const seedEvents=(board?.events||[]).filter(e=>(e.trigger==='SEED_LANE_BUY_TRIGGER'&&e.assetClass==='STOCK')||(e.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'&&e.assetClass==='STOCK')||(e.trigger==='CRYPTO_SEED_LANE_BUY_TRIGGER'&&e.assetClass==='CRYPTO')).map(e=>{
+const seedEvents=(board?.events||[]).filter(e=>{
+  if(e.trigger==='SEED_LANE_BUY_TRIGGER'&&e.assetClass==='STOCK')return e.seedLane?.eligible===true;
+  if(e.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'&&e.assetClass==='STOCK')return e.dayTradeSeedLane?.eligible===true;
+  if(e.trigger==='CRYPTO_SEED_LANE_BUY_TRIGGER'&&e.assetClass==='CRYPTO')return e.seedLane?.eligible===true;
+  return false;
+}).map(e=>{
   const fingerprint=`${e.id}|${e.trigger}|${e.stateChangedAt}`;
-  const triggerAgeMs=ageMs(e.stateChangedAt);
+  const freshnessAnchor=latestFreshnessAnchor(e);
+  const triggerAgeMs=ageMs(freshnessAnchor);
   const isFresh=triggerAgeMs<=MAX_ENTRY_AGE_MS;
   const stockSeedSessionAllowed=e.assetClass!=='STOCK'||stockEntrySessionAllowed({...e,trigger:'BUY_TRIGGER'});
-  return {...e,fingerprint,triggerAgeMs,isFresh,sessionAllowed:stockSeedSessionAllowed,isNew:true,isActionable:boardHealthy&&isFresh&&stockSeedSessionAllowed};
+  return {...e,fingerprint,triggerAgeMs,freshnessAnchor,isFresh,sessionAllowed:stockSeedSessionAllowed,isNew:true,isActionable:boardHealthy&&isFresh&&stockSeedSessionAllowed};
 });
 const compactSeed=e=>{const lane=e.dayTradeSeedLane?.eligible===true?e.dayTradeSeedLane:e.seedLane;return ({
   fingerprint:e.fingerprint,assetClass:e.assetClass,ticker:e.ticker,trigger:e.trigger,
@@ -66,7 +83,7 @@ const compactSeed=e=>{const lane=e.dayTradeSeedLane?.eligible===true?e.dayTradeS
   existingRobinhoodCashOnly:true,agentMayInitiateDeposits:false,agentMayInitiateBankTransfers:false,marginAllowed:false,
   requiresBrokerResidentStop:lane?.requiresBrokerResidentStop===true,
   requestedAction:'VERIFY_LIVE_GUARDS_CONCURRENCY_AND_EXECUTE_SEED_IF_STILL_ELIGIBLE',
-  observedPrice:e.observedPrice,triggerStateChangedAt:e.stateChangedAt,
+  observedPrice:e.observedPrice,triggerStateChangedAt:e.stateChangedAt,freshnessAnchor:e.freshnessAnchor??null,triggerAgeMs:e.triggerAgeMs,
   minimumEntry:e.minimumEntry,maximumEntry:e.maximumEntry,stop:e.stop,target1:e.target1,target2:e.target2,
   profitabilityAdmission:e.profitabilityAdmission??null,
   reason:e.reason,
@@ -82,7 +99,7 @@ const out={
   dispatchFingerprints:[...actionableCandidates.map(x=>x.fingerprint),...seedLaneCandidates.map(x=>x.fingerprint)],priorityOrder:['TRIGGER_1_STOP','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_3_TARGET2','TRIGGER_2_TARGET1','BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER','CRYPTO_SEED_LANE_BUY_TRIGGER'],
   pendingAction,automaticStockCandidates,approvalCandidates:[],approvalBatchId:null,fallbackActions,seedLaneCandidates,
   multiStockPolicy:{enabled:true,maximumAutomaticCandidatesPerDispatch:null,capacityMode:'DYNAMIC_RISK_CASH_AND_BROKER_LIMITED',automaticQualifiedEntries:true,userApprovalRequired:false,oneWinnerDoesNotBlockOtherQualifiedStocks:true,rule:'Expose every already-qualified current-generation stock candidate in rank order. Claude may execute as many as remain independently qualified after immediate broker rechecks and dynamic cash, portfolio-heat, correlation, account-floor and aggregate-stop-risk limits. Never force a trade.'},
-  queuedActions:permittedCandidates.filter(x=>!x.isActionable).map(x=>({ticker:x.ticker,trigger:x.trigger,fingerprint:x.fingerprint,isFresh:x.isFresh,sessionAllowed:x.sessionAllowed??true})),
+  queuedActions:permittedCandidates.filter(x=>!x.isActionable).map(x=>({ticker:x.ticker,trigger:x.trigger,fingerprint:x.fingerprint,isFresh:x.isFresh,sessionAllowed:x.sessionAllowed??true,freshnessAnchor:x.freshnessAnchor??null})),
   noActionInstruction:'If claudeShouldRun is false, stop immediately. Do not call Robinhood, research markets, or produce a long report.',
   actionInstruction:'For every current trigger, reconcile Robinhood positions, open orders and recent order history before submission. Exit events always take priority and block every new buy for the run. Stock entries require authoritative regular-session status and at least 20 minutes to close both here and again at the broker-time recheck. For BUY_TRIGGER dispatches, process automaticStockCandidates in rank order without requesting user approval. Recheck each candidate independently immediately before submission; after every confirmed fill recompute cash, account floor, deployed capital, planned stop risk, correlation, portfolio heat, protection capability and broker/account restrictions. Skip any candidate that no longer qualifies. Seed-lane candidates remain automatic only within their encoded caps and protection requirements. A previously published fingerprint is not proof of execution. Reconcile ambiguous or partial results by original/client order ID and never blindly retry an uncertain submission.',
   consumerContract:{invokeOnlyWhen:'claudeShouldRun === true',atomicClaimKey:'candidate.fingerprint',maximumNewBuysPerDispatch:null,capacityMode:'DYNAMIC_RISK_CASH_AND_BROKER_LIMITED',approvalMode:'NONE_AUTOMATIC',userApprovalRequired:false,automaticQualifiedStocks:true,multipleConcurrentStocksAllowed:true,fallbackRule:'Process all already-qualified stock candidates in order. Failed candidates fall through. Confirmed fills dynamically reduce remaining capacity before the next candidate.',duplicateRule:'Before every order, reconcile current Robinhood positions, open orders and recent order history. One logical trigger may create at most one live broker entry; ambiguous submissions must be reconciled before any replacement.',retryRule:'After an ambiguous response, reconcile by original/client order ID and broker state. Never create a replacement order until the original is conclusively cancelled or rejected.',creditRule:'Use one Claude run for the ordered candidate sequence where practical. The runner usage gate limits repeated invocations; broker reconciliation prevents duplicate orders when a still-current trigger is redispatched.'},
