@@ -1,13 +1,17 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-14T13:21:28.288Z",
-  "status": "DEGRADED",
-  "errors": [
-    "stocks: b1.at is not a function"
-  ],
+  "generatedAt": "2026-09-14T13:57:14.176Z",
+  "status": "OK",
+  "errors": [],
   "benchmarks": {
-    "spy": null,
-    "qqq": null,
+    "spy": {
+      "score": 65,
+      "momentum5mPct": -0.0184166907837624
+    },
+    "qqq": {
+      "score": 57,
+      "momentum5mPct": -0.011333531670143504
+    },
     "btc": null
   },
   "profitGivebackPolicy": {
@@ -23,29 +27,32 @@
       "id": "ENTRY:STOCK:SPCX",
       "ticker": "SPCX",
       "assetClass": "STOCK",
-      "status": "WAIT_ENTRY",
+      "status": "WAIT_INTRADAY_CONFIRMATION",
       "intradayEdge": {
         "status": "FRESH",
-        "generatedAt": "2026-09-14T13:21:28.288Z",
-        "setup": "VWAP_MOMENTUM_CONTINUATION",
-        "price": 147.57,
-        "vwap": 147.26887994918485,
+        "generatedAt": "2026-09-14T13:57:14.176Z",
+        "setup": "VWAP_TREND",
+        "price": 148.25,
+        "vwap": 148.12967438601535,
         "aboveVwap": true,
-        "relVol": 0.7935279634189237,
-        "momentum1mPct": 0.0338937093275371,
-        "momentum5mPct": 0.0338937093275371,
-        "momentumAcceleration": true,
-        "openingRange": null,
+        "relVol": 0.4283498632708869,
+        "momentum1mPct": -0.020231993525765546,
+        "momentum5mPct": 0.07763188983023195,
+        "momentumAcceleration": false,
+        "openingRange": {
+          "high": 149.31,
+          "low": 146.71
+        },
         "orbBreakout": false,
         "orbFailure": false,
-        "rangeHigh": 147.57,
-        "rangeLow": 147.12,
-        "score": 73,
-        "regime": "MOMENTUM_TREND",
-        "adjustedScore": 73,
-        "marketRegime": "UNKNOWN",
-        "relativeStrengthPct": null,
-        "benchmark5mMomentumPct": null,
+        "rangeHigh": 149.31,
+        "rangeLow": 146.71,
+        "score": 55,
+        "regime": "MIXED",
+        "adjustedScore": 56,
+        "marketRegime": "RISK_ON_TREND",
+        "relativeStrengthPct": 0.096,
+        "benchmark5mMomentumPct": -0.0184166907837624,
         "eventRisk": {
           "raw": "UNKNOWN",
           "high": false
@@ -66,7 +73,81 @@
             "averageProtectionLatencySeconds": null
           }
         },
-        "costAdjustedEdge": 1.825,
+        "costAdjustedEdge": 1.4,
+        "executionCostNote": "Robinhood live spread/slippage check is mandatory immediately before order; expected edge must remain positive after current spread.",
+        "profitProtection": {
+          "armAfterR": 0.6,
+          "moveStopTowardBreakevenAfterR": 0.8,
+          "trailAfterR": 1.1,
+          "neverWidenStop": true,
+          "protectWinnerBeforeGiveback": true
+        },
+        "adaptiveSizing": {
+          "mode": "EDGE_AND_REAL_FILL_WEIGHTED_WITHIN_EXISTING_RISK_CAP",
+          "multiplier": 0.6,
+          "mayNotIncreaseExistingRiskCap": true
+        },
+        "regimeRouting": {
+          "preferred": [
+            "OPENING_RANGE_BREAKOUT",
+            "VWAP_MOMENTUM_CONTINUATION",
+            "VWAP_TREND"
+          ],
+          "cashAllowed": true
+        }
+      }
+    },
+    {
+      "id": "ENTRY:STOCK:HONA",
+      "ticker": "HONA",
+      "assetClass": "STOCK",
+      "status": "SEED_LANE_BUY_TRIGGER",
+      "intradayEdge": {
+        "status": "FRESH",
+        "generatedAt": "2026-09-14T13:57:14.176Z",
+        "setup": "MIXED_INTRADAY",
+        "price": 160.4,
+        "vwap": 159.90166570887342,
+        "aboveVwap": true,
+        "relVol": 1.2038544608738995,
+        "momentum1mPct": -0.09965122072744803,
+        "momentum5mPct": -0.1369692441788084,
+        "momentumAcceleration": false,
+        "openingRange": {
+          "high": 161.64,
+          "low": 155.5
+        },
+        "orbBreakout": false,
+        "orbFailure": false,
+        "rangeHigh": 161.64,
+        "rangeLow": 155.5,
+        "score": 63,
+        "regime": "MIXED",
+        "adjustedScore": 62,
+        "marketRegime": "RISK_ON_TREND",
+        "relativeStrengthPct": -0.1186,
+        "benchmark5mMomentumPct": -0.0184166907837624,
+        "eventRisk": {
+          "raw": "UNKNOWN",
+          "high": false
+        },
+        "realFillLearning": {
+          "state": "INSUFFICIENT_DATA",
+          "bucket": null,
+          "executionQuality": {
+            "confirmedEntrySlippageSamples": 0,
+            "averageAdverseEntrySlippagePct": null,
+            "confirmedExitSlippageSamples": 0,
+            "averageAdverseExitSlippagePct": null,
+            "fillTimeSamples": 0,
+            "averageTimeToFillSeconds": null,
+            "protectionVerificationSamples": 0,
+            "protectiveExitVerificationRatePct": null,
+            "protectionLatencySamples": 0,
+            "averageProtectionLatencySeconds": null
+          }
+        },
+        "costAdjustedEdge": 1.55,
         "executionCostNote": "Robinhood live spread/slippage check is mandatory immediately before order; expected edge must remain positive after current spread.",
         "profitProtection": {
           "armAfterR": 0.6,
@@ -82,31 +163,12 @@
         },
         "regimeRouting": {
           "preferred": [
-            "VWAP_TREND",
-            "MIXED_INTRADAY"
+            "OPENING_RANGE_BREAKOUT",
+            "VWAP_MOMENTUM_CONTINUATION",
+            "VWAP_TREND"
           ],
           "cashAllowed": true
         }
-      }
-    },
-    {
-      "id": "ENTRY:STOCK:HONA",
-      "ticker": "HONA",
-      "assetClass": "STOCK",
-      "status": "DAY_TRADE_MARKET_CLOSED",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-14T13:21:28.288Z"
-      }
-    },
-    {
-      "id": "ENTRY:STOCK:CBRS",
-      "ticker": "CBRS",
-      "assetClass": "STOCK",
-      "status": "DAY_TRADE_MARKET_CLOSED",
-      "intradayEdge": {
-        "status": "UNAVAILABLE_FAIL_CLOSED",
-        "generatedAt": "2026-09-14T13:21:28.288Z"
       }
     }
   ]
