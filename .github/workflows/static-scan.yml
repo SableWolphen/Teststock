@@ -263,7 +263,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Keep this publish internally consistent all the way through the final intraday
+          # edge and execution packet, same as fast-opportunity-refresh.yml/trigger-monitor.yml
+          # (2026-09-15 fix): this step previously stopped after update-trigger-board.mjs, so any
+          # candidate this scan surfaced (e.g. a fresh BUY_TRIGGER) was published with NO intraday
+          # edge at all -- silently skipping the exact fail-closed check
+          # validate-intraday-edge-overlay.mjs exists to enforce (actionable status requires
+          # intradayEdge.status==='FRESH') and leaving those candidates stuck until whichever
+          # workflow next ran the overlay caught up, sometimes several minutes later. A fresh
+          # signal must never be published beside a stale/missing intraday-edge snapshot.
           node scripts/update-trigger-board.mjs
+          node scripts/normalize-trigger-board-policy.mjs
+          node scripts/enforce-day-trader-trigger-policy.mjs
+          node scripts/apply-intraday-edge-overlay.mjs
+          node scripts/rebuild-intraday-trigger-state.mjs
+          node scripts/validate-intraday-edge-overlay.mjs
           node scripts/validate-trigger-board.mjs
           node scripts/build-execution-dispatch.mjs
           node scripts/validate-execution-dispatch.mjs
