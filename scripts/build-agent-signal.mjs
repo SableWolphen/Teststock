@@ -96,7 +96,7 @@ const signal={
     exactBoundaryExamples:{equity80:'DEFENSE',equity100:'PROVE',equity125:'SCALE',equity150:'GROWTH'},
     tiers:[
       {minEquity:0,maxEquityExclusive:80,label:'RECOVERY',stockAllocationMultiplier:.35,maxOptionRiskPct:0,maxPlannedStopRiskPct:1,maxDeployedPct:45,newOptionsAllowed:false},
-      {minEquity:80,maxEquityExclusive:100,label:'DEFENSE',stockAllocationMultiplier:.5,maxOptionRiskPct:0,maxPlannedStopRiskPct:1.5,maxDeployedPct:55,newOptionsAllowed:false},
+      {minEquity:80,maxEquityExclusive:100,label:'DEFENSE',stockAllocationMultiplier:.5,maxOptionRiskPct:0,maxPlannedStopRiskPct:1.5,maxDeployedPct:60,newOptionsAllowed:false},
       {minEquity:100,maxEquityExclusive:125,label:'PROVE',stockAllocationMultiplier:.7,maxOptionRiskPct:5,maxPlannedStopRiskPct:2,maxDeployedPct:70,newOptionsAllowed:true},
       {minEquity:125,maxEquityExclusive:150,label:'SCALE',stockAllocationMultiplier:.85,maxOptionRiskPct:6,maxPlannedStopRiskPct:2.25,maxDeployedPct:75,newOptionsAllowed:true},
       {minEquity:150,maxEquityExclusive:null,label:'GROWTH',stockAllocationMultiplier:1,maxOptionRiskPct:8,maxPlannedStopRiskPct:2.5,maxDeployedPct:80,newOptionsAllowed:true}
