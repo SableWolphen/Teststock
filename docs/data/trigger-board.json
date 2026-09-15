@@ -1,14 +1,14 @@
 {
   "schemaVersion": 6,
   "source": "TESTSTOCK_NON_LLM_TRIGGER_MONITOR",
-  "publishedAt": "2026-09-15T14:56:33.729Z",
+  "publishedAt": "2026-09-15T14:56:47.886Z",
   "monitorHealth": "OK",
   "monitorCadenceMinutes": 5,
   "priceSource": "ALPACA_MARKET_DATA",
   "claudeMarketPollingRequired": false,
   "siteAvailability": "24_7_PUBLIC_DASHBOARD",
   "researchState": "ACTIVE",
-  "researchAgeMinutes": 0,
+  "researchAgeMinutes": 0.3,
   "marketSession": {
     "timeZone": "America/New_York",
     "dateKey": "2026-09-15",
@@ -23,7 +23,7 @@
     "forcedExitDue": false
   },
   "displayPolicy": "Never present aged research as an active trading signal. During refresh, keep the latest candidate visible as display-only and block new buy triggers until a fresh generation arrives.",
-  "stockSessionRule": "Same-day stock entries require an authoritative regular-session calendar and at least 30 minutes to close. Tagged same-day positions emit a forced exit from 15 minutes before close and after the session until confirmed flat.",
+  "stockSessionRule": "Same-day stock entries require an authoritative regular session and at least 20 minutes to close. Day-trader stock positions enter forced-exit handling from 10 minutes before close and remain there until broker-confirmed flat.",
   "executionWakeBridge": {
     "status": "DISPATCH_PACKET_READY_FOR_AUTOMATIC_EXECUTOR",
     "note": "This monitor detects triggers without an LLM. The authorized Claude runner consumes the generated dispatch and is the sole Robinhood Trading MCP execution agent."
@@ -32,7 +32,7 @@
     "activePositions": 1,
     "armingRule": "After a confirmed same-day buy, persist dayTradeSeedLane=true with the saved protection levels. Keep it ACTIVE until Robinhood confirms flat so forced exits continue to fire."
   },
-  "executionNeeded": true,
+  "executionNeeded": false,
   "buyCompetition": {
     "eligibleNow": 0,
     "best": null,
@@ -42,69 +42,9 @@
       "B"
     ],
     "candidateSource": "stockPlan.stockCandidateQueue + stockPlan.stockOrders",
-    "rule": "A/ELITE live stock triggers go first. After A-tier candidates, B/BEST_ACCEPTABLE may be executed at no more than 25% encoded normal size while live capacity remains, including after an A fill. Failed candidates fall through to the next eligible candidate in the same run. Never force a trade when all hard guards fail."
+    "rule": "Already-qualified A stocks rank before B; within tier, fresh cost-adjusted intraday edge and adjusted score break ties. Intraday intelligence may block/reorder/reduce size but never create eligibility or raise risk."
   },
-  "events": [
-    {
-      "id": "ENTRY:STOCK:HONA",
-      "assetClass": "STOCK",
-      "ticker": "HONA",
-      "trigger": "SEED_LANE_BUY_TRIGGER",
-      "entryTier": "A",
-      "entryTierLabel": "ELITE",
-      "entryTierSizeMultiplier": 1,
-      "setupGrade": null,
-      "queueRank": 1,
-      "opportunityScore": 8.4,
-      "growthQuality": 0,
-      "rewardRisk": 2.5,
-      "profitabilityAdmission": "SHADOW_ONLY",
-      "qualificationSource": null,
-      "tournamentGeneratedAt": null,
-      "decisionIntelligenceEligible": false,
-      "seedLane": {
-        "eligible": true,
-        "maxOrderUsd": 20,
-        "requiredEntryTier": "A",
-        "requiresPerOrderApproval": false,
-        "maxConcurrentPositions": 2,
-        "maxNewPositionsPerUtcDay": 1,
-        "currentOpenSeedPositions": 0,
-        "openedSeedPositionsToday": 0,
-        "existingRobinhoodCashOnly": true,
-        "agentMayInitiateDeposits": false,
-        "agentMayInitiateBankTransfers": false,
-        "marginAllowed": false,
-        "requiresBrokerResidentStop": true,
-        "rotatesToNextCandidateAfterStop": true,
-        "rule": "User-authorized automatic stock learning lane. It may bypass only the forward profitability-admission wait at a fixed $20 ceiling. Every research, freshness, entry-zone, no-chase, decision-intelligence, buying-power, account-floor, portfolio, duplicate-order and protection gate remains mandatory. LIVE_SUSPENDED and contradictory shadow evidence never qualify."
-      },
-      "dayTradeSeedLane": {
-        "eligible": false
-      },
-      "marketSession": {
-        "timeZone": "America/New_York",
-        "dateKey": "2026-09-15",
-        "minuteOfDay": 656,
-        "calendarAvailable": true,
-        "openMinute": 570,
-        "closeMinute": 960,
-        "regularSession": true,
-        "minutesToClose": 304,
-        "sessionEnded": false,
-        "entryAllowed": true,
-        "forcedExitDue": false
-      },
-      "minimumEntry": 159.01,
-      "maximumEntry": 161.41,
-      "stop": 149.37,
-      "target1": 175.47,
-      "target2": 185.91,
-      "observedPrice": 159.84,
-      "stateChangedAt": "2026-09-15T14:56:33.729Z",
-      "reason": "Automatic stock learning candidate is inside its buy zone. Capped at $20 using existing Robinhood cash only; every live guard and required protection still applies."
-    }
-  ],
+  "events": [],
   "items": [
     {
       "id": "ENTRY:STOCK:HONA",
@@ -163,10 +103,79 @@
       "target1": 175.47,
       "target2": 185.91,
       "signalGeneratedAt": "2026-09-15T14:56:32.159Z",
-      "status": "SEED_LANE_BUY_TRIGGER",
-      "reason": "Automatic stock learning candidate is inside its buy zone. Capped at $20 using existing Robinhood cash only; every live guard and required protection still applies.",
+      "status": "BLOCKED_INTRADAY_EDGE",
+      "reason": "Intraday edge blocked: score 17/100, setup MIXED_INTRADAY, regime RISK_OFF_WEAK.",
       "observedPrice": 159.84,
-      "stateChangedAt": "2026-09-15T14:56:33.729Z"
+      "stateChangedAt": "2026-09-15T14:56:33.729Z",
+      "dayTraderMode": true,
+      "overnightAllowed": false,
+      "intradayEdge": {
+        "status": "FRESH",
+        "generatedAt": "2026-09-15T14:56:48.221Z",
+        "setup": "MIXED_INTRADAY",
+        "price": 159.84,
+        "vwap": 161.73561963942504,
+        "aboveVwap": false,
+        "relVol": 0.34030626196335795,
+        "momentum1mPct": 0.018772292096858045,
+        "momentum5mPct": 0.018772292096858045,
+        "momentumAcceleration": true,
+        "openingRange": {
+          "high": 164.37,
+          "low": 162
+        },
+        "orbBreakout": false,
+        "orbFailure": true,
+        "rangeHigh": 163.43,
+        "rangeLow": 159.57,
+        "score": 25,
+        "regime": "WEAK_OR_REVERSING",
+        "adjustedScore": 17,
+        "marketRegime": "RISK_OFF_WEAK",
+        "relativeStrengthPct": 0.0287,
+        "benchmark5mMomentumPct": -0.009913815893825006,
+        "eventRisk": {
+          "raw": "UNKNOWN",
+          "high": false
+        },
+        "realFillLearning": {
+          "state": "INSUFFICIENT_DATA",
+          "bucket": null,
+          "executionQuality": {
+            "confirmedEntrySlippageSamples": 0,
+            "averageAdverseEntrySlippagePct": null,
+            "confirmedExitSlippageSamples": 0,
+            "averageAdverseExitSlippagePct": null,
+            "fillTimeSamples": 0,
+            "averageTimeToFillSeconds": null,
+            "protectionVerificationSamples": 0,
+            "protectiveExitVerificationRatePct": null,
+            "protectionLatencySamples": 0,
+            "averageProtectionLatencySeconds": null
+          }
+        },
+        "costAdjustedEdge": 0.425,
+        "executionCostNote": "Robinhood live spread/slippage check is mandatory immediately before order; expected edge must remain positive after current spread.",
+        "profitProtection": {
+          "armAfterR": 0.6,
+          "moveStopTowardBreakevenAfterR": 0.8,
+          "trailAfterR": 1.1,
+          "neverWidenStop": true,
+          "protectWinnerBeforeGiveback": true
+        },
+        "adaptiveSizing": {
+          "mode": "EDGE_AND_REAL_FILL_WEIGHTED_WITHIN_EXISTING_RISK_CAP",
+          "multiplier": 0.25,
+          "mayNotIncreaseExistingRiskCap": true
+        },
+        "regimeRouting": {
+          "preferred": [
+            "VWAP_TREND",
+            "MIXED_INTRADAY"
+          ],
+          "cashAllowed": true
+        }
+      }
     },
     {
       "id": "POSITION:STOCK:EQX",
@@ -197,7 +206,7 @@
       "armedAt": "2026-08-21T19:45:56.512Z",
       "status": "HOLD",
       "reason": "No saved sell trigger reached.",
-      "observedPrice": 11.635,
+      "observedPrice": 11.63,
       "stateChangedAt": "2026-09-12T23:20:21.204Z"
     }
   ],
@@ -212,5 +221,61 @@
     "TRIGGER_2_TARGET1": "Target 1 reached — execute validated first scale-out.",
     "TRIGGER_3_TARGET2": "Target 2 reached — execute validated exit/runner decision."
   },
-  "creditPolicy": "Alpaca/GitHub monitor prices. Claude should read the small dispatch packet first and avoid market/broker work when no action is needed."
+  "creditPolicy": "Alpaca/GitHub monitor prices. Claude should read the small dispatch packet first and avoid market/broker work when no action is needed.",
+  "dayTraderPolicy": {
+    "enabled": true,
+    "stocks": {
+      "regularSessionOnly": true,
+      "newEntryCutoffMinutesBeforeClose": 20,
+      "forcedExitMinutesBeforeClose": 10,
+      "overnightAllowed": false
+    },
+    "crypto": {
+      "intradayOnly": true,
+      "maximumHoldingHours": 3
+    },
+    "enforcedAt": "2026-09-15T14:56:48.181Z"
+  },
+  "intradayEngine": {
+    "schemaVersion": 2,
+    "generatedAt": "2026-09-15T14:56:48.221Z",
+    "status": "OK",
+    "errors": [],
+    "benchmarks": {
+      "spy": {
+        "score": 26,
+        "momentum5mPct": -0.009913815893825006
+      },
+      "qqq": {
+        "score": 27,
+        "momentum5mPct": 0
+      },
+      "btc": null
+    },
+    "features": [
+      "1m momentum",
+      "5m momentum",
+      "VWAP",
+      "relative volume",
+      "opening range breakout",
+      "momentum acceleration",
+      "SPY/QQQ relative strength",
+      "BTC context",
+      "market regime routing",
+      "event-risk suppression",
+      "setup-specific real-fill learning",
+      "execution-cost expectancy",
+      "adaptive sizing",
+      "profit protection"
+    ],
+    "profitGivebackPolicy": {
+      "enabled": true,
+      "source": "ROBINHOOD_CONFIRMED_REALIZED_AND_UNREALIZED_PNL_AT_EXECUTION_TIME",
+      "reduceRiskAfterGivebackPct": 35,
+      "stopNewRiskAfterGivebackPct": 50,
+      "onlyWhenDayPnlPositive": true,
+      "note": "Executor must calculate from fresh broker-confirmed state; repository snapshots never invent PnL."
+    },
+    "policy": "Intraday edge may block, reorder, or reduce size but may never create eligibility or increase maximum risk. Stale/unavailable data fails closed for new entries; exits remain prioritized."
+  }
 }
