@@ -17,7 +17,7 @@ async function getJson(url){let last;for(let i=0;i<3;i++){try{const r=await fetc
 const num=x=>Number(x), finite=x=>Number.isFinite(num(x));
 const pct=(a,b)=>b?((a/b)-1)*100:0;
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-function barsOf(raw,symbol){return raw?.bars?.[symbol]||raw?.bars||[];}
+function barsOf(raw,symbol){const b=raw?.bars?.[symbol];return Array.isArray(b)?b:[];}
 function vwap(bars){let pv=0,v=0;for(const b of bars){const vol=num(b.v)||0,typ=(num(b.h)+num(b.l)+num(b.c))/3;if(vol>0&&finite(typ)){pv+=typ*vol;v+=vol;}}return v?pv/v:null;}
 function average(a){const x=a.filter(finite).map(num);return x.length?x.reduce((s,v)=>s+v,0)/x.length:null;}
 function features(b1,b5,assetClass){
