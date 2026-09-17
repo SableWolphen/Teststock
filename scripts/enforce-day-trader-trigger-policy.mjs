@@ -1,21 +1,12 @@
 import fs from 'node:fs/promises';
-import {newYorkClock} from './nyse-session.mjs';
 
 const path='docs/data/trigger-board.json';
 const board=JSON.parse(await fs.readFile(path,'utf8'));
-const now=new Date();
-const nyNow=newYorkClock(now);
 const STOCK_ENTRY_CUTOFF_MINUTES=20;
 const STOCK_FORCED_EXIT_MINUTES=10;
 const CRYPTO_MAX_HOLD_HOURS=3;
 const actionable=new Set(['BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER','CRYPTO_SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_1_STOP','TRIGGER_2_TARGET1','TRIGGER_3_TARGET2']);
 const entryTriggers=new Set(['BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER']);
-
-function nyDateKey(value){
-  const d=new Date(value||0);
-  if(!Number.isFinite(d.getTime()))return null;
-  return newYorkClock(d).dateKey;
-}
 
 let blockedLateEntries=0,forcedExits=0;
 const items=(board.items||[]).map(item=>{
@@ -34,10 +25,9 @@ const items=(board.items||[]).map(item=>{
 
   if(item.assetClass==='STOCK'&&item.kind==='POSITION'){
     const s=item.marketSession||board.marketSession||{};
-    const openedToday=nyDateKey(item.armedAt)===nyNow.dateKey;
     const explicitlyDayTrade=item.dayTradeSeedLane===true||item.dayTraderMode===true||item.timeHorizonPolicy?.classification==='DAY_TRADE';
     const forcedWindow=s.sessionEnded===true||Number(s.minutesToClose)<=STOCK_FORCED_EXIT_MINUTES;
-    if((openedToday||explicitlyDayTrade)&&forcedWindow&&!['TRIGGER_1_STOP','STOCK_DAY_TRADE_FORCED_EXIT'].includes(item.status)){
+    if(explicitlyDayTrade&&forcedWindow&&!['TRIGGER_1_STOP','STOCK_DAY_TRADE_FORCED_EXIT'].includes(item.status)){
       forcedExits++;
       return {...item,status:'STOCK_DAY_TRADE_FORCED_EXIT',dayTraderMode:true,reason:s.sessionEnded?'Day-trader stock position remains open after the regular session; reconcile and flatten Teststock-attributable quantity.':`Day-trader forced-exit window is active with ${s.minutesToClose} minutes to close; flatten Teststock-attributable quantity and verify broker-confirmed flat.`};
     }
