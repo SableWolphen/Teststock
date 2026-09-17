@@ -43,6 +43,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: write
 
 jobs:
   live:
@@ -113,6 +114,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PYTHONIOENCODING: utf-8
           TESTSTOCK_LEARNING_INTERVAL_SECONDS: 300
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           bash scripts/run-background-learning.sh &
@@ -152,4 +154,23 @@ jobs:
             elapsed=$(( $(date +%s) - started ))
             if [ "$elapsed" -lt 45 ]; then sleep $((45-elapsed)); fi
           done
-          echo "Live intraday session completed; background learner stopped cleanly. The hourly schedule or watchdog starts the next session without building a queue backlog."
+          echo "Live intraday session completed; background learner stopped cleanly."
+
+          # Self-chain the next session instead of relying solely on the hourly cron
+          # schedule event or the 5-minute watchdog to notice and recover. Both are
+          # GitHub-scheduled triggers and both were observed going silent for hours
+          # at a time (2026-09-15, ~13:18-15:02 and ~11:09-15:01 ET respectively) --
+          # a documented GitHub Actions platform behavior (scheduled workflow
+          # delivery can be delayed or dropped under load), not something this repo's
+          # workflow config can fully prevent. A direct workflow_dispatch API call
+          # here does not depend on that delivery path, so as long as one session
+          # ever completes cleanly, the chain is self-sustaining; cron and the
+          # watchdog remain as the recovery path only for the case this step itself
+          # cannot run (crash, timeout, or the self-hosted runner going offline).
+          existing=$(gh run list --workflow live-intraday-runner.yml --limit 5 --json status 2>/dev/null || echo '[]')
+          if echo "$existing" | jq -e 'any(.[]; .status=="queued" or .status=="in_progress")' >/dev/null 2>&1; then
+            echo "Another live-intraday-runner session is already queued or in progress; not self-chaining"
+          else
+            echo "Self-chaining the next live intraday session"
+            gh workflow run live-intraday-runner.yml --ref main || echo "::warning::Self-chain dispatch failed; the hourly schedule or watchdog remains as fallback"
+          fi
