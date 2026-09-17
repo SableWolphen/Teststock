@@ -1,12 +1,12 @@
 {
   "schemaVersion": 11,
-  "generatedAt": "2026-09-17T18:25:02.475Z",
-  "asOf": "2026-09-17T18:18:03.411Z",
+  "generatedAt": "2026-09-17T18:40:42.155Z",
+  "asOf": "2026-09-17T18:39:24.589Z",
   "budget": 200,
   "market": "OPEN",
   "session": {
     "isOpen": true,
-    "timestamp": "2026-09-17T14:18:02.237435355-04:00",
+    "timestamp": "2026-09-17T14:39:23.208568472-04:00",
     "nextOpen": "2026-09-18T09:30:00-04:00",
     "nextClose": "2026-09-17T16:00:00-04:00",
     "label": "OPEN"
@@ -135,9 +135,81 @@
     "optionsLocked": false,
     "reason": "Scanner/model trade-history is diagnostic only. It must never pause or size live Robinhood trading. Live outcome brakes are computed only from confirmed Robinhood fills/history at runtime."
   },
-  "action": "WATCH",
+  "action": "TRADE CANDIDATE",
   "confidence": "CASH",
-  "ranked": [],
+  "ranked": [
+    {
+      "rank": 1,
+      "symbol": "AMD",
+      "sector": "Technology",
+      "price": 545.13,
+      "score": 96,
+      "entry": 550.24,
+      "stop": 486.22,
+      "target1": 646.27,
+      "target2": 716.69,
+      "allocation": 200,
+      "shares": 0.3635,
+      "estimatedCost": 200.01,
+      "maxLossAtStop": 23.27,
+      "riskWeight": 100,
+      "fundamentals": {
+        "source": "SEC EDGAR",
+        "filedThrough": "2026-02-04",
+        "coverage": 4,
+        "score": 81,
+        "revenueGrowth": 34.3,
+        "quarterlyRevenueGrowth": 55.1,
+        "netMargin": 12.5,
+        "operatingCashFlowPositive": true,
+        "operatingCashFlowYield": 0.9,
+        "liabilityRatio": null,
+        "shareDilution": 0.5,
+        "pe": 153.3,
+        "priceToSales": 22.9,
+        "estimatedNextReport": "2026-11-04",
+        "label": "STRONG"
+      },
+      "validation": {
+        "samples": 23,
+        "winRate": 57,
+        "avgMove": 11.4
+      },
+      "corporateActions": {
+        "source": "Alpaca corporate actions",
+        "risk": "NONE",
+        "events": []
+      },
+      "holdingStyle": "Position trade: several weeks to several months",
+      "reviewCadence": "Weekly",
+      "rewardRiskTarget1": 1.5,
+      "rewardRiskTarget2": 2.6,
+      "rewardRisk": 2.6,
+      "rewardRiskQualificationTarget": "TARGET2",
+      "expectancy": {
+        "expectedR": 1.05,
+        "conservativeExpectedR": 0.99,
+        "costAdjustedConservativeExpectedR": 0.97,
+        "assumedRoundTripFrictionPct": 0.3,
+        "frictionR": 0.026
+      },
+      "adaptivePerformance": {
+        "samples": 0,
+        "wins": 0,
+        "losses": 0,
+        "winRate": null,
+        "sizeMultiplier": 1,
+        "qualityAdjustment": 0,
+        "label": "UNPROVEN",
+        "source": "MODEL_RESEARCH_ONLY",
+        "modelReportedSizeMultiplier": 1,
+        "canIncreaseLiveSize": false,
+        "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+      },
+      "growthQuality": 100,
+      "portfolioOpportunityScore": 118.25
+    }
+  ],
   "allocations": [],
   "keepCashDollars": 200,
   "estimatedPortfolioStopLoss": 0,
@@ -148,16 +220,16 @@
     "dte": null,
     "checks": {
       "exists": false,
-      "tradeCandidate": false,
+      "tradeCandidate": true,
       "bullish": false,
-      "quality": false,
+      "quality": true,
       "learning": true,
       "historical": false,
-      "expectancy": false,
+      "expectancy": true,
       "rewardRisk": false,
       "market": true,
       "sector": false,
-      "intraday": false,
+      "intraday": true,
       "adaptive": true,
       "definedRisk": false,
       "dte": true,
@@ -165,11 +237,11 @@
     },
     "contract": null,
     "probabilityFirstResearchChecks": {
-      "underlyingGrowthQuality": false,
+      "underlyingGrowthQuality": true,
       "samples": false,
       "winRate": false,
-      "expectancy": false,
-      "costAdjustedExpectancy": false,
+      "expectancy": true,
+      "costAdjustedExpectancy": true,
       "rewardRisk": false
     },
     "liveEvidenceGate": {
@@ -204,9 +276,30 @@
       "TRENDING_DOWN",
       "UNKNOWN"
     ],
-    "eventBySymbol": {},
+    "eventBySymbol": {
+      "AMD": {
+        "stockBlocked": false,
+        "optionBlocked": false,
+        "daysToEstimatedReport": 49,
+        "corporateActionRisk": "NONE",
+        "reasons": []
+      }
+    },
     "blockedSymbols": [],
-    "rejectedCandidates": [],
+    "rejectedCandidates": [
+      {
+        "symbol": "AMD",
+        "entry": 550.24,
+        "stop": 486.22,
+        "target1": 646.27,
+        "target2": 716.69,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "reasons": [
+          "Did not clear one or more stock eligibility/position-sizing gates"
+        ]
+      }
+    ],
     "automaticLooseningAllowed": false,
     "note": "The overall validation status is diagnostic and must not freeze unrelated stock regimes. Block or reduce only the CURRENT runtime regime according to runtimePolicy. MIXED is disabled. CALM remains blocked when its own holdouts fail. Sparse regimes stay reduced. TRENDING_UP stays eligible when its own policy allows it."
   },
@@ -237,8 +330,8 @@
     },
     "breadth": {
       "symbols": 28,
-      "above20": 46,
-      "above50": 54,
+      "above20": 43,
+      "above50": 57,
       "above200": 71,
       "bullishSignals": 57
     },
