@@ -10,7 +10,7 @@ const exec=promisify(execFile);
 const script=new URL('./build-execution-dispatch.mjs',import.meta.url).pathname.replace(/^\/(.:)/,'$1');
 const validator=new URL('./validate-execution-dispatch.mjs',import.meta.url).pathname.replace(/^\/(.:)/,'$1');
 const signal={stockPlan:{policy:{maxConcurrentNewPositions:1}}};
-const lane={eligible:true,maxOrderUsd:20,maxConcurrentPositions:1,maxNewPositionsPerUtcDay:1,requiresPerOrderApproval:false,requiresBrokerResidentStop:true,existingRobinhoodCashOnly:true,agentMayInitiateDeposits:false,agentMayInitiateBankTransfers:false,marginAllowed:false,mustBeFlatBeforeMarketClose:true,entryCutoffMinutesBeforeClose:20,forcedExitStartMinutesBeforeClose:10};
+const lane={eligible:true,maxOrderUsd:20,maxConcurrentPositions:1,maxNewPositionsPerUtcDay:1,requiresPerOrderApproval:false,requiresBrokerResidentStop:false,existingRobinhoodCashOnly:true,agentMayInitiateDeposits:false,agentMayInitiateBankTransfers:false,marginAllowed:false,mustBeFlatBeforeMarketClose:true,entryCutoffMinutesBeforeClose:20,forcedExitStartMinutesBeforeClose:10};
 const openSession={calendarAvailable:true,regularSession:true,entryAllowed:true,minutesToClose:120};
 
 async function build(events,dir=null){
