@@ -22,12 +22,15 @@ concurrency:
 jobs:
   watchdog:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: main
+
+      - name: Record pass start time
+        run: echo "WATCHDOG_STARTED_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
 
       - name: Re-dispatch static-scan.yml if published signal data has gone stale
         env:
@@ -142,4 +145,33 @@ jobs:
             gh workflow run live-intraday-runner.yml --ref main
           else
             echo "A session just completed; scheduled/watchdog recovery will take over if needed"
+          fi
+
+      - name: Self-chain the next watchdog pass instead of relying only on cron
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # This watchdog exists specifically because GitHub's schedule event can go
+          # quiet for hours (observed repeatedly on 2026-09-15 and 2026-09-17). The
+          # watchdog's own 5-minute cron is exactly as exposed to that same failure
+          # mode -- and was observed going silent itself (2026-09-17, ~09:27-14:25
+          # UTC and again ~14:25-14:59 UTC), which stalls recovery for every workflow
+          # it exists to protect at once. A direct workflow_dispatch API call here
+          # does not depend on the schedule-event delivery path, so once any single
+          # pass completes cleanly this becomes self-sustaining; cron remains as the
+          # fallback only for the case this step itself cannot run.
+          started=${WATCHDOG_STARTED_EPOCH}
+          now=$(date +%s)
+          elapsed=$(( now - started ))
+          target=270
+          if [ "$elapsed" -lt "$target" ]; then
+            sleep $((target - elapsed))
+          fi
+          existing=$(gh run list --workflow schedule-watchdog.yml --limit 5 --json status 2>/dev/null || echo '[]')
+          if echo "$existing" | jq -e 'any(.[]; .status=="queued" or .status=="in_progress")' >/dev/null 2>&1; then
+            echo "Another watchdog pass is already queued or in progress; not self-chaining"
+          else
+            echo "Self-chaining the next watchdog pass"
+            gh workflow run schedule-watchdog.yml --ref main || echo "::warning::Self-chain dispatch failed; cron remains as fallback"
           fi
