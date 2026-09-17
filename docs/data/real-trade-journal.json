@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "sourceOfTruth": "ROBINHOOD_AGENTIC_ACCOUNT",
   "generatedAt": "2026-08-23T21:40:37.000Z",
-  "lastReconciledAt": "2026-08-23T21:40:37.000Z",
+  "lastReconciledAt": "2026-09-17T16:17:00.000Z",
   "trades": [
     {
       "journalId": "2026-08-20-RPRX-STOCK-REAL",
@@ -63,6 +63,37 @@
       "exitReason": null,
       "reconciledFromRobinhood": true,
       "notes": "Backfilled 2026-08-23 from live Robinhood-confirmed position data (average_buy_price) and the already-public execution-watchlist.json stop/target levels. The buy itself predates this fix and was never logged automatically -- see docs/strategy-changelog.txt 2026-08-23 entry. Quantity/order id intentionally omitted (never committed here). setupType/runtimeRegime/riskCluster/entrySessionBucket were not captured at signal time and are honestly marked UNKNOWN rather than guessed."
+    },
+    {
+      "journalId": "2026-09-17-HONA-STOCK-SEED-REAL",
+      "assetClass": "STOCK",
+      "symbol": "HONA",
+      "setupType": "TREND",
+      "runtimeRegime": "UNKNOWN",
+      "riskCluster": "UNKNOWN",
+      "entrySessionBucket": "MORNING_30_120",
+      "seedLane": true,
+      "teststockSignalGeneratedAt": "2026-09-17T14:09:07.841Z",
+      "entryOrderId": "6aabfa09-7ab8-46af-aae2-dfbdf4e50bf8",
+      "entryFilledAt": "2026-09-17T14:32:41.349Z",
+      "plannedEntry": 166.68,
+      "actualAverageEntry": 166.4898,
+      "plannedStop": 154.73,
+      "target1": 184.65,
+      "target2": 196.63,
+      "entrySpreadPctAtSubmission": 0.19,
+      "adverseEntrySlippagePct": null,
+      "protectionMode": "SYNTHETIC",
+      "protectiveExitVerified": false,
+      "finalExitAt": null,
+      "actualAverageExit": null,
+      "adverseExitSlippagePct": null,
+      "realizedPnlDollars": null,
+      "realizedR": null,
+      "outcome": "OPEN",
+      "exitReason": null,
+      "reconciledFromRobinhood": true,
+      "notes": "Automatic stock swing seed-lane fill executed directly this session on 2026-09-17 after PR #40 relaxed requiresBrokerResidentStop to synthetic protection for this lane (position is entirely fractional, 0.057060 shares, so no broker-resident stop is possible). Live guard recheck passed before submission: no existing HONA position, no open/same-day orders, price $166.58 ask within the published entry zone, spread ~0.19%. Sized at $9.50 rather than the full $20 seed-lane cap -- the binding constraint was the fractional synthetic-stop risk cap (0.75% of live equity per fractionalProtectionPolicy), not the deployed-capital cap. This entry was added to reconcile the automated journal, which had not recorded it: the scheduled execution-check's own journal-write-at-fill step never ran for this trade since it was executed directly from an interactive session rather than the automated live-intraday-runner executor, which left seedLane.openedSeedPositionsToday reading 0 in subsequently published dispatches despite a real seed-lane position already being open for the day."
     }
   ],
   "summary": {
@@ -80,7 +111,8 @@
     "Keep shadow/model outcomes separate from this real-money journal.",
     "Adaptive learning may reorder already-qualified candidates or reduce/block risk, but may never increase maximum live risk or loosen hard safety gates.",
     "Fixed 2026-08-23: prior to this date, no automated step ever created an OPEN entry here at buy time (only the exit side was instructed to write here), so this journal stayed empty despite live positions and permanently capped stocks at SHADOW_ONLY regardless of real performance. The scheduled Teststock execution-check now creates an OPEN entry at confirmed-fill time and reconciles OPEN entries against live Robinhood data on every run, independent of whether the current run's own trigger-board shows an exit event for that ticker.",
-    "Added 2026-08-26, expanded 2026-08-26: a seedLane=true entry originated from the user-authorized stock seed lane (docs/data/probability-first-policy.json stocks.seedLane), which still required its own explicit per-order user approval -- it is never auto-submitted. Each OPEN entry with seedLane===true occupies one of up to maxConcurrentPositions (currently 5) concurrent seed slots, each capped at maxOrderUsd (currently $5). At the user's explicit request this no longer pauses after stopped trades: a symbol with a seedLane===true entry whose outcome=LOSS and exitReason=STOP with finalExitAt today (UTC) is excluded from being re-selected as a new seed candidate for the rest of that UTC day, but the seed lane itself keeps running and rotates to the next distinct eligible candidate. The scheduled execution-check must recompute both (open seedLane===true tickers, and today's STOP-closed seedLane===true tickers) live before ever presenting a new seedLaneCandidates entry for approval, and must never exceed maxConcurrentPositions concurrently open seed positions."
+    "Added 2026-08-26, expanded 2026-08-26: a seedLane=true entry originated from the user-authorized stock seed lane (docs/data/probability-first-policy.json stocks.seedLane), which still required its own explicit per-order user approval -- it is never auto-submitted. Each OPEN entry with seedLane===true occupies one of up to maxConcurrentPositions (currently 5) concurrent seed slots, each capped at maxOrderUsd (currently $5). At the user's explicit request this no longer pauses after stopped trades: a symbol with a seedLane===true entry whose outcome=LOSS and exitReason=STOP with finalExitAt today (UTC) is excluded from being re-selected as a new seed candidate for the rest of that UTC day, but the seed lane itself keeps running and rotates to the next distinct eligible candidate. The scheduled execution-check must recompute both (open seedLane===true tickers, and today's STOP-closed seedLane===true tickers) live before ever presenting a new seedLaneCandidates entry for approval, and must never exceed maxConcurrentPositions concurrently open seed positions.",
+    "Added 2026-09-17: a seed-lane fill executed directly from an interactive session (not the scheduled automated executor) must still be reconciled into this journal at fill time -- otherwise seedLane.openedSeedPositionsToday/currentOpenSeedPositions undercounts against live reality in every subsequently published dispatch, and a later cycle can publish a second same-day SEED_LANE_BUY_TRIGGER that would exceed maxNewPositionsPerUtcDay if executed. Reconcile from live Robinhood positions/orders, not just this file, before ever executing a seed-lane candidate."
   ],
   "tradeRecordContract": {
     "journalId": "stable unique id",
