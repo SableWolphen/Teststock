@@ -168,8 +168,14 @@ jobs:
           if [ "$elapsed" -lt "$target" ]; then
             sleep $((target - elapsed))
           fi
-          existing=$(gh run list --workflow schedule-watchdog.yml --limit 5 --json status 2>/dev/null || echo '[]')
-          if echo "$existing" | jq -e 'any(.[]; .status=="queued" or .status=="in_progress")' >/dev/null 2>&1; then
+          # This run's own databaseId (GITHUB_RUN_ID) must be excluded below: this
+          # job is itself still "in_progress" from the API's point of view while
+          # this very step executes, so an unfiltered queued/in_progress check
+          # always matches itself and silently skips dispatching every time --
+          # confirmed live (2026-09-17 15:02-15:12 UTC: this step ran and exited
+          # cleanly, logged as a success, but never actually dispatched a next run).
+          existing=$(gh run list --workflow schedule-watchdog.yml --limit 5 --json databaseId,status 2>/dev/null || echo '[]')
+          if echo "$existing" | jq -e --argjson self "$GITHUB_RUN_ID" 'any(.[]; .databaseId!=$self and (.status=="queued" or .status=="in_progress"))' >/dev/null 2>&1; then
             echo "Another watchdog pass is already queued or in progress; not self-chaining"
           else
             echo "Self-chaining the next watchdog pass"
