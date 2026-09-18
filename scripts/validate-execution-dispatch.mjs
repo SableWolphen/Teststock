@@ -57,7 +57,8 @@ if(dispatch.pendingAction?.trigger==='BUY_TRIGGER'&&automaticStockCandidates.len
 const seeds=dispatch.seedLaneCandidates||[];
 if(seeds.some(x=>!((x.assetClass==='STOCK'&&['SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'].includes(x.trigger))||(x.assetClass==='CRYPTO'&&x.trigger==='CRYPTO_SEED_LANE_BUY_TRIGGER')))) fail('invalid seed-lane candidate');
 if(seeds.some(x=>x.requiresPerOrderApproval!==false)) fail('seed-lane approval must be disabled in automatic mode');
-if(seeds.some(x=>Number(x.maxOrderUsd)!==(x.assetClass==='CRYPTO'?5:20)||x.existingRobinhoodCashOnly!==true||x.agentMayInitiateDeposits!==false||x.agentMayInitiateBankTransfers!==false||x.marginAllowed!==false)) fail('seed-lane funding bounds');
+const stockSeedCap=x=>x.entryTier==='B'?7.5:30;
+if(seeds.some(x=>Number(x.maxOrderUsd)!==(x.assetClass==='CRYPTO'?5:stockSeedCap(x))||x.existingRobinhoodCashOnly!==true||x.agentMayInitiateDeposits!==false||x.agentMayInitiateBankTransfers!==false||x.marginAllowed!==false)) fail('seed-lane funding bounds');
 if(seeds.some(x=>['SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'].includes(x.trigger)&&x.requiresBrokerResidentStop!==false)) fail('stock seed-lane (swing or day-trade) must use synthetic protection, not an impossible broker-resident stop on a fractional order');
 if(seeds.some(x=>x.trigger==='CRYPTO_SEED_LANE_BUY_TRIGGER'&&x.requiresBrokerResidentStop!==true)) fail('crypto seed-lane protection bounds');
 if(seeds.some(x=>x.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'&&(x.mustBeFlatBeforeMarketClose!==true||Number(x.entryCutoffMinutesBeforeClose)!==20||Number(x.forcedExitStartMinutesBeforeClose)!==10)))fail('day-trade seed timing bounds');

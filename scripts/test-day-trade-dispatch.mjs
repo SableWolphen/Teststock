@@ -10,7 +10,7 @@ const exec=promisify(execFile);
 const script=new URL('./build-execution-dispatch.mjs',import.meta.url).pathname.replace(/^\/(.:)/,'$1');
 const validator=new URL('./validate-execution-dispatch.mjs',import.meta.url).pathname.replace(/^\/(.:)/,'$1');
 const signal={stockPlan:{policy:{maxConcurrentNewPositions:1}}};
-const lane={eligible:true,maxOrderUsd:20,maxConcurrentPositions:1,maxNewPositionsPerUtcDay:1,requiresPerOrderApproval:false,requiresBrokerResidentStop:false,existingRobinhoodCashOnly:true,agentMayInitiateDeposits:false,agentMayInitiateBankTransfers:false,marginAllowed:false,mustBeFlatBeforeMarketClose:true,entryCutoffMinutesBeforeClose:20,forcedExitStartMinutesBeforeClose:10};
+const lane={eligible:true,maxOrderUsd:30,maxConcurrentPositions:1,maxNewPositionsPerUtcDay:1,requiresPerOrderApproval:false,requiresBrokerResidentStop:false,existingRobinhoodCashOnly:true,agentMayInitiateDeposits:false,agentMayInitiateBankTransfers:false,marginAllowed:false,mustBeFlatBeforeMarketClose:true,entryCutoffMinutesBeforeClose:20,forcedExitStartMinutesBeforeClose:10};
 const openSession={calendarAvailable:true,regularSession:true,entryAllowed:true,minutesToClose:120};
 
 async function build(events,dir=null){
@@ -26,7 +26,7 @@ async function build(events,dir=null){
 test('promotes a same-day seed candidate with exact bounds',async()=>{
   const now=new Date().toISOString();
   const {out}=await build([{id:'ENTRY:STOCK:TEST',assetClass:'STOCK',ticker:'TEST',trigger:'STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER',stateChangedAt:now,dayTradeSeedLane:lane,marketSession:openSession,observedPrice:10,minimumEntry:9,maximumEntry:11,stop:8,target1:12,target2:13}]);
-  assert.equal(out.claudeShouldRun,true);assert.equal(out.seedLaneCandidates.length,1);assert.equal(out.seedLaneCandidates[0].maxOrderUsd,20);assert.equal(out.seedLaneCandidates[0].mustBeFlatBeforeMarketClose,true);assert.equal(out.seedLaneCandidates[0].entryCutoffMinutesBeforeClose,20);assert.equal(out.seedLaneCandidates[0].forcedExitStartMinutesBeforeClose,10);
+  assert.equal(out.claudeShouldRun,true);assert.equal(out.seedLaneCandidates.length,1);assert.equal(out.seedLaneCandidates[0].maxOrderUsd,30);assert.equal(out.seedLaneCandidates[0].mustBeFlatBeforeMarketClose,true);assert.equal(out.seedLaneCandidates[0].entryCutoffMinutesBeforeClose,20);assert.equal(out.seedLaneCandidates[0].forcedExitStartMinutesBeforeClose,10);
 });
 
 test('forced same-day exit blocks all new buys and remains highest priority',async()=>{
