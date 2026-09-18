@@ -72,6 +72,7 @@ const seedEvents=(board?.events||[]).filter(e=>{
 });
 const compactSeed=e=>{const lane=e.dayTradeSeedLane?.eligible===true?e.dayTradeSeedLane:e.seedLane;return ({
   fingerprint:e.fingerprint,assetClass:e.assetClass,ticker:e.ticker,trigger:e.trigger,
+  entryTier:e.entryTier??null,
   maxOrderUsd:Number(lane?.maxOrderUsd||5),
   maxConcurrentPositions:Number(lane?.maxConcurrentPositions||(e.assetClass==='CRYPTO'?1:2)),
   maxNewPositionsPerUtcDay:Number(lane?.maxNewPositionsPerUtcDay||1),

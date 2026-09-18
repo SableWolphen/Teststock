@@ -107,9 +107,13 @@ if(seedLaneConfig.enabled===true){
   const dailyRemaining=Math.max(0,Number(seedLaneConfig.maxNewPositionsPerUtcDay||1)-openedToday);
   const availableSlots=dailyRemaining>0?Math.max(0,maxConcurrent-openSeedTickers.size):0;
   if(availableSlots>0){
-    const eligiblePool=live.filter(x=>x.entryTier==='A'&&x.profitabilityAdmission?.state==='SHADOW_ONLY'&&!x.profitabilityAdmission?.regimeDisabled&&!x.profitabilityAdmission?.contradictoryShadow&&!openSeedTickers.has(x.ticker)&&!stoppedTodaySeedTickers.has(x.ticker));
-    eligiblePool.sort((a,b)=>Number(a.queueRank??999)-Number(b.queueRank??999));
-    for(const chosen of eligiblePool.slice(0,availableSlots))chosen.seedLane={eligible:true,maxOrderUsd:Number(seedLaneConfig.maxOrderUsd||5),requiredEntryTier:seedLaneConfig.requiredEntryTier||'A',requiresPerOrderApproval:false,maxConcurrentPositions:maxConcurrent,maxNewPositionsPerUtcDay:Number(seedLaneConfig.maxNewPositionsPerUtcDay||1),currentOpenSeedPositions:openSeedTickers.size,openedSeedPositionsToday:openedToday,existingRobinhoodCashOnly:true,agentMayInitiateDeposits:false,agentMayInitiateBankTransfers:false,marginAllowed:false,requiresBrokerResidentStop:seedLaneConfig.requiresBrokerResidentStop===true,rotatesToNextCandidateAfterStop:true,rule:seedLaneConfig.rule||'Bounded automatic stock seed lane using existing Robinhood cash only.'};
+    const allowBTier=seedLaneConfig.allowBTier===true;
+    const eligiblePool=live.filter(x=>(x.entryTier==='A'||(allowBTier&&x.entryTier==='B'))&&x.profitabilityAdmission?.state==='SHADOW_ONLY'&&!x.profitabilityAdmission?.regimeDisabled&&!x.profitabilityAdmission?.contradictoryShadow&&!openSeedTickers.has(x.ticker)&&!stoppedTodaySeedTickers.has(x.ticker));
+    eligiblePool.sort((a,b)=>(a.entryTier==='A'?0:1)-(b.entryTier==='A'?0:1)||Number(a.queueRank??999)-Number(b.queueRank??999));
+    for(const chosen of eligiblePool.slice(0,availableSlots)){
+      const tierCap=chosen.entryTier==='B'?Number(seedLaneConfig.bTierMaxOrderUsd||seedLaneConfig.maxOrderUsd||5):Number(seedLaneConfig.maxOrderUsd||5);
+      chosen.seedLane={eligible:true,maxOrderUsd:tierCap,requiredEntryTier:seedLaneConfig.requiredEntryTier||'A',allowBTier,requiresPerOrderApproval:false,maxConcurrentPositions:maxConcurrent,maxNewPositionsPerUtcDay:Number(seedLaneConfig.maxNewPositionsPerUtcDay||1),currentOpenSeedPositions:openSeedTickers.size,openedSeedPositionsToday:openedToday,existingRobinhoodCashOnly:true,agentMayInitiateDeposits:false,agentMayInitiateBankTransfers:false,marginAllowed:false,requiresBrokerResidentStop:seedLaneConfig.requiresBrokerResidentStop===true,rotatesToNextCandidateAfterStop:true,rule:seedLaneConfig.rule||'Bounded automatic stock seed lane using existing Robinhood cash only.'};
+    }
   }
 }
 
@@ -124,8 +128,12 @@ if(dayTradeConfig.enabled===true){
   const dailyRemaining=Math.max(0,Number(dayTradeConfig.maxNewPositionsPerUtcDay||1)-openedToday);
   const availableSlots=dailyRemaining>0?Math.max(0,maxConcurrent-openTickers.size):0;
   if(availableSlots>0){
-    const eligiblePool=live.filter(x=>x.entryTier==='A'&&x.profitabilityAdmission?.state==='SHADOW_ONLY'&&!x.profitabilityAdmission?.regimeDisabled&&!x.profitabilityAdmission?.contradictoryShadow&&!openTickers.has(x.ticker)&&!swingSelectedTickers.has(x.ticker)).sort((a,b)=>Number(a.queueRank??999)-Number(b.queueRank??999));
-    for(const chosen of eligiblePool.slice(0,availableSlots))chosen.dayTradeSeedLane={eligible:true,maxOrderUsd:Number(dayTradeConfig.maxOrderUsd||20),requiredEntryTier:dayTradeConfig.requiredEntryTier||'A',requiresPerOrderApproval:false,maxConcurrentPositions:maxConcurrent,maxNewPositionsPerUtcDay:Number(dayTradeConfig.maxNewPositionsPerUtcDay||1),currentOpenDayTradeSeedPositions:openTickers.size,openedDayTradeSeedPositionsToday:openedToday,existingRobinhoodCashOnly:true,agentMayInitiateDeposits:false,agentMayInitiateBankTransfers:false,marginAllowed:false,requiresBrokerResidentStop:dayTradeConfig.requiresBrokerResidentStop===true,mustBeFlatBeforeMarketClose:true,entryCutoffMinutesBeforeClose:Number(dayTradeConfig.entryCutoffMinutesBeforeClose||30),forcedExitStartMinutesBeforeClose:Number(dayTradeConfig.forcedExitStartMinutesBeforeClose||15),journalTag:'dayTradeSeedLane:true',rule:dayTradeConfig.rule};
+    const allowBTier=dayTradeConfig.allowBTier===true;
+    const eligiblePool=live.filter(x=>(x.entryTier==='A'||(allowBTier&&x.entryTier==='B'))&&x.profitabilityAdmission?.state==='SHADOW_ONLY'&&!x.profitabilityAdmission?.regimeDisabled&&!x.profitabilityAdmission?.contradictoryShadow&&!openTickers.has(x.ticker)&&!swingSelectedTickers.has(x.ticker)).sort((a,b)=>(a.entryTier==='A'?0:1)-(b.entryTier==='A'?0:1)||Number(a.queueRank??999)-Number(b.queueRank??999));
+    for(const chosen of eligiblePool.slice(0,availableSlots)){
+      const tierCap=chosen.entryTier==='B'?Number(dayTradeConfig.bTierMaxOrderUsd||dayTradeConfig.maxOrderUsd||20):Number(dayTradeConfig.maxOrderUsd||20);
+      chosen.dayTradeSeedLane={eligible:true,maxOrderUsd:tierCap,requiredEntryTier:dayTradeConfig.requiredEntryTier||'A',allowBTier,requiresPerOrderApproval:false,maxConcurrentPositions:maxConcurrent,maxNewPositionsPerUtcDay:Number(dayTradeConfig.maxNewPositionsPerUtcDay||1),currentOpenDayTradeSeedPositions:openTickers.size,openedDayTradeSeedPositionsToday:openedToday,existingRobinhoodCashOnly:true,agentMayInitiateDeposits:false,agentMayInitiateBankTransfers:false,marginAllowed:false,requiresBrokerResidentStop:dayTradeConfig.requiresBrokerResidentStop===true,mustBeFlatBeforeMarketClose:true,entryCutoffMinutesBeforeClose:Number(dayTradeConfig.entryCutoffMinutesBeforeClose||30),forcedExitStartMinutesBeforeClose:Number(dayTradeConfig.forcedExitStartMinutesBeforeClose||15),journalTag:'dayTradeSeedLane:true',rule:dayTradeConfig.rule};
+    }
   }
 }
 
