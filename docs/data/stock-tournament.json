@@ -1,7 +1,7 @@
 {
   "schemaVersion": 8,
   "source": "TESTSTOCK_UP_TO_20000_STOCK_KNOCKOUT",
-  "generatedAt": "2026-09-17T23:53:42.738Z",
+  "generatedAt": "2026-09-18T00:08:10.037Z",
   "objective": "Continuously eliminate weaker candidates from every legitimate active/tradable U.S. operating-company stock available, capped at 20,000 symbols, then buy the best acceptable live survivor without waiting only for a perfect setup.",
   "policy": {
     "targetTournamentSize": 20000,
@@ -892,7 +892,7 @@
           "halfLifeMinutes": 15,
           "entryProximity": 0.209,
           "freshnessMultiplier": 1,
-          "combinedMultiplier": 0.683,
+          "combinedMultiplier": 0.684,
           "expired": false
         },
         "portfolioOptimization": {
@@ -1031,7 +1031,7 @@
       "queueRank": 3,
       "ticker": "TS",
       "action": "MARKET_CLOSED_RECHECK",
-      "queueRole": "PRIMARY",
+      "queueRole": "RESERVE",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
       "entryTierSizeMultiplier": 0.25,
@@ -1328,7 +1328,7 @@
       "queueRank": 4,
       "ticker": "PSX",
       "action": "MARKET_CLOSED_RECHECK",
-      "queueRole": "PRIMARY",
+      "queueRole": "RESERVE",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
       "entryTierSizeMultiplier": 0.25,
@@ -1803,27 +1803,24 @@
         "reason": "New-listing cross-sectional cohort evidence only; never treated as same-stock validated. Eligible only for the shared stock seed-lane cap."
       },
       "seedLane": {
-        "eligible": false
-      },
-      "dayTradeSeedLane": {
         "eligible": true,
         "maxOrderUsd": 20,
         "requiredEntryTier": "A",
         "requiresPerOrderApproval": false,
-        "maxConcurrentPositions": 3,
-        "maxNewPositionsPerUtcDay": 3,
-        "currentOpenDayTradeSeedPositions": 0,
-        "openedDayTradeSeedPositionsToday": 0,
+        "maxConcurrentPositions": 2,
+        "maxNewPositionsPerUtcDay": 1,
+        "currentOpenSeedPositions": 1,
+        "openedSeedPositionsToday": 0,
         "existingRobinhoodCashOnly": true,
         "agentMayInitiateDeposits": false,
         "agentMayInitiateBankTransfers": false,
         "marginAllowed": false,
         "requiresBrokerResidentStop": false,
-        "mustBeFlatBeforeMarketClose": true,
-        "entryCutoffMinutesBeforeClose": 20,
-        "forcedExitStartMinutesBeforeClose": 10,
-        "journalTag": "dayTradeSeedLane:true",
-        "rule": "User-authorized same-day stock seed lane. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. A $20 cap on a higher-priced stock is necessarily fractional-only, and Robinhood does not support broker-resident stop triggers on fractional quantities -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing."
+        "rotatesToNextCandidateAfterStop": true,
+        "rule": "User-authorized automatic stock learning lane. It may bypass only the forward profitability-admission wait at a fixed $20 ceiling. Every research, freshness, entry-zone, no-chase, decision-intelligence, buying-power, account-floor, portfolio, duplicate-order and protection gate remains mandatory. LIVE_SUSPENDED and contradictory shadow evidence never qualify. A $20 cap on a higher-priced stock is necessarily fractional-only, and Robinhood does not support broker-resident stop triggers on fractional quantities -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop."
+      },
+      "dayTradeSeedLane": {
+        "eligible": false
       },
       "newListingCohortEvidence": {
         "setupType": "BREAKOUT",
@@ -1836,8 +1833,8 @@
         "decisionScore": 8.4,
         "rankBeforeOptimization": 5,
         "eligibleAfterOverlay": false,
-        "eligibleForSeedLane": false,
-        "eligibleForDayTradeSeedLane": true,
+        "eligibleForSeedLane": true,
+        "eligibleForDayTradeSeedLane": false,
         "upstreamActionAllowed": false,
         "setupDiagnostics": {
           "setupType": "BREAKOUT",
@@ -11888,7 +11885,7 @@
           "halfLifeMinutes": 15,
           "entryProximity": 0.209,
           "freshnessMultiplier": 1,
-          "combinedMultiplier": 0.683,
+          "combinedMultiplier": 0.684,
           "expired": false
         },
         "portfolioOptimization": {
@@ -12388,7 +12385,7 @@
       "queueRank": 3,
       "ticker": "TS",
       "action": "MARKET_CLOSED_RECHECK",
-      "queueRole": "PRIMARY",
+      "queueRole": "RESERVE",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
       "entryTierSizeMultiplier": 0.25,
@@ -12685,7 +12682,7 @@
       "queueRank": 4,
       "ticker": "PSX",
       "action": "MARKET_CLOSED_RECHECK",
-      "queueRole": "PRIMARY",
+      "queueRole": "RESERVE",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
       "entryTierSizeMultiplier": 0.25,
