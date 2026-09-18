@@ -87,6 +87,7 @@ const compactSeed=e=>{const lane=e.dayTradeSeedLane?.eligible===true?e.dayTradeS
   observedPrice:e.observedPrice,triggerStateChangedAt:e.stateChangedAt,freshnessAnchor:e.freshnessAnchor??null,triggerAgeMs:e.triggerAgeMs,
   minimumEntry:e.minimumEntry,maximumEntry:e.maximumEntry,stop:e.stop,target1:e.target1,target2:e.target2,
   profitabilityAdmission:e.profitabilityAdmission??null,
+  boundedBelowFloorEntry:e.boundedBelowFloorEntry===true,
   reason:e.reason,
   packet:`${e.ticker} | ${e.trigger} | observed ${e.observedPrice ?? 'UNKNOWN'} | capped at $${Number(lane?.maxOrderUsd||5)} existing Robinhood cash only | automatic seed/learning lane after live recheck`
 });};

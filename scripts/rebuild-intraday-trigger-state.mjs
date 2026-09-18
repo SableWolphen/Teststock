@@ -9,7 +9,7 @@ const events=(board.items||[]).filter(x=>actionable.has(x.status)).map(x=>({
   profitabilityAdmission:x.profitabilityAdmission??null,qualificationSource:x.qualificationSource??null,tournamentGeneratedAt:x.tournamentGeneratedAt??null,
   decisionIntelligenceEligible:x.decisionIntelligenceEligible??null,seedLane:x.seedLane??null,dayTradeSeedLane:x.dayTradeSeedLane??null,
   marketSession:x.marketSession??null,minimumEntry:x.minimumEntry??null,maximumEntry:x.maximumEntry??null,stop:x.stop??null,target1:x.target1??null,target2:x.target2??null,
-  observedPrice:x.observedPrice??null,stateChangedAt:x.stateChangedAt??null,intradayEdge:x.intradayEdge??null,reason:x.reason??null
+  observedPrice:x.observedPrice??null,stateChangedAt:x.stateChangedAt??null,intradayEdge:x.intradayEdge??null,reason:x.reason??null,boundedBelowFloorEntry:x.boundedBelowFloorEntry??false
 }));
 const buys=events.filter(x=>x.trigger==='BUY_TRIGGER').sort((a,b)=>((a.assetClass==='STOCK'&&a.entryTier==='A')?0:(a.assetClass==='STOCK'&&a.entryTier==='B')?1:2)-((b.assetClass==='STOCK'&&b.entryTier==='A')?0:(b.assetClass==='STOCK'&&b.entryTier==='B')?1:2)||Number(b.intradayEdge?.costAdjustedEdge??-999)-Number(a.intradayEdge?.costAdjustedEdge??-999)||Number(b.intradayEdge?.adjustedScore??-999)-Number(a.intradayEdge?.adjustedScore??-999)||Number(a.queueRank||999)-Number(b.queueRank||999));
 for(const [i,e] of buys.entries())e.queueRole=i===0?'CURRENT_BEST_BUY':'FALLBACK_BUY';

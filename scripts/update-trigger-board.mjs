@@ -45,7 +45,7 @@ const prevById=new Map((previous?.items||[]).map(x=>[x.id,x]));
 function stableItem(base,status,price,reason){const old=prevById.get(base.id),changed=!old||old.status!==status;return {...base,status,reason,observedPrice:price??old?.observedPrice??null,stateChangedAt:changed?nowIso:(old?.stateChangedAt||null)};}
 const items=[];
 for(const [i,x] of stockCandidates.entries()){
-  const p=prices[x.ticker],min=Number(x.minimumEntry),max=Number(x.maximumEntry),tier=x.entryTier==='B'?'B':'A';let status='WAIT_ENTRY',reason='Price is outside the current buy zone.';
+  const p=prices[x.ticker],min=Number(x.minimumEntry),max=Number(x.maximumEntry),tier=x.entryTier==='B'?'B':'A';let status='WAIT_ENTRY',reason='Price is outside the current buy zone.',boundedBelowFloorEntry=false;
   const admission=x.profitabilityAdmission?.state||'UNKNOWN',decisionEligible=x.decisionIntelligence?.eligibleAfterOverlay===true,decisionSeedEligible=x.decisionIntelligence?.eligibleForSeedLane===true,decisionDayTradeSeedEligible=x.decisionIntelligence?.eligibleForDayTradeSeedLane===true,actionAllowed=['AUTO_BUY_ELIGIBLE','WAIT_FOR_TRIGGER'].includes(String(x.action||''));
   // Stock seed lane (2026-08-26, expanded 2026-08-26): apply-profitability-admission.mjs flags up
   // to maxConcurrentPositions distinct SHADOW_ONLY candidates as seedLane.eligible. Each is
@@ -73,6 +73,12 @@ for(const [i,x] of stockCandidates.entries()){
     else if(!(p>0)){status='PRICE_UNAVAILABLE';reason='Latest Alpaca stock price unavailable.';}
     else if(p>max){status='DO_NOT_CHASE';reason='Price is above maximumEntry.';}
     else if(p>=min&&p<=max){status='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER';reason=`Automatic same-day stock learning candidate is inside its buy zone with ${marketSession.minutesToClose} minutes to the authoritative close. Capped at $${Number(x.dayTradeSeedLane?.maxOrderUsd||20)} using existing Robinhood cash only and must be flat today.`;}
+    // Bounded below-floor entry (2026-09-18, user request): mirrors the existing bounded
+    // above-max chase allowance (CLAUDE.md) symmetrically on the low side -- up to 1% below the
+    // computed minimumEntry still fires the seed-lane trigger, since it's an even smaller margin
+    // of safety than a normal seed-lane fill. The live executor must apply a tightened stop and
+    // reduced size to offset that, exactly as the above-max bounded allowance already requires.
+    else if(p>=min*0.99&&p<min){status='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER';boundedBelowFloorEntry=true;reason=`Automatic same-day stock learning candidate is within 1% below its buy-zone floor with ${marketSession.minutesToClose} minutes to the authoritative close. Capped at $${Number(x.dayTradeSeedLane?.maxOrderUsd||20)} using existing Robinhood cash only and must be flat today. Reduced margin of safety versus a normal in-zone fill: the executor must use a tightened stop and reduced size to offset it.`;}
   }
   else if(!actionAllowed&&seedLaneEligible&&!admissionOk){
     if(!decisionSeedEligible){status='BLOCKED_DECISION_INTELLIGENCE';reason='The automatic stock seed lane bypasses only profitability admission; seed-specific decision intelligence did not pass.';}
@@ -80,6 +86,7 @@ for(const [i,x] of stockCandidates.entries()){
     else if(!(p>0)){status='PRICE_UNAVAILABLE';reason='Latest Alpaca stock price unavailable.';}
     else if(p>max){status='DO_NOT_CHASE';reason='Price is above maximumEntry.';}
     else if(p>=min&&p<=max){status='SEED_LANE_BUY_TRIGGER';reason=`Automatic stock learning candidate is inside its buy zone. Capped at $${Number(x.seedLane?.maxOrderUsd||20)} using existing Robinhood cash only; every live guard and required protection still applies.`;}
+    else if(p>=min*0.99&&p<min){status='SEED_LANE_BUY_TRIGGER';boundedBelowFloorEntry=true;reason=`Automatic stock learning candidate is within 1% below its buy-zone floor. Capped at $${Number(x.seedLane?.maxOrderUsd||20)} using existing Robinhood cash only. Reduced margin of safety versus a normal in-zone fill: the executor must use a tightened stop and reduced size to offset it. Every other live guard and required protection still applies.`;}
   }
   else if(!admissionOk){status='BLOCKED_PROFITABILITY_ADMISSION';reason=`Profitability admission ${admission} cannot create live stock risk.`;}
   else if(!decisionEligible){status='BLOCKED_DECISION_INTELLIGENCE';reason='Decision-intelligence overlay did not pass; do not publish a buy trigger.';}
@@ -87,7 +94,7 @@ for(const [i,x] of stockCandidates.entries()){
   else if(!(p>0)){status='PRICE_UNAVAILABLE';reason='Latest Alpaca stock price unavailable.';}
   else if(p>max){status='DO_NOT_CHASE';reason='Price is above maximumEntry.';}
   else if(p>=min&&p<=max){status='BUY_TRIGGER';reason=tier==='A'?'A/ELITE stock is inside its buy zone. It has priority over B candidates but must still pass every live guard.':'B/BEST_ACCEPTABLE stock is inside its buy zone. It may be used at reduced encoded size only when no live A candidate survives every guard.';}
-  items.push(stableItem({id:`ENTRY:STOCK:${x.ticker}`,kind:'ENTRY',assetClass:'STOCK',ticker:x.ticker,entryTier:tier,entryTierLabel:x.entryTierLabel||(tier==='B'?'BEST_ACCEPTABLE':'ELITE'),entryTierSizeMultiplier:Number(x.entryTierSizeMultiplier??(tier==='B'?.5:1)),queueRank:Number(x.queueRank??x.rank??i+1),opportunityScore:Number(x.decisionScore??x.portfolioOpportunityScore??x.opportunityScore??x.growthQuality??0),growthQuality:Number(x.growthQuality||0),rewardRisk:Number(x.rewardRisk||0),profitabilityAdmission:admission,decisionIntelligenceEligible:decisionEligible,decisionIntelligenceSeedEligible:decisionSeedEligible,decisionIntelligenceDayTradeSeedEligible:decisionDayTradeSeedEligible,seedLaneEligible,seedLane:x.seedLane||null,dayTradeSeedLaneEligible,dayTradeSeedLane:x.dayTradeSeedLane||null,marketSession,minimumEntry:min,maximumEntry:max,stop:Number(x.stop),target1:Number(x.target1),target2:Number(x.target2),signalGeneratedAt:signal.generatedAt||null},status,p,reason));
+  items.push(stableItem({id:`ENTRY:STOCK:${x.ticker}`,kind:'ENTRY',assetClass:'STOCK',ticker:x.ticker,entryTier:tier,entryTierLabel:x.entryTierLabel||(tier==='B'?'BEST_ACCEPTABLE':'ELITE'),entryTierSizeMultiplier:Number(x.entryTierSizeMultiplier??(tier==='B'?.5:1)),queueRank:Number(x.queueRank??x.rank??i+1),opportunityScore:Number(x.decisionScore??x.portfolioOpportunityScore??x.opportunityScore??x.growthQuality??0),growthQuality:Number(x.growthQuality||0),rewardRisk:Number(x.rewardRisk||0),profitabilityAdmission:admission,decisionIntelligenceEligible:decisionEligible,decisionIntelligenceSeedEligible:decisionSeedEligible,decisionIntelligenceDayTradeSeedEligible:decisionDayTradeSeedEligible,seedLaneEligible,seedLane:x.seedLane||null,dayTradeSeedLaneEligible,dayTradeSeedLane:x.dayTradeSeedLane||null,marketSession,minimumEntry:min,maximumEntry:max,boundedBelowFloorEntry,stop:Number(x.stop),target1:Number(x.target1),target2:Number(x.target2),signalGeneratedAt:signal.generatedAt||null},status,p,reason));
 }
 for(const [i,x] of cryptoCandidates.entries()){
   const p=prices[x.ticker],min=Number(x.minimumEntry),max=Number(x.maximumEntry);
