@@ -2,7 +2,7 @@
   "schemaVersion": 44,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-09-19T23:38:03.550Z",
+  "generatedAt": "2026-09-19T23:57:42.361Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -346,9 +346,9 @@
     "assetClass": "STOCK",
     "overallAction": "WAIT_FOR_MARKET_OPEN",
     "reason": "Market is closed.",
-    "confidence": "CASH",
-    "signalAsOf": "2026-09-19T19:32:22.235Z",
-    "expiresAt": "2026-09-21T07:32:22.235Z",
+    "confidence": "A_PLUS",
+    "signalAsOf": "2026-09-19T23:53:57.209Z",
+    "expiresAt": "2026-09-21T11:53:57.209Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 3,
       "maxOptionPremiumPct": 8,
@@ -463,25 +463,21 @@
       "optionsLocked": false,
       "reason": "Scanner/model trade-history is diagnostic only. It must never pause or size live Robinhood trading. Live outcome brakes are computed only from confirmed Robinhood fills/history at runtime."
     },
-    "stockOrders": [],
-    "stockCandidateQueue": [
+    "stockOrders": [
       {
         "assetClass": "STOCK",
-        "queueRank": 1,
-        "queueRole": "RESERVE",
         "rank": 1,
         "ticker": "COHR",
         "sector": null,
         "action": "MARKET_CLOSED_RECHECK",
-        "allocationPctOfRobinhoodBuyingPower": 0,
-        "requiresLiveSizing": true,
+        "allocationPctOfRobinhoodBuyingPower": 15.26,
         "scanPrice": 317.19,
         "minimumEntry": 317.78,
         "maximumEntry": 324.14,
         "stop": 286.54,
         "target1": 364.64,
         "target2": 399,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": null,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 1.5,
         "rewardRisk": 2.6,
         "growthQuality": 100,
         "expectancy": {
@@ -506,6 +502,87 @@
         },
         "historicalWinRate": 85,
         "historicalSamples": 34,
+        "exitPlan": {
+          "target1SellPctOfOriginal": 25,
+          "target2Action": "DYNAMIC_TO_RUNNER_SIGNAL",
+          "maxRunnerPctOfOriginal": 0,
+          "moderateRunnerPctOfOriginal": 15,
+          "noRunnerPctOfOriginal": 0,
+          "runnerPolicyRef": "signal.runnerContinuationPolicy",
+          "validatedPolicy": "T1_25_T2_75",
+          "target2BaseSellPctOfOriginal": 75,
+          "runnerSignal": "NONE",
+          "runnerPctOfOriginal": 0,
+          "runnerAction": "EXIT_REMAINDER_AT_TARGET2"
+        },
+        "protectionPlan": {
+          "determineFromLiveQuantity": true,
+          "wholeShares": "BROKER_PERSISTENT_STOP_WHEN_SUPPORTED",
+          "fractionalRemainder": "SYNTHETIC_STOP_ONLY_IF_ACTIVE_MONITORING_PASSES",
+          "fractionalMaxPlannedStopRiskPctOfLiveEquity": 0.75,
+          "syntheticMonitoringMaxMinutes": 5,
+          "policyRef": "signal.fractionalProtectionPolicy"
+        },
+        "operationalSafety": {
+          "signalReferencePrice": 317.78,
+          "entryToStopDistancePct": 9.831,
+          "wholeShareRuntimeCheckRequired": true,
+          "wholeShareProtectabilityIsTieBreakerOnly": true,
+          "smallAccountAccessPolicyRef": "signal.smallAccountAccessPolicy",
+          "multiStockCompetitionPolicyRef": "signal.multiStockCompetitionPolicy",
+          "nonLlmTriggerMonitorRef": "signal.nonLlmTriggerMonitor",
+          "eventDrivenExecutionDispatchRef": "signal.eventDrivenExecutionDispatch",
+          "signalDriftPolicyRef": "signal.signalDriftPolicy",
+          "portfolioHeatPolicyRef": "signal.portfolioHeatPolicy",
+          "killSwitchRef": "signal.automationKillSwitch"
+        },
+        "entryTier": "A",
+        "entryTierLabel": "ELITE",
+        "entryTierSizeMultiplier": 1,
+        "bestAcceptableFallback": false
+      }
+    ],
+    "stockCandidateQueue": [
+      {
+        "assetClass": "STOCK",
+        "rank": 1,
+        "ticker": "COHR",
+        "sector": null,
+        "action": "MARKET_CLOSED_RECHECK",
+        "allocationPctOfRobinhoodBuyingPower": 15.26,
+        "scanPrice": 317.19,
+        "minimumEntry": 317.78,
+        "maximumEntry": 324.14,
+        "stop": 286.54,
+        "target1": 364.64,
+        "target2": 399,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 1.5,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "expectancy": {
+          "expectedR": 2.06,
+          "conservativeExpectedR": 2.06,
+          "costAdjustedConservativeExpectedR": 2.03,
+          "assumedRoundTripFrictionPct": 0.3,
+          "frictionR": 0.031
+        },
+        "adaptivePerformance": {
+          "samples": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "sizeMultiplier": 1,
+          "qualityAdjustment": 0,
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+        },
+        "historicalWinRate": 85,
+        "historicalSamples": 34,
+        "queueRank": 1,
+        "queueRole": "PRIMARY",
         "entryTier": "A",
         "entryTierLabel": "ELITE",
         "entryTierSizeMultiplier": 1,
@@ -589,7 +666,7 @@
             "rewardRisk": 2.6,
             "backtestStatus": "SUPPORTED",
             "newsCatalyst": {
-              "articleCount": 17,
+              "articleCount": 14,
               "windowHours": 72,
               "binaryRisk": false,
               "sentimentHint": "MIXED_OR_UNKNOWN",
@@ -618,16 +695,16 @@
                   "link": "https://finance.yahoo.com/markets/stocks/articles/coherent-cohr-too-rich-still-001913579.html"
                 },
                 {
-                  "headline": "Is Coherent (COHR) Too Rich Or Still Reasonable On Cash Flow? - Yahoo Finance",
-                  "createdAt": "2026-09-19T00:19:00.000Z",
-                  "source": "GOOGLE_NEWS:Yahoo Finance",
-                  "link": "https://news.google.com/rss/articles/CBMimAFBVV95cUxPdEJtb2RuQXVtbTBMdG5HQlhVcmQtdXNwNktuZWx0T293Mm5IUHBQSW9rMzRIeEtMNC1uWjZYYlVrRzNWZFdCSm50bnRob1RzdTdvOHczdldhYmg1RXhFU20tdWJXNm4tZ3JUMlRyNEFpVW1TbFdkU0tqMUNTdGFCR1N2VlcxV0x6VXRpSnVMd19lMmltWlhpUg?oc=5"
-                },
-                {
                   "headline": "Coherent (COHR) Stock Trades Up, Here Is Why",
                   "createdAt": "2026-09-18T23:52:40.000Z",
                   "source": "YAHOO:StockStory",
                   "link": "https://finance.yahoo.com/markets/stocks/articles/coherent-cohr-stock-trades-why-235240253.html"
+                },
+                {
+                  "headline": "Netflix, Nucor, On Holding, Xenon, Accenture, Coinbase, and More Stocks That Explain Today’s Market",
+                  "createdAt": "2026-09-18T20:19:00.000Z",
+                  "source": "YAHOO:Barrons.com",
+                  "link": "https://finance.yahoo.com/m/dcd0f202-0845-3945-921f-f151203b3bfe/netflix%2C-nucor%2C-on-holding%2C.html"
                 }
               ],
               "sourcesQueried": [
@@ -792,8 +869,8 @@
             "newsCatalyst": {
               "articleCount": 26,
               "windowHours": 72,
-              "binaryRisk": false,
-              "sentimentHint": "MIXED_OR_UNKNOWN",
+              "binaryRisk": true,
+              "sentimentHint": "POSITIVE",
               "sourcesUsed": [
                 "YAHOO",
                 "GOOGLE_NEWS",
@@ -801,22 +878,22 @@
               ],
               "headlines": [
                 {
+                  "headline": "Unpacking the Stock Market's Coiled Spring Set Up",
+                  "createdAt": "2026-09-19T23:26:00.000Z",
+                  "source": "YAHOO:Zacks",
+                  "link": "https://finance.yahoo.com/markets/stocks/articles/unpacking-stock-markets-coiled-spring-232600827.html"
+                },
+                {
                   "headline": "Dow Jones Futures: Can The Market Rally Take Flight? Robinhood, Sandisk, AMD, Moderna Surge Into Buy Areas",
                   "createdAt": "2026-09-19T16:34:51.000Z",
                   "source": "YAHOO:Investor's Business Daily",
                   "link": "https://finance.yahoo.com/m/832159c8-6dc5-38e6-b838-d7db7090ca09/dow-jones-futures%3A-can-the.html"
                 },
                 {
-                  "headline": "SanDisk Stock Jumped 11% on S&amp;P 100 News. Here’s What the Street Says. - TIKR.com",
-                  "createdAt": "2026-09-19T10:02:15.000Z",
-                  "source": "GOOGLE_NEWS:TIKR.com",
-                  "link": "https://news.google.com/rss/articles/CBMilgFBVV95cUxQeU5BdVBGQ3ZtRkdSWTlNbUFIajRxYWlYRnUzZ3hvd2pMTFJJOTdGSHBnd0xyYnhqNHlYNkh0V3VPcnB1Z19ENjFCQ2ZhNjZ1eUdNZHZqcFNvNV9wVnZoR0pUTXBsb1RtWm9lTW9iVXVqbzBfc3laYWpiVlc1Wk1JMGR3TFNMd3cyR2VyUVZxSlNNclpPRUE?oc=5"
-                },
-                {
-                  "headline": "Sandisk Joins the S&amp;P 100 on Monday -- the Same Day Nike Leaves It - The Globe and Mail",
-                  "createdAt": "2026-09-19T05:14:00.000Z",
-                  "source": "GOOGLE_NEWS:The Globe and Mail",
-                  "link": "https://news.google.com/rss/articles/CBMi4AFBVV95cUxPZmZtQnpDcHB2TlppZ3dwMV9EOVlCaGE5UDRmSGxwbHlEUDl6Y2tCckZCMEI1SEdOODFjZG5xTkVLRnFHMjF3MG1ucWZnUEJIVU5RUGdEaWJKQlFaVE9RRWRRWjczNm52Y0VsYmhRaHRLbVFTWHEtMXMySE9TLTFCM0NNUGhKLXRxSWhFa0ZrMnl0dzZSVFNjcDIwemlFUkg3VUpySGlrNTRQdzdYajg2bVhULXBsUWpmMEJlczhMN0RaVTBDNExUbVJJNjN0eV9iVU96Y1ZyS2w0N3MzYzI1bw?oc=5"
+                  "headline": "SanDisk (NASDAQ:SNDK) Stock Jumps 11% Ahead of Its S&amp;P 100 Debut, Up Over 600% in 2026 - Stocks Down Under",
+                  "createdAt": "2026-09-19T08:08:30.000Z",
+                  "source": "GOOGLE_NEWS:Stocks Down Under",
+                  "link": "https://news.google.com/rss/articles/CBMidEFVX3lxTFB6NDM5aE5lRzhpaFZpenEwYV9Fb0VNOG5vSGNOS29WZHRWdU1nc3BjWkstdmd3MHBfT1VrM1djWVFOelRvVWhnbVJmeUZYcGtWWXd4VExOcHp2dm9XTWF2NkM0bkVVbmQwVzQ2UFZxb0pjeFlM?oc=5"
                 },
                 {
                   "headline": "Sandisk Joins the S&P 100 on Monday -- the Same Day Nike Leaves It",
@@ -825,10 +902,10 @@
                   "link": "https://finance.yahoo.com/markets/stocks/articles/sandisk-joins-p-100-monday-051301493.html"
                 },
                 {
-                  "headline": "SNDK, SKHY Stocks Gain After Launching New AI Memory Standard – Wall Street Hikes Price Targets - Stocktwits",
-                  "createdAt": "2026-09-18T23:53:06.000Z",
-                  "source": "GOOGLE_NEWS:Stocktwits",
-                  "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxQNFNlRHlGNUpQb1RMUFhsb0F4cjJnWWcwY3RtWEV4ZzNYeHlKaEhrdU9ndm45Zm42R045RkZyeTF0SXViS0Yza2ZJLTlQZWI2bXdkN2tjaWxwQndMSTMtWm12c1RiMDFBMUZUbDd5bThDampzdkxEV3U1YnhlNmJsYkZHZEJxV0YzbWpaLVVZcVI3TmpiWFp4NDJ5UDRzUnIxZkc5QmxUZy1xRW1ZWTg3MGVaTFhHX1ZpaG1sTnFrMTVyQ0lCWkdaaTdyaDA?oc=5"
+                  "headline": "Stock Market Today: Nasdaq, S&P Reverse Slightly Higher; Sandisk, Lumentum Lead This Tech Rally",
+                  "createdAt": "2026-09-18T20:57:21.000Z",
+                  "source": "YAHOO:Investor's Business Daily",
+                  "link": "https://finance.yahoo.com/m/a79cf87c-d3f5-3e16-8ee6-e536ba767ccf/stock-market-today%3A-nasdaq%2C.html"
                 }
               ],
               "sourcesQueried": [
@@ -1015,12 +1092,6 @@
                   "link": "https://news.google.com/rss/articles/CBMitAFBVV95cUxOa1ZiS1U1Y2hLMVR0Q1BBSm80SFJRTzhYaGlDUmUxenc5aWsyS254b091SWJObDg5cW5YajBEajFzTkdsUkJFa2xuQlR2RE5FRGVRYlRJRnE5MWVKa2hsM2R3enNaY0duS1Z1Y1ZYbmYtc1hodUVfZlFHdkpBa092ajQyNFVIUDZwcF9mblhpdGJnY1dDWC1wQ3pIenR3dElzcjB4bk5zWWJUT1BPX0ZUVVY1cXo?oc=5"
                 },
                 {
-                  "headline": "Roivant Sciences (ROIV) director now holds 8.97M shares - Stock Titan",
-                  "createdAt": "2026-09-18T23:13:17.000Z",
-                  "source": "GOOGLE_NEWS:Stock Titan",
-                  "link": "https://news.google.com/rss/articles/CBMitAFBVV95cUxOZ0YtSTlOZXhHQVNFZTIxaW9aR1pZcEFPZWRwV3FldWk4VFlLOXhZSEJmTVVVTlU0bm1rV0d2bzhUNEsxNk5hN0JUTVBCNlFreWFoREV3aWZsSUE3bWUzMFYzRDF5S0lVSnlqQWVPT2M3WmVCV3FqQVZFVlFZekFpNkd0dVlMcDV2bkt0aW5PTWl6SkNSMEFkQnV0VjB2WjBkb0Z5N1R4WjN6SXNfczlqYUVZdU4?oc=5"
-                },
-                {
                   "headline": "New stock awards for Roivant Sciences (ROIV) director vest in 2027 - Stock Titan",
                   "createdAt": "2026-09-18T23:07:08.000Z",
                   "source": "GOOGLE_NEWS:Stock Titan",
@@ -1031,6 +1102,12 @@
                   "createdAt": "2026-09-18T23:02:16.000Z",
                   "source": "GOOGLE_NEWS:Stock Titan",
                   "link": "https://news.google.com/rss/articles/CBMitAFBVV95cUxNOXVhV0dlU0lQYXBKelVsaWNlQ1lVS3RCam5PdkxLUndxaVROUWJKOGYwQ2VrTVBIQ2ZDUFNQMXFrQUE5bGtJb3RrSnY5alFYRG1rRC1kbldzLVBveVZDczlnNVkzb3NZVVd0V2E0Tko0Rm5UZUdaNVhkREYyUUpqR0QzTlQzekVOYXRESnI0a2VCejVyWHZNMGdSVGlfUldtMmFKMlRTSVhWeldjZ08zQTlIZ3E?oc=5"
+                },
+                {
+                  "headline": "Roivant Sciences (ROIV) gives director new options and RSUs - Stock Titan",
+                  "createdAt": "2026-09-18T22:57:52.000Z",
+                  "source": "GOOGLE_NEWS:Stock Titan",
+                  "link": "https://news.google.com/rss/articles/CBMitAFBVV95cUxOUW5CVlpqRmswanotQnI2anRMcHp3UUhmZ3BQU0xCWFdDOUxVWGZ0dTh3N3dBR0tUNWQzcmV6MmFHWHRFSUNrcXpsNHBjN3JPRkhzLVZEZ1lNM2ljTVk2anEwWEFBRjV4N0hBLTlHWmtJcGRHQUFXYUM4VGdWcGJ4YjlkNC1QUzNPWFVSdHVJTG9heGdXN2lxMFZjSEhBM1dHTGZuNGdFU0pHVFNoam15aXR3UGU?oc=5"
                 }
               ],
               "sourcesQueried": [
@@ -1406,6 +1483,12 @@
               ],
               "headlines": [
                 {
+                  "headline": "Unpacking the Stock Market's Coiled Spring Set Up",
+                  "createdAt": "2026-09-19T23:26:00.000Z",
+                  "source": "YAHOO:Zacks",
+                  "link": "https://finance.yahoo.com/markets/stocks/articles/unpacking-stock-markets-coiled-spring-232600827.html"
+                },
+                {
                   "headline": "Micron (MU) Unveils Breakthrough Memory Product. It Says Much About the Memory Market",
                   "createdAt": "2026-09-19T17:11:52.000Z",
                   "source": "YAHOO:Insider Monkey",
@@ -1428,12 +1511,6 @@
                   "createdAt": "2026-09-19T12:55:00.000Z",
                   "source": "YAHOO:Motley Fool",
                   "link": "https://finance.yahoo.com/markets/stocks/articles/microns-9-dip-warning-sign-125500354.html"
-                },
-                {
-                  "headline": "Semiconductor Stocks to Buy and Hold Through 2030",
-                  "createdAt": "2026-09-19T09:37:01.000Z",
-                  "source": "YAHOO:Motley Fool",
-                  "link": "https://finance.yahoo.com/markets/stocks/articles/semiconductor-stocks-buy-hold-2030-093701236.html"
                 }
               ],
               "sourcesQueried": [
@@ -1607,9 +1684,9 @@
               "headlines": [
                 {
                   "headline": "Why Calumet (CLMT) Is Getting Attention Today - simplywall.st",
-                  "createdAt": "2026-09-19T17:30:19.000Z",
+                  "createdAt": "2026-09-19T17:30:20.000Z",
                   "source": "GOOGLE_NEWS:simplywall.st",
-                  "link": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxQQkJHa3ZNa3ZjX1VQdV9YQXZEdnY4RzZBQVFsRWl6b3pKRWU2Y3Z1VEpYREFiRll4dGhYQnE3elRJWHFDNVdncWFWVWNDdUszdDcxdm8tMDREQVZUOVEwMXBOU3U2NGZtbzhiaERYNm5nZnBPODBNWWZPZThVelF6UVlEdXZEWGdfUTIxUDA4M3d5Y3U1SzRUYVduVVJDQ2laNnBWY3NGaGFMVzjSAbABQVVfeXFMUFJjaHlpbzhsb3pZOU1WcWdBQ09fTlhacEl2eU5QVjR6c3FiYXkxd3N2dmlxUnFEdHhQeUFoNWdBWnNWNW9Tbmhyb2REaWFjNW9aSDFVWDY4SHhoZnVTR1ljNU9SOWFuVGxJeDllZndGVTBJd2R4bXRMaXlEcG5YNVZiSXpBalVWd2JHN3FIYm5EMm5yc3RHNGcyOVBsRFZDZzl3NVloVjdoeGZnYmtTdnY?oc=5"
+                  "link": "https://news.google.com/rss/articles/CBMisAFBVV95cUxQUmNoeWlvOGxvelk5TVZxZ0FDT19OWFpwSXZ5TlBWNHpzcWJheTF3c3Z2aXFScUR0eFB5QWg1Z0Fac1Y1b1NuaHJvZERpYWM1b1pIMVVYNjhIeGhmdVNHWWM1T1I5YW5UbEl4OWVmd0ZVMEl3ZHhtdExpeURwblg1VmJJekFqVVZ3Ykc3cUhibkQybnJzdEc0ZzI5UGxEVkNnOXc1WWhWN2h4Zmdia1N2dtIBsAFBVV95cUxQUmNoeWlvOGxvelk5TVZxZ0FDT19OWFpwSXZ5TlBWNHpzcWJheTF3c3Z2aXFScUR0eFB5QWg1Z0Fac1Y1b1NuaHJvZERpYWM1b1pIMVVYNjhIeGhmdVNHWWM1T1I5YW5UbEl4OWVmd0ZVMEl3ZHhtdExpeURwblg1VmJJekFqVVZ3Ykc3cUhibkQybnJzdEc0ZzI5UGxEVkNnOXc1WWhWN2h4Zmdia1N2dg?oc=5"
                 },
                 {
                   "headline": "Why Barchart’s Top Technical Analysis Expert Isn’t Adding This Hot Stock (Up 220%) to His Portfolio",
@@ -1736,18 +1813,30 @@
           "samples": 388,
           "winRatePct": 50,
           "avgForwardReturnPct": 0.25,
-          "cohortGeneratedAt": "2026-09-19T19:34:23.286Z"
+          "cohortGeneratedAt": "2026-09-19T23:56:34.111Z"
         },
         "newsCatalyst": {
           "articleCount": 16,
           "windowHours": 72,
-          "binaryRisk": false,
+          "binaryRisk": true,
           "sentimentHint": "POSITIVE",
           "sourcesUsed": [
             "YAHOO",
             "GOOGLE_NEWS"
           ],
           "headlines": [
+            {
+              "headline": "SpaceX-Tesla Merger: Ron Baron Told Elon Musk 'Whatever You Decide... Is What I'm Going to Support'",
+              "createdAt": "2026-09-19T21:30:24.000Z",
+              "source": "YAHOO:Benzinga",
+              "link": "https://finance.yahoo.com/markets/stocks/articles/spacex-tesla-merger-ron-baron-213024671.html"
+            },
+            {
+              "headline": "SpaceX Stock Has Gone Nowhere Since Its First Day of Trading",
+              "createdAt": "2026-09-19T19:57:01.000Z",
+              "source": "YAHOO:Motley Fool",
+              "link": "https://finance.yahoo.com/markets/stocks/articles/spacex-stock-gone-nowhere-since-195701417.html"
+            },
             {
               "headline": "SpaceX Nasdaq 100 weight to jump to 2.82% in quarterly rebalance -Bloomberg",
               "createdAt": "2026-09-19T19:26:58.000Z",
@@ -1761,22 +1850,10 @@
               "link": "https://finance.yahoo.com/m/e99f9364-a043-396e-a132-0a986e95b51d/anthropic-reportedly-delays.html"
             },
             {
-              "headline": "Anthropic IPO: 1 Key Lesson Investors Can Learn From SpaceX",
-              "createdAt": "2026-09-19T15:30:00.000Z",
-              "source": "YAHOO:Motley Fool",
-              "link": "https://finance.yahoo.com/markets/stocks/articles/anthropic-ipo-1-key-lesson-153000984.html"
-            },
-            {
-              "headline": "SpaceX’s Nasdaq 100 Weight Is Confirmed at 2.82% in Rebalance",
-              "createdAt": "2026-09-19T14:17:01.000Z",
-              "source": "YAHOO:Bloomberg",
-              "link": "https://finance.yahoo.com/markets/stocks/articles/spacex-nasdaq-100-weight-confirmed-141701836.html"
-            },
-            {
-              "headline": "Anthropic's IPO Is Coming. Here's What That Means for S&P 500 Investors.",
-              "createdAt": "2026-09-19T14:05:00.000Z",
-              "source": "YAHOO:Motley Fool",
-              "link": "https://finance.yahoo.com/markets/stocks/articles/anthropics-ipo-coming-heres-means-140500319.html"
+              "headline": "Amodei, Altman, and Musk Called for an AI Slowdown. Here’s Why It’s a Warning Sign for ASML Shareholders.",
+              "createdAt": "2026-09-19T17:30:02.000Z",
+              "source": "YAHOO:Barchart",
+              "link": "https://finance.yahoo.com/technology/ai/articles/amodei-altman-musk-called-ai-173002836.html"
             }
           ],
           "sourcesQueried": [
@@ -1806,13 +1883,25 @@
             "newsCatalyst": {
               "articleCount": 16,
               "windowHours": 72,
-              "binaryRisk": false,
+              "binaryRisk": true,
               "sentimentHint": "POSITIVE",
               "sourcesUsed": [
                 "YAHOO",
                 "GOOGLE_NEWS"
               ],
               "headlines": [
+                {
+                  "headline": "SpaceX-Tesla Merger: Ron Baron Told Elon Musk 'Whatever You Decide... Is What I'm Going to Support'",
+                  "createdAt": "2026-09-19T21:30:24.000Z",
+                  "source": "YAHOO:Benzinga",
+                  "link": "https://finance.yahoo.com/markets/stocks/articles/spacex-tesla-merger-ron-baron-213024671.html"
+                },
+                {
+                  "headline": "SpaceX Stock Has Gone Nowhere Since Its First Day of Trading",
+                  "createdAt": "2026-09-19T19:57:01.000Z",
+                  "source": "YAHOO:Motley Fool",
+                  "link": "https://finance.yahoo.com/markets/stocks/articles/spacex-stock-gone-nowhere-since-195701417.html"
+                },
                 {
                   "headline": "SpaceX Nasdaq 100 weight to jump to 2.82% in quarterly rebalance -Bloomberg",
                   "createdAt": "2026-09-19T19:26:58.000Z",
@@ -1826,22 +1915,10 @@
                   "link": "https://finance.yahoo.com/m/e99f9364-a043-396e-a132-0a986e95b51d/anthropic-reportedly-delays.html"
                 },
                 {
-                  "headline": "Anthropic IPO: 1 Key Lesson Investors Can Learn From SpaceX",
-                  "createdAt": "2026-09-19T15:30:00.000Z",
-                  "source": "YAHOO:Motley Fool",
-                  "link": "https://finance.yahoo.com/markets/stocks/articles/anthropic-ipo-1-key-lesson-153000984.html"
-                },
-                {
-                  "headline": "SpaceX’s Nasdaq 100 Weight Is Confirmed at 2.82% in Rebalance",
-                  "createdAt": "2026-09-19T14:17:01.000Z",
-                  "source": "YAHOO:Bloomberg",
-                  "link": "https://finance.yahoo.com/markets/stocks/articles/spacex-nasdaq-100-weight-confirmed-141701836.html"
-                },
-                {
-                  "headline": "Anthropic's IPO Is Coming. Here's What That Means for S&P 500 Investors.",
-                  "createdAt": "2026-09-19T14:05:00.000Z",
-                  "source": "YAHOO:Motley Fool",
-                  "link": "https://finance.yahoo.com/markets/stocks/articles/anthropics-ipo-coming-heres-means-140500319.html"
+                  "headline": "Amodei, Altman, and Musk Called for an AI Slowdown. Here’s Why It’s a Warning Sign for ASML Shareholders.",
+                  "createdAt": "2026-09-19T17:30:02.000Z",
+                  "source": "YAHOO:Barchart",
+                  "link": "https://finance.yahoo.com/technology/ai/articles/amodei-altman-musk-called-ai-173002836.html"
                 }
               ],
               "sourcesQueried": [
@@ -1956,7 +2033,7 @@
           "samples": 388,
           "winRatePct": 50,
           "avgForwardReturnPct": 0.25,
-          "cohortGeneratedAt": "2026-09-19T19:34:23.286Z"
+          "cohortGeneratedAt": "2026-09-19T23:56:34.111Z"
         },
         "newsCatalyst": {
           "articleCount": 10,
@@ -1981,12 +2058,6 @@
               "link": "https://finance.yahoo.com/markets/stocks/articles/sandisk-joins-p-100-monday-051301493.html"
             },
             {
-              "headline": "HONA News Today | Why did Honeywell Aerospace stock go down today? - MarketBeat",
-              "createdAt": "2026-09-18T21:41:45.000Z",
-              "source": "GOOGLE_NEWS:MarketBeat",
-              "link": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE5UTW93OFpqX2IyTEVKTVBfdmxVWFFISktRend6VE9kOVdJZGhQcGpueXFiQk82Wjdvd01oX1VnRWRRVm1kaVVaZmotRTB1QXJ3cUtfSGZaOU1TNjRFQTc2ag?oc=5"
-            },
-            {
               "headline": "Honeywell CEO Calls GE-CPP Deal Positive Amid Persistent Supply Constraints",
               "createdAt": "2026-09-18T16:52:39.000Z",
               "source": "YAHOO:Insider Monkey",
@@ -1994,9 +2065,15 @@
             },
             {
               "headline": "Honeywell Aerospace (HONA) Stock Looks Like A Bargain On Cash Flow - simplywall.st",
-              "createdAt": "2026-09-18T14:41:15.000Z",
+              "createdAt": "2026-09-18T14:41:14.000Z",
               "source": "GOOGLE_NEWS:simplywall.st",
-              "link": "https://news.google.com/rss/articles/CBMi3wFBVV95cUxPSjdwaDFOSHg2TW1lOFpQT1YyR2xqb1RraDdPaVF1eGZBMW5VVFU4U29nbVptNHI4OUNWVml0SjFON2ZudDc2c3dRczc1VDRmUmo2NlF5a24ya2ZBUGNoYzh2R24xVlZNdU9tdjlqWEtVejNvUW9ENHl4YUZKX1JCVlAzN1h4ZUhpQnpmaWhPQlptbjNReHBrWmFVaEoweVk5X3hianhibk5jNk5CLUdabHhxY0huQ3hUVlhGcjZqdHlDRFF1ZTZnR3RWaWFKSThQV2dGcGNCalRIWmI2NTM40gHfAUFVX3lxTE9KN3BoMU5IeDZNbWU4WlBPVjJHbGpvVGtoN09pUXV4ZkExblVUVThTb2dtWm00cjg5Q1ZWaXRKMU43Zm50NzZzd1FzNzVUNGZSajY2UXlrbjJrZkFQY2hjOHZHbjFWVk11T212OWpYS1V6M29Rb0Q0eXhhRkpfUkJWUDM3WHhlSGlCemZpaE9CWm1uM1F4cGtaYVVoSjB5WTlfeGJqeGJuTmM2TkItR1pseHFjSG5DeFRWWEZyNmp0eUNEUXVlNmdHdFZpYUpJOFBXZ0ZwY0JqVEhaYjY1Mzg?oc=5"
+              "link": "https://news.google.com/rss/articles/CBMi2gFBVV95cUxNdXpZQWV0NkFCSVRuQi1RaXlqbkNGQU1RaFZZellRbTBycVVSQjViY0xaMFIxbGN0azFkaEpHMnNWUmd1UzJQNlpHcGEtdWtOUS1TMF92U3IzT3g4eWROcGdMS1dDbWtuZE5QWllBWFRuSjB5NXM2b1FHanZvaUhtUXhYNzN0cUtRdTI5R0x1T1FTXzk4QjEyQlFCTlRCSVVQSzhTWlFhUDF1dzZHckpSVDRta2VoQnppcWpENEhCaFd2cXdpZm5MTUI1VHZMbkJ6TE5pazNya0RuQdIB3wFBVV95cUxPSjdwaDFOSHg2TW1lOFpQT1YyR2xqb1RraDdPaVF1eGZBMW5VVFU4U29nbVptNHI4OUNWVml0SjFON2ZudDc2c3dRczc1VDRmUmo2NlF5a24ya2ZBUGNoYzh2R24xVlZNdU9tdjlqWEtVejNvUW9ENHl4YUZKX1JCVlAzN1h4ZUhpQnpmaWhPQlptbjNReHBrWmFVaEoweVk5X3hianhibk5jNk5CLUdabHhxY0huQ3hUVlhGcjZqdHlDRFF1ZTZnR3RWaWFKSThQV2dGcGNCalRIWmI2NTM4?oc=5"
+            },
+            {
+              "headline": "Saudi Arabia’s $5.75 Billion Potential Arms Sales: What It Means for Boeing and Honeywell Aerospace",
+              "createdAt": "2026-09-18T11:34:11.000Z",
+              "source": "YAHOO:Insider Monkey",
+              "link": "https://finance.yahoo.com/markets/stocks/articles/saudi-arabia-5-75-billion-113411186.html"
             }
           ],
           "sourcesQueried": [
@@ -2046,12 +2123,6 @@
                   "link": "https://finance.yahoo.com/markets/stocks/articles/sandisk-joins-p-100-monday-051301493.html"
                 },
                 {
-                  "headline": "HONA News Today | Why did Honeywell Aerospace stock go down today? - MarketBeat",
-                  "createdAt": "2026-09-18T21:41:45.000Z",
-                  "source": "GOOGLE_NEWS:MarketBeat",
-                  "link": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE5UTW93OFpqX2IyTEVKTVBfdmxVWFFISktRend6VE9kOVdJZGhQcGpueXFiQk82Wjdvd01oX1VnRWRRVm1kaVVaZmotRTB1QXJ3cUtfSGZaOU1TNjRFQTc2ag?oc=5"
-                },
-                {
                   "headline": "Honeywell CEO Calls GE-CPP Deal Positive Amid Persistent Supply Constraints",
                   "createdAt": "2026-09-18T16:52:39.000Z",
                   "source": "YAHOO:Insider Monkey",
@@ -2059,9 +2130,15 @@
                 },
                 {
                   "headline": "Honeywell Aerospace (HONA) Stock Looks Like A Bargain On Cash Flow - simplywall.st",
-                  "createdAt": "2026-09-18T14:41:15.000Z",
+                  "createdAt": "2026-09-18T14:41:14.000Z",
                   "source": "GOOGLE_NEWS:simplywall.st",
-                  "link": "https://news.google.com/rss/articles/CBMi3wFBVV95cUxPSjdwaDFOSHg2TW1lOFpQT1YyR2xqb1RraDdPaVF1eGZBMW5VVFU4U29nbVptNHI4OUNWVml0SjFON2ZudDc2c3dRczc1VDRmUmo2NlF5a24ya2ZBUGNoYzh2R24xVlZNdU9tdjlqWEtVejNvUW9ENHl4YUZKX1JCVlAzN1h4ZUhpQnpmaWhPQlptbjNReHBrWmFVaEoweVk5X3hianhibk5jNk5CLUdabHhxY0huQ3hUVlhGcjZqdHlDRFF1ZTZnR3RWaWFKSThQV2dGcGNCalRIWmI2NTM40gHfAUFVX3lxTE9KN3BoMU5IeDZNbWU4WlBPVjJHbGpvVGtoN09pUXV4ZkExblVUVThTb2dtWm00cjg5Q1ZWaXRKMU43Zm50NzZzd1FzNzVUNGZSajY2UXlrbjJrZkFQY2hjOHZHbjFWVk11T212OWpYS1V6M29Rb0Q0eXhhRkpfUkJWUDM3WHhlSGlCemZpaE9CWm1uM1F4cGtaYVVoSjB5WTlfeGJqeGJuTmM2TkItR1pseHFjSG5DeFRWWEZyNmp0eUNEUXVlNmdHdFZpYUpJOFBXZ0ZwY0JqVEhaYjY1Mzg?oc=5"
+                  "link": "https://news.google.com/rss/articles/CBMi2gFBVV95cUxNdXpZQWV0NkFCSVRuQi1RaXlqbkNGQU1RaFZZellRbTBycVVSQjViY0xaMFIxbGN0azFkaEpHMnNWUmd1UzJQNlpHcGEtdWtOUS1TMF92U3IzT3g4eWROcGdMS1dDbWtuZE5QWllBWFRuSjB5NXM2b1FHanZvaUhtUXhYNzN0cUtRdTI5R0x1T1FTXzk4QjEyQlFCTlRCSVVQSzhTWlFhUDF1dzZHckpSVDRta2VoQnppcWpENEhCaFd2cXdpZm5MTUI1VHZMbkJ6TE5pazNya0RuQdIB3wFBVV95cUxPSjdwaDFOSHg2TW1lOFpQT1YyR2xqb1RraDdPaVF1eGZBMW5VVFU4U29nbVptNHI4OUNWVml0SjFON2ZudDc2c3dRczc1VDRmUmo2NlF5a24ya2ZBUGNoYzh2R24xVlZNdU9tdjlqWEtVejNvUW9ENHl4YUZKX1JCVlAzN1h4ZUhpQnpmaWhPQlptbjNReHBrWmFVaEoweVk5X3hianhibk5jNk5CLUdabHhxY0huQ3hUVlhGcjZqdHlDRFF1ZTZnR3RWaWFKSThQV2dGcGNCalRIWmI2NTM4?oc=5"
+                },
+                {
+                  "headline": "Saudi Arabia’s $5.75 Billion Potential Arms Sales: What It Means for Boeing and Honeywell Aerospace",
+                  "createdAt": "2026-09-18T11:34:11.000Z",
+                  "source": "YAHOO:Insider Monkey",
+                  "link": "https://finance.yahoo.com/markets/stocks/articles/saudi-arabia-5-75-billion-113411186.html"
                 }
               ],
               "sourcesQueried": [
@@ -2165,8 +2242,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-09-19T23:37:43.487Z",
-    "expiresAt": "2026-09-20T00:07:43.487Z",
+    "signalAsOf": "2026-09-19T23:57:21.089Z",
+    "expiresAt": "2026-09-20T00:27:21.089Z",
     "policy": {
       "researchMode": "ACTIVE_24_7_MORE_OPPORTUNITIES",
       "dataSource": "CRYPTO_COM_PUBLIC_API",
@@ -2201,7 +2278,7 @@
   "entryGateRobustness": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
     "status": "RED_FLAG",
-    "generatedAt": "2026-09-19T23:37:25.723Z",
+    "generatedAt": "2026-09-19T23:54:48.160Z",
     "holdoutStart": "2024-01-01",
     "holdoutEnd": "2025-12-31",
     "secondHoldoutStart": "2026-01-01",
@@ -2477,7 +2554,7 @@
   },
   "shadowDiagnostics": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/shadow-trades.json",
-    "generatedAt": "2026-09-19T19:33:27.881Z",
+    "generatedAt": "2026-09-19T23:55:42.436Z",
     "summary": {
       "ACCEPTED": {
         "resolved": 0,
@@ -2501,7 +2578,7 @@
   },
   "probabilityFirstPolicy": {
     "schemaVersion": 5,
-    "generatedAt": "2026-09-19T23:38:03.501Z",
+    "generatedAt": "2026-09-19T23:57:42.317Z",
     "objective": "Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto active around the clock, and cash acceptable. Prefer elite A stocks at normal encoded size, allow a tightly capped B best-acceptable micro-probation stock after A-tier priority whenever live capacity remains, and let crypto surface more reasonable 24/7 opportunities without removing hard risk controls. This policy cannot eliminate market loss risk.",
     "stocks": {
       "minGrowthQuality": 85,
@@ -2667,15 +2744,15 @@
   },
   "dataFreshness": {
     "status": "GENERATED_THIS_RUN",
-    "lastSuccessfulGeneration": "2026-09-19T23:38:03.600Z",
+    "lastSuccessfulGeneration": "2026-09-19T23:57:42.397Z",
     "expectedRefreshCadenceMinutes": 10,
     "stockExpectedRefreshMinutesDuringMarket": 10,
     "cryptoExpectedRefreshMinutes": 10,
-    "stockSignalAsOf": "2026-09-19T19:32:22.235Z",
-    "cryptoSignalAsOf": "2026-09-19T23:37:43.487Z",
-    "stockAgeMinutes": 246,
+    "stockSignalAsOf": "2026-09-19T23:53:57.209Z",
+    "cryptoSignalAsOf": "2026-09-19T23:57:21.089Z",
+    "stockAgeMinutes": 4,
     "cryptoAgeMinutes": 0,
-    "entryGateValidationAgeMinutes": 1,
+    "entryGateValidationAgeMinutes": 3,
     "staleAfterMinutes": {
       "unified": 20,
       "stockDuringMarket": 25,
@@ -2773,12 +2850,12 @@
     }
   },
   "systemHealth": {
-    "generatedAt": "2026-09-19T23:38:03.600Z",
+    "generatedAt": "2026-09-19T23:57:42.397Z",
     "signalAgeMinutes": 0,
     "dataFreshnessStatus": "GENERATED_THIS_RUN",
     "entryGateValidation": {
       "status": "RED_FLAG",
-      "ageMinutes": 1,
+      "ageMinutes": 3,
       "required": true
     },
     "probabilityFirstOverlay": {
@@ -2788,7 +2865,7 @@
     },
     "shadowLedger": {
       "status": "AVAILABLE",
-      "ageMinutes": 245,
+      "ageMinutes": 2,
       "requiredForTrading": false
     },
     "runtimeBroker": {
@@ -3034,8 +3111,8 @@
     }
   },
   "exitPolicyValidation": {
-    "status": "UNAVAILABLE_FAILSAFE_BASELINE",
-    "generatedAt": "2026-09-19T19:33:08.934Z",
+    "status": "AVAILABLE",
+    "generatedAt": "2026-09-19T23:54:49.956Z",
     "recommendedPolicy": "T1_25_T2_75",
     "recommendationReason": "The no-runner baseline was the strongest policy in development, so no runner policy is promoted.",
     "reportUrl": "https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/exit-policy-validation.json",
@@ -3049,7 +3126,7 @@
   },
   "portfolioCorrelationIntelligence": {
     "status": "AVAILABLE",
-    "generatedAt": "2026-09-19T19:33:06.804Z",
+    "generatedAt": "2026-09-19T23:54:47.195Z",
     "lookbackTradingDays": 90,
     "highCorrelationThreshold": 0.75,
     "veryHighCorrelationThreshold": 0.88,
@@ -3082,15 +3159,15 @@
   },
   "championChallenger": {
     "status": "AVAILABLE",
-    "generatedAt": "2026-09-19T19:33:09.016Z",
+    "generatedAt": "2026-09-19T23:54:50.014Z",
     "mode": "CHAMPION_CHALLENGER",
     "champion": {
       "exitPolicy": "T1_25_T2_75",
       "status": "LIVE_POLICY_ONLY_IF_ALL_RUNTIME_GUARDS_PASS",
       "evidence": {
-        "exitValidationGeneratedAt": "2026-09-19T19:33:08.934Z",
-        "entryValidationGeneratedAt": "2026-09-19T19:33:07.746Z",
-        "probabilityPolicyGeneratedAt": "2026-09-19T19:17:32.994Z"
+        "exitValidationGeneratedAt": "2026-09-19T23:54:49.956Z",
+        "entryValidationGeneratedAt": "2026-09-19T23:54:48.160Z",
+        "probabilityPolicyGeneratedAt": "2026-09-19T23:38:03.501Z"
       }
     },
     "promotionPolicy": {
@@ -3119,7 +3196,7 @@
   },
   "adaptivePerformance": {
     "status": "ACTIVE",
-    "generatedAt": "2026-09-19T23:38:03.448Z",
+    "generatedAt": "2026-09-19T23:57:03.060Z",
     "resolvedRealStockTrades": 1,
     "sourceOfTruth": "ROBINHOOD_CONFIRMED_REAL_FILLS_ONLY",
     "policy": {
@@ -3563,7 +3640,7 @@
       },
       "recentFilings": [],
       "newsCatalyst": {
-        "articleCount": 17,
+        "articleCount": 14,
         "windowHours": 72,
         "binaryRisk": false,
         "sentimentHint": "MIXED_OR_UNKNOWN",
@@ -3592,16 +3669,16 @@
             "link": "https://finance.yahoo.com/markets/stocks/articles/coherent-cohr-too-rich-still-001913579.html"
           },
           {
-            "headline": "Is Coherent (COHR) Too Rich Or Still Reasonable On Cash Flow? - Yahoo Finance",
-            "createdAt": "2026-09-19T00:19:00.000Z",
-            "source": "GOOGLE_NEWS:Yahoo Finance",
-            "link": "https://news.google.com/rss/articles/CBMimAFBVV95cUxPdEJtb2RuQXVtbTBMdG5HQlhVcmQtdXNwNktuZWx0T293Mm5IUHBQSW9rMzRIeEtMNC1uWjZYYlVrRzNWZFdCSm50bnRob1RzdTdvOHczdldhYmg1RXhFU20tdWJXNm4tZ3JUMlRyNEFpVW1TbFdkU0tqMUNTdGFCR1N2VlcxV0x6VXRpSnVMd19lMmltWlhpUg?oc=5"
-          },
-          {
             "headline": "Coherent (COHR) Stock Trades Up, Here Is Why",
             "createdAt": "2026-09-18T23:52:40.000Z",
             "source": "YAHOO:StockStory",
             "link": "https://finance.yahoo.com/markets/stocks/articles/coherent-cohr-stock-trades-why-235240253.html"
+          },
+          {
+            "headline": "Netflix, Nucor, On Holding, Xenon, Accenture, Coinbase, and More Stocks That Explain Today’s Market",
+            "createdAt": "2026-09-18T20:19:00.000Z",
+            "source": "YAHOO:Barrons.com",
+            "link": "https://finance.yahoo.com/m/dcd0f202-0845-3945-921f-f151203b3bfe/netflix%2C-nucor%2C-on-holding%2C.html"
           }
         ],
         "sourcesQueried": [
@@ -3708,8 +3785,8 @@
     "topMatchedCandidates": [
       {
         "ticker": "COHR",
-        "netActivityScore": 2.5,
-        "buyWeight": 0.205,
+        "netActivityScore": 2.4,
+        "buyWeight": 0.204,
         "sellWeight": 0,
         "distinctPoliticians": 1,
         "bipartisan": false,
@@ -3720,7 +3797,7 @@
       },
       {
         "ticker": "MU",
-        "netActivityScore": 2.4,
+        "netActivityScore": 2.3,
         "buyWeight": 0.196,
         "sellWeight": 0,
         "distinctPoliticians": 2,
@@ -3734,7 +3811,7 @@
         "ticker": "JNJ",
         "netActivityScore": -14.5,
         "buyWeight": 0,
-        "sellWeight": 1.21,
+        "sellWeight": 1.207,
         "distinctPoliticians": 2,
         "bipartisan": false,
         "sourceCount": 1,
@@ -3745,7 +3822,7 @@
       {
         "ticker": "SWKS",
         "netActivityScore": 2.9,
-        "buyWeight": 0.239,
+        "buyWeight": 0.238,
         "sellWeight": 0,
         "distinctPoliticians": 1,
         "bipartisan": false,
@@ -3756,9 +3833,9 @@
       },
       {
         "ticker": "INTC",
-        "netActivityScore": -14.9,
+        "netActivityScore": -14.8,
         "buyWeight": 0,
-        "sellWeight": 1.238,
+        "sellWeight": 1.235,
         "distinctPoliticians": 2,
         "bipartisan": false,
         "sourceCount": 1,
@@ -3768,8 +3845,8 @@
       },
       {
         "ticker": "COHR",
-        "netActivityScore": 2.5,
-        "buyWeight": 0.205,
+        "netActivityScore": 2.4,
+        "buyWeight": 0.204,
         "sellWeight": 0,
         "distinctPoliticians": 1,
         "bipartisan": false,
@@ -3780,7 +3857,7 @@
       },
       {
         "ticker": "MU",
-        "netActivityScore": 2.4,
+        "netActivityScore": 2.3,
         "buyWeight": 0.196,
         "sellWeight": 0,
         "distinctPoliticians": 2,
@@ -3823,18 +3900,18 @@
       "historicalSamples": 5,
       "rewardRisk": 5,
       "confirm4h": true,
-      "rsi4h": 92.1,
-      "vwap4h": 0.002857,
+      "rsi4h": 92.5,
+      "vwap4h": 0.002869,
       "pullbackToSupportOrVwap": true,
       "momentumTurnedUp": true,
       "volumeConfirm": true,
       "btcTrendSupport": true,
-      "dollarVolume20d": 8055,
-      "dollarVolume24hReal": 64330,
-      "entry": 0.003263,
-      "stop": 0.002825,
-      "target1": 0.004575,
-      "target2": 0.005451,
+      "dollarVolume20d": 8170,
+      "dollarVolume24hReal": 64917,
+      "entry": 0.003339,
+      "stop": 0.002901,
+      "target1": 0.004652,
+      "target2": 0.005527,
       "robinhoodTradable": null
     },
     "qualifiedChampion": null,
@@ -3895,7 +3972,7 @@
   },
   "unifiedMarketIntelligence": {
     "schemaVersion": 1,
-    "generatedAt": "2026-09-19T23:38:04.241Z",
+    "generatedAt": "2026-09-19T23:57:42.991Z",
     "architecture": "TWO_TOURNAMENTS_UNIFIED_EVIDENCE",
     "objective": "Improve cost-adjusted expectancy and reduce avoidable losses through diverse evidence, forward validation, broker reconciliation and hard risk limits. No win or income guarantee.",
     "providers": [
@@ -3908,7 +3985,7 @@
         ],
         "role": "PRIMARY_MARKET_DATA_AND_RESEARCH",
         "status": "CONNECTED",
-        "lastCheckedAt": "2026-09-19T23:38:04.175Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.803Z",
         "liveInfluence": "HARD_DATA_GATES_AND_TOURNAMENT_INPUT",
         "freshnessMinutes": 0,
         "capabilities": [
@@ -3928,7 +4005,7 @@
         ],
         "role": "BROKER_SOURCE_OF_TRUTH",
         "status": "AUTHORIZED_RUNTIME_REQUIRED",
-        "lastCheckedAt": "2026-09-19T23:38:04.175Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.803Z",
         "liveInfluence": "EXECUTION_AND_CONFIRMED_FILL_LEARNING_ONLY",
         "capabilities": [
           "cash and holdings verification",
@@ -3946,7 +4023,7 @@
         ],
         "role": "DIRECT_BROKER_EXECUTION",
         "status": "CONNECTED",
-        "lastCheckedAt": "2026-09-19T23:38:04.175Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.803Z",
         "liveInfluence": "QUALIFIED_CRYPTO_EXECUTION_AND_CONFIRMED_FILLS",
         "capabilities": [
           "account verification",
@@ -3963,7 +4040,7 @@
         ],
         "role": "OFFICIAL_FUNDAMENTALS_AND_FILINGS",
         "status": "CONNECTED",
-        "lastCheckedAt": "2026-09-19T23:38:04.175Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.803Z",
         "liveInfluence": "FUNDAMENTAL_AND_EVENT_RISK_GATES",
         "capabilities": [
           "company facts",
@@ -3978,7 +4055,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "OK",
-        "lastCheckedAt": "2026-09-19T23:38:04.175Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.803Z",
         "records": 2780,
         "endpoint": "https://www.insiderfinance.io/congress-trades",
         "liveInfluence": "SHADOW_ONLY"
@@ -3991,7 +4068,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "UNAVAILABLE",
-        "lastCheckedAt": "2026-09-19T23:38:04.175Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.803Z",
         "records": 0,
         "endpoint": "https://stockcircle.com/congress-stock-trades?view=latest_trades",
         "liveInfluence": "SHADOW_ONLY"
@@ -4004,7 +4081,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-09-19T23:38:04.175Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.803Z",
         "records": 0,
         "endpoint": "https://www.barchart.com/investing-ideas/politician-insider-trading",
         "liveInfluence": "SHADOW_ONLY"
@@ -4017,7 +4094,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-09-19T23:38:04.175Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.803Z",
         "records": 0,
         "endpoint": "https://www.capitoltrades.com/politicians",
         "liveInfluence": "SHADOW_ONLY"
@@ -4030,7 +4107,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-09-19T23:38:04.175Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.803Z",
         "records": 0,
         "endpoint": "https://www.quiverquant.com/congresstrading/",
         "liveInfluence": "SHADOW_ONLY"
@@ -4043,7 +4120,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-09-19T23:38:04.175Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.803Z",
         "records": 0,
         "endpoint": "https://unusualwhales.com/politics",
         "liveInfluence": "SHADOW_ONLY"
@@ -4056,7 +4133,7 @@
         ],
         "role": "OPTIONAL_LICENSED_ALTERNATIVE_DATA",
         "status": "LICENSED_KEY_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-09-19T23:38:04.175Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.803Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION",
         "capabilities": [
           "congressional activity",
@@ -4072,7 +4149,7 @@
         ],
         "role": "OPTIONAL_LICENSED_OPTIONS_AND_POLITICAL_DATA",
         "status": "LICENSED_KEY_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-09-19T23:38:04.175Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.803Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION",
         "capabilities": [
           "political disclosures",
@@ -4087,7 +4164,7 @@
         ],
         "role": "AUTHORITATIVE_RECONCILIATION",
         "status": "REFERENCE_LINKS_FROM_SOURCE_RECORDS",
-        "lastCheckedAt": "2026-09-19T23:38:04.175Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.803Z",
         "liveInfluence": "CONFIRMATION_ONLY",
         "capabilities": [
           "original disclosure links"
@@ -4102,7 +4179,7 @@
         ],
         "role": "OUTCOME_AND_BOUNDED_LEARNING_SOURCE",
         "status": "ACTIVE",
-        "lastCheckedAt": "2026-09-19T23:38:04.175Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.803Z",
         "liveInfluence": "MAY_RERANK_REDUCE_OR_BLOCK_NEVER_RAISE_MAX_RISK",
         "records": 1
       },
@@ -4115,7 +4192,7 @@
         ],
         "role": "SECONDARY_RESEARCH_AND_MANUAL_RECONCILIATION",
         "status": "REFERENCE_ONLY_NO_OFFICIAL_EXECUTION_FEED",
-        "lastCheckedAt": "2026-09-19T23:38:04.241Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.991Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -4127,7 +4204,7 @@
         ],
         "role": "SECONDARY_QUOTE_AND_NEWS_RECONCILIATION",
         "status": "REFERENCE_ONLY_NO_SUPPORTED_TRADING_API",
-        "lastCheckedAt": "2026-09-19T23:38:04.241Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.991Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -4139,7 +4216,7 @@
         ],
         "role": "OPTIONAL_AUTHORIZED_MARKET_DATA_OR_BROKER_RECONCILIATION",
         "status": "OPENAPI_CREDENTIALS_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-09-19T23:38:04.241Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.991Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION"
       },
       {
@@ -4151,7 +4228,7 @@
         ],
         "role": "CHART_TECHNICAL_AND_ALERT_VISUALIZATION",
         "status": "VISUALIZATION_REFERENCE_ALPACA_REMAINS_DATAFEED",
-        "lastCheckedAt": "2026-09-19T23:38:04.241Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.991Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -4163,7 +4240,7 @@
         ],
         "role": "SCREENER_FUNDAMENTAL_AND_LIQUIDITY_RECONCILIATION",
         "status": "LICENSED_EXPORT_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-09-19T23:38:04.241Z",
+        "lastCheckedAt": "2026-09-19T23:57:42.991Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION"
       }
     ],
