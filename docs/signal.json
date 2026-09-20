@@ -2,7 +2,7 @@
   "schemaVersion": 44,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-09-20T16:12:58.941Z",
+  "generatedAt": "2026-09-20T16:27:21.942Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -346,7 +346,7 @@
     "assetClass": "STOCK",
     "overallAction": "WAIT_FOR_MARKET_OPEN",
     "reason": "Market is closed.",
-    "confidence": "A_PLUS",
+    "confidence": "CASH",
     "signalAsOf": "2026-09-20T14:18:30.803Z",
     "expiresAt": "2026-09-22T02:18:30.803Z",
     "policy": {
@@ -463,85 +463,7 @@
       "optionsLocked": false,
       "reason": "Scanner/model trade-history is diagnostic only. It must never pause or size live Robinhood trading. Live outcome brakes are computed only from confirmed Robinhood fills/history at runtime."
     },
-    "stockOrders": [
-      {
-        "assetClass": "STOCK",
-        "rank": 1,
-        "ticker": "SNDK",
-        "sector": null,
-        "action": "MARKET_CLOSED_RECHECK",
-        "allocationPctOfRobinhoodBuyingPower": 0.01,
-        "scanPrice": 1792.96,
-        "minimumEntry": 1803.4,
-        "maximumEntry": 1839.47,
-        "stop": 1591.23,
-        "target1": 2121.66,
-        "target2": 2355.04,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": 0,
-        "rewardRisk": 2.6,
-        "growthQuality": 100,
-        "expectancy": {
-          "expectedR": 1.92,
-          "conservativeExpectedR": 1.92,
-          "costAdjustedConservativeExpectedR": 1.89,
-          "assumedRoundTripFrictionPct": 0.3,
-          "frictionR": 0.025
-        },
-        "adaptivePerformance": {
-          "samples": 0,
-          "wins": 0,
-          "losses": 0,
-          "winRate": null,
-          "sizeMultiplier": 1,
-          "qualityAdjustment": 0,
-          "label": "UNPROVEN",
-          "source": "MODEL_RESEARCH_ONLY",
-          "modelReportedSizeMultiplier": 1,
-          "canIncreaseLiveSize": false,
-          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
-        },
-        "historicalWinRate": 81,
-        "historicalSamples": 36,
-        "exitPlan": {
-          "target1SellPctOfOriginal": 25,
-          "target2Action": "DYNAMIC_TO_RUNNER_SIGNAL",
-          "maxRunnerPctOfOriginal": 0,
-          "moderateRunnerPctOfOriginal": 15,
-          "noRunnerPctOfOriginal": 0,
-          "runnerPolicyRef": "signal.runnerContinuationPolicy",
-          "validatedPolicy": "T1_25_T2_75",
-          "target2BaseSellPctOfOriginal": 75,
-          "runnerSignal": "NONE",
-          "runnerPctOfOriginal": 0,
-          "runnerAction": "EXIT_REMAINDER_AT_TARGET2"
-        },
-        "protectionPlan": {
-          "determineFromLiveQuantity": true,
-          "wholeShares": "BROKER_PERSISTENT_STOP_WHEN_SUPPORTED",
-          "fractionalRemainder": "SYNTHETIC_STOP_ONLY_IF_ACTIVE_MONITORING_PASSES",
-          "fractionalMaxPlannedStopRiskPctOfLiveEquity": 0.75,
-          "syntheticMonitoringMaxMinutes": 5,
-          "policyRef": "signal.fractionalProtectionPolicy"
-        },
-        "operationalSafety": {
-          "signalReferencePrice": 1803.4,
-          "entryToStopDistancePct": 11.765,
-          "wholeShareRuntimeCheckRequired": true,
-          "wholeShareProtectabilityIsTieBreakerOnly": true,
-          "smallAccountAccessPolicyRef": "signal.smallAccountAccessPolicy",
-          "multiStockCompetitionPolicyRef": "signal.multiStockCompetitionPolicy",
-          "nonLlmTriggerMonitorRef": "signal.nonLlmTriggerMonitor",
-          "eventDrivenExecutionDispatchRef": "signal.eventDrivenExecutionDispatch",
-          "signalDriftPolicyRef": "signal.signalDriftPolicy",
-          "portfolioHeatPolicyRef": "signal.portfolioHeatPolicy",
-          "killSwitchRef": "signal.automationKillSwitch"
-        },
-        "entryTier": "A",
-        "entryTierLabel": "ELITE",
-        "entryTierSizeMultiplier": 1,
-        "bestAcceptableFallback": false
-      }
-    ],
+    "stockOrders": [],
     "stockCandidateQueue": [
       {
         "assetClass": "STOCK",
@@ -746,18 +668,21 @@
       },
       {
         "assetClass": "STOCK",
+        "queueRank": 2,
+        "queueRole": "RESERVE",
         "rank": 1,
         "ticker": "SNDK",
         "sector": null,
         "action": "MARKET_CLOSED_RECHECK",
-        "allocationPctOfRobinhoodBuyingPower": 0.01,
+        "allocationPctOfRobinhoodBuyingPower": 0,
+        "requiresLiveSizing": true,
         "scanPrice": 1792.96,
         "minimumEntry": 1803.4,
         "maximumEntry": 1839.47,
         "stop": 1591.23,
         "target1": 2121.66,
         "target2": 2355.04,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": 0,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": null,
         "rewardRisk": 2.6,
         "growthQuality": 100,
         "expectancy": {
@@ -782,8 +707,6 @@
         },
         "historicalWinRate": 81,
         "historicalSamples": 36,
-        "queueRank": 2,
-        "queueRole": "PRIMARY",
         "entryTier": "A",
         "entryTierLabel": "ELITE",
         "entryTierSizeMultiplier": 1,
@@ -2449,8 +2372,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-09-20T16:12:36.545Z",
-    "expiresAt": "2026-09-20T16:42:36.545Z",
+    "signalAsOf": "2026-09-20T16:26:58.545Z",
+    "expiresAt": "2026-09-20T16:56:58.545Z",
     "policy": {
       "researchMode": "ACTIVE_24_7_MORE_OPPORTUNITIES",
       "dataSource": "CRYPTO_COM_PUBLIC_API",
@@ -2485,7 +2408,7 @@
   "entryGateRobustness": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
     "status": "RED_FLAG",
-    "generatedAt": "2026-09-20T16:12:17.140Z",
+    "generatedAt": "2026-09-20T16:26:40.300Z",
     "holdoutStart": "2024-01-01",
     "holdoutEnd": "2025-12-31",
     "secondHoldoutStart": "2026-01-01",
@@ -2785,7 +2708,7 @@
   },
   "probabilityFirstPolicy": {
     "schemaVersion": 5,
-    "generatedAt": "2026-09-20T16:12:58.909Z",
+    "generatedAt": "2026-09-20T16:27:21.904Z",
     "objective": "Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto active around the clock, and cash acceptable. Prefer elite A stocks at normal encoded size, allow a tightly capped B best-acceptable micro-probation stock after A-tier priority whenever live capacity remains, and let crypto surface more reasonable 24/7 opportunities without removing hard risk controls. This policy cannot eliminate market loss risk.",
     "stocks": {
       "minGrowthQuality": 85,
@@ -2951,13 +2874,13 @@
   },
   "dataFreshness": {
     "status": "GENERATED_THIS_RUN",
-    "lastSuccessfulGeneration": "2026-09-20T16:12:58.973Z",
+    "lastSuccessfulGeneration": "2026-09-20T16:27:21.982Z",
     "expectedRefreshCadenceMinutes": 10,
     "stockExpectedRefreshMinutesDuringMarket": 10,
     "cryptoExpectedRefreshMinutes": 10,
     "stockSignalAsOf": "2026-09-20T14:18:30.803Z",
-    "cryptoSignalAsOf": "2026-09-20T16:12:36.545Z",
-    "stockAgeMinutes": 114,
+    "cryptoSignalAsOf": "2026-09-20T16:26:58.545Z",
+    "stockAgeMinutes": 129,
     "cryptoAgeMinutes": 0,
     "entryGateValidationAgeMinutes": 1,
     "staleAfterMinutes": {
@@ -3057,7 +2980,7 @@
     }
   },
   "systemHealth": {
-    "generatedAt": "2026-09-20T16:12:58.973Z",
+    "generatedAt": "2026-09-20T16:27:21.982Z",
     "signalAgeMinutes": 0,
     "dataFreshnessStatus": "GENERATED_THIS_RUN",
     "entryGateValidation": {
@@ -3072,7 +2995,7 @@
     },
     "shadowLedger": {
       "status": "AVAILABLE",
-      "ageMinutes": 113,
+      "ageMinutes": 128,
       "requiredForTrading": false
     },
     "runtimeBroker": {
@@ -3395,7 +3318,7 @@
   },
   "adaptivePerformance": {
     "status": "ACTIVE",
-    "generatedAt": "2026-09-20T16:12:58.872Z",
+    "generatedAt": "2026-09-20T16:27:21.861Z",
     "resolvedRealStockTrades": 1,
     "sourceOfTruth": "ROBINHOOD_CONFIRMED_REAL_FILLS_ONLY",
     "policy": {
@@ -4111,18 +4034,18 @@
       "historicalSamples": 8,
       "rewardRisk": 5,
       "confirm4h": true,
-      "rsi4h": 70,
-      "vwap4h": 2564.191609,
+      "rsi4h": 69.3,
+      "vwap4h": 2564.555605,
       "pullbackToSupportOrVwap": true,
       "momentumTurnedUp": true,
       "volumeConfirm": false,
       "btcTrendSupport": true,
-      "dollarVolume20d": 172623674,
-      "dollarVolume24hReal": 135658408,
-      "entry": 2630.46042,
-      "stop": 2551.370651,
-      "target1": 2867.729727,
-      "target2": 3025.909265,
+      "dollarVolume20d": 172833218,
+      "dollarVolume24hReal": 138186828,
+      "entry": 2623.49652,
+      "stop": 2551.732827,
+      "target1": 2838.787599,
+      "target2": 2982.314985,
       "robinhoodTradable": null
     },
     "qualifiedChampion": {
@@ -4135,24 +4058,24 @@
       "historicalSamples": 8,
       "rewardRisk": 5,
       "confirm4h": true,
-      "rsi4h": 70,
-      "vwap4h": 2564.191609,
+      "rsi4h": 69.3,
+      "vwap4h": 2564.555605,
       "pullbackToSupportOrVwap": true,
       "momentumTurnedUp": true,
       "volumeConfirm": false,
       "btcTrendSupport": true,
-      "dollarVolume20d": 172623674,
-      "dollarVolume24hReal": 135658408,
-      "entry": 2630.46042,
-      "stop": 2551.370651,
-      "target1": 2867.729727,
-      "target2": 3025.909265,
+      "dollarVolume20d": 172833218,
+      "dollarVolume24hReal": 138186828,
+      "entry": 2623.49652,
+      "stop": 2551.732827,
+      "target1": 2838.787599,
+      "target2": 2982.314985,
       "robinhoodTradable": null
     },
     "fallbackTickers": [
       "SOL/USD",
-      "NEAR/USD",
       "SUI/USD",
+      "ARB/USD",
       "LTC/USD",
       "FIL/USD"
     ],
@@ -4212,7 +4135,7 @@
   },
   "unifiedMarketIntelligence": {
     "schemaVersion": 1,
-    "generatedAt": "2026-09-20T16:12:59.372Z",
+    "generatedAt": "2026-09-20T16:27:22.470Z",
     "architecture": "TWO_TOURNAMENTS_UNIFIED_EVIDENCE",
     "objective": "Improve cost-adjusted expectancy and reduce avoidable losses through diverse evidence, forward validation, broker reconciliation and hard risk limits. No win or income guarantee.",
     "providers": [
@@ -4225,7 +4148,7 @@
         ],
         "role": "PRIMARY_MARKET_DATA_AND_RESEARCH",
         "status": "CONNECTED",
-        "lastCheckedAt": "2026-09-20T16:12:59.327Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.416Z",
         "liveInfluence": "HARD_DATA_GATES_AND_TOURNAMENT_INPUT",
         "freshnessMinutes": 0,
         "capabilities": [
@@ -4245,7 +4168,7 @@
         ],
         "role": "BROKER_SOURCE_OF_TRUTH",
         "status": "AUTHORIZED_RUNTIME_REQUIRED",
-        "lastCheckedAt": "2026-09-20T16:12:59.327Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.416Z",
         "liveInfluence": "EXECUTION_AND_CONFIRMED_FILL_LEARNING_ONLY",
         "capabilities": [
           "cash and holdings verification",
@@ -4263,7 +4186,7 @@
         ],
         "role": "DIRECT_BROKER_EXECUTION",
         "status": "CONNECTED",
-        "lastCheckedAt": "2026-09-20T16:12:59.327Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.416Z",
         "liveInfluence": "QUALIFIED_CRYPTO_EXECUTION_AND_CONFIRMED_FILLS",
         "capabilities": [
           "account verification",
@@ -4280,7 +4203,7 @@
         ],
         "role": "OFFICIAL_FUNDAMENTALS_AND_FILINGS",
         "status": "CONNECTED",
-        "lastCheckedAt": "2026-09-20T16:12:59.327Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.416Z",
         "liveInfluence": "FUNDAMENTAL_AND_EVENT_RISK_GATES",
         "capabilities": [
           "company facts",
@@ -4295,7 +4218,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "OK",
-        "lastCheckedAt": "2026-09-20T16:12:59.327Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.416Z",
         "records": 2780,
         "endpoint": "https://www.insiderfinance.io/congress-trades",
         "liveInfluence": "SHADOW_ONLY"
@@ -4308,7 +4231,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "UNAVAILABLE",
-        "lastCheckedAt": "2026-09-20T16:12:59.327Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.416Z",
         "records": 0,
         "endpoint": "https://stockcircle.com/congress-stock-trades?view=latest_trades",
         "liveInfluence": "SHADOW_ONLY"
@@ -4321,7 +4244,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-09-20T16:12:59.327Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.416Z",
         "records": 0,
         "endpoint": "https://www.barchart.com/investing-ideas/politician-insider-trading",
         "liveInfluence": "SHADOW_ONLY"
@@ -4334,7 +4257,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-09-20T16:12:59.327Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.416Z",
         "records": 0,
         "endpoint": "https://www.capitoltrades.com/politicians",
         "liveInfluence": "SHADOW_ONLY"
@@ -4347,7 +4270,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-09-20T16:12:59.327Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.416Z",
         "records": 0,
         "endpoint": "https://www.quiverquant.com/congresstrading/",
         "liveInfluence": "SHADOW_ONLY"
@@ -4360,7 +4283,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-09-20T16:12:59.327Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.416Z",
         "records": 0,
         "endpoint": "https://unusualwhales.com/politics",
         "liveInfluence": "SHADOW_ONLY"
@@ -4373,7 +4296,7 @@
         ],
         "role": "OPTIONAL_LICENSED_ALTERNATIVE_DATA",
         "status": "LICENSED_KEY_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-09-20T16:12:59.327Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.416Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION",
         "capabilities": [
           "congressional activity",
@@ -4389,7 +4312,7 @@
         ],
         "role": "OPTIONAL_LICENSED_OPTIONS_AND_POLITICAL_DATA",
         "status": "LICENSED_KEY_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-09-20T16:12:59.327Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.416Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION",
         "capabilities": [
           "political disclosures",
@@ -4404,7 +4327,7 @@
         ],
         "role": "AUTHORITATIVE_RECONCILIATION",
         "status": "REFERENCE_LINKS_FROM_SOURCE_RECORDS",
-        "lastCheckedAt": "2026-09-20T16:12:59.327Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.416Z",
         "liveInfluence": "CONFIRMATION_ONLY",
         "capabilities": [
           "original disclosure links"
@@ -4419,7 +4342,7 @@
         ],
         "role": "OUTCOME_AND_BOUNDED_LEARNING_SOURCE",
         "status": "ACTIVE",
-        "lastCheckedAt": "2026-09-20T16:12:59.327Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.416Z",
         "liveInfluence": "MAY_RERANK_REDUCE_OR_BLOCK_NEVER_RAISE_MAX_RISK",
         "records": 1
       },
@@ -4432,7 +4355,7 @@
         ],
         "role": "SECONDARY_RESEARCH_AND_MANUAL_RECONCILIATION",
         "status": "REFERENCE_ONLY_NO_OFFICIAL_EXECUTION_FEED",
-        "lastCheckedAt": "2026-09-20T16:12:59.372Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.470Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -4444,7 +4367,7 @@
         ],
         "role": "SECONDARY_QUOTE_AND_NEWS_RECONCILIATION",
         "status": "REFERENCE_ONLY_NO_SUPPORTED_TRADING_API",
-        "lastCheckedAt": "2026-09-20T16:12:59.372Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.470Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -4456,7 +4379,7 @@
         ],
         "role": "OPTIONAL_AUTHORIZED_MARKET_DATA_OR_BROKER_RECONCILIATION",
         "status": "OPENAPI_CREDENTIALS_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-09-20T16:12:59.372Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.470Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION"
       },
       {
@@ -4468,7 +4391,7 @@
         ],
         "role": "CHART_TECHNICAL_AND_ALERT_VISUALIZATION",
         "status": "VISUALIZATION_REFERENCE_ALPACA_REMAINS_DATAFEED",
-        "lastCheckedAt": "2026-09-20T16:12:59.372Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.470Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -4480,7 +4403,7 @@
         ],
         "role": "SCREENER_FUNDAMENTAL_AND_LIQUIDITY_RECONCILIATION",
         "status": "LICENSED_EXPORT_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-09-20T16:12:59.372Z",
+        "lastCheckedAt": "2026-09-20T16:27:22.470Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION"
       }
     ],
