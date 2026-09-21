@@ -106,7 +106,7 @@
     {
       "id": "CRYPTO:PEPE-USD",
       "assetClass": "CRYPTO",
-      "ticker": "PEPE-USD",
+      "ticker": "PEPE/USD",
       "status": "ACTIVE",
       "entry": 0.00000507,
       "stop": 0.000004,
@@ -119,7 +119,7 @@
       "signalGeneratedAt": "2026-09-21T15:48:21.033Z",
       "armedAt": "2026-09-21T15:55:55.738569Z",
       "dayTradeSeedLane": true,
-      "note": "Automatic crypto seed-lane fill: 986,193 PEPE @ avg $0.00000507 ($5.00 total), Robinhood order 6ab1538a-132a-46bf-836d-c5dbd37fc417. This lane requires a broker-resident stop (unlike the fractional-stock synthetic-only lanes): a real stop order was placed immediately after the fill, sell 986,193 PEPE at stop $0.000004, Robinhood order 6ab153b5-f04b-4b3e-b3b6-0ceda5b40c93, good-for-day. Lane caps this position at 8 hours max hold (maxHoldingHours:8) regardless of stop/target -- must be exited same session even if neither level is hit.",
+      "note": "Automatic crypto seed-lane fill: 986,193 PEPE @ avg $0.00000507 ($5.00 total), Robinhood order 6ab1538a-132a-46bf-836d-c5dbd37fc417. This lane requires a broker-resident stop (unlike the fractional-stock synthetic-only lanes): a real stop order was placed immediately after the fill, sell 986,193 PEPE at stop $0.000004, Robinhood order 6ab153b5-f04b-4b3e-b3b6-0ceda5b40c93, good-for-day. Lane caps this position at 8 hours max hold (maxHoldingHours:8) regardless of stop/target -- must be exited same session even if neither level is hit. Ticker field corrected 2026-09-21T16:0x to PEPE/USD (Alpaca's required slash format for the trigger monitor's price feed) -- was initially written as PEPE-USD (Robinhood's own format, used for the actual order), which Alpaca rejected and degraded the entire trigger board's monitorHealth account-wide until fixed. When placing further Robinhood orders against this position, convert back to Robinhood's PEPE-USD/no-separator form as needed; this ticker field is what the trigger monitor's Alpaca price lookup consumes verbatim.",
       "maxHoldingHours": 8
     },
     {
@@ -137,12 +137,13 @@
       "validatedExitPolicy": "T1_25_T2_75",
       "signalGeneratedAt": null,
       "armedAt": "2026-08-21T13:04:08.259033Z",
-      "note": "Corrected 2026-09-18: this record's closedAt (2026-08-22T22:49:07Z) never matched any real order and was wrong. Live Robinhood order history: bought 11.81 DOGE on 2026-08-21T13:04:08Z at avg 0.0846272 (order 6a884cc8-5fbe-4099-9572-dccbdc4e8319), then manually sold 11.75 DOGE on 2026-08-25T12:58:42Z at avg 0.08934531 (order 6a8d9182-69a7-4ca9-9734-cbaf18a40bda) -- a real +5.6% gain on the sold portion, a win, but a manual discretionary sell below target1 (0.114576), not a target hit -- target1Completed correctly stays false. That leaves 0.06 DOGE (~$0.005 at current price) still held: economically immaterial dust, not re-armed with active 5-minute ATR-based monitoring since there is no meaningful position left to protect. Marked CLOSED to reflect that the tracked position was substantively exited via that sell, not the fabricated 2026-08-22 date.",
+      "note": "Corrected 2026-09-18: this record's closedAt (2026-08-22T22:49:07Z) never matched any real order and was wrong. Live Robinhood order history: bought 11.81 DOGE on 2026-08-21T13:04:08Z at avg 0.0846272 (order 6a884cc8-5fbe-4099-9572-dccbdc4e8319), then manually sold 11.75 DOGE on 2026-08-25T12:58:42Z at avg 0.08934531 (order 6a8d9182-69a7-4ca9-9734-cbaf18a40bda) -- a real +5.6% gain on the sold portion, a win, but a manual discretionary sell below target1 (0.114576), not a target hit -- target1Completed correctly stays false. That leaves 0.06 DOGE (~$0.005 at current price) still held: economically immaterial dust, not re-armed with active 5-minute ATR-based monitoring since there is no meaningful position left to protect. Marked CLOSED to reflect that the tracked position was substantively exited via that sell, not the fabricated 2026-08-22 date. Note 2026-09-21: this record's ticker field also uses Robinhood's hyphen format (DOGE-USD) rather than Alpaca's slash format; harmless while CLOSED (excluded from the active price lookup), but would reproduce the same PEPE board-wide DEGRADED bug if ever reactivated ACTIVE without first correcting to DOGE/USD.",
       "closedAt": "2026-08-25T12:58:43.710574Z"
     }
   ],
   "armingRules": [
     "After a confirmed Robinhood buy fill, add one ACTIVE record with ticker, assetClass, saved stop, target1, target2, exit policy, runner allowance, armedAt, and dayTradeSeedLane=true only for a same-day seed fill.",
+    "Crypto ticker must be Alpaca's slash format (e.g. PEPE/USD), not Robinhood's hyphen/no-separator form -- the trigger monitor's price lookup consumes this field verbatim against Alpaca, and a mismatched symbol degrades the entire board's monitorHealth, not just this position.",
     "For a fractional position, the trigger monitor is not considered armed until the ACTIVE record is successfully written and the 5-minute trigger workflow is healthy.",
     "After a confirmed Target 1 sell, set target1Completed=true. After Target 2 completion or a full exit, set target2Completed=true or status=CLOSED.",
     "Never infer a fill or close from market price alone. Robinhood confirmation remains authoritative."
