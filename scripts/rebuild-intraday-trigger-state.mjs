@@ -1,14 +1,14 @@
 import fs from 'node:fs/promises';
 const p='docs/data/trigger-board.json';
 const board=JSON.parse(await fs.readFile(p,'utf8'));
-const actionable=new Set(['BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER','CRYPTO_SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_1_STOP','TRIGGER_2_TARGET1','TRIGGER_3_TARGET2']);
+const actionable=new Set(['BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER','CRYPTO_SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_1_STOP','TRIGGER_2_TARGET1','TRIGGER_3_TARGET2','TRIGGER_EARLY_PROFIT_TRIM']);
 const events=(board.items||[]).filter(x=>actionable.has(x.status)).map(x=>({
   id:x.id,assetClass:x.assetClass,ticker:x.ticker,trigger:x.status,
   entryTier:x.entryTier??null,entryTierLabel:x.entryTierLabel??null,entryTierSizeMultiplier:x.entryTierSizeMultiplier??null,
   setupGrade:x.setupGrade??null,queueRank:x.queueRank??null,opportunityScore:x.opportunityScore??null,growthQuality:x.growthQuality??null,rewardRisk:x.rewardRisk??null,
   profitabilityAdmission:x.profitabilityAdmission??null,qualificationSource:x.qualificationSource??null,tournamentGeneratedAt:x.tournamentGeneratedAt??null,
   decisionIntelligenceEligible:x.decisionIntelligenceEligible??null,seedLane:x.seedLane??null,dayTradeSeedLane:x.dayTradeSeedLane??null,
-  marketSession:x.marketSession??null,minimumEntry:x.minimumEntry??null,maximumEntry:x.maximumEntry??null,stop:x.stop??null,target1:x.target1??null,target2:x.target2??null,
+  marketSession:x.marketSession??null,minimumEntry:x.minimumEntry??null,maximumEntry:x.maximumEntry??null,entry:x.entry??null,stop:x.stop??null,target1:x.target1??null,target2:x.target2??null,earlyTrimCompleted:x.earlyTrimCompleted??false,
   observedPrice:x.observedPrice??null,stateChangedAt:x.stateChangedAt??null,intradayEdge:x.intradayEdge??null,reason:x.reason??null,boundedBelowFloorEntry:x.boundedBelowFloorEntry??false
 }));
 const buys=events.filter(x=>x.trigger==='BUY_TRIGGER').sort((a,b)=>((a.assetClass==='STOCK'&&a.entryTier==='A')?0:(a.assetClass==='STOCK'&&a.entryTier==='B')?1:2)-((b.assetClass==='STOCK'&&b.entryTier==='A')?0:(b.assetClass==='STOCK'&&b.entryTier==='B')?1:2)||Number(b.intradayEdge?.costAdjustedEdge??-999)-Number(a.intradayEdge?.costAdjustedEdge??-999)||Number(b.intradayEdge?.adjustedScore??-999)-Number(a.intradayEdge?.adjustedScore??-999)||Number(a.queueRank||999)-Number(b.queueRank||999));

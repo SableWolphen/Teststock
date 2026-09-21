@@ -8,7 +8,7 @@ if(board.claudeMarketPollingRequired!==false)fail.push('Claude polling lock');
 if(board.siteAvailability!=='24_7_PUBLIC_DASHBOARD')fail.push('24/7 site availability metadata');
 if(!['ACTIVE','REFRESHING'].includes(board.researchState))fail.push('research state');
 if(!Array.isArray(board.items)||!Array.isArray(board.events))fail.push('arrays');
-const allowed=new Set(['BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER','CRYPTO_SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_1_STOP','TRIGGER_2_TARGET1','TRIGGER_3_TARGET2']);
+const allowed=new Set(['BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER','CRYPTO_SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_1_STOP','TRIGGER_2_TARGET1','TRIGGER_3_TARGET2','TRIGGER_EARLY_PROFIT_TRIM']);
 for(const e of board.events||[])if(!allowed.has(e.trigger))fail.push(`unknown trigger ${e.trigger}`);
 for(const e of board.events||[]){
   if(e.trigger==='BUY_TRIGGER'&&e.assetClass!=='STOCK')fail.push('non-stock buy sent to Claude');
