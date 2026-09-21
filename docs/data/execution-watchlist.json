@@ -120,7 +120,7 @@
       "ticker": "PEPE/USD",
       "status": "ACTIVE",
       "entry": 0.00000507,
-      "stop": 0.000004,
+      "stop": 0.0000046,
       "target1": 0.000007,
       "target2": 0.000008,
       "target1Completed": false,
@@ -131,7 +131,7 @@
       "signalGeneratedAt": "2026-09-21T15:48:21.033Z",
       "armedAt": "2026-09-21T15:55:55.738569Z",
       "dayTradeSeedLane": true,
-      "note": "Automatic crypto seed-lane fill: 986,193 PEPE @ avg $0.00000507 ($5.00 total), Robinhood order 6ab1538a-132a-46bf-836d-c5dbd37fc417. This lane requires a broker-resident stop (unlike the fractional-stock synthetic-only lanes): a real stop order was placed immediately after the fill, sell 986,193 PEPE at stop $0.000004, Robinhood order 6ab153b5-f04b-4b3e-b3b6-0ceda5b40c93, good-for-day. Lane caps this position at 8 hours max hold (maxHoldingHours:8) regardless of stop/target -- must be exited same session even if neither level is hit. Ticker field corrected 2026-09-21T16:0x to PEPE/USD (Alpaca's required slash format for the trigger monitor's price feed) -- was initially written as PEPE-USD (Robinhood's own format, used for the actual order), which Alpaca rejected and degraded the entire trigger board's monitorHealth account-wide until fixed. When placing further Robinhood orders against this position, convert back to Robinhood's PEPE-USD/no-separator form as needed; this ticker field is what the trigger monitor's Alpaca price lookup consumes verbatim. Given the 8-hour max hold and existing real stop, the new 5% early-profit-trim trigger is unlikely to matter much here but applies the same as any other position.",
+      "note": "Automatic crypto seed-lane fill: 986,193 PEPE @ avg $0.00000507 ($5.00 total), Robinhood order 6ab1538a-132a-46bf-836d-c5dbd37fc417. This lane requires a broker-resident stop (unlike the fractional-stock synthetic-only lanes): a real stop order was placed immediately after the fill. Lane caps this position at 8 hours max hold (maxHoldingHours:8) regardless of stop/target -- must be exited same session even if neither level is hit. Ticker field corrected 2026-09-21T16:0x to PEPE/USD (Alpaca's required slash format for the trigger monitor's price feed) -- was initially written as PEPE-USD (Robinhood's own format, used for the actual order), which Alpaca rejected and degraded the entire trigger board's monitorHealth account-wide until fixed. When placing further Robinhood orders against this position, convert back to Robinhood's PEPE-USD/no-separator form as needed; this ticker field is what the trigger monitor's Alpaca price lookup consumes verbatim. Stop tightened 2026-09-21 at explicit user request (crypto is volatile, shouldn't lose money): position was sitting at -5.3% (observed 0.0000048019 vs entry 0.00000507) with the original stop 21% away at 0.000004 -- far too much room. Canceled that stop order (6ab153b5-f04b-4b3e-b3b6-0ceda5b40c93) and placed a tighter real stop at 0.0000046 (~9% below entry, ~4% below the price at the time), Robinhood order 6ab1a524-b030-40d5-8f1e-5e1267915160. The 5% early-profit-trim trigger already applies to crypto positions too (not stock-specific), so profit-taking is covered automatically once this position turns positive.",
       "maxHoldingHours": 8
     },
     {
@@ -159,9 +159,10 @@
     "Crypto ticker must be Alpaca's slash format (e.g. PEPE/USD), not Robinhood's hyphen/no-separator form -- the trigger monitor's price lookup consumes this field verbatim against Alpaca, and a mismatched symbol degrades the entire board's monitorHealth, not just this position.",
     "For a fractional position, the trigger monitor is not considered armed until the ACTIVE record is successfully written and the 5-minute trigger workflow is healthy.",
     "After a confirmed Target 1 sell, set target1Completed=true. After Target 2 completion or a full exit, set target2Completed=true or status=CLOSED.",
-    "TRIGGER_EARLY_PROFIT_TRIM fires once a position is at least 5% above its recorded entry and earlyTrimCompleted is not already true (user-authorized 2026-09-21, to keep capital cycling rather than waiting only for the full target). After executing it, sell roughly half the live position and set earlyTrimCompleted=true so it does not re-fire on the same cost basis; a later fill that changes entry should reset earlyTrimCompleted=false.",
+    "TRIGGER_EARLY_PROFIT_TRIM fires once a position is at least 5% above its recorded entry and earlyTrimCompleted is not already true (user-authorized 2026-09-21, to keep capital cycling rather than waiting only for the full target). After executing it, sell roughly half the live position and set earlyTrimCompleted=true so it does not re-fire on the same cost basis; a later fill that changes entry should reset earlyTrimCompleted=false. Applies to crypto exactly the same as stocks.",
     "Never infer a fill or close from market price alone. Robinhood confirmation remains authoritative.",
-    "A position with dayTradeLaneMergeAuthorized:true may accept a fresh day-trade-lane fill on top of an existing swing lot: fill it, keep dayTradeSeedLane=false (no forced same-day flatten) for the combined position, and refresh stop/target1/target2 to the triggering cycle's published levels."
+    "A position with dayTradeLaneMergeAuthorized:true may accept a fresh day-trade-lane fill on top of an existing swing lot: fill it, keep dayTradeSeedLane=false (no forced same-day flatten) for the combined position, and refresh stop/target1/target2 to the triggering cycle's published levels.",
+    "For a broker-resident crypto stop, whenever it is tightened (never widened) the live order must be canceled and replaced -- the saved stop field here and the actual Robinhood stop order must always agree; do not let this record drift from the real order."
   ],
   "positionSchema": {
     "id": "stable execution id",
