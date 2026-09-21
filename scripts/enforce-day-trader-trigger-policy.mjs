@@ -5,7 +5,7 @@ const board=JSON.parse(await fs.readFile(path,'utf8'));
 const STOCK_ENTRY_CUTOFF_MINUTES=20;
 const STOCK_FORCED_EXIT_MINUTES=10;
 const CRYPTO_MAX_HOLD_HOURS=3;
-const actionable=new Set(['BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER','CRYPTO_SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_1_STOP','TRIGGER_2_TARGET1','TRIGGER_3_TARGET2']);
+const actionable=new Set(['BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER','CRYPTO_SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_1_STOP','TRIGGER_2_TARGET1','TRIGGER_3_TARGET2','TRIGGER_EARLY_PROFIT_TRIM']);
 const entryTriggers=new Set(['BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER']);
 
 let blockedLateEntries=0,forcedExits=0;
@@ -57,9 +57,11 @@ const events=items.filter(x=>actionable.has(x.status)).map(x=>{
     dayTradeSeedLane:x.dayTradeSeedLane??old.dayTradeSeedLane??null,
     marketSession:x.marketSession??old.marketSession??null,
     observedPrice:x.observedPrice??old.observedPrice??null,
+    entry:x.entry??old.entry??null,
     stop:x.stop??old.stop??null,
     target1:x.target1??old.target1??null,
     target2:x.target2??old.target2??null,
+    earlyTrimCompleted:x.earlyTrimCompleted??old.earlyTrimCompleted??false,
     dayTraderMode:x.assetClass==='STOCK'?true:(old.dayTraderMode??null),
     overnightAllowed:x.assetClass==='STOCK'?false:(old.overnightAllowed??null)
   };
