@@ -2,7 +2,7 @@
   "schemaVersion": 44,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-09-22T11:29:05.165Z",
+  "generatedAt": "2026-09-22T11:45:28.513Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -347,8 +347,8 @@
     "overallAction": "WAIT_FOR_MARKET_OPEN",
     "reason": "Market is closed.",
     "confidence": "A_PLUS",
-    "signalAsOf": "2026-09-22T06:22:47.259Z",
-    "expiresAt": "2026-09-23T18:22:47.259Z",
+    "signalAsOf": "2026-09-22T11:40:33.065Z",
+    "expiresAt": "2026-09-23T23:40:33.065Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 3,
       "maxOptionPremiumPct": 8,
@@ -649,14 +649,36 @@
           "eligible": false
         },
         "dayTradeSeedLane": {
-          "eligible": false
+          "eligible": true,
+          "maxOrderUsd": 30,
+          "requiredEntryTier": "A",
+          "allowBTier": true,
+          "requiresPerOrderApproval": false,
+          "maxConcurrentPositions": 5,
+          "maxNewPositionsPerUtcDay": 5,
+          "currentOpenDayTradeSeedPositions": 0,
+          "openedDayTradeSeedPositionsToday": 0,
+          "existingRobinhoodCashOnly": true,
+          "agentMayInitiateDeposits": false,
+          "agentMayInitiateBankTransfers": false,
+          "marginAllowed": false,
+          "requiresBrokerResidentStop": false,
+          "mustBeFlatBeforeMarketClose": true,
+          "entryCutoffMinutesBeforeClose": 20,
+          "forcedExitStartMinutesBeforeClose": 10,
+          "journalTag": "dayTradeSeedLane:true",
+          "target1": 88.7196,
+          "target2": 89.5894,
+          "targetPct1": 0.02,
+          "targetPct2": 0.03,
+          "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing. Profit target tightened 2026-09-22 (user-requested day-trade-only phase): target1/target2 for this lane use targetPct1/targetPct2 (2%/3% above entry) instead of the shared swing 1.5R/2.6R geometry, since the goal is small, frequent, same-day gains rather than a multi-day swing target -- stop/invalidation logic is unchanged."
         },
         "decisionIntelligence": {
           "decisionScore": 63.14,
           "rankBeforeOptimization": 1,
           "eligibleAfterOverlay": false,
           "eligibleForSeedLane": false,
-          "eligibleForDayTradeSeedLane": false,
+          "eligibleForDayTradeSeedLane": true,
           "upstreamActionAllowed": false,
           "setupDiagnostics": {
             "setupType": "STOCK_TREND",
@@ -667,12 +689,27 @@
             "rewardRisk": 2.6,
             "backtestStatus": "SUPPORTED",
             "newsCatalyst": {
-              "articleCount": 0,
+              "articleCount": 2,
               "windowHours": 72,
               "binaryRisk": false,
-              "sentimentHint": "NO_RECENT_NEWS",
-              "sourcesUsed": [],
-              "headlines": [],
+              "sentimentHint": "MIXED_OR_UNKNOWN",
+              "sourcesUsed": [
+                "YAHOO"
+              ],
+              "headlines": [
+                {
+                  "headline": "New Strong Buy Stocks for September 22nd",
+                  "createdAt": "2026-09-22T10:04:00.000Z",
+                  "source": "YAHOO:Zacks",
+                  "link": "https://finance.yahoo.com/markets/stocks/articles/strong-buy-stocks-september-22nd-100400816.html"
+                },
+                {
+                  "headline": "Best Income Stocks to Buy for September 22nd",
+                  "createdAt": "2026-09-22T06:48:00.000Z",
+                  "source": "YAHOO:Zacks",
+                  "link": "https://finance.yahoo.com/markets/stocks/articles/best-income-stocks-buy-september-064800125.html"
+                }
+              ],
               "sourcesQueried": [
                 "ALPACA_NEWS",
                 "GOOGLE_NEWS_RSS",
@@ -816,14 +853,36 @@
           "eligible": false
         },
         "dayTradeSeedLane": {
-          "eligible": false
+          "eligible": true,
+          "maxOrderUsd": 30,
+          "requiredEntryTier": "A",
+          "allowBTier": true,
+          "requiresPerOrderApproval": false,
+          "maxConcurrentPositions": 5,
+          "maxNewPositionsPerUtcDay": 5,
+          "currentOpenDayTradeSeedPositions": 0,
+          "openedDayTradeSeedPositionsToday": 0,
+          "existingRobinhoodCashOnly": true,
+          "agentMayInitiateDeposits": false,
+          "agentMayInitiateBankTransfers": false,
+          "marginAllowed": false,
+          "requiresBrokerResidentStop": false,
+          "mustBeFlatBeforeMarketClose": true,
+          "entryCutoffMinutesBeforeClose": 20,
+          "forcedExitStartMinutesBeforeClose": 10,
+          "journalTag": "dayTradeSeedLane:true",
+          "target1": 115.0968,
+          "target2": 116.2252,
+          "targetPct1": 0.02,
+          "targetPct2": 0.03,
+          "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing. Profit target tightened 2026-09-22 (user-requested day-trade-only phase): target1/target2 for this lane use targetPct1/targetPct2 (2%/3% above entry) instead of the shared swing 1.5R/2.6R geometry, since the goal is small, frequent, same-day gains rather than a multi-day swing target -- stop/invalidation logic is unchanged."
         },
         "decisionIntelligence": {
           "decisionScore": 62.51,
           "rankBeforeOptimization": 2,
           "eligibleAfterOverlay": false,
           "eligibleForSeedLane": false,
-          "eligibleForDayTradeSeedLane": false,
+          "eligibleForDayTradeSeedLane": true,
           "upstreamActionAllowed": false,
           "setupDiagnostics": {
             "setupType": "STOCK_TREND",
@@ -834,13 +893,12 @@
             "rewardRisk": 2.6,
             "backtestStatus": "SUPPORTED",
             "newsCatalyst": {
-              "articleCount": 4,
+              "articleCount": 3,
               "windowHours": 72,
               "binaryRisk": false,
               "sentimentHint": "MIXED_OR_UNKNOWN",
               "sourcesUsed": [
-                "GOOGLE_NEWS",
-                "YAHOO"
+                "GOOGLE_NEWS"
               ],
               "headlines": [
                 {
@@ -856,16 +914,10 @@
                   "link": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxOX1k0dGgzSWFKM0lFdEZXXzB4NEJGWUJBRDhWZjE0UTlXc0VlTEtFRVgzYWJYTjRVS2JENzRLUXJURERycTc0SWh6WVRVVGgtTXlqWWZ3aVRiQmlqN0dUT2U0NHRJdGFZTkc0YmdYMVB1MEJXQmxPbWZfS01hT3RCR3o3TGduX1ZmTndHSTVhWWt6c2c2YUpKUjJKd0pFTmw3cFJfaGFoMnhuM0E?oc=5"
                 },
                 {
-                  "headline": "International Seaways Stock: 8 Straight Green Days, Up 13% - Trefis",
+                  "headline": "International Seaways Stock: 8 Straight Green Days, Up 13% - trefis.com",
                   "createdAt": "2026-09-21T08:44:36.000Z",
-                  "source": "GOOGLE_NEWS:Trefis",
+                  "source": "GOOGLE_NEWS:trefis.com",
                   "link": "https://news.google.com/rss/articles/CBMitwFBVV95cUxQSG5kTVFCNnZoYV9Jd3hLbDZpVG9GWG1mR1l5TGVXajEtVVQxR1NrN2tfTGw2eU1fMV8zaUVKRGM5UGJMd3FaeU5LanBCV3h6LUt5OGlGb2xZU2w2S0k4dGFVeHNtYXFNbFhjMkVTUXp4ZFgxSldEZkpDZFgxa1U2TVo0cHBLeGY2UlFfMGFTNm82dG8xRWlfckxzQVFDVldYZjhWRk5UTkFCdDB1Z3ltVzRXX3ZQN1E?oc=5"
-                },
-                {
-                  "headline": "Oil Shipping Stocks With Pricing Power as Russian Energy Tariffs Reshape Trade",
-                  "createdAt": "2026-09-19T08:11:49.000Z",
-                  "source": "YAHOO:Simply Wall St.",
-                  "link": "https://finance.yahoo.com/energy/articles/oil-shipping-stocks-pricing-power-081149695.html"
                 }
               ],
               "sourcesQueried": [
@@ -1010,14 +1062,36 @@
           "eligible": false
         },
         "dayTradeSeedLane": {
-          "eligible": false
+          "eligible": true,
+          "maxOrderUsd": 30,
+          "requiredEntryTier": "A",
+          "allowBTier": true,
+          "requiresPerOrderApproval": false,
+          "maxConcurrentPositions": 5,
+          "maxNewPositionsPerUtcDay": 5,
+          "currentOpenDayTradeSeedPositions": 0,
+          "openedDayTradeSeedPositionsToday": 0,
+          "existingRobinhoodCashOnly": true,
+          "agentMayInitiateDeposits": false,
+          "agentMayInitiateBankTransfers": false,
+          "marginAllowed": false,
+          "requiresBrokerResidentStop": false,
+          "mustBeFlatBeforeMarketClose": true,
+          "entryCutoffMinutesBeforeClose": 20,
+          "forcedExitStartMinutesBeforeClose": 10,
+          "journalTag": "dayTradeSeedLane:true",
+          "target1": 605.1252,
+          "target2": 611.0578,
+          "targetPct1": 0.02,
+          "targetPct2": 0.03,
+          "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing. Profit target tightened 2026-09-22 (user-requested day-trade-only phase): target1/target2 for this lane use targetPct1/targetPct2 (2%/3% above entry) instead of the shared swing 1.5R/2.6R geometry, since the goal is small, frequent, same-day gains rather than a multi-day swing target -- stop/invalidation logic is unchanged."
         },
         "decisionIntelligence": {
           "decisionScore": 63.33,
           "rankBeforeOptimization": 3,
           "eligibleAfterOverlay": false,
           "eligibleForSeedLane": false,
-          "eligibleForDayTradeSeedLane": false,
+          "eligibleForDayTradeSeedLane": true,
           "upstreamActionAllowed": false,
           "setupDiagnostics": {
             "setupType": "STOCK_TREND",
@@ -1039,6 +1113,24 @@
               ],
               "headlines": [
                 {
+                  "headline": "Is Dell (DELL) Using the XPS Googlebook to Deepen Its AI Ecosystem Advantage? - Yahoo Finance",
+                  "createdAt": "2026-09-22T09:16:27.000Z",
+                  "source": "GOOGLE_NEWS:Yahoo Finance",
+                  "link": "https://news.google.com/rss/articles/CBMimgFBVV95cUxNZVhmckttYVR2V0lGSElZa2ZBYXA1N1RZLUprRzRYalFUa1J6LUItMmVScjRPeUJrMFhIOVZ6eldnMW5WWDdHSi1Rc0F6LU12eFdkY0Vfdm1Dek94cmVULUlzbkhqTnVnNlk0c3N4SjhuNU4wLWVURnVBX0kyajFKV1pVNTZwVW1jaDdreHQ2UXptTUx1aW1EZm9B?oc=5"
+                },
+                {
+                  "headline": "Is Dell (DELL) Using the XPS Googlebook to Deepen Its AI Ecosystem Advantage?",
+                  "createdAt": "2026-09-22T09:16:27.000Z",
+                  "source": "YAHOO:Simply Wall St.",
+                  "link": "https://finance.yahoo.com/technology/ai/articles/dell-dell-using-xps-googlebook-091627242.html"
+                },
+                {
+                  "headline": "QCOM Stock in Focus Today: What Investors Need to Know About GOOGL Partnership",
+                  "createdAt": "2026-09-22T08:35:32Z",
+                  "source": "ALPACA",
+                  "link": "https://www.benzinga.com/markets/equities/26/09/61912812/qualcomm-shares-rise-after-hours-google-partnership"
+                },
+                {
                   "headline": "Dell Joined the S&amp;P 100 This Week. Its Largest Outside Holder Kept Selling. - TIKR.com",
                   "createdAt": "2026-09-21T23:29:49.000Z",
                   "source": "GOOGLE_NEWS:TIKR.com",
@@ -1049,24 +1141,6 @@
                   "createdAt": "2026-09-21T23:17:46.000Z",
                   "source": "YAHOO:TIKR",
                   "link": "https://finance.yahoo.com/markets/stocks/articles/dell-joined-p-100-week-231746803.html"
-                },
-                {
-                  "headline": "$85M Dell (NYSE: DELL) stock sale by Silver Lake precedes new planned trade - Stock Titan",
-                  "createdAt": "2026-09-21T22:35:34.000Z",
-                  "source": "GOOGLE_NEWS:Stock Titan",
-                  "link": "https://news.google.com/rss/articles/CBMinwFBVV95cUxNVGwzOW82Wm1zNnZ0VzJfSnBjWHNoa2lxZlNlV2cyZnQ2ZUlVWW9iN0VBUXJLOTd0N1Zrdk9JTm5jTl9wcElJSC1LdFFfOTd1UE5LbUlaSDZPaEdlT2lqLXRsb1ZRTG42Y01BODhac21qS3NDZjNQb21BX3FObHZvanhTN3kzaUxIZ2hzeC1Tc1pnNmUzMUNscE9EOEp4UkU?oc=5"
-                },
-                {
-                  "headline": "Significant Dell (NYSE: DELL) backer Silver Lake plans another stock sale - Stock Titan",
-                  "createdAt": "2026-09-21T22:28:05.000Z",
-                  "source": "GOOGLE_NEWS:Stock Titan",
-                  "link": "https://news.google.com/rss/articles/CBMinwFBVV95cUxOU2FYZkloZm5BLVFUN2Rvb0Nnd1VNaURBTUw3d3VtdTBUcWhPWDYtMVQtSno1V3FQR25UN1BzNGhKOUZ5dDVzaHYxdEVMV2x1czAyT2lhX0ZMeFFYREYwTF9sVDRtaEtuREFKa19MakZlalBKM2RraGt4NG0zbVJDWXkwZEpBVzJmMldBdVBJdWlfVmpRZmRsckFvbVd5cW8?oc=5"
-                },
-                {
-                  "headline": "A $2.75 Billion Reason to Buy Micron Stock",
-                  "createdAt": "2026-09-21T21:59:26.000Z",
-                  "source": "YAHOO:Barchart",
-                  "link": "https://finance.yahoo.com/markets/stocks/articles/2-75-billion-reason-buy-215926466.html"
                 }
               ],
               "sourcesQueried": [
@@ -1210,14 +1284,36 @@
           "eligible": false
         },
         "dayTradeSeedLane": {
-          "eligible": false
+          "eligible": true,
+          "maxOrderUsd": 30,
+          "requiredEntryTier": "A",
+          "allowBTier": true,
+          "requiresPerOrderApproval": false,
+          "maxConcurrentPositions": 5,
+          "maxNewPositionsPerUtcDay": 5,
+          "currentOpenDayTradeSeedPositions": 0,
+          "openedDayTradeSeedPositionsToday": 0,
+          "existingRobinhoodCashOnly": true,
+          "agentMayInitiateDeposits": false,
+          "agentMayInitiateBankTransfers": false,
+          "marginAllowed": false,
+          "requiresBrokerResidentStop": false,
+          "mustBeFlatBeforeMarketClose": true,
+          "entryCutoffMinutesBeforeClose": 20,
+          "forcedExitStartMinutesBeforeClose": 10,
+          "journalTag": "dayTradeSeedLane:true",
+          "target1": 1083.2196,
+          "target2": 1093.8394,
+          "targetPct1": 0.02,
+          "targetPct2": 0.03,
+          "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing. Profit target tightened 2026-09-22 (user-requested day-trade-only phase): target1/target2 for this lane use targetPct1/targetPct2 (2%/3% above entry) instead of the shared swing 1.5R/2.6R geometry, since the goal is small, frequent, same-day gains rather than a multi-day swing target -- stop/invalidation logic is unchanged."
         },
         "decisionIntelligence": {
           "decisionScore": 62.09,
           "rankBeforeOptimization": 4,
           "eligibleAfterOverlay": false,
           "eligibleForSeedLane": false,
-          "eligibleForDayTradeSeedLane": false,
+          "eligibleForDayTradeSeedLane": true,
           "upstreamActionAllowed": false,
           "setupDiagnostics": {
             "setupType": "STOCK_TREND",
@@ -1239,34 +1335,34 @@
               ],
               "headlines": [
                 {
-                  "headline": "Micron Stock Price Forecast: MU Stock Poised to Hit All-Time High as Tight Memory Supply Continues to Support Price Increases - TradingKey",
-                  "createdAt": "2026-09-22T02:09:44.000Z",
-                  "source": "GOOGLE_NEWS:TradingKey",
-                  "link": "https://news.google.com/rss/articles/CBMixgFBVV95cUxOenNGR285dVY4UGNseWstcjUzSGtNMlp5QklyS0RfV3hzWllCaUVaSjNHWUlDcjE0NGJNOUZpT2V0aUk0VFhYVmx5T1ZVcll2Wlp4Sk4xVEp3VmxYZjFTenhEZUgyb3FJOVJaeWgyY2wyY2k4T3ZMRG5hVEQ5QXBuc0tzemVBN0k2eUQtc2VVT2VwandPRFhzNEdSR3R4ZDRBNGozR3BseF9tYUJobmpEcFBIa0lCVTlXYWZxcjd0Wk1UM3A0Wnc?oc=5"
+                  "headline": "Why It’s Time to Load Up on Micron Stock - Barchart.com",
+                  "createdAt": "2026-09-22T11:31:00.000Z",
+                  "source": "GOOGLE_NEWS:Barchart.com",
+                  "link": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxQdjBOUzBtZUczS0cydFFrR0ctaFhqSmFpYW9YVzNjX043VzhzWDFYdWZ0MFlVOUhxbXlvd2NUaFM0cjFabkFJaENiaGtfcWpkQ01lbEJfTzE5aWJabjRYM2djR0xyY1VmRGdWYWJXUnFvWmdtQjZzOWRNMmFJSDJyaVJQRUpYd21wTC1B?oc=5"
                 },
                 {
-                  "headline": "Why Micron Stock Is Jumping as Intel CEO Warns on Memory Chips - barrons.com",
-                  "createdAt": "2026-09-22T01:32:19.000Z",
-                  "source": "GOOGLE_NEWS:barrons.com",
-                  "link": "https://news.google.com/rss/articles/CBMihgFBVV95cUxObjVSZEkzTV9pcFZDM1dOLW5LcmN3MEJnU01vVHJtMHhjY251bWVDbklwUlFCR3lvbjlncjN4eDBMRWl0aFh0UTloZFlYamoxeUtLTUd3UERzTG1nQUEyTFVkTjcwOWg2SVFoVm82ZFRxTWIwMnRPdmphSGxMUkNPLWlBRzNfUQ?oc=5"
+                  "headline": "AMD Just Joined the $1 Trillion Club. Here's Why Investors Are Betting Big on the Chipmaker.",
+                  "createdAt": "2026-09-22T11:25:01.000Z",
+                  "source": "YAHOO:Motley Fool",
+                  "link": "https://finance.yahoo.com/technology/articles/amd-just-joined-1-trillion-112501746.html"
                 },
                 {
-                  "headline": "Dow Jones Futures: Falling Oil Prices, Yields Spark Market Rally; AMD, Intel, Micron, Nvidia, Sandisk Are Key Movers",
-                  "createdAt": "2026-09-22T00:59:28.000Z",
-                  "source": "YAHOO:Investor's Business Daily",
-                  "link": "https://finance.yahoo.com/m/bc32a5e1-f207-3311-ba0b-143bb01bd032/dow-jones-futures%3A-falling.html"
+                  "headline": "Micron Fell For 3 Months: Now One Wall Street Pro Says 110% Are About to Materialize",
+                  "createdAt": "2026-09-22T11:16:28.000Z",
+                  "source": "YAHOO:24/7 Wall St.",
+                  "link": "https://finance.yahoo.com/markets/stocks/articles/micron-fell-3-months-now-111628515.html"
                 },
                 {
-                  "headline": "A $2.75 Billion Reason to Buy Micron Stock",
-                  "createdAt": "2026-09-21T21:59:26.000Z",
-                  "source": "YAHOO:Barchart",
-                  "link": "https://finance.yahoo.com/markets/stocks/articles/2-75-billion-reason-buy-215926466.html"
+                  "headline": "Social Buzz: Wallstreetbets Stocks Mixed Premarket Tuesday; Rocket Lab, Alphabet to Advance",
+                  "createdAt": "2026-09-22T10:57:19.000Z",
+                  "source": "YAHOO:MT Newswires",
+                  "link": "https://finance.yahoo.com/markets/stocks/articles/social-buzz-wallstreetbets-stocks-mixed-105719443.html"
                 },
                 {
-                  "headline": "Micron (MU) Beats Stock Market Upswing: What Investors Need to Know - Yahoo Finance",
-                  "createdAt": "2026-09-21T21:45:06.000Z",
-                  "source": "GOOGLE_NEWS:Yahoo Finance",
-                  "link": "https://news.google.com/rss/articles/CBMimAFBVV95cUxOSWdtMzltXzUteS11b1VMd1Rya1M2dnNPNmE1LUNuSUt3WnJxYzNsQTVMZ2VCamJFUTdYX1RoSWtlbVdiTnBXRWw4Q0J3bUl3Tmg0S2hObEhvLUFFTERxTUZMd0pQMTZrVDY5WHZFVkloMFVNbEotVW9rcnVHbTVjY0RwYU5rR0c0NkRtcjNBWFVVdmR1a0tOdw?oc=5"
+                  "headline": "AMD, Intel, Salesforce, GameStop, and More Stocks That Explain Today’s Market",
+                  "createdAt": "2026-09-22T10:04:00.000Z",
+                  "source": "YAHOO:Barrons.com",
+                  "link": "https://finance.yahoo.com/m/18d3b8f2-8dd8-346a-8f40-e32a180cc1b3/amd%2C-intel%2C-salesforce%2C.html"
                 }
               ],
               "sourcesQueried": [
@@ -1411,14 +1507,36 @@
           "eligible": false
         },
         "dayTradeSeedLane": {
-          "eligible": false
+          "eligible": true,
+          "maxOrderUsd": 30,
+          "requiredEntryTier": "A",
+          "allowBTier": true,
+          "requiresPerOrderApproval": false,
+          "maxConcurrentPositions": 5,
+          "maxNewPositionsPerUtcDay": 5,
+          "currentOpenDayTradeSeedPositions": 0,
+          "openedDayTradeSeedPositionsToday": 0,
+          "existingRobinhoodCashOnly": true,
+          "agentMayInitiateDeposits": false,
+          "agentMayInitiateBankTransfers": false,
+          "marginAllowed": false,
+          "requiresBrokerResidentStop": false,
+          "mustBeFlatBeforeMarketClose": true,
+          "entryCutoffMinutesBeforeClose": 20,
+          "forcedExitStartMinutesBeforeClose": 10,
+          "journalTag": "dayTradeSeedLane:true",
+          "target1": 53.3766,
+          "target2": 53.8999,
+          "targetPct1": 0.02,
+          "targetPct2": 0.03,
+          "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing. Profit target tightened 2026-09-22 (user-requested day-trade-only phase): target1/target2 for this lane use targetPct1/targetPct2 (2%/3% above entry) instead of the shared swing 1.5R/2.6R geometry, since the goal is small, frequent, same-day gains rather than a multi-day swing target -- stop/invalidation logic is unchanged."
         },
         "decisionIntelligence": {
           "decisionScore": 60.62,
           "rankBeforeOptimization": 5,
           "eligibleAfterOverlay": false,
           "eligibleForSeedLane": false,
-          "eligibleForDayTradeSeedLane": false,
+          "eligibleForDayTradeSeedLane": true,
           "upstreamActionAllowed": false,
           "setupDiagnostics": {
             "setupType": "STOCK_TREND",
@@ -1611,7 +1729,7 @@
             "rewardRisk": 2.6,
             "backtestStatus": "LIMITED",
             "newsCatalyst": {
-              "articleCount": 18,
+              "articleCount": 17,
               "windowHours": 72,
               "binaryRisk": false,
               "sentimentHint": "MIXED_OR_UNKNOWN",
@@ -1621,6 +1739,12 @@
                 "ALPACA"
               ],
               "headlines": [
+                {
+                  "headline": "3 No-Brainer Cybersecurity Stocks to Buy With $1,000 Right Now",
+                  "createdAt": "2026-09-22T10:05:00.000Z",
+                  "source": "YAHOO:Motley Fool",
+                  "link": "https://finance.yahoo.com/markets/stocks/articles/3-no-brainer-cybersecurity-stocks-100500669.html"
+                },
                 {
                   "headline": "3 U.S. Growth Stocks Facing The Biggest AI Spending Test Right Now",
                   "createdAt": "2026-09-21T22:18:05.000Z",
@@ -1638,12 +1762,6 @@
                   "createdAt": "2026-09-21T19:16:30.000Z",
                   "source": "GOOGLE_NEWS:Moomoo",
                   "link": "https://news.google.com/rss/articles/CBMiwgJBVV95cUxPT2s3OV8taV9jTmRqaHFzb2hJMUZlUjZaZHdtMjNvcXJZZHNXMG9FOUV2U3hqSkhEM1lJV2dWOGR3dW40V1B4aTFyUnhyeE5TSHpYd0RhN1E1cURXeDdwMEsxMi1MWXlPblpSRi1ielB6OGpISVd5SmdoWkJ5SWQ4YWlKSzFBNHpXa191bXB6ZHppYkdwdGdsMFRVSnZSdnVPbmhhYmhRQ1k3b05KTXpZclAtVjVxR3hhSFBMVzNlRlRSaDYtYldHSE1UZDFxN2xpVmdQaHYxd0pMazI0VEdkcXVXemUyMWhKQ2JSMjNLRDBFSmlBbFRCYmNKb0IxWEFBb3FIdVFfLWRtLVh1dXJlcXpjMzRudFl0SFdyS2NPMzVEa0pPbnNMWXhpcEJ6R2xLQkJIVGcyLTg3Zlp5R1ZpQ2NR?oc=5"
-                },
-                {
-                  "headline": "PANW Maintained by Morgan Stanley -- Price Target Raised to $410 - GuruFocus",
-                  "createdAt": "2026-09-21T19:08:56.000Z",
-                  "source": "GOOGLE_NEWS:GuruFocus",
-                  "link": "https://news.google.com/rss/articles/CBMioAFBVV95cUxNdHhueW9wUzdrWEtuRlRGOFdOeHp6MzBmcnBfWnZWTFR1dDVHdzZEWHBTc2xlY0N2N2lEWlZBQ09CS2R2RV8wazVHSjdBM0hWM3U5elpCRk94cEtSdjBYT1RFRUdXUExkRmR5T3oyc011akNoUllCcEtIQ3BLUy14OHZsQ3lEVHVZOU0wTF9yeGlWQ2J6NzZRZVFDMXU4cExB?oc=5"
                 },
                 {
                   "headline": "3 Reasons to Sell PANW and 1 Stock to Buy Instead - Yahoo Finance",
@@ -1947,10 +2065,10 @@
           "samples": 377,
           "winRatePct": 49.6,
           "avgForwardReturnPct": 0.3,
-          "cohortGeneratedAt": "2026-09-22T06:26:43.498Z"
+          "cohortGeneratedAt": "2026-09-22T11:44:09.955Z"
         },
         "newsCatalyst": {
-          "articleCount": 19,
+          "articleCount": 18,
           "windowHours": 72,
           "binaryRisk": true,
           "sentimentHint": "MIXED_OR_UNKNOWN",
@@ -1960,34 +2078,34 @@
           ],
           "headlines": [
             {
+              "headline": "Maye Musk: Elon really wants to live on Mars in the coming decades",
+              "createdAt": "2026-09-22T09:28:30.000Z",
+              "source": "YAHOO:Yahoo Finance",
+              "link": "https://finance.yahoo.com/markets/article/maye-musk-elon-really-wants-to-live-on-mars-in-the-coming-decades-193421298.html"
+            },
+            {
+              "headline": "Market Chatter: SpaceX Falcon 9 Phase Out Drives Scramble for Rocket Launch Capacity",
+              "createdAt": "2026-09-22T08:48:47.000Z",
+              "source": "YAHOO:MT Newswires",
+              "link": "https://finance.yahoo.com/markets/stocks/articles/market-chatter-spacex-falcon-9-084847419.html"
+            },
+            {
+              "headline": "Is SPCX Stock Going to Crash? SpaceX Stock Price Prediction 2027 and 2030 - MEXC",
+              "createdAt": "2026-09-22T07:30:55.000Z",
+              "source": "GOOGLE_NEWS:MEXC",
+              "link": "https://news.google.com/rss/articles/CBMirgFBVV95cUxNblhTeXZ2TFV4aGZHNTVGZG96X292aXplZ25kZ3o2STZXdl9COHdTSFFFbmRWdnJXdnloSlViOHhYenpibnZfVFdxd3FoTTV6Q0xHTHBsbzU5S0w0b1hCY25RSmhhZEgyaDMya19jRnBfRm94V2VBSWFySGVEeHpnTVc2M2tQTEl4VWJ2aEdWQ0h2aTVJMmo1Y0pyUy1iZnpGUF9Balp2cU1WWFo4N3c?oc=5"
+            },
+            {
               "headline": "TSLA, SPCX, AAPL Could Be Next To ‘Rip’ After Meta’s Muse Rally, Analyst Says — Here Are The Catalysts",
               "createdAt": "2026-09-22T06:02:01.000Z",
               "source": "YAHOO:Stocktwits",
               "link": "https://finance.yahoo.com/markets/stocks/articles/tsla-spcx-aapl-could-next-060201110.html"
             },
             {
-              "headline": "SPCX Stock Climbs Overnight: Analysts Tout SpaceX-Tesla ‘Physical AI’ Flywheel, Musk ‘Effectively’ Ships Grok 4.7 On Time",
-              "createdAt": "2026-09-22T05:21:38.000Z",
-              "source": "YAHOO:Stocktwits",
-              "link": "https://finance.yahoo.com/technology/ai/articles/spcx-stock-climbs-overnight-analysts-052138405.html"
-            },
-            {
-              "headline": "SPCX Stock Climbs Overnight: Analysts Tout SpaceX-Tesla ‘Physical AI’ Flywheel, Musk ‘Effectively’ Ships Grok 4.7 On Time - TradingView",
-              "createdAt": "2026-09-22T05:21:00.000Z",
-              "source": "GOOGLE_NEWS:TradingView",
-              "link": "https://news.google.com/rss/articles/CBMihwJBVV95cUxNQlV2TU9saGhuWG1IM3hWVndsSVFuQl8yZThlT1dZSEJINnp4dUVRNmU4YS1qcldxYS1xR3pRVGsyZWcydl94Y2JuNHUyT1hVN292T0hRd2VvcldHNkJsN0xaczhGS2JiLUlsQ1ptd0FPemJ2REFrNEo1dF9tZlNUc1hsX20tNFRDeHhxUlpjNENoUEJKOXV2TTAweFE3Z21OZExlbTZzSk8xSlhzMWk3N0h1Vk1TaWRoNm53TEFlY3pxemtfRGk3MWc4X3FvdEJESS1LNnB2SGFVdzNRa1JtWHNZa1FTNFJTcWtGNkdOUjdWck1JUnpadl9UbVlOcjVkQkc0Uk1UZw?oc=5"
-            },
-            {
-              "headline": "Nasdaq Sees IPO Boom as AI, Tokenization and Fintech Fuel Growth",
-              "createdAt": "2026-09-22T02:02:06.000Z",
-              "source": "YAHOO:MarketBeat",
-              "link": "https://finance.yahoo.com/markets/stocks/articles/nasdaq-sees-ipo-boom-ai-020206620.html"
-            },
-            {
-              "headline": "A Rocket Supply Crunch Is Making It Harder to Hitch a Ride to Space",
-              "createdAt": "2026-09-22T02:00:00.000Z",
-              "source": "YAHOO:The Wall Street Journal",
-              "link": "https://finance.yahoo.com/m/793d8c03-5af5-3a2c-946b-8c7187d45b4b/a-rocket-supply-crunch-is.html"
+              "headline": "Elon Musk Says 'First Starship Launch to Orbit' Will Carry Starlink V3 Satellites in 7 Days",
+              "createdAt": "2026-09-22T05:44:06.000Z",
+              "source": "YAHOO:Benzinga",
+              "link": "https://finance.yahoo.com/technology/articles/elon-musk-says-first-starship-054406223.html"
             }
           ],
           "sourcesQueried": [
@@ -2015,7 +2133,7 @@
             "rewardRisk": 2.5,
             "backtestStatus": "SPARSE",
             "newsCatalyst": {
-              "articleCount": 19,
+              "articleCount": 18,
               "windowHours": 72,
               "binaryRisk": true,
               "sentimentHint": "MIXED_OR_UNKNOWN",
@@ -2025,34 +2143,34 @@
               ],
               "headlines": [
                 {
+                  "headline": "Maye Musk: Elon really wants to live on Mars in the coming decades",
+                  "createdAt": "2026-09-22T09:28:30.000Z",
+                  "source": "YAHOO:Yahoo Finance",
+                  "link": "https://finance.yahoo.com/markets/article/maye-musk-elon-really-wants-to-live-on-mars-in-the-coming-decades-193421298.html"
+                },
+                {
+                  "headline": "Market Chatter: SpaceX Falcon 9 Phase Out Drives Scramble for Rocket Launch Capacity",
+                  "createdAt": "2026-09-22T08:48:47.000Z",
+                  "source": "YAHOO:MT Newswires",
+                  "link": "https://finance.yahoo.com/markets/stocks/articles/market-chatter-spacex-falcon-9-084847419.html"
+                },
+                {
+                  "headline": "Is SPCX Stock Going to Crash? SpaceX Stock Price Prediction 2027 and 2030 - MEXC",
+                  "createdAt": "2026-09-22T07:30:55.000Z",
+                  "source": "GOOGLE_NEWS:MEXC",
+                  "link": "https://news.google.com/rss/articles/CBMirgFBVV95cUxNblhTeXZ2TFV4aGZHNTVGZG96X292aXplZ25kZ3o2STZXdl9COHdTSFFFbmRWdnJXdnloSlViOHhYenpibnZfVFdxd3FoTTV6Q0xHTHBsbzU5S0w0b1hCY25RSmhhZEgyaDMya19jRnBfRm94V2VBSWFySGVEeHpnTVc2M2tQTEl4VWJ2aEdWQ0h2aTVJMmo1Y0pyUy1iZnpGUF9Balp2cU1WWFo4N3c?oc=5"
+                },
+                {
                   "headline": "TSLA, SPCX, AAPL Could Be Next To ‘Rip’ After Meta’s Muse Rally, Analyst Says — Here Are The Catalysts",
                   "createdAt": "2026-09-22T06:02:01.000Z",
                   "source": "YAHOO:Stocktwits",
                   "link": "https://finance.yahoo.com/markets/stocks/articles/tsla-spcx-aapl-could-next-060201110.html"
                 },
                 {
-                  "headline": "SPCX Stock Climbs Overnight: Analysts Tout SpaceX-Tesla ‘Physical AI’ Flywheel, Musk ‘Effectively’ Ships Grok 4.7 On Time",
-                  "createdAt": "2026-09-22T05:21:38.000Z",
-                  "source": "YAHOO:Stocktwits",
-                  "link": "https://finance.yahoo.com/technology/ai/articles/spcx-stock-climbs-overnight-analysts-052138405.html"
-                },
-                {
-                  "headline": "SPCX Stock Climbs Overnight: Analysts Tout SpaceX-Tesla ‘Physical AI’ Flywheel, Musk ‘Effectively’ Ships Grok 4.7 On Time - TradingView",
-                  "createdAt": "2026-09-22T05:21:00.000Z",
-                  "source": "GOOGLE_NEWS:TradingView",
-                  "link": "https://news.google.com/rss/articles/CBMihwJBVV95cUxNQlV2TU9saGhuWG1IM3hWVndsSVFuQl8yZThlT1dZSEJINnp4dUVRNmU4YS1qcldxYS1xR3pRVGsyZWcydl94Y2JuNHUyT1hVN292T0hRd2VvcldHNkJsN0xaczhGS2JiLUlsQ1ptd0FPemJ2REFrNEo1dF9tZlNUc1hsX20tNFRDeHhxUlpjNENoUEJKOXV2TTAweFE3Z21OZExlbTZzSk8xSlhzMWk3N0h1Vk1TaWRoNm53TEFlY3pxemtfRGk3MWc4X3FvdEJESS1LNnB2SGFVdzNRa1JtWHNZa1FTNFJTcWtGNkdOUjdWck1JUnpadl9UbVlOcjVkQkc0Uk1UZw?oc=5"
-                },
-                {
-                  "headline": "Nasdaq Sees IPO Boom as AI, Tokenization and Fintech Fuel Growth",
-                  "createdAt": "2026-09-22T02:02:06.000Z",
-                  "source": "YAHOO:MarketBeat",
-                  "link": "https://finance.yahoo.com/markets/stocks/articles/nasdaq-sees-ipo-boom-ai-020206620.html"
-                },
-                {
-                  "headline": "A Rocket Supply Crunch Is Making It Harder to Hitch a Ride to Space",
-                  "createdAt": "2026-09-22T02:00:00.000Z",
-                  "source": "YAHOO:The Wall Street Journal",
-                  "link": "https://finance.yahoo.com/m/793d8c03-5af5-3a2c-946b-8c7187d45b4b/a-rocket-supply-crunch-is.html"
+                  "headline": "Elon Musk Says 'First Starship Launch to Orbit' Will Carry Starlink V3 Satellites in 7 Days",
+                  "createdAt": "2026-09-22T05:44:06.000Z",
+                  "source": "YAHOO:Benzinga",
+                  "link": "https://finance.yahoo.com/technology/articles/elon-musk-says-first-starship-054406223.html"
                 }
               ],
               "sourcesQueried": [
@@ -2164,10 +2282,10 @@
           "samples": 590,
           "winRatePct": 51.2,
           "avgForwardReturnPct": 3.69,
-          "cohortGeneratedAt": "2026-09-22T06:26:43.498Z"
+          "cohortGeneratedAt": "2026-09-22T11:44:09.955Z"
         },
         "newsCatalyst": {
-          "articleCount": 7,
+          "articleCount": 6,
           "windowHours": 72,
           "binaryRisk": false,
           "sentimentHint": "MIXED_OR_UNKNOWN",
@@ -2177,10 +2295,10 @@
           ],
           "headlines": [
             {
-              "headline": "S&amp;P 500, Dow, Nasdaq End Lower Over Capex Concerns, Surging Oil — CBRS, AMD, GOOGL, TSLA, MSTR In Focus - Stocktwits",
-              "createdAt": "2026-09-21T23:21:05.000Z",
+              "headline": "CBRS Dips In Premarket: CEO Reportedly Says Working With All AI Component Makers Except Nvidia - Stocktwits",
+              "createdAt": "2026-09-21T21:41:54.000Z",
               "source": "GOOGLE_NEWS:Stocktwits",
-              "link": "https://news.google.com/rss/articles/CBMixwFBVV95cUxOUWNlcmtSZ044VElncldPU21GVWo1bkpnWmlsNEdJSVZzcFc1ZzdUMHh1X3A3N0FGRHZZVnl1cHdTb0JkMWxNWmh2VTgycmJHc0hYUlhJSFBIbFZMLVhEOUN0QWZpYkNodklPWjhUSkc4X2NRSGhhelhEdTZ3SElBdERVZ1l3b3BfUU9pbU82MEFzckVqT3BveUgzNlBUNkZWZWYwcUVSM3J4YTlESDF3OHAzXzVQYU96TFRtM2JfNWdKTWZELWlB?oc=5"
+              "link": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxQRW1TdEcwV1BHVkFNd0t6U2RGRnZRdWNob0otRlJySnVIN2FIeVBxWWozTUJOZzhrbDVMVUlOSkEzbDhER0pwN0piVUZERmJtQld0emdnVTRpLW9NZE1zV3YtdjhzSlJtbkVQQ1ZuNnpCLUZsRUJVeGtyM0xQMGRCSFQ3VHZSUTVyRlQ1R1Q3QWIyZ0o1cEM4akFLRGkxczEyaXFaTVpiNzNqdkpkNmctVHlfNUpGLWozUkltZThNbUdCOTJxc0Y3NTZZTjM2b2t4S0VZc3g0LXhaTzYwRUpxenlRbUstZXlrMGNFanNn?oc=5"
             },
             {
               "headline": "CBRG ETF Climbs As Traders Target Leveraged Upside - StocksToTrade",
@@ -2195,16 +2313,16 @@
               "link": "https://news.google.com/rss/articles/CBMijgFBVV95cUxPMDlaM3NwZGQ3bVp4N01zN1ZhMTZyTS0tMWE3ZWxnOU5uRFVEVGU1ZTZpb2Z0TUdidGk1VHRaV1U0eEM3SXlTY1dwRzRjQV81bDU2TFJjLVNsZGZZaE50clJoR3BOSUExcTJhWlpxUDVvLXpnUU1neXI3b2dwbkF2UVlheVBSZWljTTVJYVdB?oc=5"
             },
             {
-              "headline": "Why Cerebras Systems (CBRS) Stock Is Up Today - Quiver Quantitative",
-              "createdAt": "2026-09-21T15:33:00.000Z",
-              "source": "GOOGLE_NEWS:Quiver Quantitative",
-              "link": "https://news.google.com/rss/articles/CBMiigFBVV95cUxPYnVrbUoxOVlUWTg2Rjl1UllrU2FzTXl4ZXN0VWJNeHdBVUFLQ3FlWnBGeUxmb19ZRlY2aThFWUZMaWYxSUZNSjlveDhncTMwSXgzb3NlOHpiZHZvNTUyQkhsT0FJTk1YQXBBR3h6eGRIQlBfSGpTd0NEcUdGOEN4RWI5azdFajRjZGc?oc=5"
-            },
-            {
               "headline": "Cerebras Shares Are Coming Out of Lockup in Waves. Here's the Date That Matters Most.",
               "createdAt": "2026-09-21T08:01:01.000Z",
               "source": "YAHOO:Motley Fool",
               "link": "https://finance.yahoo.com/markets/stocks/articles/cerebras-shares-coming-lockup-waves-080101779.html"
+            },
+            {
+              "headline": "Nvidia Stock And 2 US AI Infrastructure Plays Tied To Federal Defense Spending",
+              "createdAt": "2026-09-20T02:11:49.000Z",
+              "source": "YAHOO:Simply Wall St.",
+              "link": "https://finance.yahoo.com/technology/ai/articles/nvidia-stock-2-us-ai-021149518.html"
             }
           ],
           "sourcesQueried": [
@@ -2232,7 +2350,7 @@
             "rewardRisk": 2.5,
             "backtestStatus": "SPARSE",
             "newsCatalyst": {
-              "articleCount": 7,
+              "articleCount": 6,
               "windowHours": 72,
               "binaryRisk": false,
               "sentimentHint": "MIXED_OR_UNKNOWN",
@@ -2242,10 +2360,10 @@
               ],
               "headlines": [
                 {
-                  "headline": "S&amp;P 500, Dow, Nasdaq End Lower Over Capex Concerns, Surging Oil — CBRS, AMD, GOOGL, TSLA, MSTR In Focus - Stocktwits",
-                  "createdAt": "2026-09-21T23:21:05.000Z",
+                  "headline": "CBRS Dips In Premarket: CEO Reportedly Says Working With All AI Component Makers Except Nvidia - Stocktwits",
+                  "createdAt": "2026-09-21T21:41:54.000Z",
                   "source": "GOOGLE_NEWS:Stocktwits",
-                  "link": "https://news.google.com/rss/articles/CBMixwFBVV95cUxOUWNlcmtSZ044VElncldPU21GVWo1bkpnWmlsNEdJSVZzcFc1ZzdUMHh1X3A3N0FGRHZZVnl1cHdTb0JkMWxNWmh2VTgycmJHc0hYUlhJSFBIbFZMLVhEOUN0QWZpYkNodklPWjhUSkc4X2NRSGhhelhEdTZ3SElBdERVZ1l3b3BfUU9pbU82MEFzckVqT3BveUgzNlBUNkZWZWYwcUVSM3J4YTlESDF3OHAzXzVQYU96TFRtM2JfNWdKTWZELWlB?oc=5"
+                  "link": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxQRW1TdEcwV1BHVkFNd0t6U2RGRnZRdWNob0otRlJySnVIN2FIeVBxWWozTUJOZzhrbDVMVUlOSkEzbDhER0pwN0piVUZERmJtQld0emdnVTRpLW9NZE1zV3YtdjhzSlJtbkVQQ1ZuNnpCLUZsRUJVeGtyM0xQMGRCSFQ3VHZSUTVyRlQ1R1Q3QWIyZ0o1cEM4akFLRGkxczEyaXFaTVpiNzNqdkpkNmctVHlfNUpGLWozUkltZThNbUdCOTJxc0Y3NTZZTjM2b2t4S0VZc3g0LXhaTzYwRUpxenlRbUstZXlrMGNFanNn?oc=5"
                 },
                 {
                   "headline": "CBRG ETF Climbs As Traders Target Leveraged Upside - StocksToTrade",
@@ -2260,16 +2378,16 @@
                   "link": "https://news.google.com/rss/articles/CBMijgFBVV95cUxPMDlaM3NwZGQ3bVp4N01zN1ZhMTZyTS0tMWE3ZWxnOU5uRFVEVGU1ZTZpb2Z0TUdidGk1VHRaV1U0eEM3SXlTY1dwRzRjQV81bDU2TFJjLVNsZGZZaE50clJoR3BOSUExcTJhWlpxUDVvLXpnUU1neXI3b2dwbkF2UVlheVBSZWljTTVJYVdB?oc=5"
                 },
                 {
-                  "headline": "Why Cerebras Systems (CBRS) Stock Is Up Today - Quiver Quantitative",
-                  "createdAt": "2026-09-21T15:33:00.000Z",
-                  "source": "GOOGLE_NEWS:Quiver Quantitative",
-                  "link": "https://news.google.com/rss/articles/CBMiigFBVV95cUxPYnVrbUoxOVlUWTg2Rjl1UllrU2FzTXl4ZXN0VWJNeHdBVUFLQ3FlWnBGeUxmb19ZRlY2aThFWUZMaWYxSUZNSjlveDhncTMwSXgzb3NlOHpiZHZvNTUyQkhsT0FJTk1YQXBBR3h6eGRIQlBfSGpTd0NEcUdGOEN4RWI5azdFajRjZGc?oc=5"
-                },
-                {
                   "headline": "Cerebras Shares Are Coming Out of Lockup in Waves. Here's the Date That Matters Most.",
                   "createdAt": "2026-09-21T08:01:01.000Z",
                   "source": "YAHOO:Motley Fool",
                   "link": "https://finance.yahoo.com/markets/stocks/articles/cerebras-shares-coming-lockup-waves-080101779.html"
+                },
+                {
+                  "headline": "Nvidia Stock And 2 US AI Infrastructure Plays Tied To Federal Defense Spending",
+                  "createdAt": "2026-09-20T02:11:49.000Z",
+                  "source": "YAHOO:Simply Wall St.",
+                  "link": "https://finance.yahoo.com/technology/ai/articles/nvidia-stock-2-us-ai-021149518.html"
                 }
               ],
               "sourcesQueried": [
@@ -2359,35 +2477,17 @@
           "eligible": false
         },
         "dayTradeSeedLane": {
-          "eligible": true,
-          "maxOrderUsd": 30,
-          "requiredEntryTier": "A",
-          "allowBTier": true,
-          "requiresPerOrderApproval": false,
-          "maxConcurrentPositions": 5,
-          "maxNewPositionsPerUtcDay": 5,
-          "currentOpenDayTradeSeedPositions": 0,
-          "openedDayTradeSeedPositionsToday": 0,
-          "existingRobinhoodCashOnly": true,
-          "agentMayInitiateDeposits": false,
-          "agentMayInitiateBankTransfers": false,
-          "marginAllowed": false,
-          "requiresBrokerResidentStop": false,
-          "mustBeFlatBeforeMarketClose": true,
-          "entryCutoffMinutesBeforeClose": 20,
-          "forcedExitStartMinutesBeforeClose": 10,
-          "journalTag": "dayTradeSeedLane:true",
-          "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing."
+          "eligible": false
         },
         "newListingCohortEvidence": {
           "setupType": "BREAKOUT",
           "samples": 264,
           "winRatePct": 55.7,
           "avgForwardReturnPct": 0.79,
-          "cohortGeneratedAt": "2026-09-22T06:26:43.498Z"
+          "cohortGeneratedAt": "2026-09-22T11:44:09.955Z"
         },
         "newsCatalyst": {
-          "articleCount": 5,
+          "articleCount": 4,
           "windowHours": 72,
           "binaryRisk": false,
           "sentimentHint": "MIXED_OR_UNKNOWN",
@@ -2419,12 +2519,6 @@
               "createdAt": "2026-09-21T04:31:00.000Z",
               "source": "GOOGLE_NEWS:Yahoo Finance",
               "link": "https://news.google.com/rss/articles/CBMiowFBVV95cUxNUmFYTmdBWkRyV2FfcmdRd0laZjZpREtzQTFaczZrUnh5OXhuRnNwMjdoVGF0a1FOQ0laTzJSdUZFYi1xZnA5dktwdkctOFNMcVdfVi1lbEpiZDhOMDQzRE1UaDJLSGVacGN1bmN5RDh1aXF3XzdndVlYclpmNU91M2FqckVVOE41SE4zSE1Rb2N6OEp5ejNQS0MzdERoX1ZOSl9j?oc=5"
-            },
-            {
-              "headline": "Top Honeywell Aerospace (HONA) Competitors 2026 - MarketBeat",
-              "createdAt": "2026-09-20T14:06:48.000Z",
-              "source": "GOOGLE_NEWS:MarketBeat",
-              "link": "https://news.google.com/rss/articles/CBMigAFBVV95cUxQWExDdHFSQ29XbU00TFk0ZHhGd0s5Z3I3dEtlVy05QlNtUjA5Tk1sV2FhdUFSMnF6UWt5NHVobE1SU1NNQTM3SHhzc28yUFpSbUlPY0hQZGhLOHZMclJXSjN3R1pvYzNtX3pJSHU1eEItSFR5Vy1ocXR0ZXBLTEJZdw?oc=5"
             }
           ],
           "sourcesQueried": [
@@ -2441,7 +2535,7 @@
           "rankBeforeOptimization": 10,
           "eligibleAfterOverlay": false,
           "eligibleForSeedLane": false,
-          "eligibleForDayTradeSeedLane": true,
+          "eligibleForDayTradeSeedLane": false,
           "upstreamActionAllowed": false,
           "setupDiagnostics": {
             "setupType": "BREAKOUT",
@@ -2452,7 +2546,7 @@
             "rewardRisk": 2.5,
             "backtestStatus": "SPARSE",
             "newsCatalyst": {
-              "articleCount": 5,
+              "articleCount": 4,
               "windowHours": 72,
               "binaryRisk": false,
               "sentimentHint": "MIXED_OR_UNKNOWN",
@@ -2484,12 +2578,6 @@
                   "createdAt": "2026-09-21T04:31:00.000Z",
                   "source": "GOOGLE_NEWS:Yahoo Finance",
                   "link": "https://news.google.com/rss/articles/CBMiowFBVV95cUxNUmFYTmdBWkRyV2FfcmdRd0laZjZpREtzQTFaczZrUnh5OXhuRnNwMjdoVGF0a1FOQ0laTzJSdUZFYi1xZnA5dktwdkctOFNMcVdfVi1lbEpiZDhOMDQzRE1UaDJLSGVacGN1bmN5RDh1aXF3XzdndVlYclpmNU91M2FqckVVOE41SE4zSE1Rb2N6OEp5ejNQS0MzdERoX1ZOSl9j?oc=5"
-                },
-                {
-                  "headline": "Top Honeywell Aerospace (HONA) Competitors 2026 - MarketBeat",
-                  "createdAt": "2026-09-20T14:06:48.000Z",
-                  "source": "GOOGLE_NEWS:MarketBeat",
-                  "link": "https://news.google.com/rss/articles/CBMigAFBVV95cUxQWExDdHFSQ29XbU00TFk0ZHhGd0s5Z3I3dEtlVy05QlNtUjA5Tk1sV2FhdUFSMnF6UWt5NHVobE1SU1NNQTM3SHhzc28yUFpSbUlPY0hQZGhLOHZMclJXSjN3R1pvYzNtX3pJSHU1eEItSFR5Vy1ocXR0ZXBLTEJZdw?oc=5"
                 }
               ],
               "sourcesQueried": [
@@ -2593,8 +2681,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-09-22T11:28:39.710Z",
-    "expiresAt": "2026-09-22T11:58:39.710Z",
+    "signalAsOf": "2026-09-22T11:44:58.646Z",
+    "expiresAt": "2026-09-22T12:14:58.646Z",
     "policy": {
       "researchMode": "ACTIVE_24_7_MORE_OPPORTUNITIES",
       "dataSource": "CRYPTO_COM_PUBLIC_API",
@@ -2629,7 +2717,7 @@
   "entryGateRobustness": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
     "status": "RED_FLAG",
-    "generatedAt": "2026-09-22T11:28:22.013Z",
+    "generatedAt": "2026-09-22T11:41:31.541Z",
     "holdoutStart": "2024-01-01",
     "holdoutEnd": "2025-12-31",
     "secondHoldoutStart": "2026-01-01",
@@ -2905,7 +2993,7 @@
   },
   "shadowDiagnostics": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/shadow-trades.json",
-    "generatedAt": "2026-09-22T06:25:53.415Z",
+    "generatedAt": "2026-09-22T11:43:20.067Z",
     "summary": {
       "ACCEPTED": {
         "resolved": 0,
@@ -2929,7 +3017,7 @@
   },
   "probabilityFirstPolicy": {
     "schemaVersion": 5,
-    "generatedAt": "2026-09-22T11:29:05.100Z",
+    "generatedAt": "2026-09-22T11:45:28.443Z",
     "objective": "Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto active around the clock, and cash acceptable. Prefer elite A stocks at normal encoded size, allow a tightly capped B best-acceptable micro-probation stock after A-tier priority whenever live capacity remains, and let crypto surface more reasonable 24/7 opportunities without removing hard risk controls. This policy cannot eliminate market loss risk.",
     "stocks": {
       "minGrowthQuality": 85,
@@ -2992,7 +3080,9 @@
         "mustBeFlatBeforeMarketClose": true,
         "entryCutoffMinutesBeforeClose": 20,
         "forcedExitStartMinutesBeforeClose": 10,
-        "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing."
+        "targetPct1": 0.02,
+        "targetPct2": 0.03,
+        "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing. Profit target tightened 2026-09-22 (user-requested day-trade-only phase): target1/target2 for this lane use targetPct1/targetPct2 (2%/3% above entry) instead of the shared swing 1.5R/2.6R geometry, since the goal is small, frequent, same-day gains rather than a multi-day swing target -- stop/invalidation logic is unchanged."
       },
       "winningPositionAddOn": {
         "enabled": true,
@@ -3095,15 +3185,15 @@
   },
   "dataFreshness": {
     "status": "GENERATED_THIS_RUN",
-    "lastSuccessfulGeneration": "2026-09-22T11:29:05.220Z",
+    "lastSuccessfulGeneration": "2026-09-22T11:45:28.568Z",
     "expectedRefreshCadenceMinutes": 10,
     "stockExpectedRefreshMinutesDuringMarket": 10,
     "cryptoExpectedRefreshMinutes": 10,
-    "stockSignalAsOf": "2026-09-22T06:22:47.259Z",
-    "cryptoSignalAsOf": "2026-09-22T11:28:39.710Z",
-    "stockAgeMinutes": 306,
+    "stockSignalAsOf": "2026-09-22T11:40:33.065Z",
+    "cryptoSignalAsOf": "2026-09-22T11:44:58.646Z",
+    "stockAgeMinutes": 5,
     "cryptoAgeMinutes": 0,
-    "entryGateValidationAgeMinutes": 1,
+    "entryGateValidationAgeMinutes": 4,
     "staleAfterMinutes": {
       "unified": 20,
       "stockDuringMarket": 25,
@@ -3149,6 +3239,7 @@
       "nonLlmTriggerMonitor": true,
       "lowCreditTriggerExecution": true,
       "eventDrivenExecutionDispatch": true,
+      "dayTradeOnlyEntryPolicy": true,
       "claudeUnattendedExecutionPolicy": true,
       "claudeSoleExecutionAgent": true,
       "automaticStockExecution": true,
@@ -3201,12 +3292,12 @@
     }
   },
   "systemHealth": {
-    "generatedAt": "2026-09-22T11:29:05.220Z",
+    "generatedAt": "2026-09-22T11:45:28.568Z",
     "signalAgeMinutes": 0,
     "dataFreshnessStatus": "GENERATED_THIS_RUN",
     "entryGateValidation": {
       "status": "RED_FLAG",
-      "ageMinutes": 1,
+      "ageMinutes": 4,
       "required": true
     },
     "probabilityFirstOverlay": {
@@ -3216,7 +3307,7 @@
     },
     "shadowLedger": {
       "status": "AVAILABLE",
-      "ageMinutes": 303,
+      "ageMinutes": 2,
       "requiredForTrading": false
     },
     "runtimeBroker": {
@@ -3462,8 +3553,8 @@
     }
   },
   "exitPolicyValidation": {
-    "status": "UNAVAILABLE_FAILSAFE_BASELINE",
-    "generatedAt": "2026-09-22T06:23:48.056Z",
+    "status": "AVAILABLE",
+    "generatedAt": "2026-09-22T11:41:33.285Z",
     "recommendedPolicy": "T1_25_T2_75",
     "recommendationReason": "The no-runner baseline was the strongest policy in development, so no runner policy is promoted.",
     "reportUrl": "https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/exit-policy-validation.json",
@@ -3477,7 +3568,7 @@
   },
   "portfolioCorrelationIntelligence": {
     "status": "AVAILABLE",
-    "generatedAt": "2026-09-22T06:23:44.783Z",
+    "generatedAt": "2026-09-22T11:41:30.054Z",
     "lookbackTradingDays": 90,
     "highCorrelationThreshold": 0.75,
     "veryHighCorrelationThreshold": 0.88,
@@ -3511,15 +3602,15 @@
   },
   "championChallenger": {
     "status": "AVAILABLE",
-    "generatedAt": "2026-09-22T06:23:48.138Z",
+    "generatedAt": "2026-09-22T11:41:33.368Z",
     "mode": "CHAMPION_CHALLENGER",
     "champion": {
       "exitPolicy": "T1_25_T2_75",
       "status": "LIVE_POLICY_ONLY_IF_ALL_RUNTIME_GUARDS_PASS",
       "evidence": {
-        "exitValidationGeneratedAt": "2026-09-22T06:23:48.056Z",
-        "entryValidationGeneratedAt": "2026-09-22T06:23:46.275Z",
-        "probabilityPolicyGeneratedAt": "2026-09-22T06:06:56.260Z"
+        "exitValidationGeneratedAt": "2026-09-22T11:41:33.285Z",
+        "entryValidationGeneratedAt": "2026-09-22T11:41:31.541Z",
+        "probabilityPolicyGeneratedAt": "2026-09-22T11:29:05.100Z"
       }
     },
     "promotionPolicy": {
@@ -3548,7 +3639,7 @@
   },
   "adaptivePerformance": {
     "status": "ACTIVE",
-    "generatedAt": "2026-09-22T11:28:22.105Z",
+    "generatedAt": "2026-09-22T11:44:38.841Z",
     "resolvedRealStockTrades": 1,
     "sourceOfTruth": "ROBINHOOD_CONFIRMED_REAL_FILLS_ONLY",
     "policy": {
@@ -3699,6 +3790,16 @@
     ],
     "resetRule": "Only resume new entries after the triggering condition is positively verified healthy. Time passing alone does not clear the kill switch.",
     "instructions": "Never liquidate blindly. Manage existing exits by the safest supported path and open no new positions while a critical fault remains."
+  },
+  "dayTradeOnlyEntryPolicy": {
+    "enabled": true,
+    "startedAt": "2026-09-22T11:45:28.722Z",
+    "objective": "Take small, frequent, same-day gains to build the account up before returning to larger multi-day swing targets (user-requested 2026-09-22, given the PDT day-trade-count restriction was eliminated by FINRA effective 2026-06-04 -- confirmed already implemented by Robinhood -- so frequent same-day stock entries are no longer capped at 3 per 5 business days).",
+    "scope": "NEW_STOCK_ENTRIES_ONLY",
+    "existingSwingPositionsUnaffected": true,
+    "existingSwingPositionsNote": "Positions already open before this policy (tracked in execution-watchlist.json) continue to their existing saved stop/target1/target2 unchanged and are never force-closed by this policy. Only NEW stock entries are affected.",
+    "mechanism": "While enabled, update-trigger-board.mjs never emits a new BUY_TRIGGER or SEED_LANE_BUY_TRIGGER (both swing, no forced same-day exit) for stocks -- new stock entries can only come from STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER, which already requires flattening by close and now uses a tighter 2%/3% target1/target2 (probabilityFirstPolicy.stocks.dayTradeSeedLane.targetPct1/targetPct2) instead of the shared swing 1.5R/2.6R geometry. Crypto day-trade-seed-lane entries are unaffected (crypto was never subject to PDT and already uses a bounded max-holding-window lane).",
+    "revertInstruction": "Once the account has demonstrated it can make money on the tighter day-trade lane, set enabled:false here to resume normal swing-lane stock entries (BUY_TRIGGER/SEED_LANE_BUY_TRIGGER). This is a single flag flip; no other file needs to change to revert."
   },
   "smallAccountAccessPolicy": {
     "enabled": true,
@@ -3909,24 +4010,24 @@
     "enabled": true,
     "sourceRef": "docs/data/stock-tournament.json",
     "targetTournamentSize": 20000,
-    "actualAvailableUniverse": 6092,
+    "actualAvailableUniverse": 6071,
     "scanAllAvailableUpToTarget": true,
     "rounds": [
       {
         "round": "UNIVERSE",
-        "input": 6092,
-        "output": 2028,
+        "input": 6071,
+        "output": 2032,
         "rule": "Scan every legitimate active/tradable operating-company stock available from the connected U.S. equity universe, up to a 20,000-symbol ceiling. Never invent symbols or pad with ETFs/warrants just to hit 20,000."
       },
       {
         "round": "UP_TO_20000",
-        "input": 2028,
-        "output": 2028,
+        "input": 2032,
+        "output": 2032,
         "rule": "Rank the entire available discovery pool by market quality, liquidity and momentum; send the best 2,000 to deeper daily-history analysis."
       },
       {
         "round": "TOP_2000",
-        "input": 2028,
+        "input": 2032,
         "output": 683,
         "rule": "Require sufficient history, verified 20-day dollar liquidity, trend/setup structure and bounded volatility."
       },
@@ -3995,14 +4096,27 @@
       },
       "recentFilings": [],
       "newsCatalyst": {
-        "articleCount": 2,
+        "articleCount": 4,
         "windowHours": 72,
         "binaryRisk": false,
         "sentimentHint": "MIXED_OR_UNKNOWN",
         "sourcesUsed": [
-          "YAHOO"
+          "YAHOO",
+          "GOOGLE_NEWS"
         ],
         "headlines": [
+          {
+            "headline": "Scotia Growth Institute appoints Tabatha Bull as Strategic Advisor",
+            "createdAt": "2026-09-22T11:30:00.000Z",
+            "source": "YAHOO:CNW Group",
+            "link": "https://finance.yahoo.com/economy/articles/scotia-growth-institute-appoints-tabatha-113000148.html"
+          },
+          {
+            "headline": "Bank Of Nova Scotia (TSX:BNS) Launches Scotia Growth Institute As Fair Value Debate Tightens - simplywall.st",
+            "createdAt": "2026-09-22T10:30:34.000Z",
+            "source": "GOOGLE_NEWS:simplywall.st",
+            "link": "https://news.google.com/rss/articles/CBMi0wFBVV95cUxNdG1YelZLTXZpZWx1LXZLYS14cG42VlltS21hX1Q3NGMwMW9hbnp0czRmZXM2S2xKcFpRU1lzb0NZNUlCUnlha2FwNE9Pb20yTzBNVEVhdzdfSzBDSFU4YWJ2OUFoamx0MGJkeW9nRDRlMlNlRi14NnhCQ3p6LXFvc0JQZ3l4SU5VT1Rvd2ZnZWpvSzA0ODRJcWM5bzRyZjhKVkVZSW4yZTBIdFA0dEJYTmZIYXJfMkpWUjZHTTNJUTZHVkhzZDBPdERXUlFxS2FJRDY00gHYAUFVX3lxTE56dEVtWWpVSURZci1KUl9lWnRKV0hROWZMOGl3TkVqbi1wd2V2OE9ZR195OVpEOGl0d1RJNnVKSVFQQTczUTVWUHFPVzIwYzk1VzRzR1poZTJVSnpWY3FoeTMyZ2wtX0s5RW40dE8xOF8zZ2h1bnFnZzI5UGFxY1U2M1JCa1hlQ1JwMm1idVRWRk16TDh3V2RBOVZuaWpUdWVEM3UwSUlld0xyRHA3T1g2a2U4QmVFR2h6R0hXODAwZC1Yb0pLS0Z0TTBrUUFXSFRQTjV0YVBhNA?oc=5"
+          },
           {
             "headline": "BRP (TSX:DOO) Stock Sees Fair Value Lift After Q2 Analyst Target Increases",
             "createdAt": "2026-09-20T03:20:16.000Z",
@@ -4110,8 +4224,8 @@
         "warning": "Federal disclosures can arrive long after the transaction. This is not real-time order flow."
       },
       "summary": {
-        "uniqueRecords": 1818,
-        "tickers": 237,
+        "uniqueRecords": 1810,
+        "tickers": 234,
         "latestReportedDate": "2026-09-21",
         "automatedProvidersOk": 1,
         "cachePreserved": false
@@ -4175,18 +4289,18 @@
       "historicalSamples": 2,
       "rewardRisk": 5,
       "confirm4h": true,
-      "rsi4h": 65.8,
-      "vwap4h": 1.143628,
+      "rsi4h": 66.5,
+      "vwap4h": 1.143654,
       "pullbackToSupportOrVwap": true,
       "momentumTurnedUp": false,
       "volumeConfirm": true,
       "btcTrendSupport": true,
-      "dollarVolume20d": 444504,
-      "dollarVolume24hReal": 326872,
-      "entry": 1.167631,
-      "stop": 1.13791,
-      "target1": 1.256793,
-      "target2": 1.316234,
+      "dollarVolume20d": 444539,
+      "dollarVolume24hReal": 323758,
+      "entry": 1.170637,
+      "stop": 1.137936,
+      "target1": 1.268739,
+      "target2": 1.334141,
       "robinhoodTradable": null
     },
     "qualifiedChampion": {
@@ -4199,22 +4313,23 @@
       "historicalSamples": 2,
       "rewardRisk": 5,
       "confirm4h": true,
-      "rsi4h": 65.8,
-      "vwap4h": 1.143628,
+      "rsi4h": 66.5,
+      "vwap4h": 1.143654,
       "pullbackToSupportOrVwap": true,
       "momentumTurnedUp": false,
       "volumeConfirm": true,
       "btcTrendSupport": true,
-      "dollarVolume20d": 444504,
-      "dollarVolume24hReal": 326872,
-      "entry": 1.167631,
-      "stop": 1.13791,
-      "target1": 1.256793,
-      "target2": 1.316234,
+      "dollarVolume20d": 444539,
+      "dollarVolume24hReal": 323758,
+      "entry": 1.170637,
+      "stop": 1.137936,
+      "target1": 1.268739,
+      "target2": 1.334141,
       "robinhoodTradable": null
     },
     "fallbackTickers": [
       "INJ/USD",
+      "FIL/USD",
       "THETA/USD",
       "QNT/USD"
     ],
@@ -4274,7 +4389,7 @@
   },
   "unifiedMarketIntelligence": {
     "schemaVersion": 1,
-    "generatedAt": "2026-09-22T11:29:06.398Z",
+    "generatedAt": "2026-09-22T11:45:29.205Z",
     "architecture": "TWO_TOURNAMENTS_UNIFIED_EVIDENCE",
     "objective": "Improve cost-adjusted expectancy and reduce avoidable losses through diverse evidence, forward validation, broker reconciliation and hard risk limits. No win or income guarantee.",
     "providers": [
@@ -4287,7 +4402,7 @@
         ],
         "role": "PRIMARY_MARKET_DATA_AND_RESEARCH",
         "status": "CONNECTED",
-        "lastCheckedAt": "2026-09-22T11:29:06.336Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.143Z",
         "liveInfluence": "HARD_DATA_GATES_AND_TOURNAMENT_INPUT",
         "freshnessMinutes": 0,
         "capabilities": [
@@ -4307,7 +4422,7 @@
         ],
         "role": "BROKER_SOURCE_OF_TRUTH",
         "status": "AUTHORIZED_RUNTIME_REQUIRED",
-        "lastCheckedAt": "2026-09-22T11:29:06.336Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.143Z",
         "liveInfluence": "EXECUTION_AND_CONFIRMED_FILL_LEARNING_ONLY",
         "capabilities": [
           "cash and holdings verification",
@@ -4325,7 +4440,7 @@
         ],
         "role": "DIRECT_BROKER_EXECUTION",
         "status": "CONNECTED",
-        "lastCheckedAt": "2026-09-22T11:29:06.336Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.143Z",
         "liveInfluence": "QUALIFIED_CRYPTO_EXECUTION_AND_CONFIRMED_FILLS",
         "capabilities": [
           "account verification",
@@ -4342,7 +4457,7 @@
         ],
         "role": "OFFICIAL_FUNDAMENTALS_AND_FILINGS",
         "status": "CONNECTED",
-        "lastCheckedAt": "2026-09-22T11:29:06.336Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.143Z",
         "liveInfluence": "FUNDAMENTAL_AND_EVENT_RISK_GATES",
         "capabilities": [
           "company facts",
@@ -4357,7 +4472,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "OK",
-        "lastCheckedAt": "2026-09-22T11:29:06.336Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.143Z",
         "records": 2780,
         "endpoint": "https://www.insiderfinance.io/congress-trades",
         "liveInfluence": "SHADOW_ONLY"
@@ -4370,7 +4485,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "UNAVAILABLE",
-        "lastCheckedAt": "2026-09-22T11:29:06.336Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.143Z",
         "records": 0,
         "endpoint": "https://stockcircle.com/congress-stock-trades?view=latest_trades",
         "liveInfluence": "SHADOW_ONLY"
@@ -4383,7 +4498,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-09-22T11:29:06.336Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.143Z",
         "records": 0,
         "endpoint": "https://www.barchart.com/investing-ideas/politician-insider-trading",
         "liveInfluence": "SHADOW_ONLY"
@@ -4396,7 +4511,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-09-22T11:29:06.336Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.143Z",
         "records": 0,
         "endpoint": "https://www.capitoltrades.com/politicians",
         "liveInfluence": "SHADOW_ONLY"
@@ -4409,7 +4524,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-09-22T11:29:06.336Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.143Z",
         "records": 0,
         "endpoint": "https://www.quiverquant.com/congresstrading/",
         "liveInfluence": "SHADOW_ONLY"
@@ -4422,7 +4537,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-09-22T11:29:06.336Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.143Z",
         "records": 0,
         "endpoint": "https://unusualwhales.com/politics",
         "liveInfluence": "SHADOW_ONLY"
@@ -4435,7 +4550,7 @@
         ],
         "role": "OPTIONAL_LICENSED_ALTERNATIVE_DATA",
         "status": "LICENSED_KEY_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-09-22T11:29:06.336Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.143Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION",
         "capabilities": [
           "congressional activity",
@@ -4451,7 +4566,7 @@
         ],
         "role": "OPTIONAL_LICENSED_OPTIONS_AND_POLITICAL_DATA",
         "status": "LICENSED_KEY_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-09-22T11:29:06.336Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.143Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION",
         "capabilities": [
           "political disclosures",
@@ -4466,7 +4581,7 @@
         ],
         "role": "AUTHORITATIVE_RECONCILIATION",
         "status": "REFERENCE_LINKS_FROM_SOURCE_RECORDS",
-        "lastCheckedAt": "2026-09-22T11:29:06.336Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.143Z",
         "liveInfluence": "CONFIRMATION_ONLY",
         "capabilities": [
           "original disclosure links"
@@ -4481,7 +4596,7 @@
         ],
         "role": "OUTCOME_AND_BOUNDED_LEARNING_SOURCE",
         "status": "ACTIVE",
-        "lastCheckedAt": "2026-09-22T11:29:06.336Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.143Z",
         "liveInfluence": "MAY_RERANK_REDUCE_OR_BLOCK_NEVER_RAISE_MAX_RISK",
         "records": 1
       },
@@ -4494,7 +4609,7 @@
         ],
         "role": "SECONDARY_RESEARCH_AND_MANUAL_RECONCILIATION",
         "status": "REFERENCE_ONLY_NO_OFFICIAL_EXECUTION_FEED",
-        "lastCheckedAt": "2026-09-22T11:29:06.397Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.204Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -4506,7 +4621,7 @@
         ],
         "role": "SECONDARY_QUOTE_AND_NEWS_RECONCILIATION",
         "status": "REFERENCE_ONLY_NO_SUPPORTED_TRADING_API",
-        "lastCheckedAt": "2026-09-22T11:29:06.398Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.205Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -4518,7 +4633,7 @@
         ],
         "role": "OPTIONAL_AUTHORIZED_MARKET_DATA_OR_BROKER_RECONCILIATION",
         "status": "OPENAPI_CREDENTIALS_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-09-22T11:29:06.398Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.205Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION"
       },
       {
@@ -4530,7 +4645,7 @@
         ],
         "role": "CHART_TECHNICAL_AND_ALERT_VISUALIZATION",
         "status": "VISUALIZATION_REFERENCE_ALPACA_REMAINS_DATAFEED",
-        "lastCheckedAt": "2026-09-22T11:29:06.398Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.205Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -4542,7 +4657,7 @@
         ],
         "role": "SCREENER_FUNDAMENTAL_AND_LIQUIDITY_RECONCILIATION",
         "status": "LICENSED_EXPORT_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-09-22T11:29:06.398Z",
+        "lastCheckedAt": "2026-09-22T11:45:29.205Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION"
       }
     ],
