@@ -1,12 +1,12 @@
 {
   "schemaVersion": 11,
-  "generatedAt": "2026-09-23T18:05:36.788Z",
-  "asOf": "2026-09-23T18:04:35.445Z",
+  "generatedAt": "2026-09-23T18:19:45.388Z",
+  "asOf": "2026-09-23T18:18:46.131Z",
   "budget": 50,
   "market": "OPEN",
   "session": {
     "isOpen": true,
-    "timestamp": "2026-09-23T14:04:32.569628839-04:00",
+    "timestamp": "2026-09-23T14:18:42.633437213-04:00",
     "nextOpen": "2026-09-24T09:30:00-04:00",
     "nextClose": "2026-09-23T16:00:00-04:00",
     "label": "OPEN"
@@ -135,9 +135,102 @@
     "optionsLocked": false,
     "reason": "Scanner/model trade-history is diagnostic only. It must never pause or size live Robinhood trading. Live outcome brakes are computed only from confirmed Robinhood fills/history at runtime."
   },
-  "action": "WATCH",
+  "action": "TRADE CANDIDATE",
   "confidence": "CASH",
-  "ranked": [],
+  "ranked": [
+    {
+      "rank": 1,
+      "symbol": "NVDA",
+      "sector": "Technology",
+      "price": 225.49,
+      "score": 96,
+      "entry": 234.02,
+      "stop": 218.13,
+      "target1": 257.86,
+      "target2": 275.33,
+      "allocation": 50,
+      "shares": 0.2137,
+      "estimatedCost": 50.01,
+      "maxLossAtStop": 3.4,
+      "riskWeight": 100,
+      "fundamentals": {
+        "source": "SEC EDGAR",
+        "filedThrough": "2026-02-25",
+        "coverage": 5,
+        "score": 100,
+        "revenueGrowth": 61.4,
+        "quarterlyRevenueGrowth": null,
+        "netMargin": 446.1,
+        "operatingCashFlowPositive": true,
+        "operatingCashFlowYield": 1.9,
+        "liabilityRatio": 23.9,
+        "shareDilution": -0.7,
+        "pe": 31.1,
+        "priceToSales": null,
+        "estimatedNextReport": "2022-06-17",
+        "label": "STRONG"
+      },
+      "validation": {
+        "samples": 19,
+        "winRate": 53,
+        "avgMove": 0.5
+      },
+      "corporateActions": {
+        "source": "Alpaca corporate actions",
+        "risk": "LOW",
+        "events": [
+          {
+            "type": "cash_dividends",
+            "date": "2025-09-11"
+          },
+          {
+            "type": "cash_dividends",
+            "date": "2025-12-04"
+          },
+          {
+            "type": "cash_dividends",
+            "date": "2026-03-11"
+          },
+          {
+            "type": "cash_dividends",
+            "date": "2026-06-04"
+          },
+          {
+            "type": "cash_dividends",
+            "date": "2026-09-10"
+          }
+        ]
+      },
+      "holdingStyle": "Position trade: several weeks to several months",
+      "reviewCadence": "Weekly",
+      "rewardRiskTarget1": 1.5,
+      "rewardRiskTarget2": 2.6,
+      "rewardRisk": 2.6,
+      "rewardRiskQualificationTarget": "TARGET2",
+      "expectancy": {
+        "expectedR": 0.91,
+        "conservativeExpectedR": 0.87,
+        "costAdjustedConservativeExpectedR": 0.82,
+        "assumedRoundTripFrictionPct": 0.3,
+        "frictionR": 0.044
+      },
+      "adaptivePerformance": {
+        "samples": 0,
+        "wins": 0,
+        "losses": 0,
+        "winRate": null,
+        "sizeMultiplier": 1,
+        "qualityAdjustment": 0,
+        "label": "UNPROVEN",
+        "source": "MODEL_RESEARCH_ONLY",
+        "modelReportedSizeMultiplier": 1,
+        "canIncreaseLiveSize": false,
+        "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+      },
+      "growthQuality": 100,
+      "portfolioOpportunityScore": 115.75
+    }
+  ],
   "allocations": [],
   "keepCashDollars": 50,
   "estimatedPortfolioStopLoss": 0,
@@ -148,12 +241,12 @@
     "dte": null,
     "checks": {
       "exists": false,
-      "tradeCandidate": false,
+      "tradeCandidate": true,
       "bullish": false,
-      "quality": false,
+      "quality": true,
       "learning": true,
       "historical": false,
-      "expectancy": false,
+      "expectancy": true,
       "rewardRisk": false,
       "market": true,
       "sector": true,
@@ -165,7 +258,7 @@
     },
     "contract": null,
     "probabilityFirstResearchChecks": {
-      "underlyingGrowthQuality": false,
+      "underlyingGrowthQuality": true,
       "samples": false,
       "winRate": false,
       "expectancy": false,
@@ -204,9 +297,30 @@
       "TRENDING_DOWN",
       "UNKNOWN"
     ],
-    "eventBySymbol": {},
+    "eventBySymbol": {
+      "NVDA": {
+        "stockBlocked": false,
+        "optionBlocked": false,
+        "daysToEstimatedReport": -1558,
+        "corporateActionRisk": "LOW",
+        "reasons": []
+      }
+    },
     "blockedSymbols": [],
-    "rejectedCandidates": [],
+    "rejectedCandidates": [
+      {
+        "symbol": "NVDA",
+        "entry": 234.02,
+        "stop": 218.13,
+        "target1": 257.86,
+        "target2": 275.33,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "reasons": [
+          "Did not clear one or more stock eligibility/position-sizing gates"
+        ]
+      }
+    ],
     "automaticLooseningAllowed": false,
     "note": "The overall validation status is diagnostic and must not freeze unrelated stock regimes. Block or reduce only the CURRENT runtime regime according to runtimePolicy. MIXED is disabled. CALM remains blocked when its own holdouts fail. Sparse regimes stay reduced. TRENDING_UP stays eligible when its own policy allows it."
   },
