@@ -2,7 +2,7 @@
   "schemaVersion": 44,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-09-23T16:52:38.053Z",
+  "generatedAt": "2026-09-24T14:16:01.617Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -347,8 +347,8 @@
     "overallAction": "DO_NOT_TRADE",
     "reason": "Cash is the selected position.",
     "confidence": "CASH",
-    "signalAsOf": "2026-09-23T16:51:38.951Z",
-    "expiresAt": "2026-09-23T17:36:38.951Z",
+    "signalAsOf": "2026-09-24T14:15:03.650Z",
+    "expiresAt": "2026-09-24T15:00:03.650Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 3,
       "maxOptionPremiumPct": 8,
@@ -466,12 +466,12 @@
     "stockOrders": [],
     "stockCandidateQueue": [
       {
-        "ticker": "SPCX",
-        "minimumEntry": 150.62,
-        "maximumEntry": 152.89,
-        "stop": 146.83,
-        "target1": 158.19,
-        "target2": 162.74,
+        "ticker": "HONA",
+        "minimumEntry": 162.49,
+        "maximumEntry": 164.94,
+        "stop": 158.41,
+        "target1": 170.66,
+        "target2": 175.56,
         "setupType": "TREND",
         "growthQuality": 0,
         "rewardRisk": 2.5,
@@ -493,8 +493,8 @@
           "negativeRealProbation": false,
           "shadow": {
             "scope": "NEW_LISTING_COHORT",
-            "samples": 639,
-            "winRatePct": 48.7,
+            "samples": 655,
+            "winRatePct": 50.4,
             "averageR": null,
             "realFillSamples": 0,
             "shadowOnlySamples": 0
@@ -510,73 +510,78 @@
         "adaptiveSizeMultiplier": 0,
         "action": "PROFITABILITY_ADMISSION_BLOCK",
         "seedLane": {
+          "eligible": false
+        },
+        "dayTradeSeedLane": {
           "eligible": true,
           "maxOrderUsd": 30,
           "requiredEntryTier": "A",
           "allowBTier": true,
           "requiresPerOrderApproval": false,
-          "maxConcurrentPositions": 3,
-          "maxNewPositionsPerUtcDay": 2,
-          "currentOpenSeedPositions": 1,
-          "openedSeedPositionsToday": 0,
+          "maxConcurrentPositions": 5,
+          "maxNewPositionsPerUtcDay": 5,
+          "currentOpenDayTradeSeedPositions": 0,
+          "openedDayTradeSeedPositionsToday": 0,
           "existingRobinhoodCashOnly": true,
           "agentMayInitiateDeposits": false,
           "agentMayInitiateBankTransfers": false,
           "marginAllowed": false,
           "requiresBrokerResidentStop": false,
-          "rotatesToNextCandidateAfterStop": true,
-          "rule": "User-authorized automatic stock learning lane, expanded 2026-09-18 at user request for more trades/day and larger size. It may bypass only the forward profitability-admission wait at up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling), matching this policy's existing B-tier micro-probation sizing elsewhere. Up to 3 concurrent positions and 2 new positions per UTC day (raised from 2/1). Every research, freshness, entry-zone, no-chase, decision-intelligence, buying-power, account-floor, portfolio, duplicate-order and protection gate remains mandatory. LIVE_SUSPENDED and contradictory shadow evidence never qualify. A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop."
-        },
-        "dayTradeSeedLane": {
-          "eligible": false
+          "mustBeFlatBeforeMarketClose": true,
+          "entryCutoffMinutesBeforeClose": 20,
+          "forcedExitStartMinutesBeforeClose": 10,
+          "journalTag": "dayTradeSeedLane:true",
+          "target1": 165.7398,
+          "target2": 167.3647,
+          "targetPct1": 0.02,
+          "targetPct2": 0.03,
+          "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing. Profit target tightened 2026-09-22 (user-requested day-trade-only phase): target1/target2 for this lane use targetPct1/targetPct2 (2%/3% above entry) instead of the shared swing 1.5R/2.6R geometry, since the goal is small, frequent, same-day gains rather than a multi-day swing target -- stop/invalidation logic is unchanged."
         },
         "newListingCohortEvidence": {
           "setupType": "TREND",
-          "samples": 639,
-          "winRatePct": 48.7,
-          "avgForwardReturnPct": 3.7,
-          "cohortGeneratedAt": "2026-09-23T16:49:43.758Z"
+          "samples": 655,
+          "winRatePct": 50.4,
+          "avgForwardReturnPct": 3.81,
+          "cohortGeneratedAt": "2026-09-24T10:37:04.398Z"
         },
         "newsCatalyst": {
-          "articleCount": 42,
+          "articleCount": 5,
           "windowHours": 72,
           "binaryRisk": true,
           "sentimentHint": "MIXED_OR_UNKNOWN",
           "sourcesUsed": [
-            "YAHOO",
-            "ALPACA",
             "GOOGLE_NEWS"
           ],
           "headlines": [
             {
-              "headline": "SpaceX vs Amazon: Which Is the Better Stock to Own Over the Next 10 Years",
-              "createdAt": "2026-09-23T16:20:00.000Z",
-              "source": "YAHOO:Motley Fool",
-              "link": "https://finance.yahoo.com/markets/stocks/articles/spacex-vs-amazon-better-stock-162000896.html"
+              "headline": "Top Honeywell Aerospace (HONA) Competitors 2026 - MarketBeat",
+              "createdAt": "2026-09-24T02:36:19.000Z",
+              "source": "GOOGLE_NEWS:MarketBeat",
+              "link": "https://news.google.com/rss/articles/CBMigAFBVV95cUxQWExDdHFSQ29XbU00TFk0ZHhGd0s5Z3I3dEtlVy05QlNtUjA5Tk1sV2FhdUFSMnF6UWt5NHVobE1SU1NNQTM3SHhzc28yUFpSbUlPY0hQZGhLOHZMclJXSjN3R1pvYzNtX3pJSHU1eEItSFR5Vy1ocXR0ZXBLTEJZdw?oc=5"
             },
             {
-              "headline": "SpaceX Faces Another Share Unlock as Investors Watch Supply",
-              "createdAt": "2026-09-23T15:49:51.000Z",
-              "source": "YAHOO:GuruFocus.com",
-              "link": "https://finance.yahoo.com/markets/stocks/articles/spacex-faces-another-share-unlock-154951304.html"
+              "headline": "HONA DEADLINE ALERT: Faruqi &amp; Faruqi, LLP Reminds Honeywell Aerospace (NASDAQ: HONA) Investors of Securities Class Action Lawsuit Deadline on November 23, 2026 - Morningstar",
+              "createdAt": "2026-09-23T21:49:00.000Z",
+              "source": "GOOGLE_NEWS:Morningstar",
+              "link": "https://news.google.com/rss/articles/CBMiuAJBVV95cUxNdXFkRWdLYV91YUVUeGMyUGlPMU54bVVHOTA0TWZXTFBiTEdTek1zQWFPdDlUNG8xUkJXc2NIaFliMldrOUZDRDZHZEpaY3ItWkRNSkU1M0hscjhEMDRVRUUtb0RubU5QYTJxNDhqMjdYV1B1aUtIaktYUlVCYVZpV1lKc085NlN0NjlqRGZGVHktZjhhVHZscndCbU5VMms4YWNmWl9GU1lyZ2h0WXA1NEIwVXJXcF9qQ19TQmdBcDBiS2hpem5mcG16YzU4czRYZ1U5UTlwZ1hnRGs3V2U0enByMzNvcUFDajRBdUFtTE83YU41N3NOU2owa1pzZ1FtcXhjaWkzTFdwZ3Y5NHYtOG90MTZKQU16MkpGenZJUFgxTDdDa3NCakxIZlE4eWxVaVZiTHhHSFM?oc=5"
             },
             {
-              "headline": "SpaceX, OpenAI, and Anthropic Are Woth More Than Every Single IPO in the Last 45 Years",
-              "createdAt": "2026-09-23T15:40:34.000Z",
-              "source": "YAHOO:24/7 Wall St.",
-              "link": "https://finance.yahoo.com/technology/ai/articles/spacex-openai-anthropic-woth-more-154034280.html"
+              "headline": "HONA Investors Have Opportunity to Lead Honeywell Aerospace Inc. Securities Fraud Lawsuit - Morningstar",
+              "createdAt": "2026-09-23T19:49:00.000Z",
+              "source": "GOOGLE_NEWS:Morningstar",
+              "link": "https://news.google.com/rss/articles/CBMi4wFBVV95cUxQeHlFckF2OXFHTjlMX0dTTXhnUGhXUWFxVDgtWXB6T1N3VFM3NE5fd25CdHA2UXNiakdjY2RvdGM2eEhlb1U2cGJNeDdEdjJmMk9nUUl5cDJIZUd3ZXRhazN4TktrNENBTG9DQUtQZ2NHTks5eVotakRwUW5ndkFaM05QdG9reVJTenEyMmExRmJucmRuQ19SbEY3eTlKUk1KVGI1d3hmako0LWdfMlRET3VFc19YMEhOMDZoS2hJS2JUTExaWWdqTHBMR3AySXdOczZmRTRkQV80dnpoRWstQmFDaw?oc=5"
             },
             {
-              "headline": "Michael Burry Says SpaceX Isn't Worth $1 Trillion. Its AI Business Could Prove Him Wrong.",
-              "createdAt": "2026-09-23T15:15:00.000Z",
-              "source": "YAHOO:Motley Fool",
-              "link": "https://finance.yahoo.com/markets/stocks/articles/michael-burry-says-spacex-isnt-151500502.html"
+              "headline": "Law Offices of Frank R. Cruz Encourages Honeywell Aerospace, Inc. (HONA) Shareholders To Inquire About Securities Fraud Class Action - Business Wire",
+              "createdAt": "2026-09-23T16:05:00.000Z",
+              "source": "GOOGLE_NEWS:Business Wire",
+              "link": "https://news.google.com/rss/articles/CBMilAJBVV95cUxQcWx3d1lUamgtbm5aMWUwNy1keFkyNS1OMVF2VXczVU9QMnB4Y2RDWEx3alF6VThwNDM4aVlYWFVYZVBFejEwQmliNzk0eTQxVGRldnNNNzdnV2VWWXdwYjJsVFZKYWV6anktRDZXS2VvbVBUaWw0WjBORVBQS25ER2hwZ0s5LTZMYl9WbDRvMDhjVUp0dnJMODJ0Ri1sNHlpWE05TUpsTUhVMTVEcVJremY0TExVRnRmdG9WVmR5NWR4enNRMTZSYmdrcWRRXzZqVTh4cVppeUFxbDVtVzI3M09NMnQzOXFZZ1JXVzIwNUo4bGh2eExZUkVGZ0pQMlltS3JwRXpYTktwdFhxZ2gxNVgxX3o?oc=5"
             },
             {
-              "headline": "What If Elon Musk Built a Low-Cost Energy Grid?",
-              "createdAt": "2026-09-23T15:10:45.000Z",
-              "source": "YAHOO:MoneyLion",
-              "link": "https://finance.yahoo.com/energy/articles/elon-musk-built-low-cost-151045838.html"
+              "headline": "HONA Alert: HAGENS BERMAN, NATIONAL TRIAL ATTORNEYS, - globenewswire.com",
+              "createdAt": "2026-09-23T15:48:17.000Z",
+              "source": "GOOGLE_NEWS:globenewswire.com",
+              "link": "https://news.google.com/rss/articles/CBMivwJBVV95cUxPa1Q3alpkSFBBaTFNQ1ZMZ3RVRnFZbk5ENkd2eG9vdUtqOThHYjQ2eFIwMVNobGRIU0F2OU1NWW13a2N3YVdfcXl6UVBnV0ZxWklrcUF3aGM5WEhJNXVNOXg2cTVIVU5pSzI4VHh4RVJhU1NKblp4cEhLcGxNRTBWdk1hcTJRUWQwdmZwVng3ajVDYXVhS3ZnR2tyZzF1cEJzb21xYzQwREdMN3lYWjhHR2lQa3FSWGo5cjdaVEJubUFEV3laelFCdV8tN1g1VVhDT1VNY0RMNEV3b1llTE1Qc2xOUUhGSEg4Q0xxU0VDSzBqU3JiaThtaWJoM2pjMnp2UGRUR2N5MkpiLXl3QVptU0d5VVZ6emszci1sbFp0QjhyNFJESmZRU0E5dEtzdGFNZmM4ZENVcDJjb2pVWTkw?oc=5"
             }
           ],
           "sourcesQueried": [
@@ -592,8 +597,8 @@
           "decisionScore": 8.4,
           "rankBeforeOptimization": 1,
           "eligibleAfterOverlay": false,
-          "eligibleForSeedLane": true,
-          "eligibleForDayTradeSeedLane": false,
+          "eligibleForSeedLane": false,
+          "eligibleForDayTradeSeedLane": true,
           "upstreamActionAllowed": false,
           "setupDiagnostics": {
             "setupType": "TREND",
@@ -604,45 +609,43 @@
             "rewardRisk": 2.5,
             "backtestStatus": "SPARSE",
             "newsCatalyst": {
-              "articleCount": 42,
+              "articleCount": 5,
               "windowHours": 72,
               "binaryRisk": true,
               "sentimentHint": "MIXED_OR_UNKNOWN",
               "sourcesUsed": [
-                "YAHOO",
-                "ALPACA",
                 "GOOGLE_NEWS"
               ],
               "headlines": [
                 {
-                  "headline": "SpaceX vs Amazon: Which Is the Better Stock to Own Over the Next 10 Years",
-                  "createdAt": "2026-09-23T16:20:00.000Z",
-                  "source": "YAHOO:Motley Fool",
-                  "link": "https://finance.yahoo.com/markets/stocks/articles/spacex-vs-amazon-better-stock-162000896.html"
+                  "headline": "Top Honeywell Aerospace (HONA) Competitors 2026 - MarketBeat",
+                  "createdAt": "2026-09-24T02:36:19.000Z",
+                  "source": "GOOGLE_NEWS:MarketBeat",
+                  "link": "https://news.google.com/rss/articles/CBMigAFBVV95cUxQWExDdHFSQ29XbU00TFk0ZHhGd0s5Z3I3dEtlVy05QlNtUjA5Tk1sV2FhdUFSMnF6UWt5NHVobE1SU1NNQTM3SHhzc28yUFpSbUlPY0hQZGhLOHZMclJXSjN3R1pvYzNtX3pJSHU1eEItSFR5Vy1ocXR0ZXBLTEJZdw?oc=5"
                 },
                 {
-                  "headline": "SpaceX Faces Another Share Unlock as Investors Watch Supply",
-                  "createdAt": "2026-09-23T15:49:51.000Z",
-                  "source": "YAHOO:GuruFocus.com",
-                  "link": "https://finance.yahoo.com/markets/stocks/articles/spacex-faces-another-share-unlock-154951304.html"
+                  "headline": "HONA DEADLINE ALERT: Faruqi &amp; Faruqi, LLP Reminds Honeywell Aerospace (NASDAQ: HONA) Investors of Securities Class Action Lawsuit Deadline on November 23, 2026 - Morningstar",
+                  "createdAt": "2026-09-23T21:49:00.000Z",
+                  "source": "GOOGLE_NEWS:Morningstar",
+                  "link": "https://news.google.com/rss/articles/CBMiuAJBVV95cUxNdXFkRWdLYV91YUVUeGMyUGlPMU54bVVHOTA0TWZXTFBiTEdTek1zQWFPdDlUNG8xUkJXc2NIaFliMldrOUZDRDZHZEpaY3ItWkRNSkU1M0hscjhEMDRVRUUtb0RubU5QYTJxNDhqMjdYV1B1aUtIaktYUlVCYVZpV1lKc085NlN0NjlqRGZGVHktZjhhVHZscndCbU5VMms4YWNmWl9GU1lyZ2h0WXA1NEIwVXJXcF9qQ19TQmdBcDBiS2hpem5mcG16YzU4czRYZ1U5UTlwZ1hnRGs3V2U0enByMzNvcUFDajRBdUFtTE83YU41N3NOU2owa1pzZ1FtcXhjaWkzTFdwZ3Y5NHYtOG90MTZKQU16MkpGenZJUFgxTDdDa3NCakxIZlE4eWxVaVZiTHhHSFM?oc=5"
                 },
                 {
-                  "headline": "SpaceX, OpenAI, and Anthropic Are Woth More Than Every Single IPO in the Last 45 Years",
-                  "createdAt": "2026-09-23T15:40:34.000Z",
-                  "source": "YAHOO:24/7 Wall St.",
-                  "link": "https://finance.yahoo.com/technology/ai/articles/spacex-openai-anthropic-woth-more-154034280.html"
+                  "headline": "HONA Investors Have Opportunity to Lead Honeywell Aerospace Inc. Securities Fraud Lawsuit - Morningstar",
+                  "createdAt": "2026-09-23T19:49:00.000Z",
+                  "source": "GOOGLE_NEWS:Morningstar",
+                  "link": "https://news.google.com/rss/articles/CBMi4wFBVV95cUxQeHlFckF2OXFHTjlMX0dTTXhnUGhXUWFxVDgtWXB6T1N3VFM3NE5fd25CdHA2UXNiakdjY2RvdGM2eEhlb1U2cGJNeDdEdjJmMk9nUUl5cDJIZUd3ZXRhazN4TktrNENBTG9DQUtQZ2NHTks5eVotakRwUW5ndkFaM05QdG9reVJTenEyMmExRmJucmRuQ19SbEY3eTlKUk1KVGI1d3hmako0LWdfMlRET3VFc19YMEhOMDZoS2hJS2JUTExaWWdqTHBMR3AySXdOczZmRTRkQV80dnpoRWstQmFDaw?oc=5"
                 },
                 {
-                  "headline": "Michael Burry Says SpaceX Isn't Worth $1 Trillion. Its AI Business Could Prove Him Wrong.",
-                  "createdAt": "2026-09-23T15:15:00.000Z",
-                  "source": "YAHOO:Motley Fool",
-                  "link": "https://finance.yahoo.com/markets/stocks/articles/michael-burry-says-spacex-isnt-151500502.html"
+                  "headline": "Law Offices of Frank R. Cruz Encourages Honeywell Aerospace, Inc. (HONA) Shareholders To Inquire About Securities Fraud Class Action - Business Wire",
+                  "createdAt": "2026-09-23T16:05:00.000Z",
+                  "source": "GOOGLE_NEWS:Business Wire",
+                  "link": "https://news.google.com/rss/articles/CBMilAJBVV95cUxQcWx3d1lUamgtbm5aMWUwNy1keFkyNS1OMVF2VXczVU9QMnB4Y2RDWEx3alF6VThwNDM4aVlYWFVYZVBFejEwQmliNzk0eTQxVGRldnNNNzdnV2VWWXdwYjJsVFZKYWV6anktRDZXS2VvbVBUaWw0WjBORVBQS25ER2hwZ0s5LTZMYl9WbDRvMDhjVUp0dnJMODJ0Ri1sNHlpWE05TUpsTUhVMTVEcVJremY0TExVRnRmdG9WVmR5NWR4enNRMTZSYmdrcWRRXzZqVTh4cVppeUFxbDVtVzI3M09NMnQzOXFZZ1JXVzIwNUo4bGh2eExZUkVGZ0pQMlltS3JwRXpYTktwdFhxZ2gxNVgxX3o?oc=5"
                 },
                 {
-                  "headline": "What If Elon Musk Built a Low-Cost Energy Grid?",
-                  "createdAt": "2026-09-23T15:10:45.000Z",
-                  "source": "YAHOO:MoneyLion",
-                  "link": "https://finance.yahoo.com/energy/articles/elon-musk-built-low-cost-151045838.html"
+                  "headline": "HONA Alert: HAGENS BERMAN, NATIONAL TRIAL ATTORNEYS, - globenewswire.com",
+                  "createdAt": "2026-09-23T15:48:17.000Z",
+                  "source": "GOOGLE_NEWS:globenewswire.com",
+                  "link": "https://news.google.com/rss/articles/CBMivwJBVV95cUxPa1Q3alpkSFBBaTFNQ1ZMZ3RVRnFZbk5ENkd2eG9vdUtqOThHYjQ2eFIwMVNobGRIU0F2OU1NWW13a2N3YVdfcXl6UVBnV0ZxWklrcUF3aGM5WEhJNXVNOXg2cTVIVU5pSzI4VHh4RVJhU1NKblp4cEhLcGxNRTBWdk1hcTJRUWQwdmZwVng3ajVDYXVhS3ZnR2tyZzF1cEJzb21xYzQwREdMN3lYWjhHR2lQa3FSWGo5cjdaVEJubUFEV3laelFCdV8tN1g1VVhDT1VNY0RMNEV3b1llTE1Qc2xOUUhGSEg4Q0xxU0VDSzBqU3JiaThtaWJoM2pjMnp2UGRUR2N5MkpiLXl3QVptU0d5VVZ6emszci1sbFp0QjhyNFJESmZRU0E5dEtzdGFNZmM4ZENVcDJjb2pVWTkw?oc=5"
                 }
               ],
               "sourcesQueried": [
@@ -686,11 +689,11 @@
       },
       {
         "ticker": "INIO",
-        "minimumEntry": 19.93,
-        "maximumEntry": 20.23,
+        "minimumEntry": 19.9,
+        "maximumEntry": 20.2,
         "stop": 18.84,
-        "target1": 21.82,
-        "target2": 23.01,
+        "target1": 21.74,
+        "target2": 22.9,
         "setupType": "TREND",
         "growthQuality": 0,
         "rewardRisk": 2.5,
@@ -712,8 +715,8 @@
           "negativeRealProbation": false,
           "shadow": {
             "scope": "NEW_LISTING_COHORT",
-            "samples": 639,
-            "winRatePct": 48.7,
+            "samples": 655,
+            "winRatePct": 50.4,
             "averageR": null,
             "realFillSamples": 0,
             "shadowOnlySamples": 0
@@ -751,13 +754,13 @@
         },
         "newListingCohortEvidence": {
           "setupType": "TREND",
-          "samples": 639,
-          "winRatePct": 48.7,
-          "avgForwardReturnPct": 3.7,
-          "cohortGeneratedAt": "2026-09-23T16:49:43.758Z"
+          "samples": 655,
+          "winRatePct": 50.4,
+          "avgForwardReturnPct": 3.81,
+          "cohortGeneratedAt": "2026-09-24T10:37:04.398Z"
         },
         "newsCatalyst": {
-          "articleCount": 5,
+          "articleCount": 6,
           "windowHours": 72,
           "binaryRisk": false,
           "sentimentHint": "MIXED_OR_UNKNOWN",
@@ -773,15 +776,21 @@
               "link": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNNFc5T0gxcXJ0VzdCTFlHcUZKN21TUEdKTm1GNHFSeHRyeEluMXpRYkFwWE56V2UtS2ZrNTdtVFQ1M0Z6TlFMM2p3ZEhORnRpRmJ2M3NYVzRoZlNOd2ZYMEVOU3JCY2g1ZklCd1hmdE9ZSTd5aHE1TGZXNWY2b0NrNA?oc=5"
             },
             {
+              "headline": "Innio N.V. (INIO) stock price, news, quote and history - Yahoo Finance Australia",
+              "createdAt": "2026-09-22T18:35:12.000Z",
+              "source": "GOOGLE_NEWS:Yahoo Finance Australia",
+              "link": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE4xZ2xvX2NlUEd2VTdYOTRfMzdXYWhodmNpOGREVGp6THNDOHE4NWVmZnp1aUZyTnFOTmk4WnpKZFZfQW5xOG1QajFnX0paYmI0WEE?oc=5"
+            },
+            {
               "headline": "Innio Credit Ratings Upgraded by Fitch, Moody's",
               "createdAt": "2026-09-22T12:51:51.000Z",
               "source": "YAHOO:MT Newswires",
               "link": "https://finance.yahoo.com/markets/stocks/articles/innio-credit-ratings-upgraded-fitch-125151690.html"
             },
             {
-              "headline": "Two credit agencies raise INNIO’s ratings. It does not plan cash dividends near term. - stocktitan.net",
+              "headline": "Two credit agencies raise INNIO’s ratings. It does not plan cash dividends near term. - Stock Titan",
               "createdAt": "2026-09-22T12:00:00.000Z",
-              "source": "GOOGLE_NEWS:stocktitan.net",
+              "source": "GOOGLE_NEWS:Stock Titan",
               "link": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxNZ01BUHNPWEVFVjEwRE9HQWdlWWpheVNaLTE4R1ZlbmFUOTUtekkwS3pYb2hmaWt3a1l6RkR2WHcwenhPQlBXYjdrRkdlc1AzR1FtZFZkSTcxSk5wTzdXMGEyVnZUcnFwcDg5RnlXaThtd1I1UzlGSTJxMDExQ3ZwaXNpbGlmTVpfelpSaFQ2NFAtMlh3ZzZ4WjNzN3VLdTl0czVfTENELXp3ZGxHYnAwUEFxX09TQkQzUldXYm4wakI?oc=5"
             },
             {
@@ -789,12 +798,6 @@
               "createdAt": "2026-09-22T12:00:00.000Z",
               "source": "YAHOO:Business Wire",
               "link": "https://finance.yahoo.com/markets/stocks/articles/innio-receives-credit-rating-upgrades-120000069.html"
-            },
-            {
-              "headline": "A Mystery Buyer Placed a 450-Megawatt Bet on INNIO’s (INIO) Gas Engines",
-              "createdAt": "2026-09-21T02:45:47.000Z",
-              "source": "YAHOO:Insider Monkey",
-              "link": "https://finance.yahoo.com/energy/articles/mystery-buyer-placed-450-megawatt-024547582.html"
             }
           ],
           "sourcesQueried": [
@@ -822,7 +825,7 @@
             "rewardRisk": 2.5,
             "backtestStatus": "SPARSE",
             "newsCatalyst": {
-              "articleCount": 5,
+              "articleCount": 6,
               "windowHours": 72,
               "binaryRisk": false,
               "sentimentHint": "MIXED_OR_UNKNOWN",
@@ -838,15 +841,21 @@
                   "link": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNNFc5T0gxcXJ0VzdCTFlHcUZKN21TUEdKTm1GNHFSeHRyeEluMXpRYkFwWE56V2UtS2ZrNTdtVFQ1M0Z6TlFMM2p3ZEhORnRpRmJ2M3NYVzRoZlNOd2ZYMEVOU3JCY2g1ZklCd1hmdE9ZSTd5aHE1TGZXNWY2b0NrNA?oc=5"
                 },
                 {
+                  "headline": "Innio N.V. (INIO) stock price, news, quote and history - Yahoo Finance Australia",
+                  "createdAt": "2026-09-22T18:35:12.000Z",
+                  "source": "GOOGLE_NEWS:Yahoo Finance Australia",
+                  "link": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE4xZ2xvX2NlUEd2VTdYOTRfMzdXYWhodmNpOGREVGp6THNDOHE4NWVmZnp1aUZyTnFOTmk4WnpKZFZfQW5xOG1QajFnX0paYmI0WEE?oc=5"
+                },
+                {
                   "headline": "Innio Credit Ratings Upgraded by Fitch, Moody's",
                   "createdAt": "2026-09-22T12:51:51.000Z",
                   "source": "YAHOO:MT Newswires",
                   "link": "https://finance.yahoo.com/markets/stocks/articles/innio-credit-ratings-upgraded-fitch-125151690.html"
                 },
                 {
-                  "headline": "Two credit agencies raise INNIO’s ratings. It does not plan cash dividends near term. - stocktitan.net",
+                  "headline": "Two credit agencies raise INNIO’s ratings. It does not plan cash dividends near term. - Stock Titan",
                   "createdAt": "2026-09-22T12:00:00.000Z",
-                  "source": "GOOGLE_NEWS:stocktitan.net",
+                  "source": "GOOGLE_NEWS:Stock Titan",
                   "link": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxNZ01BUHNPWEVFVjEwRE9HQWdlWWpheVNaLTE4R1ZlbmFUOTUtekkwS3pYb2hmaWt3a1l6RkR2WHcwenhPQlBXYjdrRkdlc1AzR1FtZFZkSTcxSk5wTzdXMGEyVnZUcnFwcDg5RnlXaThtd1I1UzlGSTJxMDExQ3ZwaXNpbGlmTVpfelpSaFQ2NFAtMlh3ZzZ4WjNzN3VLdTl0czVfTENELXp3ZGxHYnAwUEFxX09TQkQzUldXYm4wakI?oc=5"
                 },
                 {
@@ -854,12 +863,6 @@
                   "createdAt": "2026-09-22T12:00:00.000Z",
                   "source": "YAHOO:Business Wire",
                   "link": "https://finance.yahoo.com/markets/stocks/articles/innio-receives-credit-rating-upgrades-120000069.html"
-                },
-                {
-                  "headline": "A Mystery Buyer Placed a 450-Megawatt Bet on INNIO’s (INIO) Gas Engines",
-                  "createdAt": "2026-09-21T02:45:47.000Z",
-                  "source": "YAHOO:Insider Monkey",
-                  "link": "https://finance.yahoo.com/energy/articles/mystery-buyer-placed-450-megawatt-024547582.html"
                 }
               ],
               "sourcesQueried": [
@@ -963,8 +966,8 @@
     "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
     "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
     "confidence": "CASH",
-    "signalAsOf": "2026-09-23T16:52:02.459Z",
-    "expiresAt": "2026-09-23T17:22:02.459Z",
+    "signalAsOf": "2026-09-24T14:15:30.245Z",
+    "expiresAt": "2026-09-24T14:45:30.245Z",
     "policy": {
       "researchMode": "ACTIVE_24_7_MORE_OPPORTUNITIES",
       "dataSource": "CRYPTO_COM_PUBLIC_API",
@@ -999,7 +1002,7 @@
   "entryGateRobustness": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
     "status": "RED_FLAG",
-    "generatedAt": "2026-09-23T16:51:44.012Z",
+    "generatedAt": "2026-09-24T14:15:09.213Z",
     "holdoutStart": "2024-01-01",
     "holdoutEnd": "2025-12-31",
     "secondHoldoutStart": "2026-01-01",
@@ -1275,7 +1278,7 @@
   },
   "shadowDiagnostics": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/shadow-trades.json",
-    "generatedAt": "2026-09-23T16:48:47.248Z",
+    "generatedAt": "2026-09-24T10:36:14.655Z",
     "summary": {
       "ACCEPTED": {
         "resolved": 0,
@@ -1299,7 +1302,7 @@
   },
   "probabilityFirstPolicy": {
     "schemaVersion": 5,
-    "generatedAt": "2026-09-23T16:52:38.010Z",
+    "generatedAt": "2026-09-24T14:16:01.569Z",
     "objective": "Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto active around the clock, and cash acceptable. Prefer elite A stocks at normal encoded size, allow a tightly capped B best-acceptable micro-probation stock after A-tier priority whenever live capacity remains, and let crypto surface more reasonable 24/7 opportunities without removing hard risk controls. This policy cannot eliminate market loss risk.",
     "stocks": {
       "minGrowthQuality": 85,
@@ -1466,12 +1469,12 @@
   },
   "dataFreshness": {
     "status": "GENERATED_THIS_RUN",
-    "lastSuccessfulGeneration": "2026-09-23T16:52:38.105Z",
+    "lastSuccessfulGeneration": "2026-09-24T14:16:01.659Z",
     "expectedRefreshCadenceMinutes": 10,
     "stockExpectedRefreshMinutesDuringMarket": 10,
     "cryptoExpectedRefreshMinutes": 10,
-    "stockSignalAsOf": "2026-09-23T16:51:38.951Z",
-    "cryptoSignalAsOf": "2026-09-23T16:52:02.459Z",
+    "stockSignalAsOf": "2026-09-24T14:15:03.650Z",
+    "cryptoSignalAsOf": "2026-09-24T14:15:30.245Z",
     "stockAgeMinutes": 1,
     "cryptoAgeMinutes": 1,
     "entryGateValidationAgeMinutes": 1,
@@ -1573,7 +1576,7 @@
     }
   },
   "systemHealth": {
-    "generatedAt": "2026-09-23T16:52:38.105Z",
+    "generatedAt": "2026-09-24T14:16:01.659Z",
     "signalAgeMinutes": 0,
     "dataFreshnessStatus": "GENERATED_THIS_RUN",
     "entryGateValidation": {
@@ -1588,7 +1591,7 @@
     },
     "shadowLedger": {
       "status": "AVAILABLE",
-      "ageMinutes": 4,
+      "ageMinutes": 220,
       "requiredForTrading": false
     },
     "runtimeBroker": {
@@ -1834,8 +1837,8 @@
     }
   },
   "exitPolicyValidation": {
-    "status": "AVAILABLE",
-    "generatedAt": "2026-09-23T16:48:18.885Z",
+    "status": "UNAVAILABLE_FAILSAFE_BASELINE",
+    "generatedAt": "2026-09-24T10:35:21.178Z",
     "recommendedPolicy": "T1_25_T2_75",
     "recommendationReason": "The no-runner baseline was the strongest policy in development, so no runner policy is promoted.",
     "reportUrl": "https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/exit-policy-validation.json",
@@ -1849,11 +1852,20 @@
   },
   "portfolioCorrelationIntelligence": {
     "status": "AVAILABLE",
-    "generatedAt": "2026-09-23T16:48:14.091Z",
+    "generatedAt": "2026-09-24T10:35:18.560Z",
     "lookbackTradingDays": 90,
     "highCorrelationThreshold": 0.75,
     "veryHighCorrelationThreshold": 0.88,
-    "clusters": [],
+    "clusters": [
+      {
+        "key": "FORM|LSCC",
+        "members": [
+          "FORM",
+          "LSCC"
+        ],
+        "maxPairCorrelation": 0.813
+      }
+    ],
     "policy": {
       "maxFullSizeNamesPerHighCorrelationCluster": 1,
       "maxNamesPerHighCorrelationCluster": 2,
@@ -1865,15 +1877,15 @@
   },
   "championChallenger": {
     "status": "AVAILABLE",
-    "generatedAt": "2026-09-23T16:48:18.968Z",
+    "generatedAt": "2026-09-24T10:35:21.246Z",
     "mode": "CHAMPION_CHALLENGER",
     "champion": {
       "exitPolicy": "T1_25_T2_75",
       "status": "LIVE_POLICY_ONLY_IF_ALL_RUNTIME_GUARDS_PASS",
       "evidence": {
-        "exitValidationGeneratedAt": "2026-09-23T16:48:18.885Z",
-        "entryValidationGeneratedAt": "2026-09-23T16:48:15.692Z",
-        "probabilityPolicyGeneratedAt": "2026-09-23T16:36:53.909Z"
+        "exitValidationGeneratedAt": "2026-09-24T10:35:21.178Z",
+        "entryValidationGeneratedAt": "2026-09-24T10:35:19.755Z",
+        "probabilityPolicyGeneratedAt": "2026-09-24T10:19:00.447Z"
       }
     },
     "promotionPolicy": {
@@ -1902,7 +1914,7 @@
   },
   "adaptivePerformance": {
     "status": "ACTIVE",
-    "generatedAt": "2026-09-23T16:52:37.947Z",
+    "generatedAt": "2026-09-24T14:16:01.527Z",
     "resolvedRealStockTrades": 1,
     "sourceOfTruth": "ROBINHOOD_CONFIRMED_REAL_FILLS_ONLY",
     "policy": {
@@ -2056,7 +2068,7 @@
   },
   "dayTradeOnlyEntryPolicy": {
     "enabled": true,
-    "startedAt": "2026-09-23T16:52:38.255Z",
+    "startedAt": "2026-09-24T14:16:02.032Z",
     "objective": "Take small, frequent, same-day gains to build the account up before returning to larger multi-day swing targets (user-requested 2026-09-22, given the PDT day-trade-count restriction was eliminated by FINRA effective 2026-06-04 -- confirmed already implemented by Robinhood -- so frequent same-day stock entries are no longer capped at 3 per 5 business days).",
     "scope": "NEW_STOCK_ENTRIES_ONLY",
     "existingSwingPositionsUnaffected": true,
@@ -2273,36 +2285,36 @@
     "enabled": true,
     "sourceRef": "docs/data/stock-tournament.json",
     "targetTournamentSize": 20000,
-    "actualAvailableUniverse": 6089,
+    "actualAvailableUniverse": 6071,
     "scanAllAvailableUpToTarget": true,
     "rounds": [
       {
         "round": "UNIVERSE",
-        "input": 6089,
-        "output": 2647,
+        "input": 6071,
+        "output": 2037,
         "rule": "Scan every legitimate active/tradable operating-company stock available from the connected U.S. equity universe, up to a 20,000-symbol ceiling. Never invent symbols or pad with ETFs/warrants just to hit 20,000."
       },
       {
         "round": "UP_TO_20000",
-        "input": 2647,
-        "output": 2647,
+        "input": 2037,
+        "output": 2037,
         "rule": "Rank the entire available discovery pool by market quality, liquidity and momentum; send the best 2,000 to deeper daily-history analysis."
       },
       {
         "round": "TOP_2000",
-        "input": 2647,
-        "output": 1253,
+        "input": 2037,
+        "output": 678,
         "rule": "Require sufficient history, verified 20-day dollar liquidity, trend/setup structure and bounded volatility."
       },
       {
         "round": "TOP_800",
-        "input": 1253,
-        "output": 63,
+        "input": 678,
+        "output": 40,
         "rule": "Run setup-specific historical validation and eliminate weak win-rate, sample-depth, direction, liquidity and volatility profiles."
       },
       {
         "round": "TOP_100",
-        "input": 63,
+        "input": 40,
         "output": 0,
         "rule": "Apply A-tier elite gates first, then a 25% B best-acceptable micro tier with positive expectancy/history/R:R floors. Hard account, price, spread, gap, correlation and protection gates never relax."
       },
@@ -2325,26 +2337,26 @@
     "noEligibleCandidateAction": "HOLD_CASH_AND_KEEP_SCANNING",
     "researchChampion": {
       "rank": 1,
-      "ticker": "ASX",
-      "name": "ASE Technology Holding Co., Ltd.",
+      "ticker": "TWST",
+      "name": "Twist Bioscience Corporation Common Stock",
       "setupType": "TREND",
-      "tournamentScore": 88.57,
+      "tournamentScore": 90,
       "quality": 100,
-      "historicalWinRate": 76,
+      "historicalWinRate": 82,
       "historicalSamples": 34,
       "rewardRisk": 2.6,
-      "spreadPct": 0.023,
-      "entry": 45.15,
-      "stop": 39.35,
-      "target1": 53.85,
-      "target2": 60.23,
+      "spreadPct": null,
+      "entry": 169.94,
+      "stop": 141.72,
+      "target1": 212.27,
+      "target2": 243.31,
       "entryTier": null,
       "entryTierLabel": null,
       "fundamentals": null,
       "corporateActions": null,
       "recentFilings": [],
       "newsCatalyst": {
-        "articleCount": 12,
+        "articleCount": 8,
         "windowHours": 72,
         "binaryRisk": false,
         "sentimentHint": "MIXED_OR_UNKNOWN",
@@ -2354,34 +2366,34 @@
         ],
         "headlines": [
           {
-            "headline": "ASE Technology Holding Co Ltd Stock (ASX) Moved Down by 3.30% on Sep 23: What Signal Does It Send? - tradingkey.com",
-            "createdAt": "2026-09-23T16:15:26.000Z",
-            "source": "GOOGLE_NEWS:tradingkey.com",
-            "link": "https://news.google.com/rss/articles/CBMiigFBVV95cUxQT1M0NWhRMGhWZ3Z1UXRQVXZ0OXdpNUZuQVFTY3hzNHl6ZFBzSjJkemN5YmFSNHV4NVE0RkRCbnZDZ2JkVS1ndXJEbVgwY1pPcmlHRFdwWEtZYjdzWUpVc05zYW9wT2hPUW9JTzBkWUxPajJjUUw4a3Q0ZHZ3REZneU5oamMwbmFybVE?oc=5"
+            "headline": "Understanding Momentum Shifts in (TWST) - Stock Traders Daily",
+            "createdAt": "2026-09-24T02:26:02.000Z",
+            "source": "GOOGLE_NEWS:Stock Traders Daily",
+            "link": "https://news.google.com/rss/articles/CBMitwFBVV95cUxNcHh1Q0Rvb3NZazhMeks4UXE5Y1BhSUNpTF83ZWxzcUpST1lVeDh4Z0VySm1QaEJxUEoybGg0WDVLTlhmMnJwSDVmbk4waXBkX0VVcGxWZ2VQcUMyemxwdVZNRE1PeW5DTHB6X25naExKNnJJclFwanFmOUxtcGNJMWQxMHJweU1fQ3lTNkZ2UGE0dXotel9OamdFTjI3WTh4eDh6Q0ZLX1phd0oyaGRNZWVBcWI2V28?oc=5"
           },
           {
-            "headline": "4DMedical And 2 Australian Growth Stocks To Watch - simplywall.st",
-            "createdAt": "2026-09-23T14:32:56.000Z",
+            "headline": "At $165.4910 a share, Twist Bioscience (TWST) CEO Emily M. Leproust sold stock to cover taxes. - Stock Titan",
+            "createdAt": "2026-09-23T20:09:01.000Z",
+            "source": "GOOGLE_NEWS:Stock Titan",
+            "link": "https://news.google.com/rss/articles/CBMitgFBVV95cUxOWHkxUkd1MGUzT2tqUmpxSUxaNXVZMTJiS2dpN1puLXQ3M0FoVC11WUVlb1gyZmRqYW42MkN1VndVZktUYzlTNzNObWllcFJtQWRwdjVCVnk0ekI4bXFVMTNxZC1HdndUUUJEZmwzbGFmd1pKa0NsTVBJWUZ5TFdwSl9qS2JMdHJUVm9RbnBZbHVrU0lKYm9EWDFaa2thT3pvTEVvZjg2UW1faUtFS0NyalF5SFVGdw?oc=5"
+          },
+          {
+            "headline": "A required tax-withholding sale: Twist Bioscience (TWST) HR executive Paula Green sells 294 shares. - Stock Titan",
+            "createdAt": "2026-09-23T20:08:58.000Z",
+            "source": "GOOGLE_NEWS:Stock Titan",
+            "link": "https://news.google.com/rss/articles/CBMitgFBVV95cUxOcTZjLTBNeTFjTTJDNmJFWmhaRTlzdTAxOHZfR3VzV3RUVUtvOFFudjZ6Y19kaVplenRtMmxIOWJLcEJtMzVUQVpGWmMya2xYWGExaTZkV0dya0tudGY5akdGS25iQUdxVmFTRG1vczlzZm1YQnRQQXp6T0h3U19iakNqX2NlUnBURzJKZzRvRDdrYkExYkJsV1RLd0N3ZWJhOW51dlpncjJCenYyXy1GQVdWR2taZw?oc=5"
+          },
+          {
+            "headline": "Twist Bioscience Slides as Recent Rally Cools and CEO Sale Filing Weighs on Sentiment - Quiver Quantitative",
+            "createdAt": "2026-09-23T17:34:00.000Z",
+            "source": "GOOGLE_NEWS:Quiver Quantitative",
+            "link": "https://news.google.com/rss/articles/CBMiugFBVV95cUxOeGxxT1ZoQXFIaXppU1ZwSUtuanJwSXNhWWlLTTFCSTNMS3llNGFheTJGVVp0a3dHR2VUckFCRjhIQm5pOThvZHN0X1gzR0ZGTXZqR1daakQyQUZ4S2JBcmdCS0VPOFhKamJPQ2xkVFA4UFU2UVVVaGJHdk5qTzJnUlRkcTZKUTQ0anpvSlI2V05jZ2JualpYcS1GSVRzMDVTRjBoZnpFaGRPYi15VGdGcFo0V0ROZmhkZVE?oc=5"
+          },
+          {
+            "headline": "Twist Bioscience (TWST) Joins Lilly TuneLab, Is The Stock Fully Priced? - simplywall.st",
+            "createdAt": "2026-09-23T12:53:55.000Z",
             "source": "GOOGLE_NEWS:simplywall.st",
-            "link": "https://news.google.com/rss/articles/CBMivwFBVV95cUxPVlhnZEkzTXVldVVVZURyTDNGY1E4cVd4V3N0a1dtZm14X1VuS3cyWlU4VUUwNFpHMklXUDhHbG5DUGlIajlydWl0SHR0VzZOYjRXdWo4MTJNMlJuX2YyX1FRLVpjOElNZGNUelhFMXlidENBRmRBeHJ6Wnozak94dDFBUGxia3EtamI3bjJHdWRPMmJqU3Y2Wm1QX3pxdjRvamFQQm9lNmV0WVB6ZTJUeFEzNnBjWERzWF9lYVR6MNIBxAFBVV95cUxNYWJmVXBHOHVVWDljS1hMLXpnU1E2cTRMTmpvMjVhYWdDdU1VSndBNENmck9RNUZYWE5XVndZV19NLTVuMEpDNjFHdjVxa01mY3RnRjJxcDhjM21PUFJocUtic1VLZm1rQ0ZGUVQxcVVmckRMcW5LZE9vbWo5dVVhT05VZV96T2ctMXBXYXAyb1BvSU1GcXM4cHdKOEc0OEZDalJNS21ZVnRPd3NIYS1Kc2k2Y05FVEZFUnY5OUtLdXNRWjdE?oc=5"
-          },
-          {
-            "headline": "Four AI Stars Rev Up As Analysts Raise Profit Targets; Micron Clears Early Buy Point",
-            "createdAt": "2026-09-23T12:00:57.000Z",
-            "source": "YAHOO:Investor's Business Daily",
-            "link": "https://finance.yahoo.com/m/c3a8ff5a-98f6-38ab-b515-343750b49e3d/four-ai-stars-rev-up-as.html"
-          },
-          {
-            "headline": "Can Tuas (ASX:TUA) Shares Shrug Off Rising Regulatory Costs? - simplywall.st",
-            "createdAt": "2026-09-23T09:38:04.000Z",
-            "source": "GOOGLE_NEWS:simplywall.st",
-            "link": "https://news.google.com/rss/articles/CBMivgFBVV95cUxPRWJacWpYa1VybFBjVUdDaWlpaVRUcjVlX0szT0Rwc1JKV1VFYlp2Zkk3UFJTRXF1V1JLOUp6ZjJtRElzczdVN1pVTVBaSnFMV21nWVY5WC1XMDZPaFFZY2NmdERQUTRJb0tweVhUS3dUVVc3c09oY2NhLTlQNjlZUVhJVVh1WWEyeWxEQXpTLTVDbVM2LXhoQnBWSWFVWVJmMndBSlM0Q2VwczhBUkxFZmpGTVJ5VUJKX3JYUklB0gHDAUFVX3lxTFBmVHJZZ3hGMGl5NElhZk9Qak5tenNGX3p4dVVaMlhoTlMwT21maF85ZDVQazFjXy1jVHF2U01paHBNODk0eEJfX2xUa2Q5RGstQnVRa0NRRkxOV2lfX3hGeGpBeE5pR0RCV1RSNUpJRk0yRHBlQ1JFeW1tVXpRekJCOXc1WGtoZVFaV2V3YUdMUXdaeFhjNTN5bkJfM0dpY3VRT0lJbFpoOFMxMkJrMmpEZ3c0MWlHVGFqOEVMT0FHNVhSSQ?oc=5"
-          },
-          {
-            "headline": "‘Held back’: ASX flat as AI boom passes it by - Yahoo Finance Australia",
-            "createdAt": "2026-09-23T08:04:12.000Z",
-            "source": "GOOGLE_NEWS:Yahoo Finance Australia",
-            "link": "https://news.google.com/rss/articles/CBMiekFVX3lxTFA5Y3p2ZVpsZ1FZNnRONnpvRXVJSmZMT3pTb2JXUEpDWUI3c2JhbHFPNXZ0ako1Q3RreHkwZjR4ZDF1ZUxlWFZzdUd5MFZ6eng5cXdlSnlGMWlDdV95S1JLeFNJc3hPcl9QZjVmZElQSHNXZUVtOUZ5LVRn?oc=5"
+            "link": "https://news.google.com/rss/articles/CBMi5AFBVV95cUxNWGZ3UUVGajRnVHRZd1NCUmpPaVp3ZHc3bnZ6ampOUU9zVFljM2l4TVducWJOcGFCZ1FQQWR3TXZSZGdXVmVGZ21aYy05WnJid194VGwyQ2pWZlg5UDdHb0lNNHE3aDk3XzVmM0xmaTlSTnBtYnExaVk5MVd5NFpId0d1RG5PdjdrckJXY0NZMHJHREhSVnhseTVvODRCaV90VHZQaUxnVWFVYjY4b2FKbUNFbHJka1R4MG9ZcnpYUm52c2MtcU9XaHMtN3hISkZfOEVyeW9QUGNlMkJHU3BPOXQwb0bSAeoBQVVfeXFMTlJGRjVkTWVIS3ZibzE3RFViYU8zN2RmbjRTQ1A2b3RTdVN6Z0xSbHBsOS1GamdWcVUtckExcE5CWDZDUV9Oa2ZLRTBoQUNqSGlXU0VKc0NlRUVobC1rYnY1UEhaaTRhVVdDZE9YNEIzSzFFYzg2U1dWaGFWU2hYZkxJc2xmcG9WRnpLNi1fRW1tZ0VLMW03bTIteDREalQyMl9QZlVwT0d4UGhzcThEVFpQZExuTnF3M0loOHhpZERodVU3TFFKdWJYR0NOZjFpaXplUUVKVy05YkJSekQtSWV3Y2U4M0l5RUJR?oc=5"
           }
         ],
         "sourcesQueried": [
@@ -2403,8 +2415,8 @@
         "globalReasons": [],
         "reasons": []
       },
-      "adaptiveBaseTournamentScore": 88.57,
-      "adaptiveTournamentScore": 88.57,
+      "adaptiveBaseTournamentScore": 90,
+      "adaptiveTournamentScore": 90,
       "adaptiveSizeMultiplier": 1
     },
     "liveBuyChampion": null,
@@ -2478,8 +2490,8 @@
         "warning": "Federal disclosures can arrive long after the transaction. This is not real-time order flow."
       },
       "summary": {
-        "uniqueRecords": 1825,
-        "tickers": 243,
+        "uniqueRecords": 1817,
+        "tickers": 238,
         "latestReportedDate": "2026-09-21",
         "automatedProvidersOk": 1,
         "cachePreserved": false
@@ -2487,9 +2499,9 @@
     },
     "topMatchedCandidates": [
       {
-        "ticker": "TMO",
+        "ticker": "STX",
         "netActivityScore": 2.6,
-        "buyWeight": 0.219,
+        "buyWeight": 0.215,
         "sellWeight": 0,
         "distinctPoliticians": 1,
         "bipartisan": false,
@@ -2523,55 +2535,55 @@
     "noEligibleCandidateAction": "KEEP_SCANNING_24_7",
     "researchChampion": {
       "rank": 1,
-      "ticker": "FLUX/USD",
-      "grade": "NO_TRADE",
+      "ticker": "NEAR/USD",
+      "grade": "A",
       "growthQuality": 100,
       "score": 100,
-      "historicalWinRate": 75,
-      "historicalSamples": 4,
+      "historicalWinRate": 63,
+      "historicalSamples": 8,
       "rewardRisk": 5,
       "confirm4h": true,
-      "rsi4h": 66.7,
-      "vwap4h": 0.064831,
+      "rsi4h": 52.9,
+      "vwap4h": 4.346501,
       "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": false,
-      "volumeConfirm": true,
+      "momentumTurnedUp": true,
+      "volumeConfirm": false,
       "btcTrendSupport": true,
-      "dollarVolume20d": 6232,
-      "dollarVolume24hReal": 22661,
-      "entry": 0.067565,
-      "stop": 0.063162,
-      "target1": 0.080775,
-      "target2": 0.089581,
+      "dollarVolume20d": 891722,
+      "dollarVolume24hReal": 1718975,
+      "entry": 4.479641,
+      "stop": 4.324768,
+      "target1": 4.94426,
+      "target2": 5.254006,
       "robinhoodTradable": null
     },
     "qualifiedChampion": {
-      "rank": 5,
-      "ticker": "PENGU/USD",
+      "rank": 1,
+      "ticker": "NEAR/USD",
       "grade": "A",
       "growthQuality": 100,
-      "score": 96,
-      "historicalWinRate": 40,
-      "historicalSamples": 5,
+      "score": 100,
+      "historicalWinRate": 63,
+      "historicalSamples": 8,
       "rewardRisk": 5,
       "confirm4h": true,
-      "rsi4h": 67.3,
-      "vwap4h": 0.010017,
+      "rsi4h": 52.9,
+      "vwap4h": 4.346501,
       "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": false,
-      "volumeConfirm": true,
+      "momentumTurnedUp": true,
+      "volumeConfirm": false,
       "btcTrendSupport": true,
-      "dollarVolume20d": 17139,
-      "dollarVolume24hReal": 209781,
-      "entry": 0.009857,
-      "stop": 0.009039,
-      "target1": 0.012311,
-      "target2": 0.013947,
+      "dollarVolume20d": 891722,
+      "dollarVolume24hReal": 1718975,
+      "entry": 4.479641,
+      "stop": 4.324768,
+      "target1": 4.94426,
+      "target2": 5.254006,
       "robinhoodTradable": null
     },
     "fallbackTickers": [
-      "QNT/USD",
-      "BONK/USD"
+      "FIL/USD",
+      "VET/USD"
     ],
     "instructions": "Claude evaluates only the Teststock qualified champion and already-qualified fallbacks in order through the authenticated Robinhood Trading MCP. Claude must not invent a crypto symbol or bypass any live broker, risk, freshness, no-chase, duplicate-order, sizing or protection check.",
     "researchOnlyUntilBrokerExecutionAvailable": false
@@ -2629,7 +2641,7 @@
   },
   "unifiedMarketIntelligence": {
     "schemaVersion": 1,
-    "generatedAt": "2026-09-23T16:52:55.938Z",
+    "generatedAt": "2026-09-24T14:16:20.319Z",
     "architecture": "TWO_TOURNAMENTS_UNIFIED_EVIDENCE",
     "objective": "Improve cost-adjusted expectancy and reduce avoidable losses through diverse evidence, forward validation, broker reconciliation and hard risk limits. No win or income guarantee.",
     "providers": [
@@ -2642,7 +2654,7 @@
         ],
         "role": "PRIMARY_MARKET_DATA_AND_RESEARCH",
         "status": "CONNECTED",
-        "lastCheckedAt": "2026-09-23T16:52:55.876Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.277Z",
         "liveInfluence": "HARD_DATA_GATES_AND_TOURNAMENT_INPUT",
         "freshnessMinutes": 0,
         "capabilities": [
@@ -2662,7 +2674,7 @@
         ],
         "role": "BROKER_SOURCE_OF_TRUTH",
         "status": "AUTHORIZED_RUNTIME_REQUIRED",
-        "lastCheckedAt": "2026-09-23T16:52:55.876Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.277Z",
         "liveInfluence": "EXECUTION_AND_CONFIRMED_FILL_LEARNING_ONLY",
         "capabilities": [
           "cash and holdings verification",
@@ -2680,7 +2692,7 @@
         ],
         "role": "DIRECT_BROKER_EXECUTION",
         "status": "CONNECTED",
-        "lastCheckedAt": "2026-09-23T16:52:55.876Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.277Z",
         "liveInfluence": "QUALIFIED_CRYPTO_EXECUTION_AND_CONFIRMED_FILLS",
         "capabilities": [
           "account verification",
@@ -2697,7 +2709,7 @@
         ],
         "role": "OFFICIAL_FUNDAMENTALS_AND_FILINGS",
         "status": "CONNECTED",
-        "lastCheckedAt": "2026-09-23T16:52:55.876Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.277Z",
         "liveInfluence": "FUNDAMENTAL_AND_EVENT_RISK_GATES",
         "capabilities": [
           "company facts",
@@ -2712,7 +2724,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "OK",
-        "lastCheckedAt": "2026-09-23T16:52:55.876Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.277Z",
         "records": 2780,
         "endpoint": "https://www.insiderfinance.io/congress-trades",
         "liveInfluence": "SHADOW_ONLY"
@@ -2725,7 +2737,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "UNAVAILABLE",
-        "lastCheckedAt": "2026-09-23T16:52:55.876Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.277Z",
         "records": 0,
         "endpoint": "https://stockcircle.com/congress-stock-trades?view=latest_trades",
         "liveInfluence": "SHADOW_ONLY"
@@ -2738,7 +2750,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-09-23T16:52:55.876Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.277Z",
         "records": 0,
         "endpoint": "https://www.barchart.com/investing-ideas/politician-insider-trading",
         "liveInfluence": "SHADOW_ONLY"
@@ -2751,7 +2763,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-09-23T16:52:55.876Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.277Z",
         "records": 0,
         "endpoint": "https://www.capitoltrades.com/politicians",
         "liveInfluence": "SHADOW_ONLY"
@@ -2764,7 +2776,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-09-23T16:52:55.876Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.277Z",
         "records": 0,
         "endpoint": "https://www.quiverquant.com/congresstrading/",
         "liveInfluence": "SHADOW_ONLY"
@@ -2777,7 +2789,7 @@
         ],
         "role": "DELAYED_CONGRESSIONAL_DISCLOSURE",
         "status": "REFERENCE_ONLY",
-        "lastCheckedAt": "2026-09-23T16:52:55.876Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.277Z",
         "records": 0,
         "endpoint": "https://unusualwhales.com/politics",
         "liveInfluence": "SHADOW_ONLY"
@@ -2790,7 +2802,7 @@
         ],
         "role": "OPTIONAL_LICENSED_ALTERNATIVE_DATA",
         "status": "LICENSED_KEY_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-09-23T16:52:55.876Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.277Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION",
         "capabilities": [
           "congressional activity",
@@ -2806,7 +2818,7 @@
         ],
         "role": "OPTIONAL_LICENSED_OPTIONS_AND_POLITICAL_DATA",
         "status": "LICENSED_KEY_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-09-23T16:52:55.876Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.277Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION",
         "capabilities": [
           "political disclosures",
@@ -2821,7 +2833,7 @@
         ],
         "role": "AUTHORITATIVE_RECONCILIATION",
         "status": "REFERENCE_LINKS_FROM_SOURCE_RECORDS",
-        "lastCheckedAt": "2026-09-23T16:52:55.876Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.277Z",
         "liveInfluence": "CONFIRMATION_ONLY",
         "capabilities": [
           "original disclosure links"
@@ -2836,7 +2848,7 @@
         ],
         "role": "OUTCOME_AND_BOUNDED_LEARNING_SOURCE",
         "status": "ACTIVE",
-        "lastCheckedAt": "2026-09-23T16:52:55.876Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.277Z",
         "liveInfluence": "MAY_RERANK_REDUCE_OR_BLOCK_NEVER_RAISE_MAX_RISK",
         "records": 1
       },
@@ -2849,7 +2861,7 @@
         ],
         "role": "SECONDARY_RESEARCH_AND_MANUAL_RECONCILIATION",
         "status": "REFERENCE_ONLY_NO_OFFICIAL_EXECUTION_FEED",
-        "lastCheckedAt": "2026-09-23T16:52:55.938Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.318Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -2861,7 +2873,7 @@
         ],
         "role": "SECONDARY_QUOTE_AND_NEWS_RECONCILIATION",
         "status": "REFERENCE_ONLY_NO_SUPPORTED_TRADING_API",
-        "lastCheckedAt": "2026-09-23T16:52:55.938Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.318Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -2873,7 +2885,7 @@
         ],
         "role": "OPTIONAL_AUTHORIZED_MARKET_DATA_OR_BROKER_RECONCILIATION",
         "status": "OPENAPI_CREDENTIALS_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-09-23T16:52:55.938Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.318Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION"
       },
       {
@@ -2885,7 +2897,7 @@
         ],
         "role": "CHART_TECHNICAL_AND_ALERT_VISUALIZATION",
         "status": "VISUALIZATION_REFERENCE_ALPACA_REMAINS_DATAFEED",
-        "lastCheckedAt": "2026-09-23T16:52:55.938Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.318Z",
         "liveInfluence": "ZERO"
       },
       {
@@ -2897,7 +2909,7 @@
         ],
         "role": "SCREENER_FUNDAMENTAL_AND_LIQUIDITY_RECONCILIATION",
         "status": "LICENSED_EXPORT_NOT_CONFIGURED",
-        "lastCheckedAt": "2026-09-23T16:52:55.938Z",
+        "lastCheckedAt": "2026-09-24T14:16:20.318Z",
         "liveInfluence": "SHADOW_UNTIL_FORWARD_ADMISSION"
       }
     ],

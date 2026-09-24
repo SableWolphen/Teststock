@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-23T16:51:39.767Z",
+  "generatedAt": "2026-09-24T14:10:04.414Z",
   "source": "TESTSTOCK_TRADE_QUALITY_ENGINE",
   "realTradeCoverage": {
     "total": 5,
@@ -18,11 +18,11 @@
     "authority": "ROBINHOOD_CONFIRMED_FIELDS_ONLY"
   },
   "maeMfe": {
-    "sampleSize": 0,
-    "averageMAER": null,
-    "averageMFER": null,
-    "averageMinutesToMFE": null,
-    "averageEdgeDecayMinutes": null,
+    "sampleSize": 1,
+    "averageMAER": -1.039,
+    "averageMFER": 0.8766,
+    "averageMinutesToMFE": 2553,
+    "averageEdgeDecayMinutes": 5,
     "coverageState": "INSUFFICIENT_CAPTURE",
     "source": "trade-replay.json",
     "rule": "Replay uses historical 1m paths for Robinhood-confirmed resolved trades; it never rewrites broker fills or PnL."
@@ -51,7 +51,7 @@
         "profitFactorR": 0
       }
     ],
-    "replayAverageEdgeDecayMinutes": null,
+    "replayAverageEdgeDecayMinutes": 5,
     "rule": "Raise thresholds or reduce size in weak time buckets only after sufficient reconciled/replay evidence."
   },
   "drawdownRisk": {
@@ -90,10 +90,10 @@
     }
   ],
   "replayEngine": {
-    "state": "AWAITING_RESOLVED_TRADES",
-    "generatedAt": "2026-09-23T16:48:35.948Z",
-    "sourceStatus": "DEGRADED",
-    "sampleSize": 0,
+    "state": "ACTIVE",
+    "generatedAt": "2026-09-24T09:59:44.219Z",
+    "sourceStatus": "OK",
+    "sampleSize": 1,
     "outputs": [
       "MAE/MFE",
       "time-to-edge-decay",
@@ -123,23 +123,23 @@
     "failureAction": "STOP_NEW_RISK_AND_RECONCILE; continue risk-reducing exits only"
   },
   "dataWatchdog": {
-    "state": "OK",
+    "state": "STOP_NEW_RISK",
     "checks": [
       {
         "name": "daytrader-intelligence",
-        "ageMinutes": 0.03,
+        "ageMinutes": 0.02,
         "maxAgeMinutes": 3,
         "fresh": true
       },
       {
         "name": "trigger-board",
-        "ageMinutes": 0.48,
+        "ageMinutes": 7.69,
         "maxAgeMinutes": 3,
-        "fresh": true
+        "fresh": false
       },
       {
         "name": "signal",
-        "ageMinutes": 0.5,
+        "ageMinutes": 8.02,
         "maxAgeMinutes": 30,
         "fresh": true
       }
@@ -196,7 +196,7 @@
   },
   "policy": "Optimize after-cost expectancy and execution quality, not trade count. Every learning layer may reorder, reduce, pause, retire or shadow a setup, but may never invent evidence, bypass live qualification, or increase the existing hard risk ceiling.",
   "modelDrift": {
-    "generatedAt": "2026-09-23T16:51:40.591Z",
+    "generatedAt": "2026-09-24T14:10:04.737Z",
     "bySetup": [
       {
         "setup": "UNKNOWN",
