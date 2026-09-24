@@ -8,6 +8,12 @@ import fs from 'node:fs/promises';
 // that received real backtested historical validation this run -- docs/data/full-stock-validation-pool.json,
 // ~1000 names vs. 30 -- so "is this stock a winnable option trade" is asked of the whole validated
 // pool, not just whatever happened to make the very top of the stock tournament.
+// Widened again 2026-09-24 at user request to include same-day/short-dated contracts ("daily
+// options"). These carry categorically higher gamma/theta risk than the original 35-90 DTE
+// window -- passing the same price/spread/delta bar does not mean equivalent risk -- so every
+// candidate is tagged with a dteBucket (0DTE/WEEKLY/STANDARD) rather than blended in as
+// equivalent. This still only widens the research scan: options remain walled off from
+// automatic execution regardless of dteBucket (see CLAUDE.md).
 const read=async(f,x={})=>{try{return JSON.parse(await fs.readFile(f,'utf8'));}catch{return x;}};
 const round=(n,d=2)=>Number(Number(n||0).toFixed(d));
 const chunks=(a,n)=>Array.from({length:Math.ceil(a.length/n)},(_,i)=>a.slice(i*n,(i+1)*n));
@@ -27,7 +33,8 @@ const trendScore=x=>{
   return Math.max(Number(recommendationScore.get(x.symbol)||0),Number(x.score||0))+above20*2+above50+Math.max(0,above200)*.25-Math.max(0,Number(x.atrPct||0)-5)*2;
 };
 const ranked=poolCandidates.filter(x=>x.direction==='BULLISH'&&Number(x.price)>Number(x.ma20)&&Number(x.price)>Number(x.ma50)).sort((a,b)=>trendScore(b)-trendScore(a));
-const now=new Date(),iso=d=>d.toISOString().slice(0,10),gte=iso(new Date(now.getTime()+35*864e5)),lte=iso(new Date(now.getTime()+90*864e5));
+const now=new Date(),iso=d=>d.toISOString().slice(0,10),gte=iso(now),lte=iso(new Date(now.getTime()+90*864e5));
+const dteBucket=dte=>dte<=1?'0DTE':dte<=14?'WEEKLY':'STANDARD';
 const feed=process.env.ALPACA_OPTIONS_FEED||'indicative';
 const choices=[],errors=[],rejections={noBidAsk:0,spread:0,dte:0,delta:0,premium:0};
 const CONCURRENCY=12;
@@ -43,17 +50,22 @@ for(const batch of chunks(ranked,CONCURRENCY)){
         const g=s.greeks||{},delta=Math.abs(Number(g.delta||0)),iv=Number(s.impliedVolatility??s.implied_volatility??0),premium=ask*100;
         if(!(ask>0&&bid>0)){rejections.noBidAsk++;continue;}
         if(spreadPct>10){rejections.spread++;continue;}
-        if(dte<35||dte>90){rejections.dte++;continue;}
+        if(dte<0||dte>90){rejections.dte++;continue;}
         if(delta<.25||delta>.70){rejections.delta++;continue;}
         if(premium>35){rejections.premium++;continue;}
         const underlyingScore=round(trendScore(u),1);
-        const score=round(underlyingScore+Math.max(0,10-spreadPct)*1.5+Math.max(0,8-Math.abs(delta-.45)*20)-Math.max(0,iv-1)*5,1);
-        choices.push({underlying:u.symbol,contract,kind:'LONG_CALL',expiry:iso(expiry),dte,strike,bid:round(bid,3),ask:round(ask,3),mid:round(mid,3),spreadPct:round(spreadPct,1),delta:round(delta,2),iv:round(iv,2),oneContractPremiumDollars:round(premium,2),underlyingPrice:u.price,underlyingScore,score});
+        const bucket=dteBucket(dte);
+        // Passing the same price/spread/delta bar does not mean equivalent risk: a same-day or
+        // weekly contract carries far more gamma/theta blowup risk than a 35-90 DTE one, so that
+        // risk gets priced into the ranking score directly rather than only shown as a label.
+        const bucketRiskPenalty={'0DTE':25,'WEEKLY':8,'STANDARD':0}[bucket];
+        const score=round(underlyingScore+Math.max(0,10-spreadPct)*1.5+Math.max(0,8-Math.abs(delta-.45)*20)-Math.max(0,iv-1)*5-bucketRiskPenalty,1);
+        choices.push({underlying:u.symbol,contract,kind:'LONG_CALL',expiry:iso(expiry),dte,dteBucket:bucket,strike,bid:round(bid,3),ask:round(ask,3),mid:round(mid,3),spreadPct:round(spreadPct,1),delta:round(delta,2),iv:round(iv,2),oneContractPremiumDollars:round(premium,2),underlyingPrice:u.price,underlyingScore,score});
       }
     }catch(error){errors.push({underlying:u.symbol,error:String(error?.message||error)});}
   }));
 }
 choices.sort((a,b)=>b.score-a.score||a.spreadPct-b.spreadPct||a.oneContractPremiumDollars-b.oneContractPremiumDollars);
-const out={schemaVersion:4,generatedAt:new Date().toISOString(),sourceSnapshotAsOf:latest.asOf||null,broadUniverseGeneratedAt:broad.generatedAt||null,fullPoolGeneratedAt:fullPool.generatedAt||null,fullPoolCandidateCount:poolCandidates.length,objective:'Search options on every stock this run\'s full validated pool (not just the narrow top-30 topCandidates slice) found bullish, across the broad active-US-equity scan -- not only mega-cap stocks.',policy:{maxOneContractPremiumDollars:35,minDte:35,maxDte:90,maxSpreadPct:10,minAbsDelta:.25,maxAbsDelta:.70,no0DTE:true,definedRiskOnly:true,liveWholeContractCheckRequired:true,doesNotOverrideRealFillGate:true},underlyingsScannedCount:ranked.length,underlyingsScanned:ranked.map(x=>x.symbol),contractsQualified:choices.length,candidates:choices.slice(0,15),best:choices[0]||null,rejections,scanErrors:errors};
+const out={schemaVersion:5,generatedAt:new Date().toISOString(),sourceSnapshotAsOf:latest.asOf||null,broadUniverseGeneratedAt:broad.generatedAt||null,fullPoolGeneratedAt:fullPool.generatedAt||null,fullPoolCandidateCount:poolCandidates.length,objective:'Search options on every stock this run\'s full validated pool (not just the narrow top-30 topCandidates slice) found bullish, across the broad active-US-equity scan -- not only mega-cap stocks. Includes same-day/short-dated contracts, tagged by dteBucket and scored with a risk penalty for shorter expirations -- not blended in as equivalent risk to a 35-90 DTE contract.',policy:{maxOneContractPremiumDollars:35,minDte:0,maxDte:90,maxSpreadPct:10,minAbsDelta:.25,maxAbsDelta:.70,dteBuckets:{'0DTE':'dte<=1, heaviest risk penalty, highest gamma/theta blowup risk','WEEKLY':'dte 2-14, moderate risk penalty','STANDARD':'dte 15-90, no risk penalty, the original policy window'},definedRiskOnly:true,liveWholeContractCheckRequired:true,doesNotOverrideRealFillGate:true,researchOnlyNeverAutoExecutes:'Options remain walled off from automatic execution regardless of dteBucket -- see CLAUDE.md.'},underlyingsScannedCount:ranked.length,underlyingsScanned:ranked.map(x=>x.symbol),contractsQualified:choices.length,candidates:choices.slice(0,15),best:choices[0]||null,rejections,scanErrors:errors};
 await fs.writeFile('docs/data/small-account-options.json',JSON.stringify(out,null,2));
 console.log(`Small-account option scan: ${ranked.length} underlyings, ${choices.length} qualified contracts, ${errors.length} errors`);
