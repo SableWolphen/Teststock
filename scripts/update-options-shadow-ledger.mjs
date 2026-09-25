@@ -43,14 +43,14 @@ for(const trade of openTrades){
   if(idx>=0)ledger.trades[idx]=resolved;
 }
 
-const newTrades=openNewShadowTrades({candidates:scan.candidates||[],existingTrades:ledger.trades,todayIso,nowIso,maxNewPerUtcDay:1});
+const newTrades=openNewShadowTrades({candidates:scan.candidates||[],existingTrades:ledger.trades,todayIso,nowIso,maxNewPerUtcDay:25});
 ledger.trades.push(...newTrades);
 
 ledger.trades=ledger.trades.slice(-2000);
 ledger.generatedAt=nowIso;
 ledger.summary=summarizeShadowTrades(ledger.trades);
 ledger.rules=[
-  'Paper-only: no order is ever placed by this script. Tracks the single best STANDARD-DTE (never 0DTE/weekly) candidate small-account-options.json finds each UTC day, at most one new shadow position per day.',
+  'Paper-only: no order is ever placed by this script. Tracks the top 25 STANDARD-DTE candidates small-account-options.json finds each UTC day, up to 25 new shadow positions per day.',
   'Resolution uses real live Alpaca option quotes for the exact same contract, re-queried on every run -- never fabricates an outcome from missing data. If a contract has no snapshot data at/after its expiry, it is marked UNKNOWN rather than guessed WIN/LOSS.',
   'Target/stop are fixed premium multiples (+50%/-40% of entry ask), not stock-style technical levels, since a long option\'s risk is the whole premium.',
   'This evidence may unlock a capped, reduced-size shadow-to-live seed lane once independent sample/win-rate thresholds pass -- see options-profitability-admission.json. It can never create or loosen a hard execution gate on its own, and does not itself authorize any live order.',
