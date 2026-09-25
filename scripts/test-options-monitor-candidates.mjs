@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {evaluateOptionsSeedLaneCandidate} from './options-monitor-candidates.mjs';
 
-const seedPolicy={enabled:true,maxOrderUsd:15,maxConcurrentPositions:1,maxNewPositionsPerUtcWeek:1,requiredAdmissionStates:['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'],requiredDteBucket:'STANDARD',allowedUnderlyingTypes:['INDEX_ETF'],kind:'LONG_CALL',targetMultiplier:1.5,stopMultiplier:0.6,forcedExitDaysToExpiry:3,resetGateAfterLiveLoss:true};
+const seedPolicy={enabled:true,maxOrderUsd:15,maxConcurrentPositions:1,maxNewPositionsPerUtcWeek:1,requiredAdmissionStates:['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'],requiredDteBucket:'STANDARD',allowedUnderlyingTypes:['STOCK','INDEX_ETF'],kind:'LONG_CALL',targetMultiplier:1.5,stopMultiplier:0.6,forcedExitDaysToExpiry:3,resetGateAfterLiveLoss:true};
 const goodCandidate={underlying:'SPY',underlyingType:'INDEX_ETF',dteBucket:'STANDARD',oneContractPremiumDollars:12};
 
 test('SHADOW_ONLY with zero evidence blocks every candidate, however good it looks',()=>{
@@ -28,9 +28,9 @@ test('0DTE and WEEKLY are never eligible, even at full admission',()=>{
   assert.equal(weekly.status,'BLOCKED_DTE_NOT_STANDARD');
 });
 
-test('individual stock options are never eligible, only allowed underlying types',()=>{
+test('qualified stock options are eligible for the live lane',()=>{
   const state=evaluateOptionsSeedLaneCandidate({candidate:{...goodCandidate,underlying:'CRWD',underlyingType:'STOCK'},admission:{state:'LIVE_ADMITTED'},seedPolicy});
-  assert.equal(state.status,'BLOCKED_UNDERLYING_TYPE');
+  assert.equal(state.status,'OPTION_SEED_LANE_BUY_TRIGGER');
 });
 
 test('a candidate priced above the lane cap is blocked even if it qualified for the wider research scan',()=>{
