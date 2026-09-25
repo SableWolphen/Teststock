@@ -1,18 +1,16 @@
 {
   "schemaVersion": 4,
   "source": "TESTSTOCK_EVENT_DISPATCH",
-  "generatedAt": "2026-09-25T05:31:59.903Z",
+  "generatedAt": "2026-09-25T05:37:31.612Z",
   "boardPublishedAt": "2026-09-25T05:20:54.122Z",
-  "boardAgeMs": 665781,
+  "boardAgeMs": 997490,
   "maximumBoardAgeMs": 900000,
   "monitorHealth": "OK",
-  "dispatchHealth": "OK",
-  "claudeShouldRun": true,
+  "dispatchHealth": "FAIL_CLOSED_STALE_OR_UNHEALTHY_BOARD",
+  "claudeShouldRun": false,
   "claudeShouldPollMarket": false,
-  "executionNeeded": true,
-  "dispatchFingerprints": [
-    "POSITION:STOCK:HONA|TRIGGER_1_STOP|2026-09-24T20:04:06.673Z|2026-09-25T05:20:54.122Z"
-  ],
+  "executionNeeded": false,
+  "dispatchFingerprints": [],
   "priorityOrder": [
     "TRIGGER_1_STOP",
     "STOCK_DAY_TRADE_FORCED_EXIT",
@@ -24,30 +22,7 @@
     "STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER",
     "CRYPTO_SEED_LANE_BUY_TRIGGER"
   ],
-  "pendingAction": {
-    "fingerprint": "POSITION:STOCK:HONA|TRIGGER_1_STOP|2026-09-24T20:04:06.673Z|2026-09-25T05:20:54.122Z",
-    "isNew": true,
-    "isActionable": true,
-    "priority": 100,
-    "assetClass": "STOCK",
-    "ticker": "HONA",
-    "trigger": "TRIGGER_1_STOP",
-    "entryTier": null,
-    "entryTierLabel": null,
-    "entryTierSizeMultiplier": null,
-    "queueRank": 0,
-    "queueRole": null,
-    "profitabilityAdmission": null,
-    "decisionIntelligenceEligible": null,
-    "requestedAction": "VERIFY_POSITION_AND_SELL_STOP",
-    "observedPrice": 158.33,
-    "triggerStateChangedAt": "2026-09-24T20:04:06.673Z",
-    "freshnessAnchor": "2026-09-24T20:04:06.673Z",
-    "triggerAgeMs": 34073230,
-    "expiresAt": null,
-    "reason": "Saved stop/invalidation reached. Claude should verify the live position and execute the supported sell immediately when permitted.",
-    "packet": "HONA | TRIGGER_1_STOP | observed 158.33 | VERIFY_POSITION_AND_SELL_STOP"
-  },
+  "pendingAction": null,
   "automaticStockCandidates": [],
   "approvalCandidates": [],
   "approvalBatchId": null,
@@ -62,7 +37,16 @@
     "oneWinnerDoesNotBlockOtherQualifiedStocks": true,
     "rule": "Expose every already-qualified current-generation stock candidate in rank order. Claude may execute as many as remain independently qualified after immediate broker rechecks and dynamic cash, portfolio-heat, correlation, account-floor and aggregate-stop-risk limits. Never force a trade."
   },
-  "queuedActions": [],
+  "queuedActions": [
+    {
+      "ticker": "HONA",
+      "trigger": "TRIGGER_1_STOP",
+      "fingerprint": "POSITION:STOCK:HONA|TRIGGER_1_STOP|2026-09-24T20:04:06.673Z|2026-09-25T05:20:54.122Z",
+      "isFresh": true,
+      "sessionAllowed": true,
+      "freshnessAnchor": "2026-09-24T20:04:06.673Z"
+    }
+  ],
   "noActionInstruction": "If claudeShouldRun is false, stop immediately. Do not call Robinhood, research markets, or produce a long report.",
   "actionInstruction": "For every current trigger, reconcile Robinhood positions, open orders and recent order history before submission. Exit events always take priority and block every new buy for the run. Stock entries require authoritative regular-session status and at least 20 minutes to close both here and again at the broker-time recheck. For BUY_TRIGGER dispatches, process automaticStockCandidates in rank order without requesting user approval. Recheck each candidate independently immediately before submission; after every confirmed fill recompute cash, account floor, deployed capital, planned stop risk, correlation, portfolio heat, protection capability and broker/account restrictions. Skip any candidate that no longer qualifies. Seed-lane candidates remain automatic only within their encoded caps and protection requirements. A previously published fingerprint is not proof of execution. Reconcile ambiguous or partial results by original/client order ID and never blindly retry an uncertain submission.",
   "consumerContract": {
