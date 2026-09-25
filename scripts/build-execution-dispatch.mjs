@@ -60,7 +60,6 @@ const fallbackActions=selected?.trigger==='BUY_TRIGGER'?automaticStockCandidates
 const seedEvents=(board?.events||[]).filter(e=>{
   if(e.trigger==='SEED_LANE_BUY_TRIGGER'&&e.assetClass==='STOCK')return e.seedLane?.eligible===true;
   if(e.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'&&e.assetClass==='STOCK')return e.dayTradeSeedLane?.eligible===true;
-  if(e.trigger==='CRYPTO_SEED_LANE_BUY_TRIGGER'&&e.assetClass==='CRYPTO')return e.seedLane?.eligible===true;
   return false;
 }).map(e=>{
   const fingerprint=`${e.id}|${e.trigger}|${e.stateChangedAt}`;
@@ -107,7 +106,7 @@ const out={
   consumerContract:{invokeOnlyWhen:'claudeShouldRun === true',atomicClaimKey:'candidate.fingerprint',maximumNewBuysPerDispatch:null,capacityMode:'DYNAMIC_RISK_CASH_AND_BROKER_LIMITED',approvalMode:'NONE_AUTOMATIC',userApprovalRequired:false,automaticQualifiedStocks:true,multipleConcurrentStocksAllowed:true,fallbackRule:'Process all already-qualified stock candidates in order. Failed candidates fall through. Confirmed fills dynamically reduce remaining capacity before the next candidate.',duplicateRule:'Before every order, reconcile current Robinhood positions, open orders and recent order history. One logical trigger may create at most one live broker entry; ambiguous submissions must be reconciled before any replacement.',retryRule:'After an ambiguous response, reconcile by original/client order ID and broker state. Never create a replacement order until the original is conclusively cancelled or rejected.',creditRule:'Use one Claude run for the ordered candidate sequence where practical. The runner usage gate limits repeated invocations; broker reconciliation prevents duplicate orders when a still-current trigger is redispatched.'},
   stockApprovalNotification:{needed:false,batchId:null,tickers:[],instruction:'Stock approval notifications are disabled because qualified stock entries are automatic.'},
   stopPriorityRule:'A stop event outranks profit targets and buys. When any exit event exists, do not evaluate or submit a new buy.',
-  wakeBridge:{status:'DISPATCH_PACKET_READY_FOR_AUTOMATIC_EXECUTOR',note:'GitHub generates the event packet without an LLM. The authorized Claude runtime executes qualified stock and crypto actions through Robinhood MCP.'}
+  wakeBridge:{status:'DISPATCH_PACKET_READY_FOR_AUTOMATIC_EXECUTOR',note:'GitHub generates the event packet without an LLM. The authorized Claude runtime executes qualified stock actions through Robinhood MCP.'}
 };
 
 await fs.writeFile(OUT,JSON.stringify(out,null,2));
