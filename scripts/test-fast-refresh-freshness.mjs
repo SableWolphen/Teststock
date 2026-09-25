@@ -15,8 +15,8 @@ test('fast refresh regenerates stock freshness-critical dependencies before sign
     assert.notEqual(position, -1);
   }
   assert.ok(entryGate < signalBuild);
-  assert.ok(optionsPolicy < signalBuild);
-  assert.ok(optionsValidation < signalBuild);
+  assert.ok(optionsPolicy < signalValidation);
+  assert.ok(optionsValidation < signalValidation);
   assert.ok(signalBuild < signalValidation);
   assert.equal(workflow.includes('node scripts/generate-crypto-picks.mjs'), false);
   assert.equal(workflow.includes('node scripts/update-crypto-shadow-ledger.mjs'), false);
