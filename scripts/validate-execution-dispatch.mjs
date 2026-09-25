@@ -55,12 +55,11 @@ if(dispatch.multiStockPolicy?.userApprovalRequired!==false) fail('multiStockPoli
 if(dispatch.pendingAction?.trigger==='BUY_TRIGGER'&&automaticStockCandidates.length&&automaticStockCandidates[0].fingerprint!==dispatch.pendingAction.fingerprint) fail('pendingAction must match first automatic stock candidate');
 
 const seeds=dispatch.seedLaneCandidates||[];
-if(seeds.some(x=>!((x.assetClass==='STOCK'&&['SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'].includes(x.trigger))||(x.assetClass==='CRYPTO'&&x.trigger==='CRYPTO_SEED_LANE_BUY_TRIGGER')))) fail('invalid seed-lane candidate');
+if(seeds.some(x=>!(x.assetClass==='STOCK'&&['SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'].includes(x.trigger)))) fail('invalid seed-lane candidate');
 if(seeds.some(x=>x.requiresPerOrderApproval!==false)) fail('seed-lane approval must be disabled in automatic mode');
 const stockSeedCap=x=>x.entryTier==='B'?7.5:30;
-if(seeds.some(x=>Number(x.maxOrderUsd)!==(x.assetClass==='CRYPTO'?5:stockSeedCap(x))||x.existingRobinhoodCashOnly!==true||x.agentMayInitiateDeposits!==false||x.agentMayInitiateBankTransfers!==false||x.marginAllowed!==false)) fail('seed-lane funding bounds');
+if(seeds.some(x=>Number(x.maxOrderUsd)!==stockSeedCap(x)||x.existingRobinhoodCashOnly!==true||x.agentMayInitiateDeposits!==false||x.agentMayInitiateBankTransfers!==false||x.marginAllowed!==false)) fail('seed-lane funding bounds');
 if(seeds.some(x=>['SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'].includes(x.trigger)&&x.requiresBrokerResidentStop!==false)) fail('stock seed-lane (swing or day-trade) must use synthetic protection, not an impossible broker-resident stop on a fractional order');
-if(seeds.some(x=>x.trigger==='CRYPTO_SEED_LANE_BUY_TRIGGER'&&x.requiresBrokerResidentStop!==true)) fail('crypto seed-lane protection bounds');
 if(seeds.some(x=>x.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'&&(x.mustBeFlatBeforeMarketClose!==true||Number(x.entryCutoffMinutesBeforeClose)!==20||Number(x.forcedExitStartMinutesBeforeClose)!==10)))fail('day-trade seed timing bounds');
 if(dispatch.pendingAction?.trigger==='STOCK_DAY_TRADE_FORCED_EXIT'&&Number(dispatch.pendingAction.priority)!==100)fail('day-trade forced exit priority');
 if((dispatch.priorityOrder||[]).indexOf('STOCK_DAY_TRADE_FORCED_EXIT')<0||(dispatch.priorityOrder||[]).indexOf('STOCK_DAY_TRADE_FORCED_EXIT')>1)fail('day-trade forced exit priority order');
