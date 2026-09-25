@@ -100,7 +100,7 @@ pending=d.get('pendingAction') if isinstance(d.get('pendingAction'), dict) else 
 trigger=pending.get('trigger')
 urgent_exit=trigger in {'TRIGGER_1_STOP','STOCK_DAY_TRADE_FORCED_EXIT'}
 actionable=bool(d.get('claudeShouldRun'))
-routine=False
+routine=active
 allowed=reserve_wake(Path(sys.argv[1])/'executor-usage.json',actionable=actionable,routine=routine,urgent_exit=urgent_exit)
 print('true' if allowed else 'false')
 PY
