@@ -1,7 +1,7 @@
 {
   "schemaVersion": 5,
   "generatedAt": "2026-09-25T21:26:46.566Z",
-  "objective": "Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto active around the clock, and cash acceptable. Prefer elite A stocks at normal encoded size, allow a tightly capped B best-acceptable micro-probation stock after A-tier priority whenever live capacity remains, and let crypto surface more reasonable 24/7 opportunities without removing hard risk controls. This policy cannot eliminate market loss risk.",
+  "objective": "Increase the probability of positive compounding while keeping stocks primary, options selective and tightly loss-bounded, and cash acceptable. Crypto execution is disabled. Prefer elite A stocks at normal encoded size and use options only when a separately qualified contract clears every live risk/evidence gate. This policy cannot eliminate market loss risk.",
   "stocks": {
     "minGrowthQuality": 85,
     "minHistoricalSamples": 12,
@@ -86,6 +86,7 @@
     "instructions": "Target2 is the qualification target; target1 is for partial profit/de-risking. Use cost-adjusted conservative expectancy when available so execution friction cannot be ignored. A tier always ranks before B tier. A candidates may use their normal encoded size only after every downstream runtime and broker guard passes. B candidates remain capped at 25% micro-probation size. The automatic seed lane uses only existing dedicated Robinhood cash and can never deposit, transfer, borrow or use margin."
   },
   "options": {
+    "enabled": true,
     "stocksRemainDefault": true,
     "minUnderlyingGrowthQuality": 97,
     "minHistoricalSamples": 25,
@@ -98,53 +99,56 @@
     "liveEvidenceMinimumResolvedTrades": 10,
     "liveEvidenceMinimumAverageR": 0.25,
     "liveEvidenceMinimumWinRatePct": 50,
-    "instructions": "An option may be considered only after the underlying clears these research and cost-adjusted gates AND Claude confirms the live Teststock real-fill evidence gate. One whole contract must still fit the active capital-tier dollar-risk cap."
-  },
-  "crypto": {
-    "researchMode": "ACTIVE_24_7_MORE_OPPORTUNITIES",
-    "minimumHistoricalSamples": 10,
-    "aPlusMinWinRatePct": 56,
-    "aMinWinRatePct": 50,
-    "requirePositiveHistoricalAverageMove": true,
-    "altcoinsRequirePositiveBitcoinTrend": true,
-    "aPlusMaxPlannedStopPct": 2.5,
-    "aMaxPlannedStopPct": 1.5,
-    "aPlusMaxAllocationPct": 45,
-    "aMaxAllocationPct": 30,
-    "requireLiveRealFillEvidence": true,
-    "liveEvidenceMinimumResolvedTrades": 5,
-    "liveEvidenceMinimumAverageR": 0.1,
-    "liveEvidenceMinimumWinRatePct": 45,
-    "dayTradeEntry": {
-      "timeframe": "4Hour",
-      "minimumRsi": 50,
-      "maximumRsi": 70,
-      "requiresPullbackToSupportOrVwap": true,
-      "requiresMomentumTurnUp": true,
-      "requiresVolumeConfirmation": true,
-      "minimumRewardRisk": 3,
-      "stopBelowValidatedSupportOrVwap": true
-    },
-    "dayTradeSeedLane": {
+    "executionAgent": "CLAUDE",
+    "executionTransport": "ROBINHOOD_TRADING_MCP",
+    "allowedStrategies": [
+      "LONG_CALL",
+      "LONG_PUT"
+    ],
+    "buyToOpenOnly": true,
+    "sellToCloseOnly": true,
+    "noNakedSelling": true,
+    "noExercise": true,
+    "noOvernight": true,
+    "noMargin": true,
+    "noDeposits": true,
+    "noBankTransfers": true,
+    "underlyingMustBeQualified": true,
+    "minDte": 14,
+    "maxDte": 45,
+    "expirationSafetyTradingDays": 5,
+    "minDelta": 0.55,
+    "maxDelta": 0.8,
+    "maxPremiumRiskPerTradePct": 5,
+    "maxAggregateOpenPremiumRiskPct": 15,
+    "maxNewPremiumExposurePerNyDayPct": 10,
+    "seedLane": {
       "enabled": true,
-      "maxOrderUsd": 5,
+      "maxOrderUsd": 15,
       "maxConcurrentPositions": 1,
-      "maxNewPositionsPerUtcDay": 1,
-      "maxHoldingHours": 8,
-      "maxStopLossesPerUtcDay": 2,
-      "requiredGrades": [
-        "A+"
+      "maxNewPositionsPerUtcWeek": 1,
+      "requiredAdmissionStates": [
+        "MICRO_PROBATION",
+        "PROBATION",
+        "LIVE_ADMITTED"
       ],
-      "requiresBrokerResidentStop": true,
-      "requiresPerOrderApproval": false,
-      "executionLane": "CLAUDE_ROBINHOOD_TRADING_MCP",
+      "requiredDteBucket": "STANDARD",
+      "allowedUnderlyingTypes": [
+        "STOCK",
+        "INDEX_ETF"
+      ],
+      "kind": "LONG_CALL_OR_LONG_PUT",
+      "targetMultiplier": 1.5,
+      "stopMultiplier": 0.6,
+      "forcedExitDaysToExpiry": 3,
+      "resetGateAfterLiveLoss": true,
       "existingRobinhoodCashOnly": true,
-      "agentMayInitiateDeposits": false,
-      "agentMayInitiateBankTransfers": false,
       "marginAllowed": false,
-      "rule": "User-authorized automatic crypto learning lane through Claude and the authenticated Robinhood Trading MCP. It may bypass only the forward-shadow admission wait at a fixed $5 ceiling; every research, freshness, liquidity, spread, no-chase, Robinhood tradability, buying-power, duplicate-order and protection gate still applies. LIVE_SUSPENDED never qualifies. Restricted to A+ only 2026-09-22 (user-requested: \"don't buy crypto as a day trader unless it's good\") -- plain A grade (generate-crypto-picks.mjs's grade()) requires only growthQuality>=84/score>=78/atrPct<=12 and lets thin historical evidence bypass the win-rate bar entirely (historyA: samples<6||win>=50), while A+ demands growthQuality>=92/score>=86/atrPct<=11 and real sample-backed evidence (historyAPlus: samples>=10&&win>=56) -- a materially stronger, not just technically-qualified, setup."
+      "noExercise": true,
+      "noOvernight": true,
+      "rule": "First live options lane: at most one whole long call/put contract at a time, $15 maximum premium or 5% of current account equity, whichever is lower; one new entry per UTC week; STANDARD DTE only; only independently qualified stock/ETF underlyings; no exercise, no overnight, no deposits, no transfers and no margin. A live loss resets the lane until a fresh positive independent shadow sample is earned."
     },
-    "instructions": "Crypto runs 24/7, so the research gate is intentionally more permissive than before to surface more plausible A/A+ setups. Keep positive historical tendency, 4-hour confirmation, BTC context for altcoins, liquidity, defined stops, no leverage, no averaging down, and one-position-at-a-time controls. Broker execution availability remains a separate hard gate."
+    "instructions": "An option is an alternative implementation of an already-qualified stock thesis. The lane never promises profit. A whole contract must fit the active dollar-risk cap and the live account must retain sufficient buying power. If no contract passes, trade the stock only if its own lane qualifies; otherwise stay in cash."
   },
   "common": {
     "noMargin": true,
