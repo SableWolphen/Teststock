@@ -100,7 +100,7 @@ pending=d.get('pendingAction') if isinstance(d.get('pendingAction'), dict) else 
 trigger=pending.get('trigger')
 urgent_exit=trigger in {'TRIGGER_1_STOP','STOCK_DAY_TRADE_FORCED_EXIT'}
 actionable=bool(d.get('claudeShouldRun'))
-routine=active
+routine=False
 allowed=reserve_wake(Path(sys.argv[1])/'executor-usage.json',actionable=actionable,routine=routine,urgent_exit=urgent_exit)
 print('true' if allowed else 'false')
 PY
@@ -112,7 +112,7 @@ mkdir -p "$RUNTIME_STATE_DIR/executor-diagnostics"
 diagnostic_dir="$(mktemp -d "$RUNTIME_STATE_DIR/executor-diagnostics/attempt.XXXXXX")"
 output_path="$diagnostic_dir/stdout.json"
 executor_status=0
-claude -p "$(cat scripts/claude-executor-prompt.md scripts/claude-trade-quality-rules.md scripts/claude-stock-rotation-rules.md scripts/daytrader-profit-discipline.md)" \
+claude -p "$(cat scripts/claude-executor-prompt.md scripts/claude-trade-quality-rules.md scripts/claude-stock-rotation-rules.md scripts/claude-options-rules.md scripts/daytrader-profit-discipline.md)" \
   --strict-mcp-config \
   --mcp-config .mcp.json \
   --allowedTools "Read,Glob,Grep,mcp__robinhood-trading" \
