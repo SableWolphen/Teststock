@@ -1,0 +1,59 @@
+name: Options background learning
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  learn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          ref: main
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Scan broad stock option universe
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          ALPACA_OPTIONS_FEED: indicative
+        run: node scripts/scan-small-account-options.mjs
+
+      - name: Update forward options shadow ledger
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          ALPACA_OPTIONS_FEED: indicative
+        run: node scripts/update-options-shadow-ledger.mjs
+
+      - name: Replay historical option contracts
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          ALPACA_OPTIONS_FEED: indicative
+        run: node scripts/replay-options-history.mjs
+
+      - name: Update options evidence state
+        run: node scripts/apply-options-profitability-admission.mjs
+
+      - name: Validate options policy
+        run: node scripts/validate-options-policy.mjs
+
+      - name: Commit learning artifacts
+        run: |
+          git config user.name "teststock-options-learner"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/data/small-account-options.json docs/data/options-shadow-trades.json docs/data/options-historical-replay.json docs/data/options-profitability-admission.json
+          git diff --cached --quiet || git commit -m "Update background stock-options learning"
+          git push origin main
