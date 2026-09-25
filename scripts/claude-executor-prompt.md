@@ -13,6 +13,8 @@ Read these repository files from the checked-out `main` branch before any broker
 - `docs/data/execution-watchlist.json`
 - `docs/signal.json`
 - `docs/data/adaptive-performance.json`
+- `scripts/claude-options-rules.md`
+- `docs/data/option-candidates.json` (if present; otherwise derive the option candidate from the live Robinhood option chain only after a qualified stock candidate exists)
 
 ## Fail closed
 
@@ -25,7 +27,7 @@ Only the dedicated Robinhood Agentic account may receive new Teststock trades. N
 1. Risk-reducing exits and protection repair.
 2. Forced/time-expired intraday exits.
 3. Profit protection / giveback prevention / stalled-trade exits.
-4. Qualified stock entries.
+4. Qualified stock entries and, when enabled and independently qualified, stock-options entries.
 
 After a broker-confirmed exit, immediately recompute buying power, risk, portfolio heat, correlation, open orders and broker capacity. Another qualified trade may be taken in the same run when all live gates pass.
 
@@ -81,7 +83,7 @@ Execution preferences:
 
 The low-friction rotation policy is:
 - After a confirmed stop-loss exit, wait 5 minutes before creating new risk.
-- After any confirmed exit, wait 10 minutes before re-entering the same symbol.
+- After any confirmed stock exit, the stock rotation guard forbids a second automatic entry in that ticker for the same NY day. Crypto is disabled.
 - After 3 consecutive confirmed stop-loss exits, pause new entries for 20 minutes.
 - There is no separate fixed stop-loss-count shutdown; the existing daily-loss cap remains authoritative and can still halt new entries.
 - Never force a trade just to increase activity.
@@ -107,6 +109,23 @@ Review open day trades after roughly 20 minutes if they are not progressing. Max
 
 Qualified stock entries are automatic; process them in rank order without requesting user approval, then use intraday adjusted score / cost-adjusted edge, live discovery rank, catalyst quality and liquidity quality to break ties. Continue while dynamic live capacity remains. After every fill or exit, recompute capacity before considering another candidate.
 
+
+
+## Stock options
+
+The separate options lane is enabled only under `signal.optionsTradingPolicy` and `scripts/claude-options-rules.md`. It is a profit-seeking but loss-bounded lane, not a promise of profit.
+
+Options may only be considered after the underlying stock is independently qualified. Before an option BUY TO OPEN, use the live Robinhood options tools to verify the actual chain, contract, bid/ask, liquidity, volume/open interest, DTE, delta, implied volatility/Greeks when available, premium, break-even, buying power and existing option exposure.
+
+Allowed automatic opening trades are **LONG CALL** and **LONG PUT** only. Never sell an option to open, use uncovered options, use credit/debit spreads, exercise, or intentionally create stock/short-stock exposure from an option.
+
+The hard account rule is: use only capital already in the dedicated Robinhood Agentic account. Never deposit, transfer money, borrow, use margin, or create a trade that requires more buying power than the account currently has. Maximum premium risk is 5% of current account equity for one option position, 15% aggregate open option premium risk, and 10% of account equity in new option premium exposure per New York trading day. If a contract cannot fit these limits, skip it.
+
+Options are day trades here: open and close during the same regular NYSE session. Never hold through expiration. Never exercise. If the option thesis invalidates, exit. If the option reaches the validated profit objective, protect/take profit. Never average down or widen a stop.
+
+If the option lane fails but the stock lane still qualifies, the stock lane may trade. If neither qualifies, return NO_ACTION. Cash is always a valid outcome.
+
+Before every option order, reconcile current Robinhood account state and the original order/fill state. Partial fills use confirmed quantity only. Ambiguous submissions are reconciled by original/client order ID before any retry. Risk-reducing option exits outrank new option or stock entries.
 
 ## Real-fill learning
 
