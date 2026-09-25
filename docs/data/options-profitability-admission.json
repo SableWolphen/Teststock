@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-25T10:56:16.505Z",
+  "state": "SHADOW_ONLY",
+  "sizeMultiplier": 0,
+  "reason": "Options pattern has not yet proven positive shadow expectancy; zero or unknown forward evidence is never a pass. No live option order is authorized in this state.",
+  "executionAuthorized": false,
+  "executionAuthorizedNote": "This file tracks evidence only. No option order may be placed automatically until a separate, explicit execution-lane policy exists in CLAUDE.md/probability-first-policy.json naming this admission state as a gate -- see CLAUDE.md Options section.",
+  "shadow": {
+    "samples": 0,
+    "winRatePct": null,
+    "averageR": null,
+    "independenceKey": "createdDate+underlying",
+    "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
+    "scopeNote": "Paper-only shadow outcomes from update-options-shadow-ledger.mjs; at most one new sample per UTC day."
+  },
+  "real": {
+    "samples": 0,
+    "winRatePct": null,
+    "averageRealizedR": null,
+    "source": "options-real-trade-journal.json"
+  },
+  "thresholds": {
+    "minimumIndependentShadowSamplesForMicro": 8,
+    "minimumIndependentShadowSamples": 15,
+    "minimumShadowWinRatePct": 52,
+    "minimumShadowAverageR": 0.1,
+    "microSizeMultiplier": 0.25,
+    "probationSizeMultiplier": 0.5,
+    "minimumRealResolvedForFullAdmission": 10,
+    "minimumRealAverageRForFullAdmission": 0.25,
+    "minimumRealWinRatePctForFullAdmission": 50,
+    "minimumRealSamplesForSuspensionCheck": 3
+  },
+  "rules": [
+    "Shadow (paper) evidence can only unlock a capped, reduced-size probation tier -- never full admission, never live execution by itself.",
+    "Full admission still requires the real-fill thresholds already declared in probability-first-policy.json's options section, unchanged by this file.",
+    "This overlay can only reduce or block size; it can never raise it above whatever a future execution-lane policy declares.",
+    "executionAuthorized stays false here regardless of state -- that flag belongs to a separate, deliberately-authored execution-lane policy, not to evidence accumulation."
+  ]
+}
