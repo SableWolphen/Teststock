@@ -98,7 +98,28 @@
     "liveEvidenceMinimumResolvedTrades": 10,
     "liveEvidenceMinimumAverageR": 0.25,
     "liveEvidenceMinimumWinRatePct": 50,
-    "instructions": "An option may be considered only after the underlying clears these research and cost-adjusted gates AND Claude confirms the live Teststock real-fill evidence gate. One whole contract must still fit the active capital-tier dollar-risk cap."
+    "instructions": "An option may be considered only after the underlying clears these research and cost-adjusted gates AND Claude confirms the live Teststock real-fill evidence gate. One whole contract must still fit the active capital-tier dollar-risk cap.",
+    "seedLane": {
+      "enabled": true,
+      "maxOrderUsd": 15,
+      "maxConcurrentPositions": 1,
+      "maxNewPositionsPerUtcWeek": 1,
+      "requiredAdmissionStates": ["MICRO_PROBATION", "PROBATION", "LIVE_ADMITTED"],
+      "requiredDteBucket": "STANDARD",
+      "allowedUnderlyingTypes": ["INDEX_ETF"],
+      "kind": "LONG_CALL",
+      "definedRiskOnly": true,
+      "targetMultiplier": 1.5,
+      "stopMultiplier": 0.6,
+      "forcedExitDaysToExpiry": 3,
+      "resetGateAfterLiveLoss": true,
+      "requiresPerOrderApproval": false,
+      "existingRobinhoodCashOnly": true,
+      "agentMayInitiateDeposits": false,
+      "agentMayInitiateBankTransfers": false,
+      "marginAllowed": false,
+      "rule": "User-authorized 2026-09-25 as a named, concrete options lane -- the first one this system has ever had. Deliberately not scaled by the admission sizeMultiplier tiers stocks/crypto use, since a single option contract isn't divisible the way a fractional stock or crypto position is: $15 is a fixed ceiling regardless of admission tier, sized to about 15% of a small account rather than the larger seed-lane ceilings stocks/crypto use, because a losing option can go to zero in a way a stopped-out stock position cannot. 0DTE and WEEKLY contracts are never eligible here, at any admission state -- STANDARD DTE (>=15 days) only. Individual stock options are never eligible here either -- only the four most liquid index ETFs (SPY/QQQ/IWM/DIA), so the first live proof period runs on the cleanest fills available; adding individual stocks is a separate future decision. requiredAdmissionStates means this lane produces zero live triggers while options-profitability-admission.json.state is SHADOW_ONLY or LIVE_SUSPENDED -- it is defined now but inert until real shadow evidence exists. Exit is forced at the same +50%/-40% band the shadow ledger already measures, or 3 trading days before expiry, whichever comes first -- so live behavior never drifts from what was actually tested. Any live loss immediately resets the gate: the next live entry requires a fresh independent positive shadow sample, not just staying above the admission threshold, since a single option loss is a much larger single event than a single stock or crypto stop-out."
+    }
   },
   "crypto": {
     "researchMode": "ACTIVE_24_7_MORE_OPPORTUNITIES",
