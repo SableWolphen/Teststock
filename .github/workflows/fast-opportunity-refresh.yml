@@ -4,8 +4,7 @@ on:
   workflow_dispatch:
   schedule:
     # Lightweight refresh halfway between the heavier 10-minute full-universe scans.
-    # Stocks refresh during their session; crypto and the canonical executable signal
-    # continue refreshing around the clock.
+    # Stocks refresh during their regular session; the canonical executable signal is refreshed from stock data.
     - cron: '8,18,28,38,48,58 * * * *'
 
 permissions:
@@ -51,17 +50,12 @@ jobs:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: node scripts/generate-static-picks.mjs
 
-      - name: Refresh freshness-critical stock and crypto dependencies
+      - name: Refresh freshness-critical stock dependencies
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: |
-          # Keep broker-independent entry-gate evidence and crypto research current
-          # even when the stock exchange is closed. Stock timing gates remain authoritative.
           node scripts/validate-entry-gates.mjs
-          node scripts/generate-crypto-picks.mjs
-          node scripts/update-crypto-shadow-ledger.mjs
-          node scripts/apply-crypto-profitability-admission.mjs
 
       - name: Re-rank cost-adjusted stock opportunities
         if: ${{ steps.market_window.outputs.stocks == 'true' }}
@@ -74,14 +68,12 @@ jobs:
       - name: Refresh adaptive real-fill state
         run: node scripts/build-adaptive-performance.mjs
 
-      - name: Rebuild and validate one fresh stock and crypto generation
+      - name: Rebuild and validate one fresh stock generation
         shell: bash
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
-          ROBINHOOD_CRYPTO_API_KEY: ${{ secrets.ROBINHOOD_CRYPTO_API_KEY }}
-          ROBINHOOD_CRYPTO_PRIVATE_KEY_B64: ${{ secrets.ROBINHOOD_CRYPTO_PRIVATE_KEY_B64 }}
           QUIVER_API_KEY: ${{ secrets.QUIVER_API_KEY }}
           UNUSUAL_WHALES_API_KEY: ${{ secrets.UNUSUAL_WHALES_API_KEY }}
           WEBULL_APP_KEY: ${{ secrets.WEBULL_APP_KEY }}
@@ -102,7 +94,6 @@ jobs:
              node scripts/apply-profitability-admission.mjs && \
              node scripts/apply-decision-intelligence.mjs && \
              node scripts/apply-congressional-intelligence.mjs && \
-             node scripts/apply-crypto-knockout-tournament.mjs && \
              node scripts/apply-two-tournament-architecture.mjs && \
              node scripts/build-unified-market-intelligence.mjs && \
              node scripts/apply-time-horizon-policy.mjs && \
@@ -116,8 +107,7 @@ jobs:
              node scripts/validate-time-horizon-policy.mjs && \
              node scripts/validate-robinhood-executable-universe.mjs && \
              node scripts/validate-unattended-execution-policy.mjs && \
-             node scripts/validate-claude-hourly-approval-policy.mjs && \
-             node scripts/validate-two-tournament-architecture.mjs; then
+             node scripts/validate-claude-hourly-approval-policy.mjs; then
             echo "Fast opportunity refresh passed validation"
           else
             echo "Fast refresh failed. Refusing to publish mixed-generation data." >&2
