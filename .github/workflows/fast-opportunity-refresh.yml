@@ -56,6 +56,9 @@ jobs:
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: |
           node scripts/validate-entry-gates.mjs
+          node scripts/scan-small-account-options.mjs
+          node scripts/update-options-shadow-ledger.mjs
+          node scripts/apply-options-profitability-admission.mjs
 
       - name: Re-rank cost-adjusted stock opportunities
         if: ${{ steps.market_window.outputs.stocks == 'true' }}
@@ -95,6 +98,7 @@ jobs:
              node scripts/apply-decision-intelligence.mjs && \
              node scripts/apply-congressional-intelligence.mjs && \
              node scripts/apply-time-horizon-policy.mjs && \
+             node scripts/apply-options-policy.mjs && \
              node scripts/apply-robinhood-executable-universe.mjs && \
              node scripts/validate-signal.mjs docs/signal.json && \
              node scripts/validate-stock-knockout.mjs && \
@@ -102,6 +106,7 @@ jobs:
              node scripts/validate-decision-intelligence.mjs && \
              node scripts/validate-congressional-intelligence.mjs && \
              node scripts/validate-time-horizon-policy.mjs && \
+             node scripts/validate-options-policy.mjs && \
              node scripts/validate-robinhood-executable-universe.mjs && \
              node scripts/validate-unattended-execution-policy.mjs && \
              node scripts/validate-claude-hourly-approval-policy.mjs; then
