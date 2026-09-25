@@ -12,8 +12,6 @@ Read these repository files from the checked-out `main` branch before any broker
 - `docs/data/daytrader-intelligence.json`
 - `docs/data/execution-watchlist.json`
 - `docs/signal.json`
-- `docs/data/crypto-tournament.json`
-- `docs/data/crypto-profitability-admission.json`
 - `docs/data/adaptive-performance.json`
 
 ## Fail closed
@@ -28,7 +26,6 @@ Only the dedicated Robinhood Agentic account may receive new Teststock trades. N
 2. Forced/time-expired intraday exits.
 3. Profit protection / giveback prevention / stalled-trade exits.
 4. Qualified stock entries.
-5. Qualified crypto entries.
 
 After a broker-confirmed exit, immediately recompute buying power, risk, portfolio heat, correlation, open orders and broker capacity. Another qualified trade may be taken in the same run when all live gates pass.
 
@@ -38,7 +35,7 @@ Treat `docs/data/intraday-edge.json` and each trigger-board item's `intradayEdge
 
 For a new entry require a current `intradayEdge.status=FRESH` on the actionable candidate. Prefer higher `adjustedScore` and higher positive `costAdjustedEdge` among already-qualified candidates. Respect the overlay's setup tag, market regime, relative strength, event-risk state, real-fill-learning bucket, adaptive sizing multiplier and regime routing. A weak or blocked intraday edge means no new risk even if slower research still likes the symbol.
 
-Use 1m/5m VWAP, relative volume, momentum acceleration, opening-range behavior, SPY/QQQ relative strength for stocks and BTC context for crypto as confirmation, not as permission to bypass qualification. In weak/risk-off regimes, be more selective with long entries and allow cash to win.
+Use 1m/5m VWAP, relative volume, momentum acceleration, opening-range behavior, SPY/QQQ relative strength for stocks and BTC context for stock as confirmation, not as permission to bypass qualification. In weak/risk-off regimes, be more selective with long entries and allow cash to win.
 
 Before every live entry, independently re-check through Robinhood the current price, tradability, spread, buying power, positions, open orders and duplicate state. If live spread/slippage destroys the positive expected edge implied by `costAdjustedEdge`, skip the trade. Never assume the Alpaca research quote equals the broker execution quote.
 
@@ -72,7 +69,7 @@ The existing hard daily-loss cap remains authoritative regardless of profit-give
 
 Teststock should make qualified entries and exits easy to execute without weakening risk controls.
 
-For normal stock and crypto lanes there is no fixed daily trade quota, no fixed concurrent-position quota, and no fixed per-run quota. Capacity is determined from live cash, buying power, aggregate stop risk, portfolio heat, correlation, liquidity, spread, protection capability and broker/account restrictions.
+For normal stock and stock lanes there is no fixed daily trade quota, no fixed concurrent-position quota, and no fixed per-run quota. Capacity is determined from live cash, buying power, aggregate stop risk, portfolio heat, correlation, liquidity, spread, protection capability and broker/account restrictions.
 
 Execution preferences:
 - Prefer a supported marketable-limit style entry when it improves the chance of a timely fill without violating the encoded maximum entry/no-chase price.
@@ -110,17 +107,6 @@ Review open day trades after roughly 20 minutes if they are not progressing. Max
 
 Qualified stock entries are automatic; process them in rank order without requesting user approval, then use intraday adjusted score / cost-adjusted edge, live discovery rank, catalyst quality and liquidity quality to break ties. Continue while dynamic live capacity remains. After every fill or exit, recompute capacity before considering another candidate.
 
-## Crypto
-
-Crypto entries are fully automatic only for current qualified `/USD` candidates or separately authorized seed candidates that pass every live gate.
-
-Before every crypto buy, require current intraday-edge confirmation and re-read live price, tradability, spread, buying power, positions, open orders, duplicate state, aggregate risk and protection capability through Robinhood. Skip rather than chase when live price is outside Teststock's encoded entry range.
-
-Use BTC context as a regime input. In BTC risk-off conditions, long altcoin entries require materially stronger relative strength and positive cost-adjusted edge; otherwise cash is valid.
-
-Review open crypto trades after roughly 20 minutes if they are not progressing. Maximum intended holding window is 3 hours unless a stop, target, invalidation or momentum failure exits earlier. Never convert a failed intraday crypto trade into a multi-day hold.
-
-Continue through qualified crypto candidates while dynamic live capacity remains. After every fill or exit, recompute capacity before considering another candidate.
 
 ## Real-fill learning
 
