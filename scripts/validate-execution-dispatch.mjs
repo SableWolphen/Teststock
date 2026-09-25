@@ -17,7 +17,14 @@ if(dispatch.claudeShouldRun){
   }else if(!(dispatch.seedLaneCandidates||[]).some(x=>x?.fingerprint)) fail('actionable dispatch lacks a normal or seed fingerprint');
 }
 if((dispatch.fallbackActions||[]).some(action=>action.trigger!=='BUY_TRIGGER')) fail('fallback sequence may contain only buy actions');
-if(dispatch.pendingAction?.trigger!=='BUY_TRIGGER'&&(dispatch.fallbackActions||[]).length) fail('exit dispatch cannot contain buy fallbacks');
+if(dispatch.pendingAction?.trigger!=='BUY_TRIGGER'&&(dispatch.pendingAction?.trigger!=='OPTION_SEED_LANE_BUY_TRIGGER')&&(dispatch.fallbackActions||[]).length) fail('exit dispatch cannot contain buy fallbacks');
+const optionCandidates=dispatch.optionCandidates||[];
+if(optionCandidates.some(x=>x.trigger!=='OPTION_SEED_LANE_BUY_TRIGGER'||x.assetClass!=='OPTION')) fail('invalid option candidate');
+if(optionCandidates.some(x=>!x.optionContract||!['LONG_CALL','LONG_PUT'].includes(x.optionKind))) fail('option candidate missing long option contract/kind');
+if(optionCandidates.some(x=>Number(x.dte)<14||Number(x.dte)>45||x.dteBucket!=='STANDARD')) fail('option candidate outside standard DTE bounds');
+if(optionCandidates.some(x=>Number(x.maxOrderUsd)<=0||Number(x.maxOrderUsd)>15)) fail('option candidate exceeds lane premium cap');
+if(optionCandidates.some(x=>x.admissionState!=='MICRO_PROBATION'&&x.admissionState!=='PROBATION'&&x.admissionState!=='LIVE_ADMITTED')) fail('option candidate lacks earned admission');
+if(dispatch.optionsLane?.status==='OPTION_SEED_LANE_BUY_TRIGGER'&&optionCandidates.length!==1) fail('option lane status must expose exactly one candidate');
 
 const automaticStockCandidates=dispatch.automaticStockCandidates||[];
 if(automaticStockCandidates.some(action=>action.trigger!=='BUY_TRIGGER')) fail('automaticStockCandidates may contain only BUY_TRIGGER actions');
@@ -48,6 +55,7 @@ if(dispatch.schemaVersion>=4){
 if(dispatch.consumerContract?.approvalMode!=='NONE_AUTOMATIC') fail('approvalMode must be NONE_AUTOMATIC');
 if(dispatch.consumerContract?.userApprovalRequired!==false) fail('user approval must be false');
 if(dispatch.consumerContract?.automaticQualifiedStocks!==true) fail('automaticQualifiedStocks must be true');
+if(dispatch.consumerContract?.automaticQualifiedStockOptions!==true) fail('automaticQualifiedStockOptions must be true');
 if(dispatch.consumerContract?.multipleConcurrentStocksAllowed!==true) fail('multi-stock capability must be explicit');
 if(dispatch.multiStockPolicy?.enabled!==true) fail('multiStockPolicy must be enabled');
 if(dispatch.multiStockPolicy?.automaticQualifiedEntries!==true) fail('automatic stock policy must be enabled');
@@ -65,4 +73,4 @@ if(dispatch.pendingAction?.trigger==='STOCK_DAY_TRADE_FORCED_EXIT'&&Number(dispa
 if((dispatch.priorityOrder||[]).indexOf('STOCK_DAY_TRADE_FORCED_EXIT')<0||(dispatch.priorityOrder||[]).indexOf('STOCK_DAY_TRADE_FORCED_EXIT')>1)fail('day-trade forced exit priority order');
 if(dispatch.pendingAction?.trigger==='STOCK_DAY_TRADE_FORCED_EXIT'&&(automaticStockCandidates.length||seeds.length))fail('day-trade forced exit must block buys');
 
-console.log(`Execution dispatch valid: ${dispatch.claudeShouldRun?'actionable':'idle'}; automatic stock candidates ${automaticStockCandidates.length}; seed candidates ${seeds.length}; capacity ${max===null?'dynamic':max}.`);
+console.log(`Execution dispatch valid: ${dispatch.claudeShouldRun?'actionable':'idle'}; automatic stock candidates ${automaticStockCandidates.length}; option candidates ${(dispatch.optionCandidates||[]).length}; seed candidates ${seeds.length}; capacity ${max===null?'dynamic':max}.`);
