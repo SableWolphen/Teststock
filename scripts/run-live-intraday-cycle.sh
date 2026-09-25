@@ -19,7 +19,7 @@ fi
 
 # Feed immutable snapshots to the separate background learner. It writes only to
 # runtime state, never to this live checkout, so learning cannot race broker logic.
-for f in real-trade-journal.json crypto-real-trade-journal.json; do
+for f in real-trade-journal.json; do
   if [[ -f "docs/data/$f" ]]; then
     cp "docs/data/$f" "$LEARNING_INPUT_DIR/$f.tmp"
     mv -f "$LEARNING_INPUT_DIR/$f.tmp" "$LEARNING_INPUT_DIR/$f"
@@ -96,18 +96,11 @@ def age_minutes(value):
 
 d=load('docs/data/execution-dispatch.json', {})
 w=load('docs/data/execution-watchlist.json', {})
-t=load('docs/data/crypto-tournament.json', {})
-a=load('docs/data/crypto-profitability-admission.json', {})
-active=any(isinstance(p,dict) and p.get('status')=='ACTIVE' for p in (w.get('positions') or []))
-crypto_admitted=a.get('state') in {'MICRO_PROBATION','PROBATION','LIVE_ADMITTED'} and float(a.get('sizeMultiplier') or 0)>0
-crypto_fresh=age_minutes(t.get('generatedAt')) <= 15
-crypto_candidate=isinstance(t.get('qualifiedChampion'), dict) and bool(t.get('qualifiedChampion',{}).get('ticker'))
-crypto_should_run=crypto_admitted and crypto_fresh and crypto_candidate
 pending=d.get('pendingAction') if isinstance(d.get('pendingAction'), dict) else {}
 trigger=pending.get('trigger')
 urgent_exit=trigger in {'TRIGGER_1_STOP','STOCK_DAY_TRADE_FORCED_EXIT'}
 actionable=bool(d.get('claudeShouldRun'))
-routine=active or crypto_should_run
+routine=active
 allowed=reserve_wake(Path(sys.argv[1])/'executor-usage.json',actionable=actionable,routine=routine,urgent_exit=urgent_exit)
 print('true' if allowed else 'false')
 PY
