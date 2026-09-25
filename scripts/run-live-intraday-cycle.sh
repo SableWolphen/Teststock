@@ -96,6 +96,10 @@ def age_minutes(value):
 
 d=load('docs/data/execution-dispatch.json', {})
 w=load('docs/data/execution-watchlist.json', {})
+opt_admission=load('docs/data/options-profitability-admission.json', {})
+active=any(str(x.get('status','')).upper()=='ACTIVE' and str(x.get('assetClass','')).upper() in {'STOCK','OPTION'} for x in w.get('positions',[]) if isinstance(x,dict))
+opt_live=opt_admission.get('state') in {'MICRO_PROBATION','PROBATION','LIVE_ADMITTED'} and float(opt_admission.get('sizeMultiplier',0) or 0)>0
+option_routine=bool(opt_live)
 pending=d.get('pendingAction') if isinstance(d.get('pendingAction'), dict) else {}
 trigger=pending.get('trigger')
 urgent_exit=trigger in {'TRIGGER_1_STOP','STOCK_DAY_TRADE_FORCED_EXIT'}
