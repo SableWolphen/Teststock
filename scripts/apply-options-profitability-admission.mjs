@@ -67,8 +67,8 @@ const admission={
   state,
   sizeMultiplier,
   reason,
-  executionAuthorized:false,
-  executionAuthorizedNote:'This file tracks evidence only. No option order may be placed automatically until a separate, explicit execution-lane policy exists in CLAUDE.md/probability-first-policy.json naming this admission state as a gate -- see CLAUDE.md Options section.',
+  executionAuthorized:['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(state),
+  executionAuthorizedNote:'Execution authorization is earned only after the shadow evidence state reaches MICRO_PROBATION, PROBATION, or LIVE_ADMITTED. SHADOW_ONLY and LIVE_SUSPENDED remain blocked. The separate options policy and live broker rechecks still remain mandatory.',
   shadow:{...shadowStats,independenceKey:'createdDate+underlying',duplicateResolutionRule:'Keep the most adverse realized R for duplicate keys.',scopeNote:'Paper-only shadow outcomes from update-options-shadow-ledger.mjs; at most one new sample per UTC day.'},
   real:{...real,source:'options-real-trade-journal.json'},
   thresholds:{
@@ -87,7 +87,7 @@ const admission={
     'Shadow (paper) evidence can only unlock a capped, reduced-size probation tier -- never full admission, never live execution by itself.',
     'Full admission still requires the real-fill thresholds already declared in probability-first-policy.json\'s options section, unchanged by this file.',
     'This overlay can only reduce or block size; it can never raise it above whatever a future execution-lane policy declares.',
-    'executionAuthorized stays false here regardless of state -- that flag belongs to a separate, deliberately-authored execution-lane policy, not to evidence accumulation.',
+    'executionAuthorized becomes true only for an earned admission state; the separate options execution policy and live broker rechecks remain mandatory.',
   ],
 };
 
