@@ -14,7 +14,7 @@ if(dispatch.claudeShouldRun){
     if(!action.fingerprint) fail('actionable dispatch lacks fingerprint');
     if(action.isActionable!==true) fail('actionable dispatch must be actionable');
     if(action.trigger==='BUY_TRIGGER'&&(!action.expiresAt||Date.parse(action.expiresAt)<=Date.parse(dispatch.generatedAt))) fail('entry is expired');
-  }else if(!(dispatch.seedLaneCandidates||[]).some(x=>x?.fingerprint)) fail('actionable dispatch lacks a normal or seed fingerprint');
+  }else if(!(dispatch.seedLaneCandidates||[]).some(x=>x?.fingerprint)&&!(dispatch.optionCandidates||[]).some(x=>x?.fingerprint)) fail('actionable dispatch lacks a normal, seed, or option fingerprint');
 }
 if((dispatch.fallbackActions||[]).some(action=>action.trigger!=='BUY_TRIGGER')) fail('fallback sequence may contain only buy actions');
 if(dispatch.pendingAction?.trigger!=='BUY_TRIGGER'&&(dispatch.pendingAction?.trigger!=='OPTION_SEED_LANE_BUY_TRIGGER')&&(dispatch.fallbackActions||[]).length) fail('exit dispatch cannot contain buy fallbacks');
