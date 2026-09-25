@@ -8,7 +8,7 @@ if(board.claudeMarketPollingRequired!==false)fail.push('Claude polling lock');
 if(board.siteAvailability!=='24_7_PUBLIC_DASHBOARD')fail.push('24/7 site availability metadata');
 if(!['ACTIVE','REFRESHING'].includes(board.researchState))fail.push('research state');
 if(!Array.isArray(board.items)||!Array.isArray(board.events))fail.push('arrays');
-const allowed=new Set(['BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER','CRYPTO_SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_1_STOP','TRIGGER_2_TARGET1','TRIGGER_3_TARGET2','TRIGGER_EARLY_PROFIT_TRIM']);
+const allowed=new Set(['BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_1_STOP','TRIGGER_2_TARGET1','TRIGGER_3_TARGET2','TRIGGER_EARLY_PROFIT_TRIM']);
 for(const e of board.events||[])if(!allowed.has(e.trigger))fail.push(`unknown trigger ${e.trigger}`);
 for(const e of board.events||[]){
   if(e.trigger==='BUY_TRIGGER'&&e.assetClass!=='STOCK')fail.push('non-stock buy sent to Claude');
@@ -19,7 +19,6 @@ for(const e of board.events||[]){
 }
 const stockSeedCap=e=>e.entryTier==='B'?7.5:30;
 for(const e of board.events||[]){if(e.trigger==='SEED_LANE_BUY_TRIGGER'&&(e.assetClass!=='STOCK'||e.seedLane?.eligible!==true||e.seedLane?.requiresPerOrderApproval!==false||Number(e.seedLane?.maxOrderUsd)!==stockSeedCap(e)))fail.push(`${e.ticker}: invalid stock seed trigger`);if(e.trigger==='CRYPTO_SEED_LANE_BUY_TRIGGER'&&(e.assetClass!=='CRYPTO'||e.seedLane?.eligible!==true||e.seedLane?.requiresPerOrderApproval!==false||Number(e.seedLane?.maxOrderUsd)!==5))fail.push(`${e.ticker}: invalid crypto seed trigger`);}
-for(const e of board.events||[])if(e.trigger==='CRYPTO_SEED_LANE_BUY_TRIGGER'&&(e.qualificationSource!=='CRYPTO_TOURNAMENT_QUALIFIED'||!['A','A+'].includes(e.setupGrade)||!e.tournamentGeneratedAt))fail.push(`${e.ticker}: crypto trigger lacks qualified tournament source`);
 for(const e of board.events||[]){if(e.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'&&(e.assetClass!=='STOCK'||e.dayTradeSeedLane?.eligible!==true||e.dayTradeSeedLane?.requiresPerOrderApproval!==false||Number(e.dayTradeSeedLane?.maxOrderUsd)!==stockSeedCap(e)||e.dayTradeSeedLane?.mustBeFlatBeforeMarketClose!==true||Number(e.dayTradeSeedLane?.entryCutoffMinutesBeforeClose)!==20||Number(e.dayTradeSeedLane?.forcedExitStartMinutesBeforeClose)!==10||e.marketSession?.regularSession!==true||Number(e.marketSession?.minutesToClose)<20))fail.push(`${e.ticker}: invalid stock day-trade seed trigger`);if(e.trigger==='STOCK_DAY_TRADE_FORCED_EXIT'&&(e.assetClass!=='STOCK'||e.dayTradeSeedLane!==true||e.marketSession?.forcedExitDue!==true))fail.push(`${e.ticker}: invalid stock day-trade forced exit`);}
 const stockEntries=board.items?.filter(x=>x.assetClass==='STOCK'&&x.kind==='ENTRY')||[];if(stockEntries.some(x=>x.seedLaneEligible===true&&x.dayTradeSeedLaneEligible===true))fail.push('swing/day-trade seed overlap');
 if(Boolean(board.executionNeeded)!==Boolean((board.events||[]).length))fail.push('executionNeeded mismatch');
@@ -37,7 +36,6 @@ if(board.researchState==='REFRESHING'&&buys.length)fail.push('refreshing researc
 for(const x of board.items||[])if(x.status==='STALE_SIGNAL')fail.push('legacy stale label');
 for(const x of board.items||[])if(x.kind==='ENTRY'&&x.assetClass==='STOCK'&&x.status==='BUY_TRIGGER'&&x.decisionIntelligenceEligible!==true)fail.push(`${x.ticker}: blocked overlay triggered`);
 for(const x of board.items||[])if(x.kind==='ENTRY'&&x.assetClass==='STOCK'&&x.entryTier==='B'&&Number(x.entryTierSizeMultiplier)>0.25)fail.push(`${x.ticker}: B-tier item size exceeds 25%`);
-for(const x of board.items||[])if(x.kind==='ENTRY'&&x.assetClass==='CRYPTO'&&(x.qualificationSource!=='CRYPTO_TOURNAMENT_QUALIFIED'||!['A','A+'].includes(x.setupGrade)||!x.tournamentGeneratedAt))fail.push(`${x.ticker}: unqualified crypto monitoring item`);
 const text=JSON.stringify(board).toLowerCase();
 for(const banned of ['account_number','accountnumber','routing_number','routingnumber','ssn','social security','api_secret','api key','password'])if(text.includes(banned))fail.push(`possible secret/private field: ${banned}`);
 if(fail.length)throw new Error(`trigger-board validation failed: ${[...new Set(fail)].join(', ')}`);
