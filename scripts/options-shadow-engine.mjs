@@ -19,19 +19,14 @@ export function buildShadowTradeId(contract,createdDate){
 // 0DTE/WEEKLY stay diagnostic-only and never enter the shadow-to-live pathway).
 // existingTrades: current docs/data/options-shadow-trades.json trades array.
 // Returns new trade records to append (does not mutate existingTrades).
-export function openNewShadowTrades({candidates=[],existingTrades=[],todayIso,nowIso,maxNewPerUtcDay=1}={}){
+export function openNewShadowTrades({candidates=[],existingTrades=[],todayIso,nowIso,maxNewPerUtcDay=25}={}){
   const standard=candidates.filter(x=>x.dteBucket==='STANDARD'&&Number(x.ask)>0&&Number(x.dte)>0);
   if(!standard.length)return [];
   const trackedContracts=new Set(existingTrades.map(x=>x.contract));
   const openedToday=existingTrades.filter(x=>x.createdDate===todayIso).length;
   if(openedToday>=maxNewPerUtcDay)return [];
-  const best=standard.find(x=>!trackedContracts.has(x.contract));
-  if(!best)return [];
-  const entry=round(Number(best.ask),4);
-  const stop=round(entry*STOP_MULTIPLIER,4);
-  const target=round(entry*TARGET_MULTIPLIER,4);
-  const risk=entry-stop;
-  return [{
+  const available=standard.filter(x=>!trackedContracts.has(x.contract)).slice(0,Math.max(0,maxNewPerUtcDay-openedToday));
+  return available.map(best=>{ const entry=round(Number(best.ask),4); const stop=round(entry*STOP_MULTIPLIER,4); const target=round(entry*TARGET_MULTIPLIER,4); const risk=entry-stop; return {
     id:buildShadowTradeId(best.contract,todayIso),
     createdDate:todayIso,
     createdAt:nowIso,
@@ -54,7 +49,7 @@ export function openNewShadowTrades({candidates=[],existingTrades=[],todayIso,no
     score:best.score??null,
     notes:null,
     modelOnly:true,
-  }];
+  }; });
 }
 
 // trade: one OPEN shadow trade record. liveSnapshot: {bid,ask} for the exact same contract
