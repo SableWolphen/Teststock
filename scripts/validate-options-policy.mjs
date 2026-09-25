@@ -1,0 +1,23 @@
+import fs from 'node:fs/promises';
+
+const read=async f=>JSON.parse(await fs.readFile(f,'utf8'));
+const s=await read('docs/signal.json');
+const p=s.optionsTradingPolicy||{};
+const fail=[];
+if(p.enabled!==true) fail.push('options policy disabled');
+if(p.executionAgent!=='CLAUDE') fail.push('execution agent');
+if(p.transport!=='ROBINHOOD_TRADING_MCP') fail.push('transport');
+if(p.allowedStrategies?.join(',')!=='LONG_CALL,LONG_PUT') fail.push('allowed strategies');
+if(p.buyToOpenOnly!==true||p.sellToCloseOnly!==true) fail.push('order direction');
+if(p.noNakedSelling!==true||p.noExercise!==true||p.noOvernight!==true) fail.push('unsafe strategy guard');
+if(p.noMargin!==true||p.noDeposits!==true||p.noBankTransfers!==true) fail.push('funding guard');
+if(Number(p.maxPremiumRiskPerTradePct)!==5) fail.push('per-trade premium cap');
+if(Number(p.maxAggregateOpenPremiumRiskPct)!==15) fail.push('aggregate premium cap');
+if(Number(p.maxNewPremiumExposurePerNyDayPct)!==10) fail.push('daily premium cap');
+if(Number(p.minDte)!==14||Number(p.maxDte)!==45||Number(p.expirationSafetyTradingDays)!==5) fail.push('expiration bounds');
+if(Number(p.minDelta)!==0.55||Number(p.maxDelta)!==0.80) fail.push('delta bounds');
+if(p.underlyingMustBeQualifiedStock!==true) fail.push('underlying qualification');
+if(p.liveOptionChainRequired!==true||p.liveBrokerRecheckRequired!==true) fail.push('live option/broker recheck');
+if(p.cashOnly!==true||p.accountLossCannotExceedAvailableAccountCapital!==true) fail.push('cash/account-cap rule');
+if(fail.length) throw new Error('options policy validation failed: '+[...new Set(fail)].join(', '));
+console.log('options policy valid: long calls/puts only, cash-funded, no exercise/overnight, hard premium caps and live Robinhood rechecks');
