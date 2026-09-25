@@ -49,6 +49,9 @@ Robinhood is authoritative for live buying power, positions, orders, fills, and 
 
 Options remain separate from automatic stock/crypto entry execution unless the current Teststock option policy explicitly marks an option order executable. Do not infer options authorization from stock automation.
 
+- `docs/data/small-account-options.json` (research scan) and `docs/data/options-shadow-trades.json` / `docs/data/options-profitability-admission.json` (paper-only shadow evidence, mirroring the crypto shadow pipeline) exist to gather real evidence toward an eventual options execution lane. None of these three files, individually or together, mark any option order executable. `options-profitability-admission.json.executionAuthorized` is hard-coded `false` regardless of shadow state.
+- No option order may be submitted automatically until a future, separate, explicit update to this file names a concrete options execution lane (size cap, DTE floor, one-position-at-a-time, live guard set) the way the Stocks and Crypto sections above do. Reaching `LIVE_ADMITTED` or any probation tier in the admission file is evidence, not authorization.
+
 ## Idle behavior
 
 If there is no actionable stock dispatch, no qualified crypto execution, and no protection-repair condition, stop without broker calls or broad market research.
