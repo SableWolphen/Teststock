@@ -5,7 +5,7 @@ if(board.schemaVersion!==6)fail.push('schemaVersion');
 if(board.source!=='TESTSTOCK_NON_LLM_TRIGGER_MONITOR')fail.push('source');
 if(board.monitorCadenceMinutes!==5)fail.push('monitor cadence');
 if(board.claudeMarketPollingRequired!==false)fail.push('Claude polling lock');
-if(board.siteAvailability!=='24_7_PUBLIC_DASHBOARD')fail.push('24/7 site availability metadata');
+if(board.siteAvailability!=='NYSE_STOCK_DAY_TRADING_ONLY')fail.push('stock-only site availability metadata');
 if(!['ACTIVE','REFRESHING'].includes(board.researchState))fail.push('research state');
 if(!Array.isArray(board.items)||!Array.isArray(board.events))fail.push('arrays');
 const allowed=new Set(['BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_1_STOP','TRIGGER_2_TARGET1','TRIGGER_3_TARGET2','TRIGGER_EARLY_PROFIT_TRIM']);
@@ -18,7 +18,7 @@ for(const e of board.events||[]){
   if(e.trigger==='BUY_TRIGGER'&&e.entryTier==='B'&&Number(e.entryTierSizeMultiplier)>0.25)fail.push(`${e.ticker}: B-tier size exceeds 25%`);
 }
 const stockSeedCap=e=>e.entryTier==='B'?7.5:30;
-for(const e of board.events||[]){if(e.trigger==='SEED_LANE_BUY_TRIGGER'&&(e.assetClass!=='STOCK'||e.seedLane?.eligible!==true||e.seedLane?.requiresPerOrderApproval!==false||Number(e.seedLane?.maxOrderUsd)!==stockSeedCap(e)))fail.push(`${e.ticker}: invalid stock seed trigger`);if(e.trigger==='CRYPTO_SEED_LANE_BUY_TRIGGER'&&(e.assetClass!=='CRYPTO'||e.seedLane?.eligible!==true||e.seedLane?.requiresPerOrderApproval!==false||Number(e.seedLane?.maxOrderUsd)!==5))fail.push(`${e.ticker}: invalid crypto seed trigger`);}
+for(const e of board.events||[]){if(e.trigger==='SEED_LANE_BUY_TRIGGER'&&(e.assetClass!=='STOCK'||e.seedLane?.eligible!==true||e.seedLane?.requiresPerOrderApproval!==false||Number(e.seedLane?.maxOrderUsd)!==stockSeedCap(e)))fail.push(`${e.ticker}: invalid stock seed trigger`);}
 for(const e of board.events||[]){if(e.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'&&(e.assetClass!=='STOCK'||e.dayTradeSeedLane?.eligible!==true||e.dayTradeSeedLane?.requiresPerOrderApproval!==false||Number(e.dayTradeSeedLane?.maxOrderUsd)!==stockSeedCap(e)||e.dayTradeSeedLane?.mustBeFlatBeforeMarketClose!==true||Number(e.dayTradeSeedLane?.entryCutoffMinutesBeforeClose)!==20||Number(e.dayTradeSeedLane?.forcedExitStartMinutesBeforeClose)!==10||e.marketSession?.regularSession!==true||Number(e.marketSession?.minutesToClose)<20))fail.push(`${e.ticker}: invalid stock day-trade seed trigger`);if(e.trigger==='STOCK_DAY_TRADE_FORCED_EXIT'&&(e.assetClass!=='STOCK'||e.dayTradeSeedLane!==true||e.marketSession?.forcedExitDue!==true))fail.push(`${e.ticker}: invalid stock day-trade forced exit`);}
 const stockEntries=board.items?.filter(x=>x.assetClass==='STOCK'&&x.kind==='ENTRY')||[];if(stockEntries.some(x=>x.seedLaneEligible===true&&x.dayTradeSeedLaneEligible===true))fail.push('swing/day-trade seed overlap');
 if(Boolean(board.executionNeeded)!==Boolean((board.events||[]).length))fail.push('executionNeeded mismatch');
