@@ -1,0 +1,46 @@
+name: Learn from Teststock stock history
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/data/trade-history.json'
+      - 'scripts/build-historical-stock-learning.mjs'
+      - '.github/workflows/historical-stock-learning.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: teststock-historical-stock-learning
+  cancel-in-progress: true
+
+jobs:
+  learn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build historical stock learning
+        run: node scripts/build-historical-stock-learning.mjs
+      - name: Publish historical learning snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data/historical-stock-learning.json
+          if git diff --cached --quiet; then
+            echo "No historical-learning changes."
+          else
+            git commit -m "Refresh Teststock historical stock learning"
+            git pull --rebase -X theirs origin main
+            git push
+          fi
