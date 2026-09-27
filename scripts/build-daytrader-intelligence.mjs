@@ -17,7 +17,9 @@ const now=new Date(),generatedAt=now.toISOString();
 const num=x=>Number(x),finite=x=>Number.isFinite(num(x));
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function get(url){let last;for(let i=0;i<3;i++){try{const r=await fetch(url,{headers});if(r.ok)return r.json();last=new Error(`${r.status} ${await r.text()}`);}catch(e){last=e;}await sleep(200*(2**i));}throw last;}
+let requestGate=Promise.resolve(),lastRequestAt=0;
+async function throttle(){const prev=requestGate;let release;requestGate=new Promise(r=>release=r);await prev;const wait=Math.max(0,250-(Date.now()-lastRequestAt));if(wait)await sleep(wait);lastRequestAt=Date.now();release();}
+async function get(url){let last;for(let i=0;i<6;i++){try{await throttle();const r=await fetch(url,{headers});if(r.ok)return r.json();const body=await r.text();last=new Error(`${r.status} ${body}`);const retryAfter=Number(r.headers.get('retry-after'));if(r.status===429){await sleep(Number.isFinite(retryAfter)?retryAfter*1000:1000*(2**i));continue;}}catch(e){last=e;}await sleep(350*(2**i));}throw last;}
 const errors=[];
 const regularSession=board?.marketSession?.regularSession===true;
 const currentStocks=[...new Set((board.items||[]).filter(x=>x?.kind==='ENTRY'&&x.assetClass==='STOCK'&&x.ticker).map(x=>x.ticker))];
