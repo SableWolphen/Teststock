@@ -69,6 +69,19 @@ Teststock also maintains `docs/data/web-market-history-learning.json`, built fro
 - Keep historical, forward/shadow, and Robinhood-confirmed real-fill evidence labeled separately. Promotion of strategy changes requires forward or real-fill confirmation, not backtest results alone.
 - Treat provider coverage limits, corporate-action adjustments, symbol changes, and feed scope as explicit limitations rather than pretending the dataset is literally every stock observation ever recorded.
 
+## Multi-source learning and strategy retirement
+
+Use `docs/data/learning-consensus.json` as research context when fresh. It combines broad daily history, intraday history, exit validation, option shadow evidence, correlation evidence, and Robinhood-confirmed real-fill learning without treating them as equivalent evidence.
+
+- Historical evidence may rank opportunities or reduce risk, but may never increase live risk by itself.
+- Forward/shadow evidence is required before a historical hypothesis can graduate toward live use; confirmed Robinhood real fills remain the authority for full-size promotion.
+- Persistent negative after-cost real-fill expectancy must throttle or suspend the affected setup instead of continuing it merely because older backtests were positive.
+- Learn rejected/no-trade outcomes as opportunity-cost evidence where outcome data exists; do not relabel a rejected setup as a real trade.
+- Prefer capital rotation after confirmed exits, but never create a new entry solely to keep cash deployed.
+- Portfolio correlation, sector concentration, live spreads/slippage, catalyst/event risk, and market regime remain execution-time constraints.
+- Optimize exits as well as entries. Profit-taking, trailing protection, time exits, VWAP/momentum failure, and session cutoff may be compared using historical evidence, but live risk-increasing changes require forward confirmation.
+- Options learning is contract-specific: DTE, delta, IV, spread, theta/gamma exposure, time of day, underlying regime, executable entry ask, and executable exit bid must remain separate from stock-only evidence.
+
 ## Idle behavior
 
 If there is no actionable stock dispatch and no protection-repair condition, stop without broker calls or broad market research.
