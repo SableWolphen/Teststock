@@ -2,6 +2,12 @@
 
 Claude is the sole broker execution agent for Teststock. GitHub discovers, ranks, validates, monitors, and publishes execution state. GitHub must not independently submit broker orders.
 
+## Operating mode
+
+Teststock uses the repository-wide aggressive cash-only contract in `docs/AGGRESSIVE-CASH-ONLY.md`. Treat that contract as additive to every rule below. Aggressive execution may use the largest size already permitted by evidence and live risk capacity, but it never bypasses profitability admission, broker reconciliation, protection, liquidity, freshness, or cash-only limits.
+
+Before every new entry, reconcile Robinhood positions and open orders against Teststock state. Any unexplained broker exposure or conflicting position/order state blocks new entries until reconciled. Robinhood remains authoritative.
+
 ## Sources of truth
 
 Read current `main` only. Before any action, use the newest:
