@@ -6,7 +6,7 @@ const [s,st]=await Promise.all(['docs/signal.json','docs/data/stock-tournament.j
 const stockGate=x=>({...x,brokerEligibility:{
   broker:'ROBINHOOD_TRADING_MCP',
   assetClass:'STOCK',
-  status:'CLAUDE_RUNTIME_VERIFICATION_REQUIRED',
+  status:'CHATGPT_RUNTIME_VERIFICATION_REQUIRED',
   researchEligible:true,
   liveOrderAllowed:false,
   verificationMoment:'IMMEDIATELY_BEFORE_SUBMISSION',
