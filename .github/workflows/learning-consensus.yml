@@ -1,0 +1,39 @@
+name: Build learning consensus
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 8 * * 0'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/data/web-market-history-learning.json'
+      - 'docs/data/intraday-history-learning.json'
+      - 'docs/data/adaptive-performance.json'
+      - 'docs/data/exit-policy-validation.json'
+      - 'docs/data/options-shadow-trades.json'
+      - 'docs/data/portfolio-correlation.json'
+      - 'scripts/build-learning-consensus.mjs'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with: {ref: main, fetch-depth: 1}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: node scripts/build-learning-consensus.mjs
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data/learning-consensus.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Refresh Teststock learning consensus"
+            git pull --rebase -X theirs origin main
+            git push
+          fi
