@@ -10,6 +10,8 @@ const avg=a=>a.length?a.reduce((s,n)=>s+n,0)/a.length:0;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const pct=(a,b)=>a&&b?((a/b)-1)*100:0;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+let requestGate=Promise.resolve(),lastRequestAt=0;
+async function throttle(){const prev=requestGate;let release;requestGate=new Promise(r=>release=r);await prev;const wait=Math.max(0,220-(Date.now()-lastRequestAt));if(wait)await sleep(wait);lastRequestAt=Date.now();release();}
 const key=process.env.ALPACA_API_KEY||process.env.APCA_API_KEY_ID;
 const secret=process.env.ALPACA_API_SECRET||process.env.APCA_API_SECRET_KEY;
 if(!key||!secret)throw new Error('Missing Alpaca secrets');
