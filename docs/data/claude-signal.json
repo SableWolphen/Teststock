@@ -2,7 +2,7 @@
   "schemaVersion": 44,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-09-25T21:26:46.610Z",
+  "generatedAt": "2026-09-27T17:31:45.031Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -83,7 +83,7 @@
         "newOptionsAllowed": true
       }
     ],
-    "instructions": "Select the current equity tier exactly as published. Apply its stock allocation multiplier, max deployed percentage and planned-stop-risk cap across all open/new positions. Options use that same tier's maxOptionRiskPct and require newOptionsAllowed=true plus every eliteOption and live-evidence check; crypto uses its own tournament and Claude Robinhood Trading MCP risk limits."
+    "instructions": "Select exactly one tier using lower-bound-inclusive, upper-bound-exclusive intervals: >=0 and <80 RECOVERY; >=80 and <100 DEFENSE; >=100 and <125 PROVE; >=125 and <150 SCALE; >=150 GROWTH. Exactly $80 is DEFENSE, exactly $100 is PROVE, exactly $125 is SCALE, and exactly $150 is GROWTH. Never choose the lower tier at an exact boundary. Multiply stock allocation by stockAllocationMultiplier. Never exceed tier maxDeployedPct or planned-stop-risk cap. For options use the smaller of eliteOption.maxRiskPctOfRobinhoodBuyingPower and tier.maxOptionRiskPct. If the tier disables options, do not open one."
   },
   "profitLock": {
     "mode": "TIERED_EQUITY_FLOOR",
@@ -154,7 +154,7 @@
     "maxNewPositionsPerSevenDays": 10,
     "maxNewOptionsPerDay": 1,
     "maxNewCryptoPerDay": 1,
-    "instructions": "Apply the published total-position and crypto frequency ceilings as risk limits, never trade quotas. Multiple stock trades and concurrent stock positions are allowed only while every current account, cash, stop-risk, correlation, protection and frequency limit continues to pass. Options remain capped at one new position per day and require every eliteOption, whole-contract and live-evidence check. Protective exits never count as new entries."
+    "instructions": "Up to four independently qualified new positions per day and 10 per rolling 7 days. These are ceilings, never quotas; all smaller cash, risk, event, correlation, execution, protection, and real-fill limits override them."
   },
   "correlationGuard": {
     "maxNewPositionsPerRiskCluster": 1,
@@ -225,7 +225,7 @@
     "maxStockSpreadPct": 0.35,
     "maxOptionSpreadPct": 10,
     "maxCryptoSpreadPct": 0.75,
-    "instructions": "Prefer limit orders when supported. Never pay above a saved maximum entry. Stocks must respect the stock spread cap, options must respect the option spread cap, and crypto must respect the crypto spread cap. A missed trade is better than a bad fill.",
+    "instructions": "Prefer limit orders when supported. Never pay above maximumEntry. Skip a new entry when the live bid/ask spread exceeds the applicable cap or when executable pricing is materially worse than the signal. A missed trade is better than a bad fill.",
     "preferTighterSpreadAndHigherDollarVolume": true,
     "gapRiskGuard": {
       "enabled": true,
@@ -245,7 +245,7 @@
     "stockProtection": "Determine the live stock quantity. For whole-share quantity, create and verify a broker-resident persistent protective stop when Robinhood accepts it. Do not retry unsupported trigger orders for a fractional remainder. Fractional quantity may use only signal.fractionalProtectionPolicy synthetic monitoring, and only while its monitoring/risk requirements pass.",
     "optionProtection": "After an option buy fills, immediately place a persistent sell-to-close protective stop-market or stop-limit order when the connected Robinhood option tool supports that order type. Verify the protective order is accepted and covers the full intended contract quantity.",
     "cryptoProtection": "If crypto execution becomes supported by the connected Robinhood tools, place the strongest supported persistent protective exit at or near the Teststock invalidation immediately after entry.",
-    "noProtectionNoEntry": "New stock or option entries require the strongest supported verified protection under the current stock/fractional/option policy. Crypto entries require the strongest supported verified protection through the Robinhood Trading MCP.",
+    "noProtectionNoEntry": "Whole-share stock or option entries still require verified broker-resident protection when supported. A fractional stock entry may proceed only under signal.fractionalProtectionPolicy with active <=5-minute regular-session monitoring and the smaller 0.75%-of-live-equity planned-stop-risk cap. If those synthetic-protection requirements are not verifiably available, do not open the fractional entry.",
     "target1": "At target1, sell about 25% of the ORIGINAL position when practical, then protect the remaining quantity at breakeven or tighter without widening risk.",
     "target2": "At target2, use runnerContinuationPolicy. Sell enough of the ORIGINAL position to leave at most the authorized runner: normally 50% at target2 for a strong 25% runner, 60% for a moderate 15% runner, or all remaining 75% if no runner is authorized.",
     "bracketCaution": "Do not assume bracket/OCO support. If the broker/tool does not support linked bracket orders, sequence protective-order changes and profit-taking carefully and verify quantities after every fill.",
@@ -278,21 +278,28 @@
   "autopilot": {
     "enabled": true,
     "requiresPerOrderApproval": false,
-    "scope": "Dedicated Robinhood Agentic account; qualified stock and crypto entries plus risk-reducing exits execute through Claude and the authenticated Robinhood Trading MCP.",
+    "scope": "Dedicated Robinhood Agentic account; stock execution only. Crypto execution is disabled. Qualified stock options may execute automatically under the separate cash-only options policy.",
     "executionAgent": "CLAUDE",
     "stockBuysRequireCurrentBatchApproval": false,
     "stockBuysRequireUserApproval": false,
-    "cryptoBuysRequireUserApproval": false,
     "automaticQualifiedStockBuys": true,
-    "automaticQualifiedCryptoBuys": true,
+    "automaticQualifiedCryptoBuys": false,
+    "cryptoBuysRequireUserApproval": false,
+    "automaticQualifiedOptionBuys": true,
+    "automaticRiskReducingOptionExits": true,
     "automaticRiskReducingExits": true,
     "directGitHubBrokerExecution": false,
-    "automaticQualifiedBuys": true
+    "automaticOptionRiskReducingExits": true,
+    "optionUserApprovalRequired": false,
+    "optionsFundingSource": "EXISTING_ROBINHOOD_AGENTIC_ACCOUNT_ONLY",
+    "optionsNoMargin": true,
+    "optionsNoDeposits": true,
+    "optionsNoExercise": true
   },
   "assetClassRouting": {
-    "STOCK": "Use only current Teststock stock tournament qualified candidates. Claude performs final Robinhood Trading MCP verification and automatically executes qualified stock entries when all gates pass.",
-    "OPTION": "Use only stockPlan.eliteOption, only after its runtime whole-contract check passes, and only after Claude independently confirms the live Teststock real-fill evidence gate against actual Robinhood option order history. Options remain exceptional and require separate explicit approval unless a later policy explicitly changes that.",
-    "CRYPTO": "Use only the current Teststock crypto tournament qualified champion and already-qualified crypto fallbacks. Claude performs final Robinhood Trading MCP verification and automatically executes qualified crypto entries when all gates pass."
+    "STOCK": "Use only stockPlan.stockOrders.",
+    "OPTION": "Use only stockPlan.eliteOption and only when its action is AUTO_BUY_ELIGIBLE.",
+    "CRYPTO": "Use only cryptoPlan.cryptoOrders. Never treat a crypto symbol as a stock or option."
   },
   "hardRules": [
     "FUNDING LOCK: never initiate a deposit, ACH transfer, debit-card transfer, bank transfer, wire, internal transfer, or any other movement of money into the Robinhood Agentic account.",
@@ -333,19 +340,12 @@
     "FRACTIONAL STOP LIMITATION: the connected Robinhood Agentic runtime has rejected triggered stop orders for fractional share quantities with Invalid trigger for fractional order. Do not repeatedly retry unsupported stop-market/stop-limit fractional orders.",
     "FRACTIONAL SYNTHETIC PROTECTION: a new fractional stock entry is permitted only if active regular-session monitoring can be verified at intervals of 5 minutes or less and planned stop risk is capped at 0.75% of live equity. When the saved invalidation is observed as breached, submit the supported fractional market sell immediately when permitted and verify the result.",
     "WHOLE/HYBRID PROTECTION: use a verified broker-resident stop for whole-share quantity when supported; for mixed quantities, reconcile the whole-share broker stop with the synthetic fractional remainder so combined sell orders can never exceed the live position.",
-    "SYNTHETIC STOP HONESTY: an agent-managed fractional stop is not persistent broker protection and cannot guarantee the planned exit. If monitoring becomes unavailable, do not add fractional risk and do not keep a fractional runner unattended.",
-    "LIVE ASSET SCOPE: only STOCK, OPTION and CRYPTO are eligible. Futures are disabled.",
-    "TOURNAMENT AUTHORITY: do not invent a symbol outside the current Teststock stock or crypto tournament qualified set. Robinhood live checks may reject a candidate but may not substitute an unranked idea.",
-    "REGIME-SPECIFIC VALIDATION: do not freeze all stock trading merely because the aggregate entry-gate validation status is RED_FLAG. The current setup may proceed only when its runtime regime policy explicitly allows new stocks.",
-    "MULTI-STOCK PORTFOLIO: a tournament winner has first priority, not exclusivity. Continue scanning/evaluating other independently qualified stocks while positions are open, subject to all portfolio limits. Never force the portfolio to its maximum.",
-    "AUTOMATIC STOCK EXECUTION: Claude may automatically submit only Teststock-qualified stock entries that still pass all current live Robinhood MCP, freshness, no-chase, buying-power, sizing, duplicate, correlation, portfolio-risk and protection checks immediately before submission.",
-    "AUTOMATIC CRYPTO EXECUTION: Claude may automatically submit only the Teststock qualified crypto champion or already-qualified fallbacks that still pass all current live Robinhood MCP, freshness, liquidity, spread, no-chase, buying-power, sizing, duplicate and protection checks immediately before submission.",
-    "OPTION APPROVAL: options are exceptional, not default, and live only inside stockPlan.eliteOption -- never a third tournament. Claude must obtain its own separate approval for the exact contract, expiry, strike, quantity and max risk of any option order, only after every eliteOption research check, the runtime whole-contract sizing check, and the real-fill evidence gate all pass. Options remain capped at one new position per day."
+    "SYNTHETIC STOP HONESTY: an agent-managed fractional stop is not persistent broker protection and cannot guarantee the planned exit. If monitoring becomes unavailable, do not add fractional risk and do not keep a fractional runner unattended."
   ],
   "stockPlan": {
     "assetClass": "STOCK",
-    "overallAction": "WAIT_FOR_MARKET_OPEN",
-    "reason": "Market is closed.",
+    "overallAction": "DO_NOT_TRADE",
+    "reason": "Signal is stale.",
     "confidence": "CASH",
     "signalAsOf": "2026-09-25T21:25:57.739Z",
     "expiresAt": "2026-09-27T09:25:57.739Z",
@@ -502,29 +502,12 @@
         "no averaging down",
         "no widened stops"
       ]
-    },
-    "multiPositionExecution": {
-      "enabled": true,
-      "continueScanningWhilePositionsOpen": true,
-      "perOrderApprovalRequired": false,
-      "selectionRule": "Evaluate all currently qualified candidates in Teststock rank order. A successful fill consumes portfolio capacity but does not terminate scanning or invalidate unrelated candidates.",
-      "portfolioRecheckAfterEveryFill": [
-        "non-margin cash",
-        "account equity/floor",
-        "max deployed capital",
-        "total planned stop risk",
-        "correlation/concentration",
-        "trade frequency",
-        "protection capability",
-        "concurrent-position capacity"
-      ],
-      "neverForceMaximumPositions": true
     }
   },
   "cryptoPlan": {
     "assetClass": "CRYPTO",
-    "overallAction": "WAIT_FOR_CRYPTO_TRIGGER",
-    "reason": "No A/A+ crypto setup is currently in its allowed buy zone.",
+    "overallAction": "DO_NOT_TRADE",
+    "reason": "Crypto signal is stale.",
     "confidence": "CASH",
     "signalAsOf": "2026-09-25T21:26:20.100Z",
     "expiresAt": "2026-09-25T21:56:20.100Z",
@@ -551,18 +534,15 @@
       "sizingMode": "ROBINHOOD_EXISTING_CASH_ONLY_WITH_CAPITAL_LADDER"
     },
     "execution": {
-      "mode": "CLAUDE_ROBINHOOD_TRADING_MCP",
-      "note": "Claude is the sole execution agent. Use the Teststock qualified crypto champion first, then already-qualified fallbacks in tournament order. Before any order Claude must use the authenticated Robinhood Trading MCP to independently verify the live quote, tradability, Agentic-account buying power, holdings, open orders, sizing, no-chase limits, duplicate protection and required protection. GitHub research/monitoring must never submit the broker order directly.",
-      "researchOnly": false,
-      "requiresClaude": true,
-      "directGitHubOrderSubmissionAllowed": false
+      "mode": "USE_ONLY_IF_CONNECTED_ROBINHOOD_TOOLS_SUPPORT_CRYPTO",
+      "note": "At runtime, use crypto order tools only if the connected Robinhood MCP actually exposes them."
     },
     "cryptoOrders": []
   },
   "entryGateRobustness": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
     "status": "RED_FLAG",
-    "generatedAt": "2026-09-25T21:26:01.498Z",
+    "generatedAt": "2026-09-27T17:31:43.880Z",
     "holdoutStart": "2024-01-01",
     "holdoutEnd": "2025-12-31",
     "secondHoldoutStart": "2026-01-01",
@@ -862,7 +842,7 @@
   },
   "probabilityFirstPolicy": {
     "schemaVersion": 5,
-    "generatedAt": "2026-09-25T21:26:46.566Z",
+    "generatedAt": "2026-09-27T17:31:44.991Z",
     "objective": "Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto active around the clock, and cash acceptable. Prefer elite A stocks at normal encoded size, allow a tightly capped B best-acceptable micro-probation stock after A-tier priority whenever live capacity remains, and let crypto surface more reasonable 24/7 opportunities without removing hard risk controls. This policy cannot eliminate market loss risk.",
     "stocks": {
       "minGrowthQuality": 85,
@@ -1018,6 +998,100 @@
       "riskCanOnlyBeReducedByThisOverlay": true
     }
   },
+  "crossAssetOpportunityRanking": {
+    "reportUrl": "https://sablewolphen.github.io/Teststock/data/opportunity-ranking-500.json",
+    "generatedAt": "2026-08-21T17:48:17.614Z",
+    "rankingPolicy": {
+      "stocksPrimaryOnTies": true,
+      "noForcedDiversification": true,
+      "noForcedTrade": true,
+      "liveRiskRulesAlwaysOverride": true,
+      "notes": "A higher score is only priority among already-qualified research candidates. Claude must skip any candidate that fails live execution, broker, event, real-fill, protection, frequency, correlation, cash, or account-risk checks."
+    },
+    "opportunities": [
+      {
+        "assetClass": "STOCK",
+        "symbol": "ROIV",
+        "researchEligible": true,
+        "liveChecksRequired": true,
+        "score": 134.71,
+        "growthQuality": 100,
+        "historicalWinRatePct": 83,
+        "historicalSamples": 40,
+        "rewardRiskTarget1": 1.5,
+        "rewardRiskTarget2": 2.6,
+        "costAdjustedConservativeExpectedR": 1.95,
+        "plannedAllocationDollars": 100.64,
+        "plannedStopLossDollars": 7.5,
+        "notes": [
+          "Primary asset class.",
+          "Must still pass live entry, spread, gap, cash, correlation, protection, frequency, account-floor, and real-fill learning checks."
+        ],
+        "rank": 1
+      },
+      {
+        "assetClass": "STOCK",
+        "symbol": "NUVB",
+        "researchEligible": true,
+        "liveChecksRequired": true,
+        "score": 131.33,
+        "growthQuality": 100,
+        "historicalWinRatePct": 86,
+        "historicalSamples": 28,
+        "rewardRiskTarget1": 1.5,
+        "rewardRiskTarget2": 2.6,
+        "costAdjustedConservativeExpectedR": 1.99,
+        "plannedAllocationDollars": 4.42,
+        "plannedStopLossDollars": 0.63,
+        "notes": [
+          "Primary asset class.",
+          "Must still pass live entry, spread, gap, cash, correlation, protection, frequency, account-floor, and real-fill learning checks."
+        ],
+        "rank": 2
+      },
+      {
+        "assetClass": "STOCK",
+        "symbol": "HP",
+        "researchEligible": true,
+        "liveChecksRequired": true,
+        "score": 130.99,
+        "growthQuality": 100,
+        "historicalWinRatePct": 78,
+        "historicalSamples": 32,
+        "rewardRiskTarget1": 1.5,
+        "rewardRiskTarget2": 2.6,
+        "costAdjustedConservativeExpectedR": 1.79,
+        "plannedAllocationDollars": 20.28,
+        "plannedStopLossDollars": 2.66,
+        "notes": [
+          "Primary asset class.",
+          "Must still pass live entry, spread, gap, cash, correlation, protection, frequency, account-floor, and real-fill learning checks."
+        ],
+        "rank": 3
+      }
+    ],
+    "preferredResearchOpportunity": {
+      "assetClass": "STOCK",
+      "symbol": "ROIV",
+      "researchEligible": true,
+      "liveChecksRequired": true,
+      "score": 134.71,
+      "growthQuality": 100,
+      "historicalWinRatePct": 83,
+      "historicalSamples": 40,
+      "rewardRiskTarget1": 1.5,
+      "rewardRiskTarget2": 2.6,
+      "costAdjustedConservativeExpectedR": 1.95,
+      "plannedAllocationDollars": 100.64,
+      "plannedStopLossDollars": 7.5,
+      "notes": [
+        "Primary asset class.",
+        "Must still pass live entry, spread, gap, cash, correlation, protection, frequency, account-floor, and real-fill learning checks."
+      ],
+      "rank": 1
+    },
+    "instructions": "Use this only to prioritize among research-qualified opportunities. A higher-ranked item must still pass every live account, broker, entry, spread, gap, event, real-fill, protection, cash, correlation, frequency, and risk check. Never force a trade because it ranks first."
+  },
   "symbolProbationPolicy": {
     "enabled": true,
     "historicalProbationBelowSamples": 20,
@@ -1029,15 +1103,15 @@
   },
   "dataFreshness": {
     "status": "GENERATED_THIS_RUN",
-    "lastSuccessfulGeneration": "2026-09-25T21:26:46.663Z",
+    "lastSuccessfulGeneration": "2026-09-27T17:31:45.081Z",
     "expectedRefreshCadenceMinutes": 10,
     "stockExpectedRefreshMinutesDuringMarket": 10,
     "cryptoExpectedRefreshMinutes": 10,
     "stockSignalAsOf": "2026-09-25T21:25:57.739Z",
     "cryptoSignalAsOf": "2026-09-25T21:26:20.100Z",
-    "stockAgeMinutes": 1,
-    "cryptoAgeMinutes": 0,
-    "entryGateValidationAgeMinutes": 1,
+    "stockAgeMinutes": 2646,
+    "cryptoAgeMinutes": 2645,
+    "entryGateValidationAgeMinutes": 0,
     "staleAfterMinutes": {
       "unified": 20,
       "stockDuringMarket": 25,
@@ -1063,6 +1137,7 @@
       "staleDataFailClosed": true,
       "costAdjustedExpectancy": true,
       "target2RewardRiskQualification": true,
+      "crossAssetOpportunityRanking": true,
       "conditionalRunnerExit": true,
       "fractionalSyntheticProtection": true,
       "exitPolicyHoldoutValidation": true,
@@ -1087,7 +1162,7 @@
       "claudeUnattendedExecutionPolicy": true,
       "claudeSoleExecutionAgent": true,
       "automaticStockExecution": true,
-      "automaticCryptoExecution": true,
+      "automaticCryptoExecution": false,
       "idleProtectionReconciliation": true,
       "robinhoodTradingMcpExecution": true,
       "stockKnockoutTournament": true,
@@ -1109,25 +1184,13 @@
       "congressionalDisclosureShadowOverlay": true,
       "crossSourceDisclosureDeduplication": true,
       "disclosureDelayDecay": true,
-      "cryptoKnockoutTournament": true,
-      "cryptoBrokerCapabilityGate": true,
-      "twoTournamentArchitecture": true,
-      "regimeSpecificStockValidation": true,
-      "selectiveIntradayStockMode": true,
-      "multiStockConcurrentPortfolio": true,
-      "automaticQualifiedStockBuys": true,
-      "automaticQualifiedCryptoBuys": true,
-      "claudeRobinhoodTradingMcpExecution": true,
-      "perOrderOptionApproval": true,
-      "optionLiveEvidenceGate": true,
-      "unifiedProviderRegistry": true,
-      "stockCryptoSourceEvidence": true,
-      "licensedProviderReadiness": true,
-      "shadowFirstSourceAdmission": true,
-      "noProfitGuarantee": true,
+      "automaticQualifiedOptionExecution": true,
+      "optionsCashOnly": true,
+      "optionsHardAccountLossCap": true,
       "robinhoodExecutableFinalistsOnly": true,
       "exactStockRuntimeSymbolCheck": true,
-      "exactCryptoRuntimePairCheck": true
+      "exactCryptoRuntimePairCheck": false,
+      "claudeRobinhoodTradingMcpExecution": true
     },
     "evidence": {
       "entryGateReport": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
@@ -1136,12 +1199,12 @@
     }
   },
   "systemHealth": {
-    "generatedAt": "2026-09-25T21:26:46.663Z",
+    "generatedAt": "2026-09-27T17:31:45.081Z",
     "signalAgeMinutes": 0,
     "dataFreshnessStatus": "GENERATED_THIS_RUN",
     "entryGateValidation": {
       "status": "RED_FLAG",
-      "ageMinutes": 1,
+      "ageMinutes": 0,
       "required": true
     },
     "probabilityFirstOverlay": {
@@ -1149,9 +1212,14 @@
       "ageMinutes": 0,
       "required": true
     },
+    "crossAssetRanking": {
+      "status": "AVAILABLE",
+      "ageMinutes": 53263,
+      "required": true
+    },
     "shadowLedger": {
       "status": "AVAILABLE",
-      "ageMinutes": 171,
+      "ageMinutes": 2816,
       "requiredForTrading": false
     },
     "runtimeBroker": {
@@ -1397,7 +1465,7 @@
     }
   },
   "exitPolicyValidation": {
-    "status": "AVAILABLE",
+    "status": "UNAVAILABLE_FAILSAFE_BASELINE",
     "generatedAt": "2026-09-25T18:33:05.962Z",
     "recommendedPolicy": "T1_25_T2_75",
     "recommendationReason": "The no-runner baseline was the strongest policy in development, so no runner policy is promoted.",
@@ -1465,7 +1533,7 @@
   },
   "adaptivePerformance": {
     "status": "ACTIVE",
-    "generatedAt": "2026-09-25T21:26:46.505Z",
+    "generatedAt": "2026-09-27T17:31:44.935Z",
     "resolvedRealStockTrades": 1,
     "sourceOfTruth": "ROBINHOOD_CONFIRMED_REAL_FILLS_ONLY",
     "policy": {
@@ -1619,7 +1687,7 @@
   },
   "dayTradeOnlyEntryPolicy": {
     "enabled": true,
-    "startedAt": "2026-09-25T21:26:46.806Z",
+    "startedAt": "2026-09-27T17:31:45.220Z",
     "objective": "Take small, frequent, same-day gains to build the account up before returning to larger multi-day swing targets (user-requested 2026-09-22, given the PDT day-trade-count restriction was eliminated by FINRA effective 2026-06-04 -- confirmed already implemented by Robinhood -- so frequent same-day stock entries are no longer capped at 3 per 5 business days).",
     "scope": "NEW_STOCK_ENTRIES_ONLY",
     "existingSwingPositionsUnaffected": true,
@@ -1715,6 +1783,28 @@
     },
     "instructions": "The execution runtime should fetch the tiny dispatch file first. If claudeShouldRun=false, stop immediately with no Robinhood calls or full analysis. If true, process the single highest-priority event; for a failed pre-submission buy, continue through ranked fallbackActions in the same run. Verify all live guards, execute/verify only the permitted brokerage action, reconcile state, then stop."
   },
+  "executionArchitecture": {
+    "mode": "STOCK_ONLY",
+    "researchAuthority": "TESTSTOCK",
+    "tournaments": {
+      "stock": {
+        "enabled": true,
+        "source": "docs/data/stock-tournament.json"
+      },
+      "crypto": {
+        "enabled": false
+      }
+    },
+    "liveDecisionPaths": [
+      "STOCK_TOURNAMENT"
+    ],
+    "disabledAssetClasses": [
+      "CRYPTO",
+      "FUTURES"
+    ],
+    "crossAssetSelection": false,
+    "optionsAdmissionRef": "docs/data/options-profitability-admission.json"
+  },
   "claudeExecutionPolicy": {
     "enabled": true,
     "role": "SOLE_EXECUTION_AGENT",
@@ -1727,7 +1817,6 @@
     "triggerBoardPath": "docs/data/trigger-board.json",
     "executionWatchlistPath": "docs/data/execution-watchlist.json",
     "dispatchPath": "docs/data/execution-dispatch.json",
-    "cryptoAdmissionPath": "docs/data/crypto-profitability-admission.json",
     "sourceOfTruth": "LATEST_RAW_MAIN",
     "generationMatchRequired": true,
     "generationRule": "Before adding risk, fetch the newest raw-main dispatch and signal. If generation ids or timestamps conflict, re-fetch and do not submit new risk until they match.",
@@ -1737,6 +1826,28 @@
       "capitalLadderPath": "signal.capitalLadder",
       "legacyNinetyDollarPauseThresholdAllowed": false,
       "idleAccountLookupAllowed": false
+    },
+    "optionBuys": {
+      "executionOwner": "CLAUDE",
+      "explicitApprovalRequired": false,
+      "automaticWhenFullyQualifiedAndBrokerPermits": true,
+      "allowedStrategies": [
+        "LONG_CALL",
+        "LONG_PUT"
+      ],
+      "cashOnly": true,
+      "noMargin": true,
+      "noDeposits": true,
+      "noBankTransfers": true,
+      "maxPremiumRiskPerTradePct": 5,
+      "maxAggregateOpenPremiumRiskPct": 15,
+      "maxNewPremiumExposurePerNyDayPct": 10,
+      "noExercise": true,
+      "noOvernight": true,
+      "underlyingMustBeQualifiedStock": true,
+      "requireLiveOptionChain": true,
+      "requireLiveBrokerRecheck": true,
+      "rule": "Options are an alternative implementation of an already-qualified stock thesis. Buy to open long calls/puts only; sell to close only. Never force an option trade when the live chain does not pass every gate."
     },
     "stockBuys": {
       "executionOwner": "CLAUDE",
@@ -1760,24 +1871,12 @@
       "requireLiveBrokerRecheck": true,
       "rule": "Qualified stock entries are automatic through Claude. Immediately before each submission, re-check freshness, price/max-entry/no-chase, buying power, account floor, portfolio heat, correlation, trade frequency, duplicate state, sizing and protection capability. Skip anything that no longer qualifies."
     },
-    "crypto": {
-      "executionOwner": "CLAUDE",
-      "explicitApprovalRequired": false,
-      "automaticWhenFullyQualifiedAndBrokerPermits": true,
-      "directGitHubOrderSubmissionAllowed": false,
-      "requireRobinhoodTradingMcp": true,
-      "requireLiveBrokerRecheck": true,
-      "requireCurrentAdmissionGate": true,
-      "manualHoldingsIsolationRequired": true,
-      "rule": "Qualified crypto is automatic through Claude using the connected Robinhood Trading MCP. Re-check tradability, quote/spread, buying power, holdings, open orders, sizing and protection live immediately before submission. Manage only Teststock-attributable quantity."
-    },
     "exits": {
       "explicitApprovalRequired": false,
       "automaticWhenDetectedAndBrokerPermits": true,
       "appliesTo": [
         "STOCK",
-        "OPTION",
-        "CRYPTO"
+        "OPTION"
       ],
       "scope": [
         "TRIGGER_1_STOP",
@@ -1785,9 +1884,6 @@
         "TRIGGER_2_TARGET1",
         "TRIGGER_3_TARGET2",
         "TRIGGER_EARLY_PROFIT_TRIM",
-        "CRYPTO_STOP",
-        "CRYPTO_TARGET",
-        "CRYPTO_TIME_EXIT",
         "EMERGENCY_PROTECTION_EXIT"
       ]
     },
@@ -1829,7 +1925,7 @@
         "docs/data/execution-watchlist.json"
       ],
       "robinhoodCallsOnNormalIdle": false,
-      "rule": "If no actionable stock dispatch, qualified crypto execution, or protection repair exists, stop."
+      "rule": "If no actionable stock dispatch and no protection repair exists, stop."
     }
   },
   "stockTournament": {
@@ -1907,45 +2003,45 @@
       "corporateActions": null,
       "recentFilings": [],
       "newsCatalyst": {
-        "articleCount": 22,
+        "articleCount": 18,
         "windowHours": 72,
         "binaryRisk": false,
         "sentimentHint": "MIXED_OR_UNKNOWN",
         "sourcesUsed": [
+          "GOOGLE_NEWS",
           "YAHOO",
-          "ALPACA",
-          "GOOGLE_NEWS"
+          "ALPACA"
         ],
         "headlines": [
           {
-            "headline": "Is LLY Stock Cheaper Than It Looks?",
-            "createdAt": "2026-09-25T17:13:11.000Z",
-            "source": "YAHOO:Trefis",
-            "link": "https://finance.yahoo.com/markets/stocks/articles/lly-stock-cheaper-looks-171311333.html"
+            "headline": "How New TREMFYA Data At Johnson &amp; Johnson Stock Has Changed Its Investment Story - simplywall.st",
+            "createdAt": "2026-09-27T03:48:54.000Z",
+            "source": "GOOGLE_NEWS:simplywall.st",
+            "link": "https://news.google.com/rss/articles/CBMi3wFBVV95cUxOaExka3ZwcHY3RVh4elU1MnFfZjBVejQ4MmxCM09UV2hRRUpUQWNYUWJPOERNS2E3NjZUalRSUlh1U1BPaGdYZUUwSFFVcGo4Y2xrb013S1JsdUJqWFFIVUtkU1JjSmNVd1FjS2xkYUw1ell6LWhralNsY29YUjNKeEhxVHREZ3pxZ1Z2eXh2anREajRoSXlBSUh4UEVINHVYSGI5UExaQUpnVXlWM3JESGtCWWJNN2F0T1IyNV9TTjdWdnlqR1hMdFV0ZjlhT0pBU1BDUFJENUMzOWFzbkJJ0gHkAUFVX3lxTFBkQnBVbWxpMzdnN0xHM3JHRUtFNnRrcFcyV0Z5RzJoNkJ6bUZEbnRfR3RKdS1LWngwb0FTR1F2bFZLUFRBOEh1YVJUQmdJNC01UzU4dkVjNzRRd2VwWGZRYW5OVnBZdnNHbFNzQnNqc1JnWTVOQTdOR0c0a01HVHhTSGJPM0tKLU81enlkam5rbUVMcGx1R3ozZEFCQUQ0dUtENXhSOXV3MVNuSVc5QXlEblYwVVR6UkI4Vzdhc2tCWThHRTd3cXlqbkJ6YktEcy1LM0loaVBOVVpyajdkc1JHaDkxcg?oc=5"
           },
           {
-            "headline": "Pfizer Stock Paid Out $49B: So Why Did Investors Lose Money?",
-            "createdAt": "2026-09-25T17:03:42.000Z",
-            "source": "YAHOO:Trefis",
-            "link": "https://finance.yahoo.com/healthcare/articles/pfizer-stock-paid-49b-why-170342234.html"
+            "headline": "JNJ Stock Advances After Hours On $5.5B Proposal To Resolve Talc Litigation - Stocktwits",
+            "createdAt": "2026-09-26T20:10:42.000Z",
+            "source": "GOOGLE_NEWS:Stocktwits",
+            "link": "https://news.google.com/rss/articles/CBMi1gFBVV95cUxOM0g2eE5NWm1VMzNoLU5IbmVsbk1IVEhVWWZaOXBBbGEzZ1AtOXllblFGQXhoTDVwMjZkRFBVc1p2RGF2ejdSWDFSRDV6QjNrWUxCY3NYQ2hyYjdwR3dtU1p2TjhuVnhOQ2Z0cnJITm92end6WHozZUZOWURzSDJjSkllRXVqSHU2YXUtTU4zelhVNC1jZF9zNlQyaS1XekFjOEhHbUdrWHZBWUdtd0VLTS1XalFTT2NVbDh1NV9jOUpJTWdVUlhlRmpWU2FFeE0xcFhRekxR?oc=5"
           },
           {
-            "headline": "Johnson & Johnson Clinical Trials Show Progress Across Key Therapies",
-            "createdAt": "2026-09-25T15:03:18Z",
-            "source": "ALPACA",
-            "link": "https://www.benzinga.com/news/health-care/26/09/61998704/johnson-johnson-clinical-trials-show-progress-across-key-therapies"
-          },
-          {
-            "headline": "Johnson &amp; Johnson Clinical Trials Show Progress Across Key Therapies - Benzinga",
-            "createdAt": "2026-09-25T15:03:18.000Z",
-            "source": "GOOGLE_NEWS:Benzinga",
-            "link": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxOUkEwZkdienZPZlpwd3Z5VktzM242V3RuT0ppaDhDdEY2N3BLeVBQSnh5V0JxNTNpQXVNRF9ZLTZiUUF1MGU3dV80b3RGR1FoZUlFSTg0WWFVNmtNNllSWHVHcl81Wkxnc0hVZVJ1RmxGa0U3WGlsNjNsbVN6MWpzOHdrUm5zeHZ3OVU2dktldEIzemgyTWx1aXVnSjhaXzBWYnJoNXhIS0xjYzJtSmJGWGZ1ajlzdTV1bzg4bVdfUGg?oc=5"
-          },
-          {
-            "headline": "ABBV vs. JNJ: One of These Dividend Aristocrats Will Crush the Other Over the Next Decade",
-            "createdAt": "2026-09-25T15:01:01.000Z",
+            "headline": "Want Bulletproof Dividend Income? These 3 Stocks Have Raised Payouts Through 8 Major Downturns",
+            "createdAt": "2026-09-26T13:30:30.000Z",
             "source": "YAHOO:24/7 Wall St.",
-            "link": "https://finance.yahoo.com/healthcare/articles/abbv-vs-jnj-one-dividend-150101693.html"
+            "link": "https://finance.yahoo.com/markets/stocks/articles/want-bulletproof-dividend-income-3-133030903.html"
+          },
+          {
+            "headline": "What Does Johnson & Johnson (JNJ) New Clinical Data Mean For Its Stock?",
+            "createdAt": "2026-09-26T06:10:47.000Z",
+            "source": "YAHOO:Simply Wall St.",
+            "link": "https://finance.yahoo.com/healthcare/articles/does-johnson-johnson-jnj-clinical-061047114.html"
+          },
+          {
+            "headline": "What Does Johnson &amp; Johnson (JNJ) New Clinical Data Mean For Its Stock? - Yahoo Finance",
+            "createdAt": "2026-09-26T06:10:00.000Z",
+            "source": "GOOGLE_NEWS:Yahoo Finance",
+            "link": "https://news.google.com/rss/articles/CBMimgFBVV95cUxPRTJWUHZ4eW5UZmtHQXJmYV82RjFqTVZ6OW5Kd1ZtMUdlX0QwZ1pPdFkxUWFrNWFnVFk0VHBxMUJLQkdZOVM0ZTNndjByMnZMcFdYRU9HZ3ZaWHJmcmlpRlRLRS1QQmVMS1lUMF9fYzJpak51bk5KR0xGanNiVHVGZElaSUYwRFF2dG5tUDJUa0MxN2d3a3BCX3NB?oc=5"
           }
         ],
         "sourcesQueried": [
@@ -2112,135 +2208,60 @@
       }
     ]
   },
-  "cryptoTournament": {
+  "timeHorizonPolicy": {
     "enabled": true,
-    "sourceRef": "docs/data/crypto-tournament.json",
-    "market": "24_7",
-    "scanAllSupportedUsdPairs": true,
-    "supportedUsdPairs": 200,
-    "brokerExecution": {
-      "status": "CLAUDE_ROBINHOOD_TRADING_MCP",
-      "lane": "CLAUDE_ROBINHOOD_TRADING_MCP",
-      "directGitHubOrderSubmissionAllowed": false,
-      "executableByCurrentClaudeRobinhoodConnection": true,
-      "executableByDirectRobinhoodCryptoApi": false,
-      "requiresAuthenticatedRobinhoodTradingMcp": true,
-      "researchOnly": false,
-      "requiresClaude": true,
-      "rule": "Claude is the sole execution agent. Use the Teststock qualified crypto champion first, then already-qualified fallbacks in tournament order. Before any order Claude must use the authenticated Robinhood Trading MCP to independently verify the live quote, tradability, Agentic-account buying power, holdings, open orders, sizing, no-chase limits, duplicate protection and required protection. GitHub research/monitoring must never submit the broker order directly.",
-      "reason": "Claude is the sole execution agent. GitHub research and monitoring never submit broker orders directly."
-    },
-    "buyWhenAtLeastOneFullyQualifiedCandidateExists": true,
-    "forcedCryptoBuy": false,
-    "noEligibleCandidateAction": "KEEP_SCANNING_24_7",
-    "researchChampion": {
-      "rank": 1,
-      "ticker": "XRP/USD",
-      "grade": "NO_TRADE",
-      "growthQuality": 100,
-      "score": 100,
-      "historicalWinRate": 33,
-      "historicalSamples": 6,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 59.5,
-      "vwap4h": 1.557214,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": false,
-      "volumeConfirm": true,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 18666883,
-      "dollarVolume24hReal": 32396235,
-      "entry": 1.557308,
-      "stop": 1.53618,
-      "target1": 1.620692,
-      "target2": 1.662948,
-      "robinhoodTradable": null
-    },
-    "qualifiedChampion": {
-      "rank": 2,
-      "ticker": "CRO/USD",
-      "grade": "A",
-      "growthQuality": 100,
-      "score": 100,
-      "historicalWinRate": 33,
-      "historicalSamples": 3,
-      "rewardRisk": 5,
-      "confirm4h": true,
-      "rsi4h": 70,
-      "vwap4h": 0.064153,
-      "pullbackToSupportOrVwap": true,
-      "momentumTurnedUp": false,
-      "volumeConfirm": true,
-      "btcTrendSupport": true,
-      "dollarVolume20d": 2248224,
-      "dollarVolume24hReal": 3323363,
-      "entry": 0.065421,
-      "stop": 0.063832,
-      "target1": 0.070186,
-      "target2": 0.073362,
-      "robinhoodTradable": null
-    },
-    "fallbackTickers": [
-      "ATOM/USD"
+    "liveExecutionStyle": "ACTIVE_DAY_TRADER",
+    "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
+    "classes": [
+      "DAY_TRADE"
     ],
-    "instructions": "Claude evaluates only the Teststock qualified champion and already-qualified fallbacks in order through the authenticated Robinhood Trading MCP. Claude must not invent a crypto symbol or bypass any live broker, risk, freshness, no-chase, duplicate-order, sizing or protection check.",
-    "researchOnlyUntilBrokerExecutionAvailable": false
-  },
-  "executionArchitecture": {
-    "version": 5,
-    "mode": "TWO_TOURNAMENTS_ONLY",
-    "researchAuthority": "TESTSTOCK",
-    "tournaments": {
-      "stock": {
-        "enabled": true,
-        "source": "docs/data/stock-tournament.json",
-        "operatingMode": "CONTINUOUS_SCAN_SELECTIVE_INTRADAY_MULTI_POSITION",
-        "purpose": "Continuously scan during the stock session, rank contenders, execute independently qualified setups in priority order, and continue scanning even while other Teststock stock positions are open.",
-        "execution": "Claude uses the authenticated Robinhood Trading MCP for final broker-side verification of already-qualified Teststock candidates and automatically submits qualified stock orders when every Teststock and live broker guard passes.",
-        "selectorRule": "Do not invent a different stock. Start with the current Teststock liveBuyChampion/current best qualified stock, then continue through already-qualified Teststock candidates in order. A filled winner does not make the remaining independently qualified candidates ineligible.",
-        "portfolioRule": "Multiple Teststock stock positions may be open concurrently. Recompute remaining cash, deployed capital, planned stop risk, correlation, frequency, protection and concurrent-position capacity after every fill. The published maximum is a ceiling, never a quota.",
-        "approvalRule": "No manual approval is required for qualified stock entries. Claude may submit only candidates that Teststock already marked executable and that still pass every live broker and risk check immediately before submission.",
-        "validationScope": "REGIME_SPECIFIC",
-        "validationRule": "A global entry-gate RED_FLAG does not freeze unrelated regimes. The current setup may proceed only when its current runtime regime policy has allowNewStocks=true. A blocked regime remains blocked; sparse regimes keep their reduced size.",
-        "activityRule": "Scan continuously on the configured schedules and take every independently qualified opportunity that survives all gates, subject to published cash/risk/frequency/concurrent-position limits. Never create trades merely to increase activity.",
-        "holdingRule": "Prefer same-day management for intraday setups. Overnight exposure requires an explicit current Teststock plan and verified protection; never hold overnight just to avoid a planned exit."
+    "selection": "Every new live Teststock position is a stock day trade. There are no fixed trade-count quotas; entries and exits remain bounded by live cash, broker, freshness, protection, heat, correlation and daily-loss constraints.",
+    "stocks": {
+      "regularSessionOnly": true,
+      "newEntryCutoffMinutesBeforeClose": 20,
+      "forcedExitMinutesBeforeClose": 10,
+      "softReviewAfterMinutes": 20,
+      "maximumHoldingMinutes": 120,
+      "defaultFlatBySessionEnd": true,
+      "overnightNewPositionsAllowed": false,
+      "bracketOrOcoRequired": true,
+      "fixedDailyEntryCountLimit": null,
+      "fixedConcurrentPositionCountLimit": null,
+      "fixedPerExecutorRunEntryCountLimit": null,
+      "capacityMode": "DYNAMIC_RISK_CASH_AND_BROKER_LIMITED",
+      "cooldownAfterStopMinutes": 5,
+      "sameSymbolReentryCooldownMinutes": null,
+      "maximumEntriesPerSymbolPerNyDay": 1,
+      "sameDayStockReentryAllowed": false,
+      "distinctStockRotationRequired": true,
+      "partialFillTopUpAsNewEntryAllowed": false,
+      "consecutiveStopLossPause": {
+        "count": 3,
+        "pauseMinutes": 20
       },
-      "crypto": {
-        "enabled": true,
-        "source": "docs/data/crypto-tournament.json",
-        "purpose": "Continuously research and rank supported crypto pairs using trend, confirmation, history, liquidity, BTC context and risk checks until the best qualified setup survives.",
-        "execution": "Claude uses the authenticated Robinhood Trading MCP for final live quote, tradability, buying-power, holdings, open-order, sizing, duplicate-protection and protection checks, then automatically executes the Teststock qualified crypto champion or already-qualified fallback when every gate passes.",
-        "selectorRule": "Do not invent a different crypto asset. Use the Teststock qualified crypto champion or an already-qualified fallback only."
-      }
+      "stopNewEntriesAfterStopLossExitsPerNyDay": null,
+      "orderExecution": {
+        "entryPreference": "MARKETABLE_LIMIT_WHEN_SUPPORTED",
+        "exitPreference": "FASTEST_SUPPORTED_RISK_APPROPRIATE_ORDER",
+        "stalePassiveOrderSeconds": 45,
+        "allowCancelReplaceAfterBrokerReconciliation": true,
+        "neverBlindRetry": true
+      },
+      "maximumAccountRisk": "Existing Teststock cap; never increased for day trading."
     },
-    "liveDecisionPaths": [
-      "STOCK_TOURNAMENT",
-      "CRYPTO_TOURNAMENT"
-    ],
-    "disabledAssetClasses": [
-      "FUTURES"
-    ],
-    "crossAssetSelection": false,
-    "rule": "Teststock decides what is worth considering through two independent tournaments. Robinhood Trading MCP is the live execution truth. Broker-side checks may reject a tournament candidate but may never replace it with an unranked idea or weaken Teststock gates."
-  },
-  "intradayStockPolicy": {
-    "enabled": true,
-    "mode": "CONTINUOUS_SCAN_SELECTIVE_MULTI_POSITION_TRADING",
-    "objective": "Seek multiple independent short-duration stock opportunities during the regular session while preserving capital through regime-specific validation, live execution checks, predefined exits and portfolio-level frequency/risk ceilings.",
-    "systemWideEntryPauseFromGlobalValidationStatus": false,
-    "regimeSpecificValidationRequired": true,
-    "sameDayPreferred": true,
-    "forcedTradeQuota": false,
-    "multipleConcurrentPositionsAllowed": true,
-    "continueScanningWhilePositionsOpen": true,
-    "perOrderApprovalRequired": false,
-    "overnightRequiresExplicitCurrentPlan": true,
-    "instructions": "Keep scanning during market hours even when one or more Teststock stocks are already open. A global validation RED_FLAG is diagnostic; block only the current regime when its runtime policy says allowNewStocks=false. Each new candidate must independently pass every Teststock and Robinhood MCP gate. Recompute remaining cash, portfolio stop risk, deployed capital, correlation, frequency and position capacity after every fill. Maximum positions are a ceiling, never a target. No strategy guarantees profit."
+    "rotationSafety": {
+      "allowImmediateRotationAfterConfirmedExit": true,
+      "existingDailyLossCapRemainsAuthoritative": true,
+      "brokerAccountRestrictionsRemainAuthoritative": true,
+      "portfolioHeatRemainsAuthoritative": true,
+      "correlationLimitsRemainAuthoritative": true,
+      "buyingPowerAndSettledFundsRemainAuthoritative": true,
+      "noForcedTrades": true
+    }
   },
   "unifiedMarketIntelligence": {
     "schemaVersion": 1,
-    "generatedAt": "2026-09-25T21:27:04.400Z",
+    "generatedAt": "2026-09-27T17:32:03.537Z",
     "architecture": "TWO_TOURNAMENTS_UNIFIED_EVIDENCE",
     "objective": "Improve cost-adjusted expectancy and reduce avoidable losses through diverse evidence, forward validation, broker reconciliation and hard risk limits. No win or income guarantee.",
     "providers": [
@@ -2248,8 +2269,7 @@
         "id": "ALPACA",
         "name": "Alpaca",
         "assetClasses": [
-          "STOCK",
-          "CRYPTO"
+          "STOCK"
         ],
         "role": "PRIMARY_MARKET_DATA_AND_RESEARCH",
         "status": "CONNECTED",
@@ -2287,7 +2307,7 @@
         "id": "ROBINHOOD_CRYPTO",
         "name": "Robinhood Crypto API",
         "assetClasses": [
-          "CRYPTO"
+          "STOCK"
         ],
         "role": "DIRECT_BROKER_EXECUTION",
         "status": "CONNECTED",
@@ -2442,8 +2462,7 @@
         "id": "REAL_FILL_LEDGER",
         "name": "Teststock reconciled real fills",
         "assetClasses": [
-          "STOCK",
-          "CRYPTO"
+          "STOCK"
         ],
         "role": "OUTCOME_AND_BOUNDED_LEARNING_SOURCE",
         "status": "ACTIVE",
@@ -2455,8 +2474,7 @@
         "id": "YAHOO_FINANCE",
         "name": "Yahoo Finance",
         "assetClasses": [
-          "STOCK",
-          "CRYPTO"
+          "STOCK"
         ],
         "role": "SECONDARY_RESEARCH_AND_MANUAL_RECONCILIATION",
         "status": "REFERENCE_ONLY_NO_OFFICIAL_EXECUTION_FEED",
@@ -2467,8 +2485,7 @@
         "id": "GOOGLE_FINANCE",
         "name": "Google Finance",
         "assetClasses": [
-          "STOCK",
-          "CRYPTO"
+          "STOCK"
         ],
         "role": "SECONDARY_QUOTE_AND_NEWS_RECONCILIATION",
         "status": "REFERENCE_ONLY_NO_SUPPORTED_TRADING_API",
@@ -2479,8 +2496,7 @@
         "id": "WEBULL",
         "name": "Webull",
         "assetClasses": [
-          "STOCK",
-          "CRYPTO"
+          "STOCK"
         ],
         "role": "OPTIONAL_AUTHORIZED_MARKET_DATA_OR_BROKER_RECONCILIATION",
         "status": "OPENAPI_CREDENTIALS_NOT_CONFIGURED",
@@ -2491,8 +2507,7 @@
         "id": "TRADINGVIEW",
         "name": "TradingView",
         "assetClasses": [
-          "STOCK",
-          "CRYPTO"
+          "STOCK"
         ],
         "role": "CHART_TECHNICAL_AND_ALERT_VISUALIZATION",
         "status": "VISUALIZATION_REFERENCE_ALPACA_REMAINS_DATAFEED",
@@ -2503,8 +2518,7 @@
         "id": "FINVIZ",
         "name": "Finviz",
         "assetClasses": [
-          "STOCK",
-          "CRYPTO"
+          "STOCK"
         ],
         "role": "SCREENER_FUNDAMENTAL_AND_LIQUIDITY_RECONCILIATION",
         "status": "LICENSED_EXPORT_NOT_CONFIGURED",
@@ -2548,7 +2562,7 @@
       "classes": [
         "DAY_TRADE"
       ],
-      "selection": "Every new live Teststock position is intraday. There is no fixed stock or crypto trade-count quota; entries and exits should be easy to execute while hard risk, cash, broker, freshness and protection constraints remain authoritative.",
+      "selection": "Every new live Teststock position is a stock day trade. There are no fixed trade-count quotas; entries and exits remain bounded by live cash, broker, freshness, protection, heat, correlation and daily-loss constraints.",
       "stocks": {
         "regularSessionOnly": true,
         "newEntryCutoffMinutesBeforeClose": 20,
@@ -2582,35 +2596,6 @@
         },
         "maximumAccountRisk": "Existing Teststock cap; never increased for day trading."
       },
-      "crypto": {
-        "market": "24_7",
-        "softReviewAfterMinutes": 20,
-        "maximumHoldingMinutes": 180,
-        "maximumHoldingHours": 3,
-        "fixedDailyEntryCountLimit": null,
-        "fixedConcurrentPositionCountLimit": null,
-        "fixedPerExecutorRunEntryCountLimit": null,
-        "capacityMode": "DYNAMIC_RISK_CASH_AND_BROKER_LIMITED",
-        "cooldownAfterStopMinutes": 5,
-        "sameSymbolReentryCooldownMinutes": 10,
-        "consecutiveStopLossPause": {
-          "count": 3,
-          "pauseMinutes": 20
-        },
-        "stopNewEntriesAfterStopLossExitsPerNyDay": null,
-        "orderExecution": {
-          "entryPreference": "MARKETABLE_LIMIT_WHEN_SUPPORTED",
-          "exitPreference": "FASTEST_SUPPORTED_RISK_APPROPRIATE_ORDER",
-          "stalePassiveOrderSeconds": 45,
-          "allowCancelReplaceAfterBrokerReconciliation": true,
-          "neverBlindRetry": true
-        },
-        "revalidateContinuously": true,
-        "noMultiDayConversion": true,
-        "noLeverage": true,
-        "noAverageDown": true,
-        "noChasing": true
-      },
       "rotationSafety": {
         "allowImmediateRotationAfterConfirmedExit": true,
         "existingDailyLossCapRemainsAuthoritative": true,
@@ -2622,85 +2607,47 @@
       }
     }
   },
-  "timeHorizonPolicy": {
+  "optionsTradingPolicy": {
     "enabled": true,
-    "liveExecutionStyle": "ACTIVE_DAY_TRADER",
-    "dayTraderModeEffectiveAt": "2026-09-06T15:00:00.000Z",
-    "classes": [
-      "DAY_TRADE"
+    "executionAgent": "CLAUDE",
+    "transport": "ROBINHOOD_TRADING_MCP",
+    "cashOnly": true,
+    "accountLossCannotExceedAvailableAccountCapital": true,
+    "noMargin": true,
+    "noDeposits": true,
+    "noBankTransfers": true,
+    "allowedStrategies": [
+      "LONG_CALL",
+      "LONG_PUT"
     ],
-    "selection": "Every new live Teststock position is intraday. There is no fixed stock or crypto trade-count quota; entries and exits should be easy to execute while hard risk, cash, broker, freshness and protection constraints remain authoritative.",
-    "stocks": {
-      "regularSessionOnly": true,
-      "newEntryCutoffMinutesBeforeClose": 20,
-      "forcedExitMinutesBeforeClose": 10,
-      "softReviewAfterMinutes": 20,
-      "maximumHoldingMinutes": 120,
-      "defaultFlatBySessionEnd": true,
-      "overnightNewPositionsAllowed": false,
-      "bracketOrOcoRequired": true,
-      "fixedDailyEntryCountLimit": null,
-      "fixedConcurrentPositionCountLimit": null,
-      "fixedPerExecutorRunEntryCountLimit": null,
-      "capacityMode": "DYNAMIC_RISK_CASH_AND_BROKER_LIMITED",
-      "cooldownAfterStopMinutes": 5,
-      "sameSymbolReentryCooldownMinutes": null,
-      "maximumEntriesPerSymbolPerNyDay": 1,
-      "sameDayStockReentryAllowed": false,
-      "distinctStockRotationRequired": true,
-      "partialFillTopUpAsNewEntryAllowed": false,
-      "consecutiveStopLossPause": {
-        "count": 3,
-        "pauseMinutes": 20
-      },
-      "stopNewEntriesAfterStopLossExitsPerNyDay": null,
-      "orderExecution": {
-        "entryPreference": "MARKETABLE_LIMIT_WHEN_SUPPORTED",
-        "exitPreference": "FASTEST_SUPPORTED_RISK_APPROPRIATE_ORDER",
-        "stalePassiveOrderSeconds": 45,
-        "allowCancelReplaceAfterBrokerReconciliation": true,
-        "neverBlindRetry": true
-      },
-      "maximumAccountRisk": "Existing Teststock cap; never increased for day trading."
-    },
-    "crypto": {
-      "market": "24_7",
-      "softReviewAfterMinutes": 20,
-      "maximumHoldingMinutes": 180,
-      "maximumHoldingHours": 3,
-      "fixedDailyEntryCountLimit": null,
-      "fixedConcurrentPositionCountLimit": null,
-      "fixedPerExecutorRunEntryCountLimit": null,
-      "capacityMode": "DYNAMIC_RISK_CASH_AND_BROKER_LIMITED",
-      "cooldownAfterStopMinutes": 5,
-      "sameSymbolReentryCooldownMinutes": 10,
-      "consecutiveStopLossPause": {
-        "count": 3,
-        "pauseMinutes": 20
-      },
-      "stopNewEntriesAfterStopLossExitsPerNyDay": null,
-      "orderExecution": {
-        "entryPreference": "MARKETABLE_LIMIT_WHEN_SUPPORTED",
-        "exitPreference": "FASTEST_SUPPORTED_RISK_APPROPRIATE_ORDER",
-        "stalePassiveOrderSeconds": 45,
-        "allowCancelReplaceAfterBrokerReconciliation": true,
-        "neverBlindRetry": true
-      },
-      "revalidateContinuously": true,
-      "noMultiDayConversion": true,
-      "noLeverage": true,
-      "noAverageDown": true,
-      "noChasing": true
-    },
-    "rotationSafety": {
-      "allowImmediateRotationAfterConfirmedExit": true,
-      "existingDailyLossCapRemainsAuthoritative": true,
-      "brokerAccountRestrictionsRemainAuthoritative": true,
-      "portfolioHeatRemainsAuthoritative": true,
-      "correlationLimitsRemainAuthoritative": true,
-      "buyingPowerAndSettledFundsRemainAuthoritative": true,
-      "noForcedTrades": true
-    }
+    "buyToOpenOnly": true,
+    "sellToCloseOnly": true,
+    "noNakedSelling": true,
+    "noCreditSpreads": true,
+    "noDebitSpreadsInitially": true,
+    "noStraddlesOrStrangles": true,
+    "noExercise": true,
+    "noOvernight": true,
+    "underlyingMustBeQualifiedStock": true,
+    "liveOptionChainRequired": true,
+    "liveBrokerRecheckRequired": true,
+    "maxPremiumRiskPerTradePct": 5,
+    "maxAggregateOpenPremiumRiskPct": 15,
+    "maxNewPremiumExposurePerNyDayPct": 10,
+    "minDte": 14,
+    "maxDte": 45,
+    "expirationSafetyTradingDays": 5,
+    "minDelta": 0.55,
+    "maxDelta": 0.8,
+    "minLiquidity": "TIGHT_SPREAD_AND_EXITABLE",
+    "entryStyle": "MARKETABLE_LIMIT_WITH_MAX_PREMIUM",
+    "exitStyle": "FASTEST_SUPPORTED_RISK_APPROPRIATE_SELL_TO_CLOSE",
+    "riskRule": "Premium paid is the hard position-level loss ceiling; total new premium may never exceed current available account buying power or the encoded account percentage caps.",
+    "dayTradeRule": "Every Teststock option position is opened and closed during the same regular NYSE session. Never carry through expiration.",
+    "fallbackRule": "If no option contract passes every live gate, do not force an option trade. The independently qualified stock lane may trade instead.",
+    "exerciseRule": "Never exercise automatically. Close the option contract before expiration and never allow exercise to create stock or short-stock exposure.",
+    "duplicateRule": "Reconcile broker order/fill history and Teststock execution state before every option order; partial fills remain part of the original order.",
+    "optionsApprovalRequiredAtBroker": true
   },
   "robinhoodExecutableUniversePolicy": {
     "enabled": true,
@@ -2714,8 +2661,8 @@
       "automaticQualifiedBuys": true
     },
     "crypto": {
-      "gate": "CLAUDE_ROBINHOOD_TRADING_MCP_EXACT_PAIR_CHECK",
-      "automaticQualifiedBuys": true
+      "enabled": false,
+      "automaticQualifiedBuys": false
     },
     "directGitHubBrokerExecutionAllowed": false,
     "failClosed": true,

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-25T21:27:04.400Z",
+  "generatedAt": "2026-09-27T17:32:03.537Z",
   "architecture": "TWO_TOURNAMENTS_UNIFIED_EVIDENCE",
   "objective": "Improve cost-adjusted expectancy and reduce avoidable losses through diverse evidence, forward validation, broker reconciliation and hard risk limits. No win or income guarantee.",
   "providers": [
@@ -8,8 +8,7 @@
       "id": "ALPACA",
       "name": "Alpaca",
       "assetClasses": [
-        "STOCK",
-        "CRYPTO"
+        "STOCK"
       ],
       "role": "PRIMARY_MARKET_DATA_AND_RESEARCH",
       "status": "CONNECTED",
@@ -47,7 +46,7 @@
       "id": "ROBINHOOD_CRYPTO",
       "name": "Robinhood Crypto API",
       "assetClasses": [
-        "CRYPTO"
+        "STOCK"
       ],
       "role": "DIRECT_BROKER_EXECUTION",
       "status": "CONNECTED",
@@ -202,8 +201,7 @@
       "id": "REAL_FILL_LEDGER",
       "name": "Teststock reconciled real fills",
       "assetClasses": [
-        "STOCK",
-        "CRYPTO"
+        "STOCK"
       ],
       "role": "OUTCOME_AND_BOUNDED_LEARNING_SOURCE",
       "status": "ACTIVE",
@@ -215,8 +213,7 @@
       "id": "YAHOO_FINANCE",
       "name": "Yahoo Finance",
       "assetClasses": [
-        "STOCK",
-        "CRYPTO"
+        "STOCK"
       ],
       "role": "SECONDARY_RESEARCH_AND_MANUAL_RECONCILIATION",
       "status": "REFERENCE_ONLY_NO_OFFICIAL_EXECUTION_FEED",
@@ -227,8 +224,7 @@
       "id": "GOOGLE_FINANCE",
       "name": "Google Finance",
       "assetClasses": [
-        "STOCK",
-        "CRYPTO"
+        "STOCK"
       ],
       "role": "SECONDARY_QUOTE_AND_NEWS_RECONCILIATION",
       "status": "REFERENCE_ONLY_NO_SUPPORTED_TRADING_API",
@@ -239,8 +235,7 @@
       "id": "WEBULL",
       "name": "Webull",
       "assetClasses": [
-        "STOCK",
-        "CRYPTO"
+        "STOCK"
       ],
       "role": "OPTIONAL_AUTHORIZED_MARKET_DATA_OR_BROKER_RECONCILIATION",
       "status": "OPENAPI_CREDENTIALS_NOT_CONFIGURED",
@@ -251,8 +246,7 @@
       "id": "TRADINGVIEW",
       "name": "TradingView",
       "assetClasses": [
-        "STOCK",
-        "CRYPTO"
+        "STOCK"
       ],
       "role": "CHART_TECHNICAL_AND_ALERT_VISUALIZATION",
       "status": "VISUALIZATION_REFERENCE_ALPACA_REMAINS_DATAFEED",
@@ -263,8 +257,7 @@
       "id": "FINVIZ",
       "name": "Finviz",
       "assetClasses": [
-        "STOCK",
-        "CRYPTO"
+        "STOCK"
       ],
       "role": "SCREENER_FUNDAMENTAL_AND_LIQUIDITY_RECONCILIATION",
       "status": "LICENSED_EXPORT_NOT_CONFIGURED",
@@ -308,7 +301,7 @@
     "classes": [
       "DAY_TRADE"
     ],
-    "selection": "Every new live Teststock position is intraday. There is no fixed stock or crypto trade-count quota; entries and exits should be easy to execute while hard risk, cash, broker, freshness and protection constraints remain authoritative.",
+    "selection": "Every new live Teststock position is a stock day trade. There are no fixed trade-count quotas; entries and exits remain bounded by live cash, broker, freshness, protection, heat, correlation and daily-loss constraints.",
     "stocks": {
       "regularSessionOnly": true,
       "newEntryCutoffMinutesBeforeClose": 20,
@@ -341,35 +334,6 @@
         "neverBlindRetry": true
       },
       "maximumAccountRisk": "Existing Teststock cap; never increased for day trading."
-    },
-    "crypto": {
-      "market": "24_7",
-      "softReviewAfterMinutes": 20,
-      "maximumHoldingMinutes": 180,
-      "maximumHoldingHours": 3,
-      "fixedDailyEntryCountLimit": null,
-      "fixedConcurrentPositionCountLimit": null,
-      "fixedPerExecutorRunEntryCountLimit": null,
-      "capacityMode": "DYNAMIC_RISK_CASH_AND_BROKER_LIMITED",
-      "cooldownAfterStopMinutes": 5,
-      "sameSymbolReentryCooldownMinutes": 10,
-      "consecutiveStopLossPause": {
-        "count": 3,
-        "pauseMinutes": 20
-      },
-      "stopNewEntriesAfterStopLossExitsPerNyDay": null,
-      "orderExecution": {
-        "entryPreference": "MARKETABLE_LIMIT_WHEN_SUPPORTED",
-        "exitPreference": "FASTEST_SUPPORTED_RISK_APPROPRIATE_ORDER",
-        "stalePassiveOrderSeconds": 45,
-        "allowCancelReplaceAfterBrokerReconciliation": true,
-        "neverBlindRetry": true
-      },
-      "revalidateContinuously": true,
-      "noMultiDayConversion": true,
-      "noLeverage": true,
-      "noAverageDown": true,
-      "noChasing": true
     },
     "rotationSafety": {
       "allowImmediateRotationAfterConfirmedExit": true,
