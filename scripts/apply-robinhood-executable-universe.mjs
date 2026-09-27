@@ -19,7 +19,7 @@ const stockGate=x=>({...x,brokerEligibility:{
     'no duplicate or conflicting open order exists',
     'required protective exit path is supported'
   ],
-  rule:'Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol.'
+  rule:'ChatGPT must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol.'
 }});
 
 st.liveQueue=(st.liveQueue||[]).map(stockGate);
@@ -31,10 +31,12 @@ st.liveFallbacks=(st.liveFallbacks||[]).map(stockGate);
 const policy={
   enabled:true,
   mode:'ROBINHOOD_EXECUTABLE_FINALISTS_ONLY',
-  executionAgent:'CLAUDE',
+  executionAgent:'CHATGPT',
   brokerLane:'ROBINHOOD_TRADING_MCP',
+  discoveryScope:'BROAD_GLOBAL_INFORMATION_WITH_US_BROKER_EXECUTION',
+  discoveryRule:'Global news, catalysts and research may influence ranking, but live capital is restricted to exact securities and contracts independently verified as tradable in the authenticated Robinhood Agentic account.',
   discoveryVsExecution:'Research sources may discover candidates; only exact candidates independently verified through the authenticated Robinhood Trading MCP immediately before submission may be ordered.',
-  stock:{gate:'CLAUDE_ROBINHOOD_TRADING_MCP_EXACT_SYMBOL_CHECK',perOrderApprovalStillRequired:false,automaticQualifiedBuys:true},
+  stock:{gate:'CHATGPT_ROBINHOOD_TRADING_MCP_EXACT_SYMBOL_CHECK',perOrderApprovalStillRequired:false,automaticQualifiedBuys:true,scanBroadlyTradeOnlyBrokerSupported:true},
   crypto:{enabled:false,automaticQualifiedBuys:false},
   directGitHubBrokerExecutionAllowed:false,
   failClosed:true,
@@ -42,10 +44,10 @@ const policy={
 };
 
 s.robinhoodExecutableUniversePolicy=policy;
-s.generatorIntegrity={...(s.generatorIntegrity||{}),traceableFeatures:{...(s.generatorIntegrity?.traceableFeatures||{}),robinhoodExecutableFinalistsOnly:true,exactStockRuntimeSymbolCheck:true,exactCryptoRuntimePairCheck:false,claudeRobinhoodTradingMcpExecution:true}};
+s.generatorIntegrity={...(s.generatorIntegrity||{}),traceableFeatures:{...(s.generatorIntegrity?.traceableFeatures||{}),robinhoodExecutableFinalistsOnly:true,exactStockRuntimeSymbolCheck:true,exactCryptoRuntimePairCheck:false,chatgptRobinhoodTradingMcpExecution:true}};
 await Promise.all([
   write('docs/data/stock-tournament.json',st),
   write('docs/signal.json',s),
   write('docs/data/claude-signal.json',s)
 ]);
-console.log(`Robinhood executable gate attached for Claude Trading MCP: stocks=${st.liveQueue.length+st.researchFinalists.length}; crypto execution disabled; no broker confirmation=no order`);
+console.log(`Robinhood executable gate attached for ChatGPT Trading MCP: stocks=${st.liveQueue.length+st.researchFinalists.length}; crypto execution disabled; no broker confirmation=no order`);
