@@ -34,7 +34,9 @@ permissions:
   actions: write
 
 concurrency:
-  group: trigger-monitor
+  # Alpaca Basic is capped at 200 market-data requests/minute. Serialize live
+  # research publishers so trigger, fast refresh and full scan cannot burst together.
+  group: static-scan
   # Do not cancel a nearly-finished refresh just because the next 5-minute tick arrived.
   # Finishing one coherent generation is safer than repeatedly starving publication.
   cancel-in-progress: false
