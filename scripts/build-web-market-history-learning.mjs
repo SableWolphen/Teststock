@@ -9,11 +9,13 @@ const years=Math.max(3,Math.min(20,Number(process.env.TESTSTOCK_HISTORY_YEARS||1
 const startDate=new Date(Date.now()-years*365.25*86400000).toISOString().slice(0,10);
 const endDate=new Date().toISOString().slice(0,10);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+let requestGate=Promise.resolve(),lastRequestAt=0;
+async function throttle(){const prev=requestGate;let release;requestGate=new Promise(r=>release=r);await prev;const wait=Math.max(0,250-(Date.now()-lastRequestAt));if(wait)await sleep(wait);lastRequestAt=Date.now();release();}
 const chunks=(a,n)=>Array.from({length:Math.ceil(a.length/n)},(_,i)=>a.slice(i*n,(i+1)*n));
 const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:null;
 const round=(x,d=4)=>Number(Number(x).toFixed(d));
 const pct=(a,b)=>Number.isFinite(a)&&Number.isFinite(b)&&b!==0?((a/b)-1)*100:null;
-async function get(url,attempts=5){let err;for(let i=0;i<attempts;i++){try{const r=await fetch(url,{headers});if(r.ok)return r.json();err=new Error(`${r.status} ${await r.text()}`);}catch(e){err=e;}await sleep(350*(2**i));}throw err;}
+async function get(url,attempts=7){let err;for(let i=0;i<attempts;i++){try{await throttle();const r=await fetch(url,{headers});if(r.ok)return r.json();const body=await r.text();err=new Error(`${r.status} ${body}`);const retryAfter=Number(r.headers.get('retry-after'));if(r.status===429){await sleep(Number.isFinite(retryAfter)?retryAfter*1000:1000*(2**i));continue;}}catch(e){err=e;}await sleep(450*(2**i));}throw err;}
 function operatingCompany(a){
   const name=String(a?.name||'').trim();
   if(!name||!a?.symbol)return false;
