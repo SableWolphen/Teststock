@@ -2,7 +2,7 @@
   "schemaVersion": 44,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-09-27T19:05:38.649Z",
+  "generatedAt": "2026-09-27T19:21:17.786Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -346,9 +346,9 @@
     "assetClass": "STOCK",
     "overallAction": "WAIT_FOR_MARKET_OPEN",
     "reason": "Market is closed.",
-    "confidence": "CASH",
-    "signalAsOf": "2026-09-27T18:11:39.532Z",
-    "expiresAt": "2026-09-29T06:11:39.532Z",
+    "confidence": "B",
+    "signalAsOf": "2026-09-27T19:18:58.720Z",
+    "expiresAt": "2026-09-29T07:18:58.720Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 3,
       "maxOptionPremiumPct": 8,
@@ -463,25 +463,21 @@
       "optionsLocked": false,
       "reason": "Scanner/model trade-history is diagnostic only. It must never pause or size live Robinhood trading. Live outcome brakes are computed only from confirmed Robinhood fills/history at runtime."
     },
-    "stockOrders": [],
-    "stockCandidateQueue": [
+    "stockOrders": [
       {
         "assetClass": "STOCK",
-        "queueRank": 1,
-        "queueRole": "RESERVE",
         "rank": 1,
         "ticker": "BNS",
         "sector": null,
-        "action": "PROFITABILITY_ADMISSION_BLOCK",
-        "allocationPctOfRobinhoodBuyingPower": 0,
-        "requiresLiveSizing": true,
+        "action": "MARKET_CLOSED_RECHECK",
+        "allocationPctOfRobinhoodBuyingPower": 1.39,
         "scanPrice": 93.5,
         "minimumEntry": 93.5,
         "maximumEntry": 95.37,
         "stop": 91.63,
         "target1": 96.31,
         "target2": 98.36,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": null,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.03,
         "rewardRisk": 2.6,
         "growthQuality": 100,
         "expectancy": {
@@ -506,6 +502,318 @@
         },
         "historicalWinRate": 93,
         "historicalSamples": 27,
+        "exitPlan": {
+          "target1SellPctOfOriginal": 25,
+          "target2Action": "DYNAMIC_TO_RUNNER_SIGNAL",
+          "maxRunnerPctOfOriginal": 0,
+          "moderateRunnerPctOfOriginal": 15,
+          "noRunnerPctOfOriginal": 0,
+          "runnerPolicyRef": "signal.runnerContinuationPolicy",
+          "validatedPolicy": "T1_25_T2_75",
+          "target2BaseSellPctOfOriginal": 75,
+          "runnerSignal": "NONE",
+          "runnerPctOfOriginal": 0,
+          "runnerAction": "EXIT_REMAINDER_AT_TARGET2"
+        },
+        "protectionPlan": {
+          "determineFromLiveQuantity": true,
+          "wholeShares": "BROKER_PERSISTENT_STOP_WHEN_SUPPORTED",
+          "fractionalRemainder": "SYNTHETIC_STOP_ONLY_IF_ACTIVE_MONITORING_PASSES",
+          "fractionalMaxPlannedStopRiskPctOfLiveEquity": 0.75,
+          "syntheticMonitoringMaxMinutes": 5,
+          "policyRef": "signal.fractionalProtectionPolicy"
+        },
+        "operationalSafety": {
+          "signalReferencePrice": 93.5,
+          "entryToStopDistancePct": 2,
+          "wholeShareRuntimeCheckRequired": true,
+          "wholeShareProtectabilityIsTieBreakerOnly": true,
+          "smallAccountAccessPolicyRef": "signal.smallAccountAccessPolicy",
+          "multiStockCompetitionPolicyRef": "signal.multiStockCompetitionPolicy",
+          "nonLlmTriggerMonitorRef": "signal.nonLlmTriggerMonitor",
+          "eventDrivenExecutionDispatchRef": "signal.eventDrivenExecutionDispatch",
+          "signalDriftPolicyRef": "signal.signalDriftPolicy",
+          "portfolioHeatPolicyRef": "signal.portfolioHeatPolicy",
+          "killSwitchRef": "signal.automationKillSwitch"
+        },
+        "entryTier": "B",
+        "entryTierLabel": "BEST_ACCEPTABLE",
+        "entryTierSizeMultiplier": 0.25,
+        "bestAcceptableFallback": true
+      },
+      {
+        "assetClass": "STOCK",
+        "rank": 2,
+        "ticker": "JNJ",
+        "sector": null,
+        "action": "MARKET_CLOSED_RECHECK",
+        "allocationPctOfRobinhoodBuyingPower": 1.17,
+        "scanPrice": 271.2,
+        "minimumEntry": 280.44,
+        "maximumEntry": 286.05,
+        "stop": 264.56,
+        "target1": 304.26,
+        "target2": 321.73,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.07,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "expectancy": {
+          "expectedR": 1.92,
+          "conservativeExpectedR": 1.92,
+          "costAdjustedConservativeExpectedR": 1.86,
+          "assumedRoundTripFrictionPct": 0.3,
+          "frictionR": 0.053
+        },
+        "adaptivePerformance": {
+          "samples": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "sizeMultiplier": 1,
+          "qualityAdjustment": 0,
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+        },
+        "historicalWinRate": 81,
+        "historicalSamples": 31,
+        "exitPlan": {
+          "target1SellPctOfOriginal": 25,
+          "target2Action": "DYNAMIC_TO_RUNNER_SIGNAL",
+          "maxRunnerPctOfOriginal": 0,
+          "moderateRunnerPctOfOriginal": 15,
+          "noRunnerPctOfOriginal": 0,
+          "runnerPolicyRef": "signal.runnerContinuationPolicy",
+          "validatedPolicy": "T1_25_T2_75",
+          "target2BaseSellPctOfOriginal": 75,
+          "runnerSignal": "NONE",
+          "runnerPctOfOriginal": 0,
+          "runnerAction": "EXIT_REMAINDER_AT_TARGET2"
+        },
+        "protectionPlan": {
+          "determineFromLiveQuantity": true,
+          "wholeShares": "BROKER_PERSISTENT_STOP_WHEN_SUPPORTED",
+          "fractionalRemainder": "SYNTHETIC_STOP_ONLY_IF_ACTIVE_MONITORING_PASSES",
+          "fractionalMaxPlannedStopRiskPctOfLiveEquity": 0.75,
+          "syntheticMonitoringMaxMinutes": 5,
+          "policyRef": "signal.fractionalProtectionPolicy"
+        },
+        "operationalSafety": {
+          "signalReferencePrice": 280.44,
+          "entryToStopDistancePct": 5.663,
+          "wholeShareRuntimeCheckRequired": true,
+          "wholeShareProtectabilityIsTieBreakerOnly": true,
+          "smallAccountAccessPolicyRef": "signal.smallAccountAccessPolicy",
+          "multiStockCompetitionPolicyRef": "signal.multiStockCompetitionPolicy",
+          "nonLlmTriggerMonitorRef": "signal.nonLlmTriggerMonitor",
+          "eventDrivenExecutionDispatchRef": "signal.eventDrivenExecutionDispatch",
+          "signalDriftPolicyRef": "signal.signalDriftPolicy",
+          "portfolioHeatPolicyRef": "signal.portfolioHeatPolicy",
+          "killSwitchRef": "signal.automationKillSwitch"
+        },
+        "entryTier": "B",
+        "entryTierLabel": "BEST_ACCEPTABLE",
+        "entryTierSizeMultiplier": 0.25,
+        "bestAcceptableFallback": true
+      },
+      {
+        "assetClass": "STOCK",
+        "rank": 3,
+        "ticker": "NAT",
+        "sector": null,
+        "action": "MARKET_CLOSED_RECHECK",
+        "allocationPctOfRobinhoodBuyingPower": 0.47,
+        "scanPrice": 7.72,
+        "minimumEntry": 8.3,
+        "maximumEntry": 8.47,
+        "stop": 7.32,
+        "target1": 9.77,
+        "target2": 10.85,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.06,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "expectancy": {
+          "expectedR": 1.92,
+          "conservativeExpectedR": 1.92,
+          "costAdjustedConservativeExpectedR": 1.89,
+          "assumedRoundTripFrictionPct": 0.3,
+          "frictionR": 0.025
+        },
+        "adaptivePerformance": {
+          "samples": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "sizeMultiplier": 1,
+          "qualityAdjustment": 0,
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+        },
+        "historicalWinRate": 81,
+        "historicalSamples": 36,
+        "exitPlan": {
+          "target1SellPctOfOriginal": 25,
+          "target2Action": "DYNAMIC_TO_RUNNER_SIGNAL",
+          "maxRunnerPctOfOriginal": 0,
+          "moderateRunnerPctOfOriginal": 15,
+          "noRunnerPctOfOriginal": 0,
+          "runnerPolicyRef": "signal.runnerContinuationPolicy",
+          "validatedPolicy": "T1_25_T2_75",
+          "target2BaseSellPctOfOriginal": 75,
+          "runnerSignal": "NONE",
+          "runnerPctOfOriginal": 0,
+          "runnerAction": "EXIT_REMAINDER_AT_TARGET2"
+        },
+        "protectionPlan": {
+          "determineFromLiveQuantity": true,
+          "wholeShares": "BROKER_PERSISTENT_STOP_WHEN_SUPPORTED",
+          "fractionalRemainder": "SYNTHETIC_STOP_ONLY_IF_ACTIVE_MONITORING_PASSES",
+          "fractionalMaxPlannedStopRiskPctOfLiveEquity": 0.75,
+          "syntheticMonitoringMaxMinutes": 5,
+          "policyRef": "signal.fractionalProtectionPolicy"
+        },
+        "operationalSafety": {
+          "signalReferencePrice": 8.3,
+          "entryToStopDistancePct": 11.807,
+          "wholeShareRuntimeCheckRequired": true,
+          "wholeShareProtectabilityIsTieBreakerOnly": true,
+          "smallAccountAccessPolicyRef": "signal.smallAccountAccessPolicy",
+          "multiStockCompetitionPolicyRef": "signal.multiStockCompetitionPolicy",
+          "nonLlmTriggerMonitorRef": "signal.nonLlmTriggerMonitor",
+          "eventDrivenExecutionDispatchRef": "signal.eventDrivenExecutionDispatch",
+          "signalDriftPolicyRef": "signal.signalDriftPolicy",
+          "portfolioHeatPolicyRef": "signal.portfolioHeatPolicy",
+          "killSwitchRef": "signal.automationKillSwitch"
+        },
+        "entryTier": "B",
+        "entryTierLabel": "BEST_ACCEPTABLE",
+        "entryTierSizeMultiplier": 0.25,
+        "bestAcceptableFallback": true
+      },
+      {
+        "assetClass": "STOCK",
+        "rank": 4,
+        "ticker": "PFG",
+        "sector": null,
+        "action": "MARKET_CLOSED_RECHECK",
+        "allocationPctOfRobinhoodBuyingPower": 1.38,
+        "scanPrice": 114.78,
+        "minimumEntry": 120.79,
+        "maximumEntry": 123.21,
+        "stop": 111.77,
+        "target1": 134.32,
+        "target2": 144.24,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.1,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "expectancy": {
+          "expectedR": 1.77,
+          "conservativeExpectedR": 1.77,
+          "costAdjustedConservativeExpectedR": 1.73,
+          "assumedRoundTripFrictionPct": 0.3,
+          "frictionR": 0.04
+        },
+        "adaptivePerformance": {
+          "samples": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "sizeMultiplier": 1,
+          "qualityAdjustment": 0,
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+        },
+        "historicalWinRate": 77,
+        "historicalSamples": 35,
+        "exitPlan": {
+          "target1SellPctOfOriginal": 25,
+          "target2Action": "DYNAMIC_TO_RUNNER_SIGNAL",
+          "maxRunnerPctOfOriginal": 0,
+          "moderateRunnerPctOfOriginal": 15,
+          "noRunnerPctOfOriginal": 0,
+          "runnerPolicyRef": "signal.runnerContinuationPolicy",
+          "validatedPolicy": "T1_25_T2_75",
+          "target2BaseSellPctOfOriginal": 75,
+          "runnerSignal": "NONE",
+          "runnerPctOfOriginal": 0,
+          "runnerAction": "EXIT_REMAINDER_AT_TARGET2"
+        },
+        "protectionPlan": {
+          "determineFromLiveQuantity": true,
+          "wholeShares": "BROKER_PERSISTENT_STOP_WHEN_SUPPORTED",
+          "fractionalRemainder": "SYNTHETIC_STOP_ONLY_IF_ACTIVE_MONITORING_PASSES",
+          "fractionalMaxPlannedStopRiskPctOfLiveEquity": 0.75,
+          "syntheticMonitoringMaxMinutes": 5,
+          "policyRef": "signal.fractionalProtectionPolicy"
+        },
+        "operationalSafety": {
+          "signalReferencePrice": 120.79,
+          "entryToStopDistancePct": 7.468,
+          "wholeShareRuntimeCheckRequired": true,
+          "wholeShareProtectabilityIsTieBreakerOnly": true,
+          "smallAccountAccessPolicyRef": "signal.smallAccountAccessPolicy",
+          "multiStockCompetitionPolicyRef": "signal.multiStockCompetitionPolicy",
+          "nonLlmTriggerMonitorRef": "signal.nonLlmTriggerMonitor",
+          "eventDrivenExecutionDispatchRef": "signal.eventDrivenExecutionDispatch",
+          "signalDriftPolicyRef": "signal.signalDriftPolicy",
+          "portfolioHeatPolicyRef": "signal.portfolioHeatPolicy",
+          "killSwitchRef": "signal.automationKillSwitch"
+        },
+        "entryTier": "B",
+        "entryTierLabel": "BEST_ACCEPTABLE",
+        "entryTierSizeMultiplier": 0.25,
+        "bestAcceptableFallback": true
+      }
+    ],
+    "stockCandidateQueue": [
+      {
+        "assetClass": "STOCK",
+        "rank": 1,
+        "ticker": "BNS",
+        "sector": null,
+        "action": "PROFITABILITY_ADMISSION_BLOCK",
+        "allocationPctOfRobinhoodBuyingPower": 1.39,
+        "scanPrice": 93.5,
+        "minimumEntry": 93.5,
+        "maximumEntry": 95.37,
+        "stop": 91.63,
+        "target1": 96.31,
+        "target2": 98.36,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.03,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "expectancy": {
+          "expectedR": 2.35,
+          "conservativeExpectedR": 2.19,
+          "costAdjustedConservativeExpectedR": 2.04,
+          "assumedRoundTripFrictionPct": 0.3,
+          "frictionR": 0.15
+        },
+        "adaptivePerformance": {
+          "samples": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "sizeMultiplier": 1,
+          "qualityAdjustment": 0,
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+        },
+        "historicalWinRate": 93,
+        "historicalSamples": 27,
+        "queueRank": 1,
+        "queueRole": "PRIMARY",
         "entryTier": "B",
         "entryTierLabel": "BEST_ACCEPTABLE",
         "entryTierSizeMultiplier": 0.25,
@@ -671,21 +979,18 @@
       },
       {
         "assetClass": "STOCK",
-        "queueRank": 2,
-        "queueRole": "RESERVE",
-        "rank": 4,
+        "rank": 3,
         "ticker": "NAT",
         "sector": null,
         "action": "PROFITABILITY_ADMISSION_BLOCK",
-        "allocationPctOfRobinhoodBuyingPower": 0,
-        "requiresLiveSizing": true,
+        "allocationPctOfRobinhoodBuyingPower": 0.47,
         "scanPrice": 7.72,
         "minimumEntry": 8.3,
         "maximumEntry": 8.47,
         "stop": 7.32,
         "target1": 9.77,
         "target2": 10.85,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": null,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.06,
         "rewardRisk": 2.6,
         "growthQuality": 100,
         "expectancy": {
@@ -710,6 +1015,8 @@
         },
         "historicalWinRate": 81,
         "historicalSamples": 36,
+        "queueRank": 2,
+        "queueRole": "PRIMARY",
         "entryTier": "B",
         "entryTierLabel": "BEST_ACCEPTABLE",
         "entryTierSizeMultiplier": 0.25,
@@ -818,9 +1125,9 @@
                   "link": "https://news.google.com/rss/articles/CBMiygFBVV95cUxPMHplM0h1YVllUEZpTjB1dVRxYlFrLS1seTE2SjNXWExuT2pnQ0FFdDZWZmNFY3FPdVNqLXIwNFB2RC1kX2NneWJrZWpKb2NjYU52RTEtZ2phejFyakZ1cmhJWEh4NHI5VDZEZTZCWVpIX3BsU3NZU1Zka2EtTWJKR0VGUUZ4RUhFdEZ1TDhXNTFuRWxNR05oWnhiUjdsTDh4RXB6RVpTU1BuYkNuZmVxSXZrQWx5UGJrWVpzamdLZXZuRkFuNTU4TTZR?oc=5"
                 },
                 {
-                  "headline": "Are You Looking for a Top Momentum Pick? Why Nordic American Tankers (NAT) is a Great Choice - finance.yahoo.com",
+                  "headline": "Are You Looking for a Top Momentum Pick? Why Nordic American Tankers (NAT) is a Great Choice - Yahoo Finance",
                   "createdAt": "2026-09-25T15:00:03.000Z",
-                  "source": "GOOGLE_NEWS:finance.yahoo.com",
+                  "source": "GOOGLE_NEWS:Yahoo Finance",
                   "link": "https://news.google.com/rss/articles/CBMimgFBVV95cUxOeFpQeHFaYzZXaFBhb2RESWEyclZiTVdfR0Q5cmlVYUs5WmUxTWJ1MUtCNktES1pjbnlWVTBQbHA1OFN5SE1wdmJtRUxqYkhkVUxwSW1xQU5IX0ZQOWQxNjB0ckEtdzQ1c2dfT0dNR0F5cmp6MERReGhrMEhYdnliRHZDcTh0RWZXbzc2S2JDUzhiMDZVVXl5MFpR?oc=5"
                 },
                 {
@@ -1000,7 +1307,7 @@
             "rewardRisk": 2.6,
             "backtestStatus": "LIMITED",
             "newsCatalyst": {
-              "articleCount": 10,
+              "articleCount": 9,
               "windowHours": 72,
               "binaryRisk": false,
               "sentimentHint": "MIXED_OR_UNKNOWN",
@@ -1015,12 +1322,6 @@
                   "createdAt": "2026-09-27T10:59:54.000Z",
                   "source": "GOOGLE_NEWS:Yahoo! Finance Canada",
                   "link": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE4xcFBZT0RPMmh3cTltX1A5OG9NY2U3WF9aRi05V25QcHd1cUFrMDluTUJHN2dQTzNaRVFqMlZSY0U1cG9vLVRDR1F1M1ozRlctWXc?oc=5"
-                },
-                {
-                  "headline": "CareDx Refocused On Transplant Testing, And Wall Street Noticed - Finimize",
-                  "createdAt": "2026-09-27T02:11:51.000Z",
-                  "source": "GOOGLE_NEWS:Finimize",
-                  "link": "https://news.google.com/rss/articles/CBMiXEFVX3lxTFBMMEV5YVo0U3A4MlZPaHRzSkJGT2RMM0lUVzYtNWRraXV3RkRFanNTS1ZCckxDZnZuaTNqX3FjaXk2cVJnVzZYbzV0WllhdUd5VmR2dVNhUWJzcVEz?oc=5"
                 },
                 {
                   "headline": "Revenue Growth Could Be A Game Changer For CareDx Stock (CDNA) - simplywall.st",
@@ -1039,6 +1340,12 @@
                   "createdAt": "2026-09-25T17:35:11Z",
                   "source": "ALPACA",
                   "link": "https://www.benzinga.com/markets/options/26/09/62003901/10-health-care-stocks-whale-alerts-today-s-session"
+                },
+                {
+                  "headline": "CareDx (CDNA) Stock Could Be 33% Below Fair Value On Cash Flow - simplywall.st",
+                  "createdAt": "2026-09-25T10:35:03.000Z",
+                  "source": "GOOGLE_NEWS:simplywall.st",
+                  "link": "https://news.google.com/rss/articles/CBMi1gFBVV95cUxOZTRWTE5BN3RsNERaRFlBNncyZ0J6cl8tdzA0WGVGT2tRN3ZIWGJuV2NDVkdYRWZHQXBrcVltSFh1cEp2WUJZdmR3c3BHMldpSVJrcGV5dVpaYjNIaGw4QTJaWFNaTkFtTGdjby13Z3BiOXl6MU5TeGJTQnhpc2o3Y1UySDVMdlU0NlJUUm9neXVhQmV6RlNfM1hTNG5RcE9ySXVhOFd5OF9LcnNUcU40eXg3d2h6OTVqU3VZeFRsNklyTlctQ0hDNGg4ODZSRDJtRlNjTTZR0gHbAUFVX3lxTE9MLW1WTlhadEJXOEVWMWhGVzdiZVRTYzNNMzV2bWJKZWJtX0dQRlFiQXMyZUJjRjZ0bm5mcERJQld4UDlWMU9RNjZfVDg3eTdPNDMyQTBfY2UtRFg1ZU1EWFdZLTgwOVJOWVVIRFJ1RExVb3pmZlhxbU1wYkRoemJ3SGQzZkhYTGN3VlUzTnV2dWdkMU5FTXVlX3FZWXdsclpsUF9rMmE2Tkl6YnR1a2pGUXVKRDZkb3E3N1FRXzJmdWRrMnFtc18zQ2hkQktuQk03NTR5dmZGX1N0WQ?oc=5"
                 }
               ],
               "sourcesQueried": [
@@ -1079,21 +1386,18 @@
       },
       {
         "assetClass": "STOCK",
-        "queueRank": 4,
-        "queueRole": "RESERVE",
         "rank": 2,
         "ticker": "JNJ",
         "sector": null,
         "action": "PROFITABILITY_ADMISSION_BLOCK",
-        "allocationPctOfRobinhoodBuyingPower": 0,
-        "requiresLiveSizing": true,
+        "allocationPctOfRobinhoodBuyingPower": 1.17,
         "scanPrice": 271.2,
         "minimumEntry": 280.44,
         "maximumEntry": 286.05,
         "stop": 264.56,
         "target1": 304.26,
         "target2": 321.73,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": null,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.07,
         "rewardRisk": 2.6,
         "growthQuality": 100,
         "expectancy": {
@@ -1118,6 +1422,8 @@
         },
         "historicalWinRate": 81,
         "historicalSamples": 31,
+        "queueRank": 4,
+        "queueRole": "PRIMARY",
         "entryTier": "B",
         "entryTierLabel": "BEST_ACCEPTABLE",
         "entryTierSizeMultiplier": 0.25,
@@ -1239,9 +1545,9 @@
                   "link": "https://finance.yahoo.com/healthcare/articles/does-johnson-johnson-jnj-clinical-061047114.html"
                 },
                 {
-                  "headline": "What Does Johnson &amp; Johnson (JNJ) New Clinical Data Mean For Its Stock? - finance.yahoo.com",
+                  "headline": "What Does Johnson &amp; Johnson (JNJ) New Clinical Data Mean For Its Stock? - Yahoo Finance",
                   "createdAt": "2026-09-26T06:10:00.000Z",
-                  "source": "GOOGLE_NEWS:finance.yahoo.com",
+                  "source": "GOOGLE_NEWS:Yahoo Finance",
                   "link": "https://news.google.com/rss/articles/CBMimgFBVV95cUxPRTJWUHZ4eW5UZmtHQXJmYV82RjFqTVZ6OW5Kd1ZtMUdlX0QwZ1pPdFkxUWFrNWFnVFk0VHBxMUJLQkdZOVM0ZTNndjByMnZMcFdYRU9HZ3ZaWHJmcmlpRlRLRS1QQmVMS1lUMF9fYzJpak51bk5KR0xGanNiVHVGZElaSUYwRFF2dG5tUDJUa0MxN2d3a3BCX3NB?oc=5"
                 }
               ],
@@ -1284,21 +1590,18 @@
       },
       {
         "assetClass": "STOCK",
-        "queueRank": 5,
-        "queueRole": "RESERVE",
-        "rank": 5,
+        "rank": 4,
         "ticker": "PFG",
         "sector": null,
         "action": "PROFITABILITY_ADMISSION_BLOCK",
-        "allocationPctOfRobinhoodBuyingPower": 0,
-        "requiresLiveSizing": true,
+        "allocationPctOfRobinhoodBuyingPower": 1.38,
         "scanPrice": 114.78,
         "minimumEntry": 120.79,
         "maximumEntry": 123.21,
         "stop": 111.77,
         "target1": 134.32,
         "target2": 144.24,
-        "plannedStopRiskPctOfRobinhoodBuyingPower": null,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.1,
         "rewardRisk": 2.6,
         "growthQuality": 100,
         "expectancy": {
@@ -1323,6 +1626,8 @@
         },
         "historicalWinRate": 77,
         "historicalSamples": 35,
+        "queueRank": 5,
+        "queueRole": "PRIMARY",
         "entryTier": "B",
         "entryTierLabel": "BEST_ACCEPTABLE",
         "entryTierSizeMultiplier": 0.25,
@@ -1612,9 +1917,9 @@
               ],
               "headlines": [
                 {
-                  "headline": "Tower Semiconductor (TSEM) Jumped, What Is Behind The Latest Attention? - finance.yahoo.com",
+                  "headline": "Tower Semiconductor (TSEM) Jumped, What Is Behind The Latest Attention? - Yahoo Finance",
                   "createdAt": "2026-09-27T12:09:55.000Z",
-                  "source": "GOOGLE_NEWS:finance.yahoo.com",
+                  "source": "GOOGLE_NEWS:Yahoo Finance",
                   "link": "https://news.google.com/rss/articles/CBMipgFBVV95cUxPN2FmdWFkbVIyVC1lNk5pdkRnQjlid2tDakN4Nlg3MFFXYVl2eEkzU29HczhsZ2E0ZzBBZnk4V1RtSGMzZHdVRjBsaW9JQkR4V1c5eXphVTUwM3ZGbjhKNEEwNFBYaGx4OGNWMmtCTTQ1N011SzFna25YR3F2QjlpQjUtN21MRGN0blI3ZHlfYmdZLTFXQWlQMHBPWjZLMUhhRVFRdVBn?oc=5"
                 },
                 {
@@ -1806,7 +2111,7 @@
             "rewardRisk": 2.6,
             "backtestStatus": "LIMITED",
             "newsCatalyst": {
-              "articleCount": 22,
+              "articleCount": 21,
               "windowHours": 72,
               "binaryRisk": false,
               "sentimentHint": "MIXED_OR_UNKNOWN",
@@ -2026,9 +2331,9 @@
                   "link": "https://news.google.com/rss/articles/CBMi6gFBVV95cUxQblV6Q190Z3dLZlZ0THZtbjJCZjVONGVUVmRHS0ZCOFVKRlN3Xy00dFcwZXNqY1NTZ2E5RmpCWk5NTzVZRkJfQzV6SmZJUFBKQUdFRGY2T0xSNks0YU5CN2RUZFJQTUxaQm0tNFU3MjdaRTZxVmNJYVpZdHdLZ2h3a0NoRW0tUFIyeV83Z0VtN05UNWZsV2o2T2VXZzRRSXozUHBNVTBxdC1KMEtHelUyb3JWemszZTBuUlFYTEV3QlRWZXVTZG1Ca282al9RM3JLQzRaRFJKVU15eXdYWE1QSTJSTUNhMEtBYUHSAeoBQVVfeXFMUG5VekNfdGd3S2ZWdEx2bW4yQmY1TjRlVFZkR0tGQjhVSkZTd18tNHRXMGVzamNTU2dhOUZqQlpOTU81WUZCX0M1ekpmSVBQSkFHRURmNk9MUjZLNGFOQjdkVGRSUE1MWkJtLTRVNzI3WkU2cVZjSWFaWXR3S2dod2tDaEVtLVBSMnlfN2dFbTdOVDVmbFdqNk9lV2c0UUl6M1BwTVUwcXQtSjBLR3pVMm9yVnprM2UwblJRWExFd0JUVmV1U2RtQmtvNmpfUTNyS0M0WkRSSlVNeXl3WFhNUEkyUk1DYTBLQWFB?oc=5"
                 },
                 {
-                  "headline": "A Look at Mitsubishi UFJ Financial Group Inc (MUFG) After 4.0% G - GuruFocus",
+                  "headline": "A Look at Mitsubishi UFJ Financial Group Inc (MUFG) After 4.0% G - gurufocus.com",
                   "createdAt": "2026-09-25T21:22:24.000Z",
-                  "source": "GOOGLE_NEWS:GuruFocus",
+                  "source": "GOOGLE_NEWS:gurufocus.com",
                   "link": "https://news.google.com/rss/articles/CBMiygFBVV95cUxNY1BYMG5ETzZ1NHhvcW81NTdudEFEc0E4dW85M2RkenpiY1VjY1Zud2w2LXRKM3RpQ2d1SFBuUEJ5bGlOeUhTeVB2cW56ajVlWmtrdlFweW82NjAyanpLY3Jfd0NVdGVLS3BWeTRVX1VjeWUxWWh3SzBPNG4tY1BpVWUtd1prRXBiLU5JLWNzVjRIamNKT0ZRYWtDYW9BUHRGblYxOWMyRXJ6MHB1SkJ6QlJNdG1Mckhia2NYU05kRmdvMExmaWFPbmRn?oc=5"
                 },
                 {
@@ -2165,7 +2470,7 @@
   "entryGateRobustness": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
     "status": "RED_FLAG",
-    "generatedAt": "2026-09-27T19:05:36.007Z",
+    "generatedAt": "2026-09-27T19:19:43.995Z",
     "holdoutStart": "2024-01-01",
     "holdoutEnd": "2025-12-31",
     "secondHoldoutStart": "2026-01-01",
@@ -2441,7 +2746,7 @@
   },
   "shadowDiagnostics": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/shadow-trades.json",
-    "generatedAt": "2026-09-27T18:14:35.840Z",
+    "generatedAt": "2026-09-27T19:19:58.882Z",
     "summary": {
       "ACCEPTED": {
         "resolved": 0,
@@ -2465,7 +2770,7 @@
   },
   "probabilityFirstPolicy": {
     "schemaVersion": 5,
-    "generatedAt": "2026-09-27T19:05:38.599Z",
+    "generatedAt": "2026-09-27T19:21:17.709Z",
     "objective": "Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto active around the clock, and cash acceptable. Prefer elite A stocks at normal encoded size, allow a tightly capped B best-acceptable micro-probation stock after A-tier priority whenever live capacity remains, and let crypto surface more reasonable 24/7 opportunities without removing hard risk controls. This policy cannot eliminate market loss risk.",
     "stocks": {
       "minGrowthQuality": 85,
@@ -2755,15 +3060,15 @@
   },
   "dataFreshness": {
     "status": "GENERATED_THIS_RUN",
-    "lastSuccessfulGeneration": "2026-09-27T19:05:38.701Z",
+    "lastSuccessfulGeneration": "2026-09-27T19:21:17.838Z",
     "expectedRefreshCadenceMinutes": 10,
     "stockExpectedRefreshMinutesDuringMarket": 10,
     "cryptoExpectedRefreshMinutes": 10,
-    "stockSignalAsOf": "2026-09-27T18:11:39.532Z",
+    "stockSignalAsOf": "2026-09-27T19:18:58.720Z",
     "cryptoSignalAsOf": "2026-09-25T21:26:20.100Z",
-    "stockAgeMinutes": 54,
-    "cryptoAgeMinutes": 2739,
-    "entryGateValidationAgeMinutes": 0,
+    "stockAgeMinutes": 2,
+    "cryptoAgeMinutes": 2755,
+    "entryGateValidationAgeMinutes": 2,
     "staleAfterMinutes": {
       "unified": 20,
       "stockDuringMarket": 25,
@@ -2852,12 +3157,12 @@
     }
   },
   "systemHealth": {
-    "generatedAt": "2026-09-27T19:05:38.701Z",
+    "generatedAt": "2026-09-27T19:21:17.838Z",
     "signalAgeMinutes": 0,
     "dataFreshnessStatus": "GENERATED_THIS_RUN",
     "entryGateValidation": {
       "status": "RED_FLAG",
-      "ageMinutes": 0,
+      "ageMinutes": 2,
       "required": true
     },
     "probabilityFirstOverlay": {
@@ -2867,12 +3172,12 @@
     },
     "crossAssetRanking": {
       "status": "AVAILABLE",
-      "ageMinutes": 53357,
+      "ageMinutes": 53373,
       "required": true
     },
     "shadowLedger": {
       "status": "AVAILABLE",
-      "ageMinutes": 51,
+      "ageMinutes": 1,
       "requiredForTrading": false
     },
     "runtimeBroker": {
@@ -3119,7 +3424,7 @@
   },
   "exitPolicyValidation": {
     "status": "AVAILABLE",
-    "generatedAt": "2026-09-27T18:12:41.510Z",
+    "generatedAt": "2026-09-27T19:19:44.890Z",
     "recommendedPolicy": "T1_25_T2_75",
     "recommendationReason": "The no-runner baseline was the strongest policy in development, so no runner policy is promoted.",
     "reportUrl": "https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/exit-policy-validation.json",
@@ -3133,7 +3438,7 @@
   },
   "portfolioCorrelationIntelligence": {
     "status": "AVAILABLE",
-    "generatedAt": "2026-09-27T18:12:38.340Z",
+    "generatedAt": "2026-09-27T19:19:43.082Z",
     "lookbackTradingDays": 90,
     "highCorrelationThreshold": 0.75,
     "veryHighCorrelationThreshold": 0.88,
@@ -3149,15 +3454,15 @@
   },
   "championChallenger": {
     "status": "AVAILABLE",
-    "generatedAt": "2026-09-27T18:12:41.596Z",
+    "generatedAt": "2026-09-27T19:19:44.981Z",
     "mode": "CHAMPION_CHALLENGER",
     "champion": {
       "exitPolicy": "T1_25_T2_75",
       "status": "LIVE_POLICY_ONLY_IF_ALL_RUNTIME_GUARDS_PASS",
       "evidence": {
-        "exitValidationGeneratedAt": "2026-09-27T18:12:41.510Z",
-        "entryValidationGeneratedAt": "2026-09-27T18:12:39.846Z",
-        "probabilityPolicyGeneratedAt": "2026-09-27T18:09:03.499Z"
+        "exitValidationGeneratedAt": "2026-09-27T19:19:44.890Z",
+        "entryValidationGeneratedAt": "2026-09-27T19:19:43.995Z",
+        "probabilityPolicyGeneratedAt": "2026-09-27T19:05:38.599Z"
       }
     },
     "promotionPolicy": {
@@ -3186,7 +3491,7 @@
   },
   "adaptivePerformance": {
     "status": "ACTIVE",
-    "generatedAt": "2026-09-27T19:05:38.539Z",
+    "generatedAt": "2026-09-27T19:21:17.233Z",
     "resolvedRealStockTrades": 1,
     "sourceOfTruth": "ROBINHOOD_CONFIRMED_REAL_FILLS_ONLY",
     "policy": {
@@ -3340,7 +3645,7 @@
   },
   "dayTradeOnlyEntryPolicy": {
     "enabled": true,
-    "startedAt": "2026-09-27T19:05:38.853Z",
+    "startedAt": "2026-09-27T19:21:17.994Z",
     "objective": "Take small, frequent, same-day gains to build the account up before returning to larger multi-day swing targets (user-requested 2026-09-22, given the PDT day-trade-count restriction was eliminated by FINRA effective 2026-06-04 -- confirmed already implemented by Robinhood -- so frequent same-day stock entries are no longer capped at 3 per 5 business days).",
     "scope": "NEW_STOCK_ENTRIES_ONLY",
     "existingSwingPositionsUnaffected": true,
@@ -3805,8 +4110,8 @@
         "warning": "Federal disclosures can arrive long after the transaction. This is not real-time order flow."
       },
       "summary": {
-        "uniqueRecords": 1812,
-        "tickers": 234,
+        "uniqueRecords": 1818,
+        "tickers": 238,
         "latestReportedDate": "2026-09-21",
         "automatedProvidersOk": 1,
         "cachePreserved": false
@@ -3826,19 +4131,7 @@
         "confidence": 49
       },
       {
-        "ticker": "PFG",
-        "netActivityScore": 2.4,
-        "buyWeight": 0.199,
-        "sellWeight": 0,
-        "distinctPoliticians": 1,
-        "bipartisan": false,
-        "sourceCount": 1,
-        "recordCount": 1,
-        "latestReportedDate": "2026-07-21",
-        "confidence": 43
-      },
-      {
-        "ticker": "SWKS",
+        "ticker": "TMO",
         "netActivityScore": 2.4,
         "buyWeight": 0.199,
         "sellWeight": 0,
@@ -3916,7 +4209,7 @@
   },
   "unifiedMarketIntelligence": {
     "schemaVersion": 1,
-    "generatedAt": "2026-09-27T19:05:39.181Z",
+    "generatedAt": "2026-09-27T19:21:18.321Z",
     "architecture": "TWO_TOURNAMENTS_UNIFIED_EVIDENCE",
     "objective": "Improve cost-adjusted expectancy and reduce avoidable losses through diverse evidence, forward validation, broker reconciliation and hard risk limits. No win or income guarantee.",
     "providers": [
