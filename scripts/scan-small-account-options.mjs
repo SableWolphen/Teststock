@@ -32,7 +32,7 @@ const get=async u=>{const r=await fetch(u,{headers});if(!r.ok)throw new Error(`A
 const latest=await read('docs/data/latest-100.json');
 const broad=await read('docs/data/broad-stock-universe.json');
 const fullPool=await read('docs/data/full-stock-validation-pool.json');
-const poolCandidates=(fullPool.candidates||[]).filter(x=>x.symbol&&Number.isFinite(x.price)&&Number.isFinite(x.ma20)&&Number.isFinite(x.ma50)).map(x=>({...x,underlyingType:'STOCK'}));
+const poolCandidates=(fullPool.candidates||[]).filter(x=>x.symbol&&Number.isFinite(x.price)&&Number.isFinite(x.ma20)&&Number.isFinite(x.ma50)).map(x=>({...x,underlyingType:'STOCK',optionBias:Number(x.price)>Number(x.ma20)&&Number(x.price)>Number(x.ma50)?'BULLISH':Number(x.price)<Number(x.ma20)&&Number(x.price)<Number(x.ma50)?'BEARISH':'MIXED'}));
 
 const INDEX_ETF_UNIVERSE=['SPY','QQQ','IWM','DIA'];
 const avg=a=>a.length?a.reduce((s,n)=>s+n,0)/a.length:0;
@@ -49,11 +49,11 @@ async function indexEtfCandidates(){
       if(bars.length<60)continue;
       const c=bars.map(x=>x.c),price=c.at(-1),ma20=sma(c,20),ma50=sma(c,50),ma200=sma(c,Math.min(200,c.length));
       const a=atr(bars.map(x=>({h:x.h,l:x.l,c:x.c}))),atrPct=round((a/price)*100,2);
-      const direction=price>ma20&&price>ma50?'BULLISH':'MIXED';
+      const direction=price>ma20&&price>ma50?'BULLISH':price<ma20&&price<ma50?'BEARISH':'MIXED';
       // No fundamentals-based growthQuality exists for an index product; score is pure trend
       // strength (same formula trendScore below applies to price/ma20/ma50/ma200/atrPct), so
       // an index ETF is never artificially boosted above or held below a real stock candidate.
-      out.push({symbol,price:round(price),ma20:round(ma20),ma50:round(ma50),ma200:round(ma200),atrPct,direction,score:0,underlyingType:'INDEX_ETF'});
+      out.push({symbol,price:round(price),ma20:round(ma20),ma50:round(ma50),ma200:round(ma200),atrPct,direction,optionBias:direction,score:0,underlyingType:'INDEX_ETF'});
     }catch(error){console.warn(`Index ETF candidate fetch ${symbol}: ${error.message}`);}
   }
   return out;
@@ -67,7 +67,7 @@ const trendScore=x=>{
   const above200=x.ma200>0?(x.price/x.ma200-1)*100:0;
   return Math.max(Number(recommendationScore.get(x.symbol)||0),Number(x.score||0))+above20*2+above50+Math.max(0,above200)*.25-Math.max(0,Number(x.atrPct||0)-5)*2;
 };
-const ranked=[...poolCandidates,...etfCandidates].filter(x=>x.direction==='BULLISH'&&Number(x.price)>Number(x.ma20)&&Number(x.price)>Number(x.ma50)).sort((a,b)=>trendScore(b)-trendScore(a));
+const ranked=[...poolCandidates,...etfCandidates].filter(x=>x.optionBias==='BULLISH'||x.optionBias==='BEARISH').sort((a,b)=>Math.abs(trendScore(b))-Math.abs(trendScore(a)));
 const now=new Date(),iso=d=>d.toISOString().slice(0,10),gte=iso(now),lte=iso(new Date(now.getTime()+90*864e5));
 const dteBucket=dte=>dte<=1?'0DTE':dte<=14?'WEEKLY':'STANDARD';
 const feed=process.env.ALPACA_OPTIONS_FEED||'indicative';
@@ -79,7 +79,9 @@ for(const batch of chunks(ranked,CONCURRENCY)){
       const q=new URLSearchParams({feed,limit:'1000',expiration_date_gte:gte,expiration_date_lte:lte,strike_price_gte:String(round(u.price*.82,2)),strike_price_lte:String(round(u.price*1.18,2))});
       const raw=await get(`https://data.alpaca.markets/v1beta1/options/snapshots/${u.symbol}?${q}`);
       for(const [contract,s] of Object.entries(raw.snapshots||{})){
-        const m=contract.match(/^([A-Z.]+)(\d{6})(C)(\d{8})$/);if(!m)continue;
+        const m=contract.match(/^([A-Z.]+)(\d{6})([CP])(\d{8})$/);if(!m)continue;
+        const contractSide=m[3]==='C'?'BULLISH':'BEARISH';
+        if(contractSide!==u.optionBias)continue;
         const expiry=new Date(Date.UTC(2000+Number(m[2].slice(0,2)),Number(m[2].slice(2,4))-1,Number(m[2].slice(4,6)))),dte=Math.ceil((expiry-now)/864e5),strike=Number(m[4])/1000;
         const qx=s.latestQuote||s.latest_quote||{},bid=Number(qx.bp??qx.bid_price??0),ask=Number(qx.ap??qx.ask_price??0),mid=(bid+ask)/2,spreadPct=mid>0?(ask-bid)/mid*100:999;
         const g=s.greeks||{},delta=Math.abs(Number(g.delta||0)),iv=Number(s.impliedVolatility??s.implied_volatility??0),premium=ask*100;
@@ -95,12 +97,12 @@ for(const batch of chunks(ranked,CONCURRENCY)){
         // risk gets priced into the ranking score directly rather than only shown as a label.
         const bucketRiskPenalty={'0DTE':25,'WEEKLY':8,'STANDARD':0}[bucket];
         const score=round(underlyingScore+Math.max(0,10-spreadPct)*1.5+Math.max(0,8-Math.abs(delta-.45)*20)-Math.max(0,iv-1)*5-bucketRiskPenalty,1);
-        choices.push({underlying:u.symbol,underlyingType:u.underlyingType||'STOCK',contract,kind:'LONG_CALL',expiry:iso(expiry),dte,dteBucket:bucket,strike,bid:round(bid,3),ask:round(ask,3),mid:round(mid,3),spreadPct:round(spreadPct,1),delta:round(delta,2),iv:round(iv,2),oneContractPremiumDollars:round(premium,2),underlyingPrice:u.price,underlyingScore,score});
+        choices.push({underlying:u.symbol,underlyingType:u.underlyingType||'STOCK',underlyingBias:u.optionBias,contract,kind:m[3]==='C'?'LONG_CALL':'LONG_PUT',expiry:iso(expiry),dte,dteBucket:bucket,strike,bid:round(bid,3),ask:round(ask,3),mid:round(mid,3),spreadPct:round(spreadPct,1),delta:round(delta,2),iv:round(iv,2),oneContractPremiumDollars:round(premium,2),underlyingPrice:u.price,underlyingScore,score});
       }
     }catch(error){errors.push({underlying:u.symbol,error:String(error?.message||error)});}
   }));
 }
 choices.sort((a,b)=>b.score-a.score||a.spreadPct-b.spreadPct||a.oneContractPremiumDollars-b.oneContractPremiumDollars);
-const out={schemaVersion:6,generatedAt:new Date().toISOString(),sourceSnapshotAsOf:latest.asOf||null,broadUniverseGeneratedAt:broad.generatedAt||null,fullPoolGeneratedAt:fullPool.generatedAt||null,fullPoolCandidateCount:poolCandidates.length,indexEtfUniverse:INDEX_ETF_UNIVERSE,indexEtfCandidatesFound:etfCandidates.length,objective:'Search options on every stock this run\'s full validated pool (not just the narrow top-30 topCandidates slice) found bullish, across the broad active-US-equity scan -- not only mega-cap stocks. Includes same-day/short-dated contracts, tagged by dteBucket and scored with a risk penalty for shorter expirations -- not blended in as equivalent risk to a 35-90 DTE contract. Also includes highly liquid index ETFs (SPY/QQQ/IWM/DIA), scored on plain technical trend rather than the fundamentals methodology used for stocks, tagged underlyingType.',policy:{maxOneContractPremiumDollars:35,minDte:0,maxDte:90,maxSpreadPct:10,minAbsDelta:.25,maxAbsDelta:.70,dteBuckets:{'0DTE':'dte<=1, heaviest risk penalty, highest gamma/theta blowup risk','WEEKLY':'dte 2-14, moderate risk penalty','STANDARD':'dte 15-90, no risk penalty, the original policy window'},definedRiskOnly:true,liveWholeContractCheckRequired:true,doesNotOverrideRealFillGate:true,researchOnlyNeverAutoExecutes:'Options remain walled off from automatic execution regardless of dteBucket or underlyingType -- see CLAUDE.md.'},underlyingsScannedCount:ranked.length,underlyingsScanned:ranked.map(x=>x.symbol),contractsQualified:choices.length,candidates:choices.slice(0,15),best:choices[0]||null,rejections,scanErrors:errors};
+const out={schemaVersion:7,generatedAt:new Date().toISOString(),sourceSnapshotAsOf:latest.asOf||null,broadUniverseGeneratedAt:broad.generatedAt||null,fullPoolGeneratedAt:fullPool.generatedAt||null,fullPoolCandidateCount:poolCandidates.length,indexEtfUniverse:INDEX_ETF_UNIVERSE,indexEtfCandidatesFound:etfCandidates.length,objective:'Search both bullish long-call and bearish long-put opportunities across every directionally qualified stock in this run\'s full validated pool, not just the narrow top candidates. Includes same-day/short-dated contracts, tagged by dteBucket and scored with a risk penalty for shorter expirations -- not blended in as equivalent risk to a 35-90 DTE contract. Also includes highly liquid index ETFs (SPY/QQQ/IWM/DIA), scored on plain technical trend rather than the fundamentals methodology used for stocks, tagged underlyingType.',policy:{maxOneContractPremiumDollars:35,minDte:0,maxDte:90,maxSpreadPct:10,minAbsDelta:.25,maxAbsDelta:.70,dteBuckets:{'0DTE':'dte<=1, heaviest risk penalty, highest gamma/theta blowup risk','WEEKLY':'dte 2-14, moderate risk penalty','STANDARD':'dte 15-90, no risk penalty, the original policy window'},definedRiskOnly:true,liveWholeContractCheckRequired:true,doesNotOverrideRealFillGate:true,researchOnlyNeverAutoExecutes:'New directional option patterns remain research/shadow evidence until profitability admission and every separate live execution gate pass; scanning a put does not itself authorize a live put.'},underlyingsScannedCount:ranked.length,underlyingsScanned:ranked.map(x=>x.symbol),contractsQualified:choices.length,candidates:choices.slice(0,15),best:choices[0]||null,rejections,scanErrors:errors};
 await fs.writeFile('docs/data/small-account-options.json',JSON.stringify(out,null,2));
 console.log(`Small-account option scan: ${ranked.length} underlyings, ${choices.length} qualified contracts, ${errors.length} errors`);
