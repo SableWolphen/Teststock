@@ -58,6 +58,17 @@ Options remain a separate, evidence-gated automatic lane. Do not infer options a
 - Once an option's profit floor/trailing protection ratchets upward, it may never be loosened. Sell-to-close remains the only normal exit; do not exercise simply to realize a gain.
 - Options shadow evidence is intraday and executable-price based: entry ask, exit bid, no midpoint fills. It requires at least 50 independent outcomes across 20 trading days and profit factor of at least 1.30 before micro probation. Profit floors may only move upward, and every position must be flat by the session cutoff.
 
+## Broad historical market learning
+
+Teststock also maintains `docs/data/web-market-history-learning.json`, built from broad provider-hosted US-equity history rather than only repository trade records.
+
+- Historical market learning may supply priors, pattern context, and research ranking support.
+- It must use time-ordered features/outcomes and avoid future-data leakage.
+- Include inactive assets when provider coverage permits so historical research is less survivorship-biased.
+- Historical priors cannot create live execution eligibility, increase hard risk ceilings, override profitability admission, or supersede Robinhood live state.
+- Keep historical, forward/shadow, and Robinhood-confirmed real-fill evidence labeled separately. Promotion of strategy changes requires forward or real-fill confirmation, not backtest results alone.
+- Treat provider coverage limits, corporate-action adjustments, symbol changes, and feed scope as explicit limitations rather than pretending the dataset is literally every stock observation ever recorded.
+
 ## Idle behavior
 
 If there is no actionable stock dispatch and no protection-repair condition, stop without broker calls or broad market research.
