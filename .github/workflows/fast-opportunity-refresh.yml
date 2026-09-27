@@ -3,8 +3,8 @@ name: Fast Teststock opportunity refresh
 on:
   workflow_dispatch:
   schedule:
-    # Lightweight refresh halfway between the heavier 10-minute full-universe scans.
-    # Stocks refresh during their regular session; the canonical executable signal is refreshed from stock data.
+    # Hot-list refresh: reprice/rerank the already-discovered candidate pool between hourly full-universe scans.
+    # Do not repeat historical/full-universe/option-learning downloads here; preserve Alpaca Basic budget for live candidates.
     - cron: '8,18,28,38,48,58 13-21 * * 1-5'
 
 permissions:
@@ -50,16 +50,13 @@ jobs:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: node scripts/generate-static-picks.mjs
 
-      - name: Refresh freshness-critical stock dependencies
+      - name: Reuse validated research and options evidence
         if: ${{ steps.market_window.outputs.stocks == 'true' }}
-        env:
-          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
-          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: |
-          node scripts/validate-entry-gates.mjs
-          node scripts/scan-small-account-options.mjs
-          node scripts/update-options-shadow-ledger.mjs
-          node scripts/apply-options-profitability-admission.mjs
+          test -s docs/data/entry-gate-validation.json
+          test -s docs/data/small-account-options.json
+          test -s docs/data/options-profitability-admission.json
+          echo "Using the latest validated research snapshots; live trigger steps below refresh the hot list only."
 
       - name: Re-rank cost-adjusted stock opportunities
         if: ${{ steps.market_window.outputs.stocks == 'true' }}
