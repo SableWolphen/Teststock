@@ -26,7 +26,7 @@ BROKER RULES WHEN A TRIGGER EXISTS:
 - BUY_TRIGGER is not authorization by itself. Re-check the current signal and every encoded live guard before buying.
 - After a confirmed buy, arm execution-watchlist.json with ticker, asset class, stop, Target 1, Target 2, exit policy, runner allowance, signal time and a stable id. Do not store quantity, account balances, account identifiers or secrets in the public repo.
 - Whole-share quantities should use verified broker-resident protection when supported.
-- Fractional quantities use the non-LLM trigger monitor only for price detection. The monitor cannot place Robinhood orders or wake Claude by itself.
+- Fractional quantities use the non-LLM trigger monitor for price detection. The monitor never places Robinhood orders itself; when it publishes an actionable dispatch, it may request an immediate wake of the live execution runner.
 - TRIGGER_1_STOP: verify the live position, sell using the strongest supported path when permitted, then verify the actual fill.
 - TRIGGER_2_TARGET1: verify and execute the validated first scale-out, then mark Target 1 complete in the watchlist after the fill is confirmed.
 - TRIGGER_3_TARGET2: verify and execute the validated Target 2 / runner decision, then update the watchlist after confirmed fills.
@@ -39,4 +39,4 @@ CREDIT RULE:
 Use Claude for brokerage decisions/actions, not continuous price checks or basic target arithmetic. When the trigger board has no event, terminate with minimal output.
 
 IMPORTANT LIMITATION:
-No strategy or automation can prevent all losses. The public GitHub monitor detects price events but cannot itself execute Robinhood orders. If Claude is not running when a trigger occurs, execution is delayed until the next authorized run. Therefore a fractional position is not fully protected merely because the trigger board exists; the current signal's execution-response requirement must also be satisfied.
+No strategy or automation can prevent all losses. The public GitHub monitor detects price events but cannot itself execute Robinhood orders. Actionable dispatches now request an immediate live-runner wake when no executor session is already queued or running, while the hourly schedule, persistent self-chain, and watchdog remain recovery paths. Execution can still be delayed if the self-hosted runner, broker, network, or authentication is unavailable, so a trigger board is not equivalent to guaranteed instantaneous protection.
