@@ -5,7 +5,7 @@ on:
   schedule:
     # Lightweight refresh halfway between the heavier 10-minute full-universe scans.
     # Stocks refresh during their regular session; the canonical executable signal is refreshed from stock data.
-    - cron: '8,18,28,38,48,58 * * * *'
+    - cron: '8,18,28,38,48,58 13-21 * * 1-5'
 
 permissions:
   contents: write
@@ -51,6 +51,7 @@ jobs:
         run: node scripts/generate-static-picks.mjs
 
       - name: Refresh freshness-critical stock dependencies
+        if: ${{ steps.market_window.outputs.stocks == 'true' }}
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
@@ -69,9 +70,11 @@ jobs:
           node scripts/apply-opportunity-expansion.mjs
 
       - name: Refresh adaptive real-fill state
+        if: ${{ steps.market_window.outputs.stocks == 'true' }}
         run: node scripts/build-adaptive-performance.mjs
 
       - name: Rebuild and validate one fresh stock generation
+        if: ${{ steps.market_window.outputs.stocks == 'true' }}
         shell: bash
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
@@ -118,6 +121,7 @@ jobs:
           fi
 
       - name: Publish refreshed opportunity state
+        if: ${{ steps.market_window.outputs.stocks == 'true' }}
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
