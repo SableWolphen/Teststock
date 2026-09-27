@@ -73,8 +73,9 @@ on:
       - 'CLAUDE.md'
   workflow_dispatch:
   schedule:
-    # Full-universe scan is hourly on Alpaca Basic; fast refresh handles intrahour changes.
-    - cron: '3 * * * *'
+    # Full-universe stock scan only wakes in the weekday US cash-session envelope.
+    # Exact holiday/early-close eligibility is still enforced by the NYSE calendar-aware runtime gates.
+    - cron: '3 13-21 * * 1-5'
 
 permissions:
   contents: write
