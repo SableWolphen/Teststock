@@ -8,7 +8,8 @@ on:
         type: boolean
         default: false
   schedule:
-    - cron: '2 * * * *'
+    # Weekday regular-session wake only (UTC window spans EDT/EST); an in-job NYSE gate below is authoritative.
+    - cron: '2 13-21 * * 1-5'
   push:
     branches: [main]
     paths:
@@ -150,8 +151,26 @@ jobs:
             > "$probe_dir/stdout.json" 2> "$probe_dir/stderr.txt" || probe_status=$?
           python scripts/record-executor-result.py "$probe_dir" "$probe_status"
 
-      - name: Run concurrent trading and learning lanes
+      - name: Check regular US stock session
+        id: stock_session
         if: ${{ !inputs.verify_only }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          dow=$(TZ=America/New_York date +%u)
+          hour=$(TZ=America/New_York date +%H)
+          minute=$(TZ=America/New_York date +%M)
+          minute_of_day=$((10#$hour * 60 + 10#$minute))
+          if [ "$dow" -ge 1 ] && [ "$dow" -le 5 ] && [ "$minute_of_day" -ge 570 ] && [ "$minute_of_day" -lt 960 ]; then
+            echo "open=true" >> "$GITHUB_OUTPUT"
+            echo "Regular US stock session is active."
+          else
+            echo "open=false" >> "$GITHUB_OUTPUT"
+            echo "Regular US stock session is closed; skipping stock/options live runner."
+          fi
+
+      - name: Run concurrent trading and learning lanes
+        if: ${{ !inputs.verify_only && steps.stock_session.outputs.open == 'true' }}
         shell: bash
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
@@ -203,6 +222,16 @@ jobs:
             if [ "$elapsed" -lt 45 ]; then sleep $((45-elapsed)); fi
           done
           echo "Live intraday session completed; background learner stopped cleanly."
+
+          # Never self-chain after the stock session has closed.
+          dow=$(TZ=America/New_York date +%u)
+          hour=$(TZ=America/New_York date +%H)
+          minute=$(TZ=America/New_York date +%M)
+          minute_of_day=$((10#$hour * 60 + 10#$minute))
+          if [ "$dow" -lt 1 ] || [ "$dow" -gt 5 ] || [ "$minute_of_day" -lt 570 ] || [ "$minute_of_day" -ge 960 ]; then
+            echo "Regular US stock session is closed; ending runner without self-chain."
+            exit 0
+          fi
 
           # Self-chain the next session instead of relying solely on the hourly cron
           # schedule event or the 5-minute watchdog to notice and recover. Both are
