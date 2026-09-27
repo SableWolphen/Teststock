@@ -36,6 +36,10 @@ export function evaluateOptionsSeedLaneCandidate({
   if(!allowedTypes.includes(candidate.underlyingType)){
     return {status:'BLOCKED_UNDERLYING_TYPE',reason:`Candidate underlyingType is ${candidate.underlyingType}; this lane is currently restricted to ${allowedTypes.join('/')} only.`};
   }
+  const allowedKinds=seedPolicy.allowedKinds||[seedPolicy.kind||'LONG_CALL'];
+  if(!allowedKinds.includes(candidate.kind)){
+    return {status:'BLOCKED_OPTION_KIND',reason:`Candidate kind is ${candidate.kind}; lane permits ${allowedKinds.join('/')}.`};
+  }
   const maxOrderUsd=Number(seedPolicy.maxOrderUsd||0);
   const premium=Number(candidate.oneContractPremiumDollars||0);
   if(!(premium>0&&premium<=maxOrderUsd)){
@@ -55,7 +59,7 @@ export function evaluateOptionsSeedLaneCandidate({
     admissionState,
     seedLane:{
       maxOrderUsd,
-      kind:seedPolicy.kind||'LONG_CALL',
+      kind:candidate.kind,
       targetMultiplier:seedPolicy.targetMultiplier,
       stopMultiplier:seedPolicy.stopMultiplier,
       breakEvenArmMultiplier:seedPolicy.breakEvenArmMultiplier,
