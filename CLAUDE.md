@@ -1,6 +1,8 @@
-# Teststock Claude Execution Contract
+# Teststock Intelligence / ChatGPT Execution Contract
 
-Claude is the sole broker execution agent for Teststock. GitHub discovers, ranks, validates, monitors, and publishes execution state. GitHub must not independently submit broker orders.
+Teststock is an intelligence and monitoring system only. GitHub gathers and analyzes Alpaca/provider market data, news/catalysts, historical/forward evidence, ranks candidates, monitors triggers, and publishes execution packets. GitHub/Teststock has zero independent brokerage authority and must never submit Robinhood orders.
+
+ChatGPT is the sole broker execution layer. ChatGPT reads Teststock as decision support, independently reconciles live Robinhood account/position/order state, obeys every Robinhood tool review/confirmation requirement, submits permitted stock/option buys and sells, verifies fills, and reconciles resulting state. A Teststock packet is never itself a broker order or proof of execution.
 
 ## Operating mode
 
@@ -18,10 +20,10 @@ Read current `main` only. Before any action, use the newest:
 
 Robinhood is authoritative for live buying power, positions, orders, fills, and cancellations. Never invent broker state.
 
-## Fully automatic execution
+## ChatGPT-controlled execution
 
 ### Stocks
-- Qualified stock entries are automatic. No user approval or approval batch is required.
+- Qualified Teststock stock entries are eligible for ChatGPT execution under the user's standing authorization, but Teststock itself never places them. ChatGPT must still obey any Robinhood tool-required review or confirmation.
 - A high model score is not sufficient qualification. The current profitability-admission file must show `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`; `SHADOW_ONLY` cannot use a seed lane to bypass the evidence requirement.
 - This includes normal A/B/C candidates and encoded stock seed-lane candidates when their current Teststock rules permit execution.
 - Re-check every candidate immediately before submission: freshness, max entry (see bounded momentum entry below), buying power, account floor, portfolio heat, correlation, trade frequency, duplicate orders, sizing, and protection capability.
@@ -30,7 +32,7 @@ Robinhood is authoritative for live buying power, positions, orders, fills, and 
 
 
 ### Exits and protection
-- Risk-reducing exits and validated profit-taking are automatic for stocks, options, when current policy permits them.
+- Risk-reducing exits and validated profit-taking are handled by ChatGPT for stocks/options when current policy permits them; Teststock only supplies the trigger/evidence packet.
 - Stops/exits outrank new buys.
 - After an entry fill, establish required protection immediately. If protection cannot be established, use the safest currently authorized risk-reducing action.
 
@@ -46,7 +48,7 @@ Robinhood is authoritative for live buying power, positions, orders, fills, and 
 
 ## Options
 
-Options remain a separate, evidence-gated automatic lane. Do not infer options authorization from stock automation; the options policy, earned admission state, live option-chain checks and account-capacity checks must all pass.
+Options remain a separate, evidence-gated intelligence lane for ChatGPT execution. Do not infer options authorization from stock automation; the options policy, earned admission state, live option-chain checks and account-capacity checks must all pass.
 
 - `docs/data/small-account-options.json` is the research scan; `docs/data/options-shadow-trades.json` and `docs/data/options-profitability-admission.json` provide evidence before live capital is allowed.
 - The live lane is now wired into `build-execution-dispatch.mjs` as `OPTION_SEED_LANE_BUY_TRIGGER`. It remains blocked while admission is `SHADOW_ONLY` or `LIVE_SUSPENDED`.
