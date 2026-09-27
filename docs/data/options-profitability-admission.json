@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-27T18:09:03.377Z",
+  "generatedAt": "2026-09-27T18:10:11.777Z",
   "state": "SHADOW_ONLY",
   "sizeMultiplier": 0,
   "reason": "Options pattern has not yet proven positive shadow expectancy; zero or unknown forward evidence is never a pass. No live option order is authorized in this state.",
@@ -8,8 +8,10 @@
   "executionAuthorizedNote": "Execution authorization is earned only after the shadow evidence state reaches MICRO_PROBATION, PROBATION, or LIVE_ADMITTED. SHADOW_ONLY and LIVE_SUSPENDED remain blocked. The separate options policy and live broker rechecks still remain mandatory.",
   "shadow": {
     "samples": 0,
+    "distinctTradingDays": 0,
     "winRatePct": null,
     "averageR": null,
+    "profitFactor": null,
     "independenceKey": "createdDate+underlying",
     "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
     "scopeNote": "Paper-only shadow outcomes from update-options-shadow-ledger.mjs; at most one new sample per UTC day."
@@ -21,10 +23,13 @@
     "source": "options-real-trade-journal.json"
   },
   "thresholds": {
-    "minimumIndependentShadowSamplesForMicro": 8,
-    "minimumIndependentShadowSamples": 15,
+    "minimumIndependentShadowSamplesForMicro": 50,
+    "minimumIndependentShadowSamples": 100,
+    "minimumDistinctTradingDaysForMicro": 20,
+    "minimumDistinctTradingDays": 30,
     "minimumShadowWinRatePct": 52,
     "minimumShadowAverageR": 0.1,
+    "minimumShadowProfitFactor": 1.3,
     "microSizeMultiplier": 0.25,
     "probationSizeMultiplier": 0.5,
     "minimumRealResolvedForFullAdmission": 10,
@@ -33,7 +38,7 @@
     "minimumRealSamplesForSuspensionCheck": 3
   },
   "rules": [
-    "Shadow (paper) evidence can only unlock a capped, reduced-size probation tier -- never full admission, never live execution by itself.",
+    "At least 50 independent outcomes across 20 trading days, with positive after-spread expectancy and profit factor of at least 1.3, are required before micro probation.",
     "Full admission still requires the real-fill thresholds already declared in probability-first-policy.json's options section, unchanged by this file.",
     "This overlay can only reduce or block size; it can never raise it above whatever a future execution-lane policy declares.",
     "executionAuthorized becomes true only for an earned admission state; the separate options execution policy and live broker rechecks remain mandatory."

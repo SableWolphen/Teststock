@@ -87,6 +87,14 @@ The free static scan adds a second score on top of the core setup score. It cons
 
 A core TRADE CANDIDATE is downgraded to WATCH if too few independent learning confirmations agree. Very weak historical calibration can force WAIT.
 
+## Evidence-first day-trading promotion
+
+The live day-trading lane does not promote a stock setup from model score alone. A setup remains shadow-only until it has at least 100 independent resolved outcomes across 20 trading days, positive after-cost expectancy, and a profit factor of at least 1.25. Passing that bar permits only quarter-size micro probation. Larger probation requires at least 200 outcomes across 30 days, and normal size still requires positive Robinhood-confirmed real-fill evidence.
+
+Options use a separate, stricter ledger. Shadow entries use the displayed ask and exits use the executable bid. New entries stop at 15:30 New York time and all paper positions are closed from 15:50 onward. The paper exit floor moves to break-even after a 20% gain, locks part of the gain after 35%, and trails the executable bid high-water mark after 50%. At least 50 independent option outcomes across 20 trading days with profit factor of at least 1.30 are required before quarter-size micro probation can become eligible.
+
+Multiple same-day candidates speed observation, but do not replace evidence across distinct trading days and market conditions.
+
 ## Automatic past-pick tracking
 When a generated result remains a TRADE CANDIDATE after the learning gates, Teststock stores it in `docs/data/trade-history.json`.
 

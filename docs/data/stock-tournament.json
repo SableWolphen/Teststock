@@ -268,7 +268,7 @@
     {
       "queueRank": 1,
       "ticker": "BNS",
-      "action": "MARKET_CLOSED_RECHECK",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "PRIMARY",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
@@ -364,11 +364,11 @@
       },
       "adaptiveBaseTournamentScore": 56.5,
       "adaptiveTournamentScore": 56.5,
-      "adaptiveSizeMultiplier": 0.25,
+      "adaptiveSizeMultiplier": 0,
       "adaptiveOriginalQueueRank": 1,
       "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "B",
         "setupType": "STOCK_TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -384,8 +384,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -398,45 +400,24 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
       },
       "dayTradeSeedLane": {
-        "eligible": true,
-        "maxOrderUsd": 7.5,
-        "requiredEntryTier": "A",
-        "allowBTier": true,
-        "requiresPerOrderApproval": false,
-        "maxConcurrentPositions": 5,
-        "maxNewPositionsPerUtcDay": 5,
-        "currentOpenDayTradeSeedPositions": 0,
-        "openedDayTradeSeedPositionsToday": 0,
-        "existingRobinhoodCashOnly": true,
-        "agentMayInitiateDeposits": false,
-        "agentMayInitiateBankTransfers": false,
-        "marginAllowed": false,
-        "requiresBrokerResidentStop": false,
-        "mustBeFlatBeforeMarketClose": true,
-        "entryCutoffMinutesBeforeClose": 20,
-        "forcedExitStartMinutesBeforeClose": 10,
-        "journalTag": "dayTradeSeedLane:true",
-        "target1": 95.37,
-        "target2": 96.305,
-        "targetPct1": 0.02,
-        "targetPct2": 0.03,
-        "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing. Profit target tightened 2026-09-22 (user-requested day-trade-only phase): target1/target2 for this lane use targetPct1/targetPct2 (2%/3% above entry) instead of the shared swing 1.5R/2.6R geometry, since the goal is small, frequent, same-day gains rather than a multi-day swing target -- stop/invalidation logic is unchanged."
+        "eligible": false
       },
       "decisionIntelligence": {
         "decisionScore": 67.15,
@@ -636,7 +617,7 @@
     {
       "queueRank": 3,
       "ticker": "CDNA",
-      "action": "MARKET_CLOSED_RECHECK",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "RESERVE",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
@@ -733,11 +714,11 @@
       },
       "adaptiveBaseTournamentScore": 54.7,
       "adaptiveTournamentScore": 54.7,
-      "adaptiveSizeMultiplier": 0.25,
+      "adaptiveSizeMultiplier": 0,
       "adaptiveOriginalQueueRank": 3,
       "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "B",
         "setupType": "STOCK_TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -753,8 +734,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -767,45 +750,24 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
       },
       "dayTradeSeedLane": {
-        "eligible": true,
-        "maxOrderUsd": 7.5,
-        "requiredEntryTier": "A",
-        "allowBTier": true,
-        "requiresPerOrderApproval": false,
-        "maxConcurrentPositions": 5,
-        "maxNewPositionsPerUtcDay": 5,
-        "currentOpenDayTradeSeedPositions": 0,
-        "openedDayTradeSeedPositionsToday": 0,
-        "existingRobinhoodCashOnly": true,
-        "agentMayInitiateDeposits": false,
-        "agentMayInitiateBankTransfers": false,
-        "marginAllowed": false,
-        "requiresBrokerResidentStop": false,
-        "mustBeFlatBeforeMarketClose": true,
-        "entryCutoffMinutesBeforeClose": 20,
-        "forcedExitStartMinutesBeforeClose": 10,
-        "journalTag": "dayTradeSeedLane:true",
-        "target1": 66.3408,
-        "target2": 66.9912,
-        "targetPct1": 0.02,
-        "targetPct2": 0.03,
-        "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing. Profit target tightened 2026-09-22 (user-requested day-trade-only phase): target1/target2 for this lane use targetPct1/targetPct2 (2%/3% above entry) instead of the shared swing 1.5R/2.6R geometry, since the goal is small, frequent, same-day gains rather than a multi-day swing target -- stop/invalidation logic is unchanged."
+        "eligible": false
       },
       "decisionIntelligence": {
         "decisionScore": 64.89,
@@ -1005,7 +967,7 @@
     {
       "queueRank": 2,
       "ticker": "NAT",
-      "action": "MARKET_CLOSED_RECHECK",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "PRIMARY",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
@@ -1101,11 +1063,11 @@
       },
       "adaptiveBaseTournamentScore": 55,
       "adaptiveTournamentScore": 55,
-      "adaptiveSizeMultiplier": 0.25,
+      "adaptiveSizeMultiplier": 0,
       "adaptiveOriginalQueueRank": 4,
       "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "B",
         "setupType": "STOCK_TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -1121,8 +1083,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -1135,45 +1099,24 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
       },
       "dayTradeSeedLane": {
-        "eligible": true,
-        "maxOrderUsd": 7.5,
-        "requiredEntryTier": "A",
-        "allowBTier": true,
-        "requiresPerOrderApproval": false,
-        "maxConcurrentPositions": 5,
-        "maxNewPositionsPerUtcDay": 5,
-        "currentOpenDayTradeSeedPositions": 0,
-        "openedDayTradeSeedPositionsToday": 0,
-        "existingRobinhoodCashOnly": true,
-        "agentMayInitiateDeposits": false,
-        "agentMayInitiateBankTransfers": false,
-        "marginAllowed": false,
-        "requiresBrokerResidentStop": false,
-        "mustBeFlatBeforeMarketClose": true,
-        "entryCutoffMinutesBeforeClose": 20,
-        "forcedExitStartMinutesBeforeClose": 10,
-        "journalTag": "dayTradeSeedLane:true",
-        "target1": 8.466,
-        "target2": 8.549,
-        "targetPct1": 0.02,
-        "targetPct2": 0.03,
-        "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing. Profit target tightened 2026-09-22 (user-requested day-trade-only phase): target1/target2 for this lane use targetPct1/targetPct2 (2%/3% above entry) instead of the shared swing 1.5R/2.6R geometry, since the goal is small, frequent, same-day gains rather than a multi-day swing target -- stop/invalidation logic is unchanged."
+        "eligible": false
       },
       "decisionIntelligence": {
         "decisionScore": 64.82,
@@ -1373,7 +1316,7 @@
     {
       "queueRank": 4,
       "ticker": "JNJ",
-      "action": "MARKET_CLOSED_RECHECK",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "PRIMARY",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
@@ -1470,11 +1413,11 @@
       },
       "adaptiveBaseTournamentScore": 54.5,
       "adaptiveTournamentScore": 54.5,
-      "adaptiveSizeMultiplier": 0.25,
+      "adaptiveSizeMultiplier": 0,
       "adaptiveOriginalQueueRank": 2,
       "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "B",
         "setupType": "STOCK_TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -1490,8 +1433,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -1504,45 +1449,24 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
       },
       "dayTradeSeedLane": {
-        "eligible": true,
-        "maxOrderUsd": 7.5,
-        "requiredEntryTier": "A",
-        "allowBTier": true,
-        "requiresPerOrderApproval": false,
-        "maxConcurrentPositions": 5,
-        "maxNewPositionsPerUtcDay": 5,
-        "currentOpenDayTradeSeedPositions": 0,
-        "openedDayTradeSeedPositionsToday": 0,
-        "existingRobinhoodCashOnly": true,
-        "agentMayInitiateDeposits": false,
-        "agentMayInitiateBankTransfers": false,
-        "marginAllowed": false,
-        "requiresBrokerResidentStop": false,
-        "mustBeFlatBeforeMarketClose": true,
-        "entryCutoffMinutesBeforeClose": 20,
-        "forcedExitStartMinutesBeforeClose": 10,
-        "journalTag": "dayTradeSeedLane:true",
-        "target1": 286.0488,
-        "target2": 288.8532,
-        "targetPct1": 0.02,
-        "targetPct2": 0.03,
-        "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing. Profit target tightened 2026-09-22 (user-requested day-trade-only phase): target1/target2 for this lane use targetPct1/targetPct2 (2%/3% above entry) instead of the shared swing 1.5R/2.6R geometry, since the goal is small, frequent, same-day gains rather than a multi-day swing target -- stop/invalidation logic is unchanged."
+        "eligible": false
       },
       "decisionIntelligence": {
         "decisionScore": 64.47,
@@ -1754,7 +1678,7 @@
     {
       "queueRank": 5,
       "ticker": "PFG",
-      "action": "MARKET_CLOSED_RECHECK",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "PRIMARY",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
@@ -1838,11 +1762,11 @@
       },
       "adaptiveBaseTournamentScore": 54.1,
       "adaptiveTournamentScore": 54.1,
-      "adaptiveSizeMultiplier": 0.25,
+      "adaptiveSizeMultiplier": 0,
       "adaptiveOriginalQueueRank": 5,
       "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "B",
         "setupType": "STOCK_TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -1858,8 +1782,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -1872,45 +1798,24 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
       },
       "dayTradeSeedLane": {
-        "eligible": true,
-        "maxOrderUsd": 7.5,
-        "requiredEntryTier": "A",
-        "allowBTier": true,
-        "requiresPerOrderApproval": false,
-        "maxConcurrentPositions": 5,
-        "maxNewPositionsPerUtcDay": 5,
-        "currentOpenDayTradeSeedPositions": 0,
-        "openedDayTradeSeedPositionsToday": 0,
-        "existingRobinhoodCashOnly": true,
-        "agentMayInitiateDeposits": false,
-        "agentMayInitiateBankTransfers": false,
-        "marginAllowed": false,
-        "requiresBrokerResidentStop": false,
-        "mustBeFlatBeforeMarketClose": true,
-        "entryCutoffMinutesBeforeClose": 20,
-        "forcedExitStartMinutesBeforeClose": 10,
-        "journalTag": "dayTradeSeedLane:true",
-        "target1": 123.2058,
-        "target2": 124.4137,
-        "targetPct1": 0.02,
-        "targetPct2": 0.03,
-        "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing. Profit target tightened 2026-09-22 (user-requested day-trade-only phase): target1/target2 for this lane use targetPct1/targetPct2 (2%/3% above entry) instead of the shared swing 1.5R/2.6R geometry, since the goal is small, frequent, same-day gains rather than a multi-day swing target -- stop/invalidation logic is unchanged."
+        "eligible": false
       },
       "decisionIntelligence": {
         "decisionScore": 63.35,
@@ -2109,7 +2014,7 @@
     {
       "queueRank": 7,
       "ticker": "DELL",
-      "action": "MARKET_CLOSED_RECHECK",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "RESERVE",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
@@ -2211,11 +2116,11 @@
       },
       "adaptiveBaseTournamentScore": 53.8,
       "adaptiveTournamentScore": 53.8,
-      "adaptiveSizeMultiplier": 0.25,
+      "adaptiveSizeMultiplier": 0,
       "adaptiveOriginalQueueRank": 6,
       "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "B",
         "setupType": "STOCK_TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -2231,8 +2136,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -2245,17 +2152,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -2461,7 +2369,7 @@
     {
       "queueRank": 6,
       "ticker": "TSEM",
-      "action": "MARKET_CLOSED_RECHECK",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "RESERVE",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
@@ -2558,11 +2466,11 @@
       },
       "adaptiveBaseTournamentScore": 54.1,
       "adaptiveTournamentScore": 54.1,
-      "adaptiveSizeMultiplier": 0.25,
+      "adaptiveSizeMultiplier": 0,
       "adaptiveOriginalQueueRank": 7,
       "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "B",
         "setupType": "STOCK_TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -2578,8 +2486,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -2592,17 +2502,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -2809,7 +2720,7 @@
     {
       "queueRank": 8,
       "ticker": "MUFG",
-      "action": "MARKET_CLOSED_RECHECK",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "RESERVE",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
@@ -2905,11 +2816,11 @@
       },
       "adaptiveBaseTournamentScore": 53.4,
       "adaptiveTournamentScore": 53.4,
-      "adaptiveSizeMultiplier": 0.25,
+      "adaptiveSizeMultiplier": 0,
       "adaptiveOriginalQueueRank": 8,
       "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "B",
         "setupType": "STOCK_TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -2925,8 +2836,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -2939,17 +2852,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -3252,10 +3166,10 @@
       },
       "adaptiveBaseTournamentScore": 87.2,
       "adaptiveTournamentScore": 87.2,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -3271,8 +3185,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -3285,17 +3201,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -3495,7 +3412,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 11,
@@ -3593,10 +3511,10 @@
       },
       "adaptiveBaseTournamentScore": 86.5,
       "adaptiveTournamentScore": 86.5,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -3612,8 +3530,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -3626,17 +3546,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -3834,7 +3755,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 9,
@@ -3926,10 +3848,10 @@
       },
       "adaptiveBaseTournamentScore": 86.9,
       "adaptiveTournamentScore": 86.9,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -3945,8 +3867,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -3959,17 +3883,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -4159,7 +4084,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 10,
@@ -4233,10 +4159,10 @@
       },
       "adaptiveBaseTournamentScore": 86.61,
       "adaptiveTournamentScore": 86.61,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "BREAKOUT",
         "runtimeRegime": "TRENDING_UP",
@@ -4252,8 +4178,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -4266,17 +4194,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -4450,7 +4379,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 16,
@@ -4549,10 +4479,10 @@
       },
       "adaptiveBaseTournamentScore": 85.55,
       "adaptiveTournamentScore": 85.55,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -4568,8 +4498,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -4582,17 +4514,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -4791,7 +4724,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 12,
@@ -4890,10 +4824,10 @@
       },
       "adaptiveBaseTournamentScore": 86.15,
       "adaptiveTournamentScore": 86.15,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -4909,8 +4843,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -4923,17 +4859,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -5132,7 +5069,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 15,
@@ -5197,10 +5135,10 @@
       },
       "adaptiveBaseTournamentScore": 85.55,
       "adaptiveTournamentScore": 85.55,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -5216,8 +5154,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -5230,17 +5170,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -5403,7 +5344,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 14,
@@ -5483,10 +5425,10 @@
       },
       "adaptiveBaseTournamentScore": 85.85,
       "adaptiveTournamentScore": 85.85,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -5502,8 +5444,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -5516,17 +5460,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -5706,7 +5651,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 13,
@@ -5805,10 +5751,10 @@
       },
       "adaptiveBaseTournamentScore": 86,
       "adaptiveTournamentScore": 86,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -5824,8 +5770,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -5838,17 +5786,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -6047,7 +5996,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 17,
@@ -6147,10 +6097,10 @@
       },
       "adaptiveBaseTournamentScore": 85.5,
       "adaptiveTournamentScore": 85.5,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -6166,8 +6116,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -6180,17 +6132,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -6390,7 +6343,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 18,
@@ -6489,10 +6443,10 @@
       },
       "adaptiveBaseTournamentScore": 85.5,
       "adaptiveTournamentScore": 85.5,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -6508,8 +6462,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -6522,17 +6478,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -6731,7 +6688,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 19,
@@ -6831,10 +6789,10 @@
       },
       "adaptiveBaseTournamentScore": 85.2,
       "adaptiveTournamentScore": 85.2,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -6850,8 +6808,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -6864,17 +6824,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -7074,7 +7035,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 21,
@@ -7139,10 +7101,10 @@
       },
       "adaptiveBaseTournamentScore": 85.13,
       "adaptiveTournamentScore": 85.13,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -7158,8 +7120,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -7172,17 +7136,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -7345,7 +7310,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 22,
@@ -7443,10 +7409,10 @@
       },
       "adaptiveBaseTournamentScore": 85.1,
       "adaptiveTournamentScore": 85.1,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -7462,8 +7428,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -7476,17 +7444,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -7682,7 +7651,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 20,
@@ -7747,10 +7717,10 @@
       },
       "adaptiveBaseTournamentScore": 85.2,
       "adaptiveTournamentScore": 85.2,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -7766,8 +7736,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -7780,17 +7752,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -7955,7 +7928,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 23,
@@ -8035,10 +8009,10 @@
       },
       "adaptiveBaseTournamentScore": 84.7,
       "adaptiveTournamentScore": 84.7,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -8054,8 +8028,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -8068,17 +8044,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -8258,7 +8235,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 24,
@@ -8338,10 +8316,10 @@
       },
       "adaptiveBaseTournamentScore": 84.4,
       "adaptiveTournamentScore": 84.4,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -8357,8 +8335,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -8371,17 +8351,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -8559,7 +8540,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 27,
@@ -8658,10 +8640,10 @@
       },
       "adaptiveBaseTournamentScore": 83.05,
       "adaptiveTournamentScore": 83.05,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -8677,8 +8659,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -8691,17 +8675,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -8900,7 +8885,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 29,
@@ -8965,10 +8951,10 @@
       },
       "adaptiveBaseTournamentScore": 81.95,
       "adaptiveTournamentScore": 81.95,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -8984,8 +8970,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -8998,17 +8986,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -9173,7 +9162,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 26,
@@ -9273,10 +9263,10 @@
       },
       "adaptiveBaseTournamentScore": 83.2,
       "adaptiveTournamentScore": 83.2,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -9292,8 +9282,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -9306,17 +9298,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -9516,7 +9509,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 25,
@@ -9613,10 +9607,10 @@
       },
       "adaptiveBaseTournamentScore": 83.3,
       "adaptiveTournamentScore": 83.3,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -9632,8 +9626,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -9646,17 +9642,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -9846,7 +9843,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 28,
@@ -9946,10 +9944,10 @@
       },
       "adaptiveBaseTournamentScore": 82.5,
       "adaptiveTournamentScore": 82.5,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -9965,8 +9963,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -9979,17 +9979,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -10200,7 +10201,8 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "rank": 30,
@@ -10305,10 +10307,10 @@
       },
       "adaptiveBaseTournamentScore": 79.65,
       "adaptiveTournamentScore": 79.65,
-      "adaptiveSizeMultiplier": 1,
+      "adaptiveSizeMultiplier": 0,
       "profitabilityAdmission": {
-        "state": "ELITE_RUNTIME_ELIGIBLE",
-        "sizeMultiplier": 1,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "A",
         "setupType": "TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -10324,8 +10326,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -10338,17 +10342,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -10548,12 +10553,13 @@
           "required protective exit path is supported"
         ],
         "rule": "Claude must verify the exact candidate through the authenticated Robinhood Trading MCP immediately before submission. If any live broker, freshness, sizing, no-chase, duplicate-order or protection check fails, reject the candidate; never substitute an unranked symbol."
-      }
+      },
+      "action": "PROFITABILITY_ADMISSION_BLOCK"
     },
     {
       "queueRank": 1,
       "ticker": "BNS",
-      "action": "MARKET_CLOSED_RECHECK",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "PRIMARY",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
@@ -10649,11 +10655,11 @@
       },
       "adaptiveBaseTournamentScore": 56.5,
       "adaptiveTournamentScore": 56.5,
-      "adaptiveSizeMultiplier": 0.25,
+      "adaptiveSizeMultiplier": 0,
       "adaptiveOriginalQueueRank": 1,
       "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "B",
         "setupType": "STOCK_TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -10669,8 +10675,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -10683,45 +10691,24 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
       },
       "dayTradeSeedLane": {
-        "eligible": true,
-        "maxOrderUsd": 7.5,
-        "requiredEntryTier": "A",
-        "allowBTier": true,
-        "requiresPerOrderApproval": false,
-        "maxConcurrentPositions": 5,
-        "maxNewPositionsPerUtcDay": 5,
-        "currentOpenDayTradeSeedPositions": 0,
-        "openedDayTradeSeedPositionsToday": 0,
-        "existingRobinhoodCashOnly": true,
-        "agentMayInitiateDeposits": false,
-        "agentMayInitiateBankTransfers": false,
-        "marginAllowed": false,
-        "requiresBrokerResidentStop": false,
-        "mustBeFlatBeforeMarketClose": true,
-        "entryCutoffMinutesBeforeClose": 20,
-        "forcedExitStartMinutesBeforeClose": 10,
-        "journalTag": "dayTradeSeedLane:true",
-        "target1": 95.37,
-        "target2": 96.305,
-        "targetPct1": 0.02,
-        "targetPct2": 0.03,
-        "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing. Profit target tightened 2026-09-22 (user-requested day-trade-only phase): target1/target2 for this lane use targetPct1/targetPct2 (2%/3% above entry) instead of the shared swing 1.5R/2.6R geometry, since the goal is small, frequent, same-day gains rather than a multi-day swing target -- stop/invalidation logic is unchanged."
+        "eligible": false
       },
       "decisionIntelligence": {
         "decisionScore": 67.15,
@@ -10921,7 +10908,7 @@
     {
       "queueRank": 3,
       "ticker": "CDNA",
-      "action": "MARKET_CLOSED_RECHECK",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "RESERVE",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
@@ -11018,11 +11005,11 @@
       },
       "adaptiveBaseTournamentScore": 54.7,
       "adaptiveTournamentScore": 54.7,
-      "adaptiveSizeMultiplier": 0.25,
+      "adaptiveSizeMultiplier": 0,
       "adaptiveOriginalQueueRank": 3,
       "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "B",
         "setupType": "STOCK_TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -11038,8 +11025,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -11052,45 +11041,24 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
       },
       "dayTradeSeedLane": {
-        "eligible": true,
-        "maxOrderUsd": 7.5,
-        "requiredEntryTier": "A",
-        "allowBTier": true,
-        "requiresPerOrderApproval": false,
-        "maxConcurrentPositions": 5,
-        "maxNewPositionsPerUtcDay": 5,
-        "currentOpenDayTradeSeedPositions": 0,
-        "openedDayTradeSeedPositionsToday": 0,
-        "existingRobinhoodCashOnly": true,
-        "agentMayInitiateDeposits": false,
-        "agentMayInitiateBankTransfers": false,
-        "marginAllowed": false,
-        "requiresBrokerResidentStop": false,
-        "mustBeFlatBeforeMarketClose": true,
-        "entryCutoffMinutesBeforeClose": 20,
-        "forcedExitStartMinutesBeforeClose": 10,
-        "journalTag": "dayTradeSeedLane:true",
-        "target1": 66.3408,
-        "target2": 66.9912,
-        "targetPct1": 0.02,
-        "targetPct2": 0.03,
-        "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing. Profit target tightened 2026-09-22 (user-requested day-trade-only phase): target1/target2 for this lane use targetPct1/targetPct2 (2%/3% above entry) instead of the shared swing 1.5R/2.6R geometry, since the goal is small, frequent, same-day gains rather than a multi-day swing target -- stop/invalidation logic is unchanged."
+        "eligible": false
       },
       "decisionIntelligence": {
         "decisionScore": 64.89,
@@ -11290,7 +11258,7 @@
     {
       "queueRank": 2,
       "ticker": "NAT",
-      "action": "MARKET_CLOSED_RECHECK",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "PRIMARY",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
@@ -11386,11 +11354,11 @@
       },
       "adaptiveBaseTournamentScore": 55,
       "adaptiveTournamentScore": 55,
-      "adaptiveSizeMultiplier": 0.25,
+      "adaptiveSizeMultiplier": 0,
       "adaptiveOriginalQueueRank": 4,
       "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "B",
         "setupType": "STOCK_TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -11406,8 +11374,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -11420,45 +11390,24 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
       },
       "dayTradeSeedLane": {
-        "eligible": true,
-        "maxOrderUsd": 7.5,
-        "requiredEntryTier": "A",
-        "allowBTier": true,
-        "requiresPerOrderApproval": false,
-        "maxConcurrentPositions": 5,
-        "maxNewPositionsPerUtcDay": 5,
-        "currentOpenDayTradeSeedPositions": 0,
-        "openedDayTradeSeedPositionsToday": 0,
-        "existingRobinhoodCashOnly": true,
-        "agentMayInitiateDeposits": false,
-        "agentMayInitiateBankTransfers": false,
-        "marginAllowed": false,
-        "requiresBrokerResidentStop": false,
-        "mustBeFlatBeforeMarketClose": true,
-        "entryCutoffMinutesBeforeClose": 20,
-        "forcedExitStartMinutesBeforeClose": 10,
-        "journalTag": "dayTradeSeedLane:true",
-        "target1": 8.466,
-        "target2": 8.549,
-        "targetPct1": 0.02,
-        "targetPct2": 0.03,
-        "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing. Profit target tightened 2026-09-22 (user-requested day-trade-only phase): target1/target2 for this lane use targetPct1/targetPct2 (2%/3% above entry) instead of the shared swing 1.5R/2.6R geometry, since the goal is small, frequent, same-day gains rather than a multi-day swing target -- stop/invalidation logic is unchanged."
+        "eligible": false
       },
       "decisionIntelligence": {
         "decisionScore": 64.82,
@@ -11658,7 +11607,7 @@
     {
       "queueRank": 4,
       "ticker": "JNJ",
-      "action": "MARKET_CLOSED_RECHECK",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "PRIMARY",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
@@ -11755,11 +11704,11 @@
       },
       "adaptiveBaseTournamentScore": 54.5,
       "adaptiveTournamentScore": 54.5,
-      "adaptiveSizeMultiplier": 0.25,
+      "adaptiveSizeMultiplier": 0,
       "adaptiveOriginalQueueRank": 2,
       "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "B",
         "setupType": "STOCK_TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -11775,8 +11724,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -11789,45 +11740,24 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
       },
       "dayTradeSeedLane": {
-        "eligible": true,
-        "maxOrderUsd": 7.5,
-        "requiredEntryTier": "A",
-        "allowBTier": true,
-        "requiresPerOrderApproval": false,
-        "maxConcurrentPositions": 5,
-        "maxNewPositionsPerUtcDay": 5,
-        "currentOpenDayTradeSeedPositions": 0,
-        "openedDayTradeSeedPositionsToday": 0,
-        "existingRobinhoodCashOnly": true,
-        "agentMayInitiateDeposits": false,
-        "agentMayInitiateBankTransfers": false,
-        "marginAllowed": false,
-        "requiresBrokerResidentStop": false,
-        "mustBeFlatBeforeMarketClose": true,
-        "entryCutoffMinutesBeforeClose": 20,
-        "forcedExitStartMinutesBeforeClose": 10,
-        "journalTag": "dayTradeSeedLane:true",
-        "target1": 286.0488,
-        "target2": 288.8532,
-        "targetPct1": 0.02,
-        "targetPct2": 0.03,
-        "rule": "User-authorized same-day stock seed lane, expanded 2026-09-18 at user request for more trades/day and larger size. It reuses the swing seed candidate pool, never overlaps a swing selection, accepts entries only during the authoritative regular session with at least 20 minutes to close (matching the system-wide day-trader policy), and requires repeated forced-exit dispatches from 10 minutes before close until Robinhood confirms the position is flat. Up to a $30 ceiling for A-tier candidates (raised from $20); a B-tier (best-acceptable) candidate is now also day-trade-seed-lane eligible but stays capped at $7.50 (25% of the A-tier ceiling). Up to 5 concurrent positions and 5 new positions per UTC day (raised from 3/3). A fractional-only fill (common at this size) has no broker-resident stop available on Robinhood -- this lane uses the same agent-managed synthetic-stop protection already defined for fractional positions elsewhere (fractionalProtectionPolicy), including its tighter 0.75%-of-equity planned-stop-risk cap and mandatory active-monitoring requirement, rather than requiring an impossible broker-resident stop. Synthetic protection still requires the same <=5 minute active-monitoring cadence during the regular session as the swing lane, separate from this lane's own forced-exit timing. Profit target tightened 2026-09-22 (user-requested day-trade-only phase): target1/target2 for this lane use targetPct1/targetPct2 (2%/3% above entry) instead of the shared swing 1.5R/2.6R geometry, since the goal is small, frequent, same-day gains rather than a multi-day swing target -- stop/invalidation logic is unchanged."
+        "eligible": false
       },
       "decisionIntelligence": {
         "decisionScore": 64.47,
@@ -12039,7 +11969,7 @@
     {
       "queueRank": 7,
       "ticker": "DELL",
-      "action": "MARKET_CLOSED_RECHECK",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "RESERVE",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
@@ -12141,11 +12071,11 @@
       },
       "adaptiveBaseTournamentScore": 53.8,
       "adaptiveTournamentScore": 53.8,
-      "adaptiveSizeMultiplier": 0.25,
+      "adaptiveSizeMultiplier": 0,
       "adaptiveOriginalQueueRank": 6,
       "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "B",
         "setupType": "STOCK_TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -12161,8 +12091,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -12175,17 +12107,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -12391,7 +12324,7 @@
     {
       "queueRank": 6,
       "ticker": "TSEM",
-      "action": "MARKET_CLOSED_RECHECK",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "RESERVE",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
@@ -12488,11 +12421,11 @@
       },
       "adaptiveBaseTournamentScore": 54.1,
       "adaptiveTournamentScore": 54.1,
-      "adaptiveSizeMultiplier": 0.25,
+      "adaptiveSizeMultiplier": 0,
       "adaptiveOriginalQueueRank": 7,
       "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "B",
         "setupType": "STOCK_TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -12508,8 +12441,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -12522,17 +12457,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -12739,7 +12675,7 @@
     {
       "queueRank": 8,
       "ticker": "MUFG",
-      "action": "MARKET_CLOSED_RECHECK",
+      "action": "PROFITABILITY_ADMISSION_BLOCK",
       "queueRole": "RESERVE",
       "entryTier": "B",
       "entryTierLabel": "BEST_ACCEPTABLE",
@@ -12835,11 +12771,11 @@
       },
       "adaptiveBaseTournamentScore": 53.4,
       "adaptiveTournamentScore": 53.4,
-      "adaptiveSizeMultiplier": 0.25,
+      "adaptiveSizeMultiplier": 0,
       "adaptiveOriginalQueueRank": 8,
       "profitabilityAdmission": {
-        "state": "BEST_ACCEPTABLE_MICRO",
-        "sizeMultiplier": 0.25,
+        "state": "SHADOW_ONLY",
+        "sizeMultiplier": 0,
         "entryTier": "B",
         "setupType": "STOCK_TREND",
         "runtimeRegime": "TRENDING_UP",
@@ -12855,8 +12791,10 @@
         "shadow": {
           "scope": "SETUP_FALLBACK",
           "samples": 0,
+          "distinctTradingDays": 0,
           "winRatePct": null,
           "averageR": null,
+          "profitFactor": null,
           "realFillSamples": 0,
           "shadowOnlySamples": 0,
           "independenceKey": "decisionDate+symbol+setup+regime",
@@ -12869,17 +12807,18 @@
           "averageRealizedR": null
         },
         "thresholds": {
-          "minimumIndependentShadowSamplesForMicro": 6,
-          "minimumIndependentShadowSamples": 12,
+          "minimumIndependentShadowSamplesForMicro": 100,
+          "minimumIndependentShadowSamples": 200,
+          "minimumDistinctTradingDaysForMicro": 20,
+          "minimumDistinctTradingDays": 30,
           "minimumShadowWinRatePct": 50,
-          "minimumShadowAverageR": 0.15,
-          "eliteARuntimeSizeMultiplier": 1,
-          "bestAcceptableBMicroSizeMultiplier": 0.25,
+          "minimumShadowAverageR": 0.1,
+          "minimumShadowProfitFactor": 1.25,
           "minimumRealSamplesForSuspensionCheck": 8,
           "minimumRealSamplesForFullAdmission": 15,
           "minimumRealAverageRForFullAdmission": 0.1
         },
-        "reason": "Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes."
+        "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
       },
       "seedLane": {
         "eligible": false
@@ -13111,8 +13050,8 @@
   },
   "profitabilityAdmissionPolicy": {
     "enabled": true,
-    "mode": "TIERED_A_NORMAL_B_MICRO_WITH_REAL_SUSPENSION",
-    "rule": "A-tier research winners no longer need to wait for a large forward-shadow sample before becoming runtime-eligible; they may use up to their already-encoded normal size only after every downstream Teststock and live Robinhood guard passes. B-tier best-acceptable stocks are capped at 25% micro-probation size. Disabled regimes, contradictory shadow evidence, or negative Robinhood-confirmed real-fill probation remain hard blocks. Historical/backtest evidence remains diagnostic and cannot override a failed live guard."
+    "mode": "EVIDENCE_FIRST_DAY_TRADING",
+    "rule": "Every stock setup remains shadow-only until at least 100 independent outcomes across 20 trading days pass positive expectancy, profit-factor, regime and safety gates. Micro probation is capped at 25%; larger size requires additional forward and Robinhood-confirmed real-fill evidence."
   },
   "decisionIntelligencePolicy": {
     "enabled": true,

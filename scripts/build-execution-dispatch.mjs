@@ -120,13 +120,14 @@ if(optionsPolicy.enabled===true&&Array.isArray(optionsPolicy.allowedUnderlyingTy
       stateChangedAt:optionsScan.generatedAt,observedPrice:candidate.ask,optionContract:candidate.contract,optionKind:candidate.kind||optionLaneResult.seedLane.kind,
       expiry:candidate.expiry,dte:candidate.dte,dteBucket:candidate.dteBucket,strike:candidate.strike,bid:candidate.bid,ask:candidate.ask,mid:candidate.mid,spreadPct:candidate.spreadPct,delta:candidate.delta,iv:candidate.iv,
       maxOrderUsd:Number(optionsPolicy.maxOrderUsd||15),admissionState:optionsAdmission.state,
+      profitProtection:optionLaneResult.seedLane,
       requestedAction:'VERIFY_LIVE_OPTION_CHAIN_ACCOUNT_GUARDS_AND_EXECUTE_LONG_OPTION_IF_STILL_ELIGIBLE',priority:45,reason:optionLaneResult.reason
     };
   }
 }
 const optionCandidateCompact=optionTrigger?{
   fingerprint:`${optionTrigger.id}|${optionTrigger.trigger}|${optionTrigger.stateChangedAt}`,isNew:true,isActionable:true,priority:45,assetClass:'OPTION',ticker:optionTrigger.ticker,trigger:optionTrigger.trigger,
-  optionContract:optionTrigger.optionContract,optionKind:optionTrigger.optionKind,expiry:optionTrigger.expiry,dte:optionTrigger.dte,dteBucket:optionTrigger.dteBucket,strike:optionTrigger.strike,bid:optionTrigger.bid,ask:optionTrigger.ask,mid:optionTrigger.mid,spreadPct:optionTrigger.spreadPct,delta:optionTrigger.delta,iv:optionTrigger.iv,maxOrderUsd:optionTrigger.maxOrderUsd,admissionState:optionTrigger.admissionState,requestedAction:optionTrigger.requestedAction,triggerStateChangedAt:optionTrigger.stateChangedAt,freshnessAnchor:optionTrigger.stateChangedAt,triggerAgeMs:ageMs(optionTrigger.stateChangedAt),reason:optionTrigger.reason,packet:`${optionTrigger.ticker} | ${optionTrigger.optionKind} | ${optionTrigger.optionContract} | premium ${optionTrigger.ask} | ${optionTrigger.requestedAction}`
+  optionContract:optionTrigger.optionContract,optionKind:optionTrigger.optionKind,expiry:optionTrigger.expiry,dte:optionTrigger.dte,dteBucket:optionTrigger.dteBucket,strike:optionTrigger.strike,bid:optionTrigger.bid,ask:optionTrigger.ask,mid:optionTrigger.mid,spreadPct:optionTrigger.spreadPct,delta:optionTrigger.delta,iv:optionTrigger.iv,maxOrderUsd:optionTrigger.maxOrderUsd,admissionState:optionTrigger.admissionState,profitProtection:optionTrigger.profitProtection,requestedAction:optionTrigger.requestedAction,triggerStateChangedAt:optionTrigger.stateChangedAt,freshnessAnchor:optionTrigger.stateChangedAt,triggerAgeMs:ageMs(optionTrigger.stateChangedAt),reason:optionTrigger.reason,packet:`${optionTrigger.ticker} | ${optionTrigger.optionKind} | ${optionTrigger.optionContract} | premium ${optionTrigger.ask} | ${optionTrigger.requestedAction}`
 }:null;
 
 const out={

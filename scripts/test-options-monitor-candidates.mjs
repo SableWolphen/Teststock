@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {evaluateOptionsSeedLaneCandidate} from './options-monitor-candidates.mjs';
 
-const seedPolicy={enabled:true,maxOrderUsd:15,maxConcurrentPositions:1,maxNewPositionsPerUtcWeek:1,requiredAdmissionStates:['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'],requiredDteBucket:'STANDARD',allowedUnderlyingTypes:['STOCK','INDEX_ETF'],kind:'LONG_CALL',targetMultiplier:1.5,stopMultiplier:0.6,forcedExitDaysToExpiry:3,resetGateAfterLiveLoss:true};
+const seedPolicy={enabled:true,maxOrderUsd:15,maxConcurrentPositions:1,maxNewPositionsPerUtcWeek:1,requiredAdmissionStates:['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'],requiredDteBucket:'STANDARD',allowedUnderlyingTypes:['STOCK','INDEX_ETF'],kind:'LONG_CALL',targetMultiplier:2,stopMultiplier:0.6,breakEvenArmMultiplier:1.2,firstLockArmMultiplier:1.35,firstLockFloorMultiplier:1.15,trailArmMultiplier:1.5,trailFraction:.8,mustBeFlatBeforeMarketClose:true,forcedExitMinutesBeforeClose:10,resetGateAfterLiveLoss:true};
 const goodCandidate={underlying:'SPY',underlyingType:'INDEX_ETF',dteBucket:'STANDARD',oneContractPremiumDollars:12};
 
 test('SHADOW_ONLY with zero evidence blocks every candidate, however good it looks',()=>{

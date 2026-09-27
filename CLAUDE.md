@@ -16,6 +16,7 @@ Robinhood is authoritative for live buying power, positions, orders, fills, and 
 
 ### Stocks
 - Qualified stock entries are automatic. No user approval or approval batch is required.
+- A high model score is not sufficient qualification. The current profitability-admission file must show `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`; `SHADOW_ONLY` cannot use a seed lane to bypass the evidence requirement.
 - This includes normal A/B/C candidates and encoded stock seed-lane candidates when their current Teststock rules permit execution.
 - Re-check every candidate immediately before submission: freshness, max entry (see bounded momentum entry below), buying power, account floor, portfolio heat, correlation, trade frequency, duplicate orders, sizing, and protection capability.
 - Bounded momentum entry: a confirmed setup may be entered up to 1.5% above its technical trigger price if volume and momentum still confirm the move at the live re-check, using a tightened stop and reduced size to offset the smaller margin of safety. Skip the trade instead if price is already beyond that 1.5% band, if volume/momentum no longer confirm at re-check, or if a tightened stop and reduced size cannot both be established. This is a bounded allowance, not open-ended chasing.
@@ -46,6 +47,7 @@ Options remain a separate, evidence-gated automatic lane. Do not infer options a
 - When admission reaches `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`, the lane may automatically submit only a whole long stock call/put contract that passes every live Claude/Robinhood check, within the $15/5%-of-account premium ceiling, one open option at a time and one new option entry per UTC week.
 - Options use existing dedicated Robinhood Agentic account funds only: no deposits, bank transfers, margin, naked selling, exercise, or overnight holding. A live loss resets the options lane until fresh positive independent shadow evidence is earned.
 - The live option lane never promises profit. If the contract does not have sufficient positive evidence, liquidity, price/Greeks, or account capacity, Claude must return `NO_ACTION`. Reaching a probation tier in the admission file is evidence, not by itself a green light to submit an order — the dispatch wiring is the remaining gate.
+- Options shadow evidence is intraday and executable-price based: entry ask, exit bid, no midpoint fills. It requires at least 50 independent outcomes across 20 trading days and profit factor of at least 1.30 before micro probation. Profit floors may only move upward, and every position must be flat by the session cutoff.
 
 ## Idle behavior
 

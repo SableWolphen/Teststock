@@ -21,6 +21,7 @@ const policy={
   },
   options:{
     stocksRemainDefault:true,minUnderlyingGrowthQuality:97,minHistoricalSamples:25,minHistoricalWinRatePct:62,minConservativeExpectedR:0.9,minCostAdjustedConservativeExpectedR:0.85,minRewardRisk:3,requireWholeContractRuntimeCheck:true,requireLiveRealFillEvidence:true,liveEvidenceMinimumResolvedTrades:10,liveEvidenceMinimumAverageR:0.25,liveEvidenceMinimumWinRatePct:50,
+    seedLane:{enabled:true,maxOrderUsd:15,maxConcurrentPositions:1,maxNewPositionsPerUtcWeek:1,requiredAdmissionStates:['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'],requiredDteBucket:'STANDARD',allowedUnderlyingTypes:['STOCK','INDEX_ETF'],kind:'LONG_CALL',targetMultiplier:2,stopMultiplier:.6,breakEvenArmMultiplier:1.2,firstLockArmMultiplier:1.35,firstLockFloorMultiplier:1.15,trailArmMultiplier:1.5,trailFraction:.8,mustBeFlatBeforeMarketClose:true,entryCutoffMinutesBeforeClose:30,forcedExitMinutesBeforeClose:10,resetGateAfterLiveLoss:true,rule:'One cash-funded long option at a time, only after the independent options shadow ledger earns admission. Entry uses a marketable limit within the encoded premium cap. Profit protection may only move upward; all positions must be sold to close before the session ends.'},
     instructions:'An option may be considered only after the underlying clears these research and cost-adjusted gates AND Claude confirms the live Teststock real-fill evidence gate. One whole contract must still fit the active capital-tier dollar-risk cap.'
   },
   crypto:{
