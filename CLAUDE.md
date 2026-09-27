@@ -6,7 +6,7 @@ Claude is the sole broker execution agent for Teststock. GitHub discovers, ranks
 
 Teststock uses the repository-wide aggressive cash-only contract in `docs/AGGRESSIVE-CASH-ONLY.md`. Treat that contract as additive to every rule below. Aggressive execution may use the largest size already permitted by evidence and live risk capacity, but it never bypasses profitability admission, broker reconciliation, protection, liquidity, freshness, or cash-only limits.
 
-Before every new entry, reconcile Robinhood positions and open orders against Teststock state. Any unexplained broker exposure or conflicting position/order state blocks new entries until reconciled. Robinhood remains authoritative.
+Before every new entry, reconcile Robinhood positions and open orders against Teststock state. Robinhood remains authoritative. A broker position that exists in Robinhood but is missing from Teststock must be adopted into the managed position profile rather than treated as a global trading lock. Adopted positions immediately count toward cash, aggregate risk, correlation/concentration, duplicate-symbol/contract checks, exits, and protection. Ambiguous or conflicting open-order state blocks the conflicting action until reconciled; it does not automatically freeze unrelated entries.
 
 ## Sources of truth
 
@@ -50,7 +50,7 @@ Options remain a separate, evidence-gated automatic lane. Do not infer options a
 
 - `docs/data/small-account-options.json` is the research scan; `docs/data/options-shadow-trades.json` and `docs/data/options-profitability-admission.json` provide evidence before live capital is allowed.
 - The live lane is now wired into `build-execution-dispatch.mjs` as `OPTION_SEED_LANE_BUY_TRIGGER`. It remains blocked while admission is `SHADOW_ONLY` or `LIVE_SUSPENDED`.
-- When admission reaches `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`, the lane may automatically submit only a whole long stock call/put contract that passes every live Claude/Robinhood check, within the $15/5%-of-account premium ceiling, one open option at a time and one new option entry per UTC week.
+- When admission reaches `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`, the lane may automatically submit a whole long stock call/put contract that passes every live Claude/Robinhood check, within the current per-trade premium ceiling and aggregate cash/premium-risk limits. Existing broker options are adopted into the managed profile and counted against those limits instead of causing a mismatch-wide freeze. Duplicate exposure or insufficient remaining risk capacity still blocks that specific new entry.
 - Options use existing dedicated Robinhood Agentic account funds only: no deposits, bank transfers, margin, naked selling, exercise, or overnight holding. A live loss resets the options lane until fresh positive independent shadow evidence is earned.
 - The live option lane never promises profit. If the contract does not have sufficient positive evidence, liquidity, price/Greeks, or account capacity, Claude must return `NO_ACTION`. Reaching a probation tier in the admission file is evidence, not by itself a green light to submit an order — the dispatch wiring is the remaining gate.
 - Long options do not need to be held to expiration. Profitable contracts may be sold-to-close early whenever the current option exit policy produces a validated profit-taking, trailing-profit, risk-reduction, or session-cutoff exit. Expiration is a maximum lifetime, not a profit target.
