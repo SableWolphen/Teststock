@@ -16,7 +16,9 @@ const candidates=(scan.candidates||[]).filter(x=>x.contract&&!tracked.has(x.cont
 async function replay(c){
   const end=new Date().toISOString();
   const start=new Date(Date.now()-120*86400000).toISOString();
-  const q=new URLSearchParams({start,end,timeframe:'1Day',limit:'1000',feed:process.env.ALPACA_OPTIONS_FEED||'indicative',sort:'asc'});
+  // Alpaca's historical option-bars endpoint does not accept a feed query
+  // parameter. The account's available feed is selected by the API itself.
+  const q=new URLSearchParams({start,end,timeframe:'1Day',limit:'1000',sort:'asc'});
   const raw=await get(`https://data.alpaca.markets/v1beta1/options/bars?symbols=${encodeURIComponent(c.contract)}&${q}`);
   const rows=raw.bars?.[c.contract]||raw.bars?.[c.contract.toUpperCase()]||[];
   if(!rows.length)return null;
