@@ -138,3 +138,23 @@ jobs:
             echo "Unable to publish trigger state after 3 attempts." >&2
             exit 1
           fi
+
+      - name: Wake live executor for actionable dispatch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! jq -e '.claudeShouldRun == true or .executionNeeded == true' docs/data/execution-dispatch.json >/dev/null; then
+            echo "Dispatch is idle; no executor wake required."
+            exit 0
+          fi
+
+          existing="$(gh run list --workflow live-intraday-runner.yml --limit 10 --json databaseId,status 2>/dev/null || echo '[]')"
+          if echo "$existing" | jq -e 'any(.[]; .status == "queued" or .status == "in_progress")' >/dev/null 2>&1; then
+            echo "Live Teststock executor is already queued/running; it will consume the actionable dispatch on its next fast cycle."
+            exit 0
+          fi
+
+          gh workflow run live-intraday-runner.yml --ref main
+          echo "Actionable dispatch published and live executor wake requested."
