@@ -6,7 +6,9 @@ if(!key||!secret)throw new Error('Missing Alpaca credentials');
 const headers={'APCA-API-KEY-ID':key,'APCA-API-SECRET-KEY':secret};
 const read=async(f,x={})=>{try{return JSON.parse(await fs.readFile(f,'utf8'));}catch{return x;}};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function get(u){let e;for(let i=0;i<4;i++){try{const r=await fetch(u,{headers});if(r.ok)return r.json();e=new Error(`${r.status} ${await r.text()}`);}catch(x){e=x;}await sleep(250*(2**i));}throw e;}
+let requestGate=Promise.resolve(),lastRequestAt=0;
+async function throttle(){const prev=requestGate;let release;requestGate=new Promise(r=>release=r);await prev;const wait=Math.max(0,250-(Date.now()-lastRequestAt));if(wait)await sleep(wait);lastRequestAt=Date.now();release();}
+async function get(u){let e;for(let i=0;i<6;i++){try{await throttle();const r=await fetch(u,{headers});if(r.ok)return r.json();const body=await r.text();e=new Error(`${r.status} ${body}`);const retryAfter=Number(r.headers.get('retry-after'));if(r.status===429){await sleep(Number.isFinite(retryAfter)?retryAfter*1000:1000*(2**i));continue;}}catch(x){e=x;}await sleep(350*(2**i));}throw e;}
 const broad=await read('docs/data/broad-stock-universe.json');
 const full=await read('docs/data/full-stock-validation-pool.json');
 const web=await read('docs/data/web-market-history-learning.json');
