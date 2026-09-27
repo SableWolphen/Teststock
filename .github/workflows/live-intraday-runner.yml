@@ -22,6 +22,9 @@ on:
       - 'scripts/apply-model-drift.mjs'
       - 'scripts/validate-trade-quality-engine.mjs'
       - 'scripts/build-live-trading-health.mjs'
+      - 'scripts/runner-health.mjs'
+      - 'scripts/write-runner-heartbeat.mjs'
+      - 'scripts/verify-runtime-prerequisites.mjs'
       - 'scripts/claude-trade-quality-rules.md'
       - 'scripts/claude-stock-rotation-rules.md'
       - 'scripts/daytrader-profit-discipline.md'
@@ -63,30 +66,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          command -v node >/dev/null
-          command -v python >/dev/null
-          command -v claude >/dev/null
-          test -f .mcp.json
-          test -f scripts/run-live-intraday-cycle.sh
-          test -f scripts/run-background-learning.sh
-          test -f scripts/build-daytrader-intelligence.mjs
-          test -f scripts/validate-daytrader-intelligence.mjs
-          test -f scripts/build-real-fill-scorecard.mjs
-          test -f scripts/build-trade-quality-engine.mjs
-          test -f scripts/apply-model-drift.mjs
-          test -f scripts/validate-trade-quality-engine.mjs
-          test -f scripts/build-live-trading-health.mjs
-          test -f scripts/claude-trade-quality-rules.md
-          test -f scripts/claude-stock-rotation-rules.md
-          test -f scripts/daytrader-profit-discipline.md
-          test -f scripts/claude-executor-prompt.md && test -f scripts/claude-options-rules.md && test -f scripts/options-monitor-candidates.mjs && test -f scripts/validate-options-policy.mjs
-          grep -q 'learning-output' scripts/run-live-intraday-cycle.sh
-          grep -q 'BACKGROUND_LEARNING_REFRESHED' scripts/run-background-learning.sh
-          grep -q 'real-fill-scorecard.json' scripts/claude-trade-quality-rules.md
-          grep -q 'daytrader-profit-discipline.md' scripts/run-live-intraday-cycle.sh
-          grep -q 'OPEN_DRIVE' scripts/daytrader-profit-discipline.md
-          grep -q 'MIDDAY' scripts/daytrader-profit-discipline.md
-          grep -q 'POWER_HOUR' scripts/daytrader-profit-discipline.md
+          if ! command -v claude >/dev/null && command -v powershell.exe >/dev/null; then
+            claude_path=$(powershell.exe -NoProfile -Command "(Get-Command claude -ErrorAction SilentlyContinue).Source" | tr -d '\r' | tail -n 1)
+            if [ -n "$claude_path" ]; then
+              claude_dir=$(dirname "$(cygpath -u "$claude_path")")
+              export PATH="$claude_dir:$PATH"
+              echo "$claude_dir" >> "$GITHUB_PATH"
+              echo "Recovered Claude CLI from Windows command discovery: $claude_path"
+            fi
+          fi
+          for executable in node python claude; do
+            if ! command -v "$executable" >/dev/null; then
+              echo "::error::Runtime prerequisite failed: executable '$executable' is not on PATH"
+              exit 1
+            fi
+            echo "Runtime executable found: $executable=$(command -v "$executable")"
+          done
+          node scripts/verify-runtime-prerequisites.mjs
           # Unit/regression tests run in Build Check; startup verification must only
           # gate on runtime prerequisites so a test failure cannot kill live sessions.
           echo 'Persistent Teststock trading and independent background-learning lanes are present.'
@@ -118,8 +114,10 @@ jobs:
           PYTHONIOENCODING: utf-8
           TESTSTOCK_LEARNING_INTERVAL_SECONDS: 300
           GH_TOKEN: ${{ github.token }}
+          TESTSTOCK_RUNNER_HEARTBEAT_FILE: ${{ runner.temp }}/teststock-runtime/runner-heartbeat.json
         run: |
           set -euo pipefail
+          node scripts/write-runner-heartbeat.mjs "$TESTSTOCK_RUNNER_HEARTBEAT_FILE"
           bash scripts/run-background-learning.sh &
           learner_pid=$!
           cleanup() {
@@ -135,6 +133,7 @@ jobs:
             cycle=$((cycle+1))
             started=$(date +%s)
             echo "=== Teststock fast intraday cycle $cycle at $(date -u +%FT%TZ) ==="
+            node scripts/write-runner-heartbeat.mjs "$TESTSTOCK_RUNNER_HEARTBEAT_FILE"
             if ! git fetch --quiet origin main; then
               echo "git fetch failed this cycle (likely transient network); reusing current checkout"
             elif ! git reset --hard --quiet origin/main; then

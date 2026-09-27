@@ -4,12 +4,31 @@
 const round=(n,d=4)=>Number(Number(n||0).toFixed(d));
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 
-// Fixed anchors rather than stock-style R geometry: a long option's "risk" is the whole
-// premium, so target/stop are defined as multiples of the entry premium (ask), not a
-// technical stop-loss level. +50% target, -40% stop -- a deliberately asymmetric,
-// definedRiskOnly band consistent with probability-first-policy.json's options section.
-export const TARGET_MULTIPLIER=1.5;
+// Version 2 models an intraday long-option exit using executable prices. It arms a
+// progressively higher floor as the bid rises, and never lowers that floor. The final
+// target is deliberately beyond the first profit-lock threshold so the paper ledger can
+// measure how much continuation was retained versus given back.
+export const TARGET_MULTIPLIER=2;
 export const STOP_MULTIPLIER=0.6;
+export const BREAK_EVEN_ARM_MULTIPLIER=1.2;
+export const FIRST_LOCK_ARM_MULTIPLIER=1.35;
+export const FIRST_LOCK_FLOOR_MULTIPLIER=1.15;
+export const TRAIL_ARM_MULTIPLIER=1.5;
+export const TRAIL_FRACTION=0.8;
+
+export function newYorkSession(nowIso){
+  const parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(nowIso)).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+  const date=`${parts.year}-${parts.month}-${parts.day}`,minute=Number(parts.hour)*60+Number(parts.minute);
+  return {date,minute,entryAllowed:minute>=575&&minute<930,forcedExitDue:minute>=950};
+}
+
+export function protectedFloor(entry,highWaterBid,initialStop){
+  let floor=Number(initialStop);
+  if(highWaterBid>=entry*BREAK_EVEN_ARM_MULTIPLIER)floor=Math.max(floor,entry);
+  if(highWaterBid>=entry*FIRST_LOCK_ARM_MULTIPLIER)floor=Math.max(floor,entry*FIRST_LOCK_FLOOR_MULTIPLIER);
+  if(highWaterBid>=entry*TRAIL_ARM_MULTIPLIER)floor=Math.max(floor,highWaterBid*TRAIL_FRACTION);
+  return round(floor,4);
+}
 
 export function buildShadowTradeId(contract,createdDate){
   return `${createdDate}-${contract}`;
@@ -19,14 +38,15 @@ export function buildShadowTradeId(contract,createdDate){
 // 0DTE/WEEKLY stay diagnostic-only and never enter the shadow-to-live pathway).
 // existingTrades: current docs/data/options-shadow-trades.json trades array.
 // Returns new trade records to append (does not mutate existingTrades).
-export function openNewShadowTrades({candidates=[],existingTrades=[],todayIso,nowIso,maxNewPerUtcDay=25}={}){
+export function openNewShadowTrades({candidates=[],existingTrades=[],todayIso,nowIso,maxNewPerUtcDay=25,marketSession=null}={}){
+  if(marketSession&&(!marketSession.entryAllowed||marketSession.date!==todayIso))return [];
   const standard=candidates.filter(x=>x.dteBucket==='STANDARD'&&Number(x.ask)>0&&Number(x.dte)>0);
   if(!standard.length)return [];
   const trackedContracts=new Set(existingTrades.map(x=>x.contract));
   const openedToday=existingTrades.filter(x=>x.createdDate===todayIso).length;
   if(openedToday>=maxNewPerUtcDay)return [];
   const available=standard.filter(x=>!trackedContracts.has(x.contract)).slice(0,Math.max(0,maxNewPerUtcDay-openedToday));
-  return available.map(best=>{ const entry=round(Number(best.ask),4); const stop=round(entry*STOP_MULTIPLIER,4); const target=round(entry*TARGET_MULTIPLIER,4); const risk=entry-stop; return {
+  return available.map(best=>{ const entry=round(Number(best.ask),4); const entryBid=round(Number(best.bid||0),4); const stop=round(entry*STOP_MULTIPLIER,4); const target=round(entry*TARGET_MULTIPLIER,4); const risk=entry-stop; return {
     id:buildShadowTradeId(best.contract,todayIso),
     createdDate:todayIso,
     createdAt:nowIso,
@@ -36,7 +56,10 @@ export function openNewShadowTrades({candidates=[],existingTrades=[],todayIso,no
     expiry:best.expiry,
     dteAtCreation:best.dte,
     entry,
+    entryBid,
+    entrySpreadPct:entry>0?round((entry-entryBid)/entry*100,2):null,
     stop,
+    protectedFloor:stop,
     target,
     targetR:round((target-entry)/risk,4),
     status:'OPEN',
@@ -45,6 +68,12 @@ export function openNewShadowTrades({candidates=[],existingTrades=[],todayIso,no
     resolvedAt:null,
     lastCheckedAt:nowIso,
     lastCheckedMid:null,
+    lastCheckedBid:null,
+    highWaterBid:entryBid,
+    lowWaterBid:entryBid,
+    exitPolicyVersion:2,
+    deltaAtCreation:best.delta??null,
+    ivAtCreation:best.iv??null,
     underlyingScore:best.underlyingScore??null,
     score:best.score??null,
     notes:null,
@@ -56,24 +85,33 @@ export function openNewShadowTrades({candidates=[],existingTrades=[],todayIso,no
 // symbol re-queried live, or null if the lookup found no data this run. nowIso/expiryIso
 // drive the expiry check. Never fabricates a resolution from missing data -- if the contract
 // has passed expiry and no snapshot could be found, marks UNKNOWN rather than guessing WIN/LOSS.
-export function resolveOptionShadowTrade(trade,liveSnapshot,nowIso){
+export function resolveOptionShadowTrade(trade,liveSnapshot,nowIso,marketSession=null){
   if(trade.status!=='OPEN')return trade;
   const now=new Date(nowIso),expiry=new Date(trade.expiry+'T21:00:00Z'),pastExpiry=now>=expiry;
   const risk=trade.entry-trade.stop;
   if(liveSnapshot&&Number(liveSnapshot.bid)>0&&Number(liveSnapshot.ask)>0){
-    const mid=round((Number(liveSnapshot.bid)+Number(liveSnapshot.ask))/2,4);
-    if(mid>=trade.target){
-      return {...trade,status:'RESOLVED',outcome:'WIN',realizedR:trade.targetR,resolvedAt:nowIso,lastCheckedAt:nowIso,lastCheckedMid:mid};
+    const bid=round(Number(liveSnapshot.bid),4),ask=round(Number(liveSnapshot.ask),4),mid=round((bid+ask)/2,4);
+    const highWaterBid=round(Math.max(Number(trade.highWaterBid||0),bid),4);
+    const lowWaterBid=round(Math.min(Number(trade.lowWaterBid??bid),bid),4);
+    const floor=protectedFloor(Number(trade.entry),highWaterBid,Number(trade.stop));
+    const exitAt=(price,outcome,reason)=>{
+      const r=clamp(round((price-trade.entry)/risk,4),-1,Number(trade.targetR));
+      return {...trade,status:'RESOLVED',outcome,exitReason:reason,exitBid:price,realizedR:r,resolvedAt:nowIso,lastCheckedAt:nowIso,lastCheckedMid:mid,lastCheckedBid:bid,highWaterBid,lowWaterBid,protectedFloor:floor};
+    };
+    if(bid>=trade.target){
+      return exitAt(bid,'WIN','TARGET');
     }
-    if(mid<=trade.stop){
-      return {...trade,status:'RESOLVED',outcome:'LOSS',realizedR:-1,resolvedAt:nowIso,lastCheckedAt:nowIso,lastCheckedMid:mid};
+    if(bid<=floor){
+      return exitAt(bid,bid>trade.entry?'WIN':'LOSS',floor>trade.stop?'PROFIT_FLOOR':'STOP');
     }
+    const createdDate=trade.createdDate||String(trade.createdAt||'').slice(0,10);
+    const sameDayExit=marketSession?.forcedExitDue&&marketSession.date===createdDate;
+    const missedSameDayExit=marketSession?.date&&marketSession.date>createdDate;
+    if(sameDayExit||missedSameDayExit)return exitAt(bid,bid>trade.entry?'WIN':bid<trade.entry?'LOSS':'FLAT',sameDayExit?'SESSION_CUTOFF':'LATE_SESSION_RECONCILIATION');
     if(pastExpiry){
-      const r=clamp(round((mid-trade.entry)/risk,4),-1,trade.targetR);
-      const outcome=r>0.02?'WIN':r<-0.02?'LOSS':'FLAT';
-      return {...trade,status:'RESOLVED',outcome,realizedR:r,resolvedAt:nowIso,lastCheckedAt:nowIso,lastCheckedMid:mid};
+      return exitAt(bid,bid>trade.entry?'WIN':bid<trade.entry?'LOSS':'FLAT','EXPIRY_RECONCILIATION');
     }
-    return {...trade,lastCheckedAt:nowIso,lastCheckedMid:mid};
+    return {...trade,lastCheckedAt:nowIso,lastCheckedMid:mid,lastCheckedBid:bid,highWaterBid,lowWaterBid,protectedFloor:floor};
   }
   if(pastExpiry){
     return {...trade,status:'UNKNOWN',outcome:null,realizedR:null,resolvedAt:nowIso,lastCheckedAt:nowIso,notes:'Contract had no live snapshot data at/after expiry; outcome cannot be determined from real prices, so no result is recorded rather than guessed.'};
@@ -91,11 +129,16 @@ export function summarizeShadowTrades(trades){
   }
   const independent=[...independentMap.values()];
   const wins=independent.filter(x=>Number(x.realizedR)>0).length;
+  const gains=independent.filter(x=>Number(x.realizedR)>0).reduce((s,x)=>s+Number(x.realizedR),0);
+  const losses=Math.abs(independent.filter(x=>Number(x.realizedR)<0).reduce((s,x)=>s+Number(x.realizedR),0));
+  const distinctDays=new Set(independent.map(x=>x.createdDate).filter(Boolean)).size;
   return {
     resolvedCount:resolved.length,
     independentSamples:independent.length,
     winRatePct:independent.length?round(wins/independent.length*100,1):null,
     averageR:independent.length?round(independent.reduce((s,x)=>s+Number(x.realizedR),0)/independent.length,2):null,
+    profitFactor:losses>0?round(gains/losses,2):gains>0?999:null,
+    distinctTradingDays:distinctDays,
     independenceKey:'createdDate+underlying',
     duplicateResolutionRule:'Keep the most adverse realized R for duplicate keys.',
   };

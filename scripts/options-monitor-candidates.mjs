@@ -4,9 +4,8 @@
 // Kept separate so the gate logic can be unit tested without live data, same split as
 // crypto-monitor-candidates.mjs / test-crypto-monitoring.mjs.
 //
-// This lane is currently unwired into build-execution-dispatch.mjs -- defining and testing the
-// gate here is a deliberate, separate step from making it capable of actually firing a live
-// order. That wiring is a further decision, not implied by this file existing.
+// build-execution-dispatch.mjs calls this gate only when an independently qualified stock event
+// exists in the same fresh generation. SHADOW_ONLY can never create an option trigger.
 
 export function evaluateOptionsSeedLaneCandidate({
   candidate,
@@ -59,7 +58,13 @@ export function evaluateOptionsSeedLaneCandidate({
       kind:seedPolicy.kind||'LONG_CALL',
       targetMultiplier:seedPolicy.targetMultiplier,
       stopMultiplier:seedPolicy.stopMultiplier,
-      forcedExitDaysToExpiry:seedPolicy.forcedExitDaysToExpiry,
+      breakEvenArmMultiplier:seedPolicy.breakEvenArmMultiplier,
+      firstLockArmMultiplier:seedPolicy.firstLockArmMultiplier,
+      firstLockFloorMultiplier:seedPolicy.firstLockFloorMultiplier,
+      trailArmMultiplier:seedPolicy.trailArmMultiplier,
+      trailFraction:seedPolicy.trailFraction,
+      mustBeFlatBeforeMarketClose:seedPolicy.mustBeFlatBeforeMarketClose===true,
+      forcedExitMinutesBeforeClose:seedPolicy.forcedExitMinutesBeforeClose,
       existingRobinhoodCashOnly:true,
       marginAllowed:false,
     },

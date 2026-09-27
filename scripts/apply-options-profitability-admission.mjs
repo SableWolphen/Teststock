@@ -25,10 +25,14 @@ for(const x of resolved){
 }
 const independent=[...independentMap.values()];
 const wins=independent.filter(x=>Number(x.realizedR)>0).length;
+const gains=independent.filter(x=>Number(x.realizedR)>0).reduce((s,x)=>s+Number(x.realizedR),0);
+const losses=Math.abs(independent.filter(x=>Number(x.realizedR)<0).reduce((s,x)=>s+Number(x.realizedR),0));
 const shadowStats={
   samples:independent.length,
+  distinctTradingDays:new Set(independent.map(x=>x.createdDate).filter(Boolean)).size,
   winRatePct:independent.length?round(wins/independent.length*100,1):null,
   averageR:independent.length?round(independent.reduce((s,x)=>s+Number(x.realizedR),0)/independent.length,2):null,
+  profitFactor:losses>0?round(gains/losses,2):gains>0?999:null,
 };
 
 const realSummary=evidence.summary||{};
@@ -38,19 +42,20 @@ const real={
   averageRealizedR:realSummary.averageRealizedR??null,
 };
 
-// Options shadow trades open at most one per UTC day (vs. crypto's continuous 24/7 flow), so
-// these thresholds are deliberately smaller than crypto's -- but still require real,
-// independent, positive forward evidence before any live capital, capped and reduced even then.
-const MIN_SHADOW_MICRO=8, MIN_SHADOW=15;
-const SHADOW_MIN_WIN=52, SHADOW_MIN_AVG_R=.1;
+// Many candidates can be observed each day, but correlated same-day outcomes do not replace
+// experience across market regimes. Both sample count and distinct trading-day coverage are
+// mandatory before a live option can be considered.
+const MIN_SHADOW_MICRO=50, MIN_SHADOW=100;
+const MIN_SHADOW_DAYS_MICRO=20, MIN_SHADOW_DAYS=30;
+const SHADOW_MIN_WIN=52, SHADOW_MIN_AVG_R=.1, SHADOW_MIN_PROFIT_FACTOR=1.3;
 const REAL_MIN_RESOLVED=Number(optionsPolicy.liveEvidenceMinimumResolvedTrades??10);
 const REAL_MIN_AVG_R=Number(optionsPolicy.liveEvidenceMinimumAverageR??0.25);
 const REAL_MIN_WIN=Number(optionsPolicy.liveEvidenceMinimumWinRatePct??50);
 const REAL_MIN_SUSPEND_CHECK=3;
 
 const contradictoryShadow=shadowStats.samples>=3&&(Number(shadowStats.averageR)<0||Number(shadowStats.winRatePct)<40);
-const earlyShadowPassed=shadowStats.samples>=MIN_SHADOW_MICRO&&Number(shadowStats.winRatePct)>=SHADOW_MIN_WIN&&Number(shadowStats.averageR)>=SHADOW_MIN_AVG_R&&!contradictoryShadow;
-const shadowPassed=shadowStats.samples>=MIN_SHADOW&&Number(shadowStats.winRatePct)>=SHADOW_MIN_WIN&&Number(shadowStats.averageR)>=SHADOW_MIN_AVG_R;
+const earlyShadowPassed=shadowStats.samples>=MIN_SHADOW_MICRO&&shadowStats.distinctTradingDays>=MIN_SHADOW_DAYS_MICRO&&Number(shadowStats.winRatePct)>=SHADOW_MIN_WIN&&Number(shadowStats.averageR)>=SHADOW_MIN_AVG_R&&Number(shadowStats.profitFactor)>=SHADOW_MIN_PROFIT_FACTOR&&!contradictoryShadow;
+const shadowPassed=shadowStats.samples>=MIN_SHADOW&&shadowStats.distinctTradingDays>=MIN_SHADOW_DAYS&&Number(shadowStats.winRatePct)>=SHADOW_MIN_WIN&&Number(shadowStats.averageR)>=SHADOW_MIN_AVG_R&&Number(shadowStats.profitFactor)>=SHADOW_MIN_PROFIT_FACTOR;
 
 let state='SHADOW_ONLY',sizeMultiplier=0,reason='Options pattern has not yet proven positive shadow expectancy; zero or unknown forward evidence is never a pass. No live option order is authorized in this state.';
 if(earlyShadowPassed){state='MICRO_PROBATION';sizeMultiplier=.25;reason=`${MIN_SHADOW_MICRO} independent positive forward-shadow outcomes passed; any future live options capital would remain capped at one-quarter size. This state alone still does not authorize a live order -- that requires a separate, explicit execution-lane policy.`;}
@@ -74,8 +79,11 @@ const admission={
   thresholds:{
     minimumIndependentShadowSamplesForMicro:MIN_SHADOW_MICRO,
     minimumIndependentShadowSamples:MIN_SHADOW,
+    minimumDistinctTradingDaysForMicro:MIN_SHADOW_DAYS_MICRO,
+    minimumDistinctTradingDays:MIN_SHADOW_DAYS,
     minimumShadowWinRatePct:SHADOW_MIN_WIN,
     minimumShadowAverageR:SHADOW_MIN_AVG_R,
+    minimumShadowProfitFactor:SHADOW_MIN_PROFIT_FACTOR,
     microSizeMultiplier:.25,
     probationSizeMultiplier:.5,
     minimumRealResolvedForFullAdmission:REAL_MIN_RESOLVED,
@@ -84,7 +92,7 @@ const admission={
     minimumRealSamplesForSuspensionCheck:REAL_MIN_SUSPEND_CHECK,
   },
   rules:[
-    'Shadow (paper) evidence can only unlock a capped, reduced-size probation tier -- never full admission, never live execution by itself.',
+    'At least 50 independent outcomes across 20 trading days, with positive after-spread expectancy and profit factor of at least 1.3, are required before micro probation.',
     'Full admission still requires the real-fill thresholds already declared in probability-first-policy.json\'s options section, unchanged by this file.',
     'This overlay can only reduce or block size; it can never raise it above whatever a future execution-lane policy declares.',
     'executionAuthorized becomes true only for an earned admission state; the separate options execution policy and live broker rechecks remain mandatory.',

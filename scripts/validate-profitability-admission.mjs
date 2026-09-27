@@ -4,23 +4,13 @@ const read=async f=>JSON.parse(await fs.readFile(f,'utf8'));
 const [s,t]=await Promise.all(['docs/signal.json','docs/data/stock-tournament.json'].map(read)),fail=[];
 fail.push(...stockExecutionPolicyFailures(s));
 const dayTradeOnlyMode=s.dayTradeOnlyEntryPolicy?.enabled===true;
-if(t.profitabilityAdmissionPolicy?.mode!=='TIERED_A_NORMAL_B_MICRO_WITH_REAL_SUSPENSION')fail.push('policy mode');
+if(t.profitabilityAdmissionPolicy?.mode!=='EVIDENCE_FIRST_DAY_TRADING')fail.push('policy mode');
 for(const x of t.liveQueue||[]){
   const a=x.profitabilityAdmission||{},blocked=['SHADOW_ONLY','LIVE_SUSPENDED'].includes(a.state);
   if(a.historicalEvidenceIsDiagnosticOnly!==true)fail.push(`${x.ticker}: historical authority`);
-  if(a.state==='ELITE_RUNTIME_ELIGIBLE'){
-    if(x.entryTier!=='A')fail.push(`${x.ticker}: elite state on non-A`);
-    if(Number(a.sizeMultiplier)>1||Number(x.adaptiveSizeMultiplier)>1)fail.push(`${x.ticker}: A size`);
-    if(a.regimeDisabled===true||a.contradictoryShadow===true||a.negativeRealProbation===true)fail.push(`${x.ticker}: unsafe A runtime eligibility`);
-  }
-  if(a.state==='BEST_ACCEPTABLE_MICRO'){
-    if(x.entryTier!=='B')fail.push(`${x.ticker}: B micro state on non-B`);
-    if(Number(a.sizeMultiplier)>.25||Number(x.adaptiveSizeMultiplier)>.25||Number(x.entryTierSizeMultiplier)>.25)fail.push(`${x.ticker}: B micro size`);
-    if(a.regimeDisabled===true||a.contradictoryShadow===true||a.negativeRealProbation===true)fail.push(`${x.ticker}: unsafe B micro eligibility`);
-  }
   if(a.state==='MICRO_PROBATION'){
     if(Number(a.sizeMultiplier)>.25||Number(x.adaptiveSizeMultiplier)>.25)fail.push(`${x.ticker}: micro size`);
-    const shadow=Number(a.shadow?.samples)>=6&&Number(a.shadow?.winRatePct)>=50&&Number(a.shadow?.averageR)>=.15&&a.regimeDisabled!==true&&a.contradictoryShadow!==true;
+    const shadow=Number(a.shadow?.samples)>=100&&Number(a.shadow?.distinctTradingDays)>=20&&Number(a.shadow?.winRatePct)>=50&&Number(a.shadow?.averageR)>=.10&&Number(a.shadow?.profitFactor)>=1.25&&a.regimeDisabled!==true&&a.contradictoryShadow!==true;
     if(!shadow)fail.push(`${x.ticker}: forward micro evidence`);
   }
   if(x.entryTier==='B'&&!blocked&&Number(x.adaptiveSizeMultiplier)>.25)fail.push(`${x.ticker}: B above micro cap`);
@@ -30,12 +20,12 @@ for(const x of t.liveQueue||[]){
   // admitted ELITE_RUNTIME_ELIGIBLE/BEST_ACCEPTABLE_MICRO row dayTradeSeedLane-eligible (not just
   // SHADOW_ONLY bypass rows), so this validator must accept that admitted state too -- only while
   // the policy is actually enabled, so the stricter SHADOW_ONLY-only check still applies normally.
-  const dayTradeStateOk=a.state==='SHADOW_ONLY'||(dayTradeOnlyMode&&['ELITE_RUNTIME_ELIGIBLE','BEST_ACCEPTABLE_MICRO'].includes(a.state));
+  const dayTradeStateOk=dayTradeOnlyMode&&['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(a.state);
   if(x.dayTradeSeedLane?.eligible===true&&(!['A','B'].includes(x.entryTier)||!dayTradeStateOk||a.regimeDisabled===true||a.contradictoryShadow===true||Number(x.dayTradeSeedLane.maxOrderUsd)!==(x.entryTier==='B'?7.5:30)||x.dayTradeSeedLane.journalTag!=='dayTradeSeedLane:true'))fail.push(`${x.ticker}: invalid day-trade seed eligibility`);
-  if(x.seedLane?.eligible===true&&(!['A','B'].includes(x.entryTier)||a.state!=='SHADOW_ONLY'||a.regimeDisabled===true||a.contradictoryShadow===true||Number(x.seedLane.maxOrderUsd)!==(x.entryTier==='B'?7.5:30)))fail.push(`${x.ticker}: invalid stock seed eligibility`);
+  if(x.seedLane?.eligible===true)fail.push(`${x.ticker}: evidence-first mode forbids swing seed bypass`);
 }
-if(s.generatorIntegrity?.traceableFeatures?.tieredStockProfitabilityAdmission!==true)fail.push('tiered admission integrity');
-if(s.generatorIntegrity?.traceableFeatures?.eliteARuntimeEligibility!==true)fail.push('A runtime integrity');
+if(s.generatorIntegrity?.traceableFeatures?.shadowFirstProfitabilityAdmission!==true)fail.push('shadow-first integrity');
+if(s.generatorIntegrity?.traceableFeatures?.evidenceFirstDayTrading!==true)fail.push('evidence-first integrity');
 if(s.generatorIntegrity?.traceableFeatures?.bTierMicroProbation!==true)fail.push('B micro integrity');
 if(fail.length)throw new Error(`profitability admission validation failed: ${[...new Set(fail)].join(', ')}`);
-console.log(`profitability admission validation passed: A normal runtime eligibility; B micro capped at 25%; A=${(t.liveQueue||[]).filter(x=>x.profitabilityAdmission?.state==='ELITE_RUNTIME_ELIGIBLE').length}; B=${(t.liveQueue||[]).filter(x=>x.profitabilityAdmission?.state==='BEST_ACCEPTABLE_MICRO').length}`);
+console.log(`profitability admission validation passed: evidence-first stock day trading; micro=${(t.liveQueue||[]).filter(x=>x.profitabilityAdmission?.state==='MICRO_PROBATION').length}`);

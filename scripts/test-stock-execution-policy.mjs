@@ -19,9 +19,9 @@ test('fresh stock-only policy passes the admission and broker validators without
   await fs.mkdir(path.join(cwd,'docs/data'),{recursive:true});
   await write(cwd,'docs/signal.json',{
     schemaVersion:44,autopilot:{requiresPerOrderApproval:false},
-    generatorIntegrity:{traceableFeatures:{tieredStockProfitabilityAdmission:true,eliteARuntimeEligibility:true,bTierMicroProbation:true}}
+    generatorIntegrity:{traceableFeatures:{shadowFirstProfitabilityAdmission:true,evidenceFirstDayTrading:true,bTierMicroProbation:true}}
   });
-  const tournament={profitabilityAdmissionPolicy:{mode:'TIERED_A_NORMAL_B_MICRO_WITH_REAL_SUSPENSION'},liveQueue:[],researchFinalists:[{ticker:'ABC'}]};
+  const tournament={profitabilityAdmissionPolicy:{mode:'EVIDENCE_FIRST_DAY_TRADING'},liveQueue:[],researchFinalists:[{ticker:'ABC'}]};
   await write(cwd,'docs/data/stock-tournament.json',tournament);
   const optionShadow={state:'SHADOW_ONLY',sizeMultiplier:0,executionAuthorized:false};
   await write(cwd,'docs/data/options-profitability-admission.json',optionShadow);
@@ -61,9 +61,9 @@ test('fresh stock-only policy passes the admission and broker validators without
   }
   await write(cwd,'docs/signal.json',signal);
   for(const row of [
-    {ticker:'ABC',entryTier:'B',adaptiveSizeMultiplier:.5,profitabilityAdmission:{state:'BEST_ACCEPTABLE_MICRO',historicalEvidenceIsDiagnosticOnly:true,sizeMultiplier:.5}},
+    {ticker:'ABC',entryTier:'A',adaptiveSizeMultiplier:.5,profitabilityAdmission:{state:'MICRO_PROBATION',historicalEvidenceIsDiagnosticOnly:true,sizeMultiplier:.5,shadow:{samples:100,distinctTradingDays:20,winRatePct:55,averageR:.2,profitFactor:1.4}}},
     {ticker:'ABC',action:'AUTO_BUY_ELIGIBLE',profitabilityAdmission:{state:'LIVE_SUSPENDED',historicalEvidenceIsDiagnosticOnly:true}},
-    {ticker:'ABC',entryTier:'A',profitabilityAdmission:{state:'ELITE_RUNTIME_ELIGIBLE',historicalEvidenceIsDiagnosticOnly:true,contradictoryShadow:true}},
+    {ticker:'ABC',entryTier:'A',seedLane:{eligible:true},profitabilityAdmission:{state:'SHADOW_ONLY',historicalEvidenceIsDiagnosticOnly:true}},
   ]){
     await write(cwd,'docs/data/stock-tournament.json',{...tournament,liveQueue:[row]});
     assert.notEqual(run(cwd,'validate-profitability-admission.mjs').status,0,'unsafe profitability row must fail');

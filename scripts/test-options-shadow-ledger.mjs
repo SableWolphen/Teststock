@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {openNewShadowTrades,resolveOptionShadowTrade,summarizeShadowTrades,TARGET_MULTIPLIER,STOP_MULTIPLIER} from './options-shadow-engine.mjs';
+import {openNewShadowTrades,resolveOptionShadowTrade,summarizeShadowTrades,TARGET_MULTIPLIER,STOP_MULTIPLIER,protectedFloor,newYorkSession} from './options-shadow-engine.mjs';
 
 const standardCandidate={underlying:'ABC',contract:'ABC260101C00100000',expiry:'2026-01-01',dte:45,dteBucket:'STANDARD',ask:2,underlyingScore:80,score:90};
 const zeroDteCandidate={underlying:'XYZ',contract:'XYZ260101C00050000',expiry:'2026-01-01',dte:0,dteBucket:'0DTE',ask:1,score:95};
@@ -29,11 +29,12 @@ test('an already-tracked contract is never opened twice',()=>{
 });
 
 test('hitting target resolves a real win at the recorded targetR',()=>{
-  const trade={status:'OPEN',entry:2,stop:1.2,target:3,targetR:2.25,expiry:'2026-12-01'};
-  const resolved=resolveOptionShadowTrade(trade,{bid:2.9,ask:3.1},'2026-11-01T00:00:00Z');
+  const trade={status:'OPEN',entry:2,stop:1.2,target:4,targetR:2.5,expiry:'2026-12-01'};
+  const resolved=resolveOptionShadowTrade(trade,{bid:4.05,ask:4.15},'2026-11-01T00:00:00Z');
   assert.equal(resolved.status,'RESOLVED');
   assert.equal(resolved.outcome,'WIN');
-  assert.equal(resolved.realizedR,2.25);
+  assert.equal(resolved.exitReason,'TARGET');
+  assert.equal(resolved.realizedR,2.5);
 });
 
 test('hitting stop resolves a full loss',()=>{
@@ -73,6 +74,33 @@ test('summary keeps the most adverse realized R per independent day+underlying k
   assert.equal(summary.independentSamples,2);
   assert.equal(summary.resolvedCount,3);
   assert.equal(summary.winRatePct,50);
+  assert.equal(summary.distinctTradingDays,2);
+  assert.equal(summary.profitFactor,1.5);
+});
+
+test('profit floor rises with the executable bid high-water mark and never loosens',()=>{
+  assert.equal(protectedFloor(2,2.1,1.2),1.2);
+  assert.equal(protectedFloor(2,2.4,1.2),2);
+  assert.equal(protectedFloor(2,2.7,1.2),2.3);
+  assert.equal(protectedFloor(2,4,1.2),3.2);
+});
+
+test('profit floor resolves against bid instead of optimistic midpoint',()=>{
+  const trade={status:'OPEN',createdDate:'2026-09-25',entry:2,stop:1.2,target:4,targetR:2.5,highWaterBid:3.2,expiry:'2026-12-01'};
+  const resolved=resolveOptionShadowTrade(trade,{bid:2.5,ask:2.9},'2026-09-25T18:00:00Z');
+  assert.equal(resolved.status,'RESOLVED');
+  assert.equal(resolved.exitReason,'PROFIT_FLOOR');
+  assert.ok(resolved.realizedR>0);
+});
+
+test('day-trade session blocks late entries and forces a bid exit',()=>{
+  const late=newYorkSession('2026-09-25T20:55:00Z');
+  assert.equal(late.forcedExitDue,true);
+  assert.deepEqual(openNewShadowTrades({candidates:[standardCandidate],existingTrades:[],todayIso:late.date,nowIso:'2026-09-25T20:55:00Z',marketSession:late}),[]);
+  const trade={status:'OPEN',createdDate:late.date,entry:2,stop:1.2,target:4,targetR:2.5,expiry:'2026-12-01'};
+  const resolved=resolveOptionShadowTrade(trade,{bid:2.2,ask:2.3},'2026-09-25T20:55:00Z',late);
+  assert.equal(resolved.exitReason,'SESSION_CUTOFF');
+  assert.equal(resolved.exitBid,2.2);
 });
 
 function round(n,d=4){return Number(Number(n||0).toFixed(d));}

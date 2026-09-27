@@ -18,16 +18,18 @@ const independentMap=new Map();
 for(const x of [...resolvedShadow,...resolvedReal]){const k=[x.createdDate,x.symbol,norm(x.setupType),norm(x.runtimeRegime)].join('|'),old=independentMap.get(k);if(!old||Number(x.realizedR)<Number(old.realizedR))independentMap.set(k,x);}
 const independentResolved=[...independentMap.values()];
 const realBuckets=adaptive?.buckets||{};
-const MIN_SHADOW_MICRO=6,MIN_SHADOW=12,MIN_REAL_PROBATION=8,MIN_REAL_FULL=15;
-const SHADOW_MIN_WIN=50,SHADOW_MIN_AVG_R=.15,REAL_MIN_AVG_R=.10;
+const MIN_SHADOW_MICRO=100,MIN_SHADOW=200,MIN_SHADOW_DAYS_MICRO=20,MIN_SHADOW_DAYS=30,MIN_REAL_PROBATION=8,MIN_REAL_FULL=15;
+const SHADOW_MIN_WIN=50,SHADOW_MIN_AVG_R=.10,SHADOW_MIN_PROFIT_FACTOR=1.25,REAL_MIN_AVG_R=.10;
 
 function shadowStats(setup,regime){
   const exact=independentResolved.filter(x=>norm(x.setupType)===setup&&norm(x.runtimeRegime)===regime);
   const setupOnly=independentResolved.filter(x=>norm(x.setupType)===setup);
   const rows=exact.length>=MIN_SHADOW?exact:setupOnly;
   const wins=rows.filter(x=>Number(x.realizedR)>0).length;
+  const gains=rows.filter(x=>Number(x.realizedR)>0).reduce((sum,x)=>sum+Number(x.realizedR),0);
+  const losses=Math.abs(rows.filter(x=>Number(x.realizedR)<0).reduce((sum,x)=>sum+Number(x.realizedR),0));
   const realFillSamples=rows.filter(x=>x.evidenceSource==='REAL').length;
-  return {scope:exact.length>=MIN_SHADOW?'REGIME_SETUP':'SETUP_FALLBACK',samples:rows.length,winRatePct:rows.length?wins/rows.length*100:null,averageR:rows.length?rows.reduce((s,x)=>s+Number(x.realizedR),0)/rows.length:null,realFillSamples,shadowOnlySamples:rows.length-realFillSamples};
+  return {scope:exact.length>=MIN_SHADOW?'REGIME_SETUP':'SETUP_FALLBACK',samples:rows.length,distinctTradingDays:new Set(rows.map(x=>x.createdDate).filter(Boolean)).size,winRatePct:rows.length?wins/rows.length*100:null,averageR:rows.length?rows.reduce((s,x)=>s+Number(x.realizedR),0)/rows.length:null,profitFactor:losses>0?gains/losses:gains>0?999:null,realFillSamples,shadowOnlySamples:rows.length-realFillSamples};
 }
 function realStats(setup,regime){
   const exact=(realBuckets.byRegimeSetup||[]).find(x=>x.key===`${regime}|${setup}`);
@@ -43,23 +45,19 @@ function admission(row){
   const regimeDisabled=(entryValidation.disabledRegimes||[]).map(norm).includes(regime);
   const contradictoryShadow=s.samples>=3&&(Number(s.averageR)<0||Number(s.winRatePct)<40);
   const negativeRealProbation=Number(r.samples||0)>=MIN_REAL_PROBATION&&Number(r.averageRealizedR)<0;
-  const earlyShadowPassed=s.samples>=MIN_SHADOW_MICRO&&Number(s.winRatePct)>=SHADOW_MIN_WIN&&Number(s.averageR)>=SHADOW_MIN_AVG_R&&!regimeDisabled&&!contradictoryShadow;
-  const shadowPassed=s.samples>=MIN_SHADOW&&Number(s.winRatePct)>=SHADOW_MIN_WIN&&Number(s.averageR)>=SHADOW_MIN_AVG_R&&!regimeDisabled&&!contradictoryShadow;
+  const earlyShadowPassed=s.samples>=MIN_SHADOW_MICRO&&s.distinctTradingDays>=MIN_SHADOW_DAYS_MICRO&&Number(s.winRatePct)>=SHADOW_MIN_WIN&&Number(s.averageR)>=SHADOW_MIN_AVG_R&&Number(s.profitFactor)>=SHADOW_MIN_PROFIT_FACTOR&&!regimeDisabled&&!contradictoryShadow;
+  const shadowPassed=s.samples>=MIN_SHADOW&&s.distinctTradingDays>=MIN_SHADOW_DAYS&&Number(s.winRatePct)>=SHADOW_MIN_WIN&&Number(s.averageR)>=SHADOW_MIN_AVG_R&&Number(s.profitFactor)>=SHADOW_MIN_PROFIT_FACTOR&&!regimeDisabled&&!contradictoryShadow;
   let state='SHADOW_ONLY',sizeMultiplier=0,reason='Candidate is not eligible because a hard profitability/regime contradiction remains.';
 
   if(negativeRealProbation){
     state='LIVE_SUSPENDED';sizeMultiplier=0;reason='Robinhood-confirmed real-fill probation is negative; live entry remains suspended.';
-  }else if(!regimeDisabled&&!contradictoryShadow&&tier==='A'){
-    state='ELITE_RUNTIME_ELIGIBLE';sizeMultiplier=1;reason='Elite A-tier candidate may use up to its normal encoded size after every downstream live Robinhood, freshness, entry, spread, portfolio and protection gate passes.';
-  }else if(!regimeDisabled&&!contradictoryShadow&&tier==='B'){
-    state='BEST_ACCEPTABLE_MICRO';sizeMultiplier=.25;reason='Best-acceptable B-tier candidate may enter only as a micro-probation position capped at one-quarter of normal candidate size after every downstream live guard passes.';
   }else if(earlyShadowPassed){
-    state='MICRO_PROBATION';sizeMultiplier=.25;reason='Independent positive outcomes passed the micro evidence bar; live capital remains capped at one-quarter size.';
+    state='MICRO_PROBATION';sizeMultiplier=.25;reason='At least 100 independent positive outcomes across 20 trading days passed the after-cost evidence bar; live capital remains capped at one-quarter size.';
   }
-  if(!['ELITE_RUNTIME_ELIGIBLE','BEST_ACCEPTABLE_MICRO','LIVE_SUSPENDED'].includes(state)&&shadowPassed){state='PROBATION';sizeMultiplier=.5;reason='Forward evidence passed; live capital remains reduced while real-fill evidence accumulates.';}
-  if(!['ELITE_RUNTIME_ELIGIBLE','BEST_ACCEPTABLE_MICRO','LIVE_SUSPENDED'].includes(state)&&shadowPassed&&Number(r.samples)>=MIN_REAL_FULL&&Number(r.averageRealizedR)>=REAL_MIN_AVG_R){state='LIVE_ADMITTED';sizeMultiplier=1;reason='Forward proof and sufficient positive real-fill evidence passed.';}
+  if(state!=='LIVE_SUSPENDED'&&shadowPassed){state='PROBATION';sizeMultiplier=.5;reason='At least 200 independent positive outcomes across 30 trading days passed; live capital remains reduced while real-fill evidence accumulates.';}
+  if(state!=='LIVE_SUSPENDED'&&shadowPassed&&Number(r.samples)>=MIN_REAL_FULL&&Number(r.averageRealizedR)>=REAL_MIN_AVG_R){state='LIVE_ADMITTED';sizeMultiplier=1;reason='Forward proof and sufficient positive real-fill evidence passed.';}
 
-  return {state,sizeMultiplier,entryTier:tier,setupType:setup,runtimeRegime:regime,historical,historicalEvidenceIsDiagnosticOnly:true,regimeDisabled,contradictoryShadow,negativeRealProbation,shadow:{...s,independenceKey:'decisionDate+symbol+setup+regime',duplicateResolutionRule:'Keep the most adverse realized R for duplicate keys.',evidencePoolNote:'Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split.'},real:{samples:Number(r.samples||0),winRatePct:r.winRatePct??null,averageRealizedR:r.averageRealizedR??null},thresholds:{minimumIndependentShadowSamplesForMicro:MIN_SHADOW_MICRO,minimumIndependentShadowSamples:MIN_SHADOW,minimumShadowWinRatePct:SHADOW_MIN_WIN,minimumShadowAverageR:SHADOW_MIN_AVG_R,eliteARuntimeSizeMultiplier:1,bestAcceptableBMicroSizeMultiplier:.25,minimumRealSamplesForSuspensionCheck:MIN_REAL_PROBATION,minimumRealSamplesForFullAdmission:MIN_REAL_FULL,minimumRealAverageRForFullAdmission:REAL_MIN_AVG_R},reason};
+  return {state,sizeMultiplier,entryTier:tier,setupType:setup,runtimeRegime:regime,historical,historicalEvidenceIsDiagnosticOnly:true,regimeDisabled,contradictoryShadow,negativeRealProbation,shadow:{...s,independenceKey:'decisionDate+symbol+setup+regime',duplicateResolutionRule:'Keep the most adverse realized R for duplicate keys.',evidencePoolNote:'Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split.'},real:{samples:Number(r.samples||0),winRatePct:r.winRatePct??null,averageRealizedR:r.averageRealizedR??null},thresholds:{minimumIndependentShadowSamplesForMicro:MIN_SHADOW_MICRO,minimumIndependentShadowSamples:MIN_SHADOW,minimumDistinctTradingDaysForMicro:MIN_SHADOW_DAYS_MICRO,minimumDistinctTradingDays:MIN_SHADOW_DAYS,minimumShadowWinRatePct:SHADOW_MIN_WIN,minimumShadowAverageR:SHADOW_MIN_AVG_R,minimumShadowProfitFactor:SHADOW_MIN_PROFIT_FACTOR,minimumRealSamplesForSuspensionCheck:MIN_REAL_PROBATION,minimumRealSamplesForFullAdmission:MIN_REAL_FULL,minimumRealAverageRForFullAdmission:REAL_MIN_AVG_R},reason};
 }
 function apply(row){
   const a=admission(row);
@@ -93,9 +91,7 @@ if(newListingFile.enabled===true){
   live.push(...newListingRows);
 }
 
-// Retain the legacy $5 A-tier seed lane as a fail-closed fallback for any future upstream path that
-// still emits a safe A candidate as SHADOW_ONLY. In the current tiered policy, normal safe A rows
-// become ELITE_RUNTIME_ELIGIBLE before this point, so this lane is normally dormant.
+// Evidence-first mode never lets a SHADOW_ONLY row bypass admission through a live seed lane.
 const seedLaneConfig=probabilityPolicy?.stocks?.seedLane||{enabled:false};
 if(seedLaneConfig.enabled===true){
   const todayUtc=new Date().toISOString().slice(0,10);
@@ -108,7 +104,7 @@ if(seedLaneConfig.enabled===true){
   const availableSlots=dailyRemaining>0?Math.max(0,maxConcurrent-openSeedTickers.size):0;
   if(availableSlots>0){
     const allowBTier=seedLaneConfig.allowBTier===true;
-    const eligiblePool=live.filter(x=>(x.entryTier==='A'||(allowBTier&&x.entryTier==='B'))&&x.profitabilityAdmission?.state==='SHADOW_ONLY'&&!x.profitabilityAdmission?.regimeDisabled&&!x.profitabilityAdmission?.contradictoryShadow&&!openSeedTickers.has(x.ticker)&&!stoppedTodaySeedTickers.has(x.ticker));
+    const eligiblePool=[];
     eligiblePool.sort((a,b)=>(a.entryTier==='A'?0:1)-(b.entryTier==='A'?0:1)||Number(a.queueRank??999)-Number(b.queueRank??999));
     for(const chosen of eligiblePool.slice(0,availableSlots)){
       const tierCap=chosen.entryTier==='B'?Number(seedLaneConfig.bTierMaxOrderUsd||seedLaneConfig.maxOrderUsd||5):Number(seedLaneConfig.maxOrderUsd||5);
@@ -127,7 +123,7 @@ const dayTradeConfig=probabilityPolicy?.stocks?.dayTradeSeedLane||{enabled:false
 // policy is active, so the day-trade lane becomes the real replacement entry path instead of
 // silently starving every new stock entry.
 const dayTradeOnlyMode=signal.dayTradeOnlyEntryPolicy?.enabled===true;
-const dayTradeAdmittedStatesAllowed=['ELITE_RUNTIME_ELIGIBLE','BEST_ACCEPTABLE_MICRO'];
+const dayTradeAdmittedStatesAllowed=['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'];
 if(dayTradeConfig.enabled===true){
   const todayUtc=new Date().toISOString().slice(0,10);
   const dayTrades=(realJournal.trades||[]).filter(x=>x.assetClass==='STOCK'&&x.dayTradeSeedLane===true);
@@ -138,7 +134,7 @@ if(dayTradeConfig.enabled===true){
   const availableSlots=dailyRemaining>0?Math.max(0,maxConcurrent-openTickers.size):0;
   if(availableSlots>0){
     const allowBTier=dayTradeConfig.allowBTier===true;
-    const eligiblePool=live.filter(x=>(x.entryTier==='A'||(allowBTier&&x.entryTier==='B'))&&(x.profitabilityAdmission?.state==='SHADOW_ONLY'||(dayTradeOnlyMode&&dayTradeAdmittedStatesAllowed.includes(x.profitabilityAdmission?.state)))&&!x.profitabilityAdmission?.regimeDisabled&&!x.profitabilityAdmission?.contradictoryShadow&&!openTickers.has(x.ticker)&&!swingSelectedTickers.has(x.ticker)).sort((a,b)=>(a.entryTier==='A'?0:1)-(b.entryTier==='A'?0:1)||Number(a.queueRank??999)-Number(b.queueRank??999));
+    const eligiblePool=live.filter(x=>(x.entryTier==='A'||(allowBTier&&x.entryTier==='B'))&&dayTradeOnlyMode&&dayTradeAdmittedStatesAllowed.includes(x.profitabilityAdmission?.state)&&!x.profitabilityAdmission?.regimeDisabled&&!x.profitabilityAdmission?.contradictoryShadow&&!openTickers.has(x.ticker)&&!swingSelectedTickers.has(x.ticker)).sort((a,b)=>(a.entryTier==='A'?0:1)-(b.entryTier==='A'?0:1)||Number(a.queueRank??999)-Number(b.queueRank??999));
     for(const chosen of eligiblePool.slice(0,availableSlots)){
       const tierCap=chosen.entryTier==='B'?Number(dayTradeConfig.bTierMaxOrderUsd||dayTradeConfig.maxOrderUsd||20):Number(dayTradeConfig.maxOrderUsd||20);
       // Lane-scoped target1/target2 (2026-09-22, user-requested day-trade-only phase): the shared
@@ -153,7 +149,7 @@ if(dayTradeConfig.enabled===true){
   }
 }
 
-tournament.profitabilityAdmissionPolicy={enabled:true,mode:'TIERED_A_NORMAL_B_MICRO_WITH_REAL_SUSPENSION',rule:'A-tier research winners no longer need to wait for a large forward-shadow sample before becoming runtime-eligible; they may use up to their already-encoded normal size only after every downstream Teststock and live Robinhood guard passes. B-tier best-acceptable stocks are capped at 25% micro-probation size. Disabled regimes, contradictory shadow evidence, or negative Robinhood-confirmed real-fill probation remain hard blocks. Historical/backtest evidence remains diagnostic and cannot override a failed live guard.'};
+tournament.profitabilityAdmissionPolicy={enabled:true,mode:'EVIDENCE_FIRST_DAY_TRADING',rule:'Every stock setup remains shadow-only until at least 100 independent outcomes across 20 trading days pass positive expectancy, profit-factor, regime and safety gates. Micro probation is capped at 25%; larger size requires additional forward and Robinhood-confirmed real-fill evidence.'};
 const q=new Map(live.map(x=>[x.ticker||x.symbol,x]));
 signal.stockPlan=signal.stockPlan||{};
 const existingQueue=(signal.stockPlan.stockCandidateQueue||[]).map(x=>q.has(x.ticker)?{...x,profitabilityAdmission:q.get(x.ticker).profitabilityAdmission,adaptiveSizeMultiplier:q.get(x.ticker).adaptiveSizeMultiplier,action:q.get(x.ticker).action,seedLane:q.get(x.ticker).seedLane,dayTradeSeedLane:q.get(x.ticker).dayTradeSeedLane}:x);
@@ -161,7 +157,7 @@ const existingQueueTickers=new Set(existingQueue.map(x=>x.ticker));
 const newListingQueueRows=live.filter(x=>x.newListingCohortEvidence&&!existingQueueTickers.has(x.ticker)).slice(0,Math.max(0,15-existingQueue.length)).map(x=>({ticker:x.ticker,minimumEntry:x.minimumEntry,maximumEntry:x.maximumEntry,stop:x.stop,target1:x.target1,target2:x.target2,setupType:x.setupType,growthQuality:x.growthQuality,rewardRisk:x.rewardRisk,entryTier:x.entryTier,profitabilityAdmission:x.profitabilityAdmission,adaptiveSizeMultiplier:x.adaptiveSizeMultiplier,action:x.action,seedLane:x.seedLane,dayTradeSeedLane:x.dayTradeSeedLane,newListingCohortEvidence:x.newListingCohortEvidence,newsCatalyst:x.newsCatalyst||null,queueRole:'RESERVE'}));
 signal.stockPlan.stockCandidateQueue=[...existingQueue,...newListingQueueRows].map((x,i)=>({...x,queueRank:i+1,queueRole:x.queueRole||'RESERVE'}));
 signal.stockTournament={...(signal.stockTournament||{}),profitabilityAdmissionPolicy:tournament.profitabilityAdmissionPolicy,liveBuyChampion:tournament.liveBuyChampion,liveFallbackTickers:tournament.liveFallbacks.map(x=>x.ticker)};
-signal.generatorIntegrity={...(signal.generatorIntegrity||{}),traceableFeatures:{...(signal.generatorIntegrity?.traceableFeatures||{}),shadowFirstProfitabilityAdmission:false,tieredStockProfitabilityAdmission:true,eliteARuntimeEligibility:true,bTierMicroProbation:true}};
+signal.generatorIntegrity={...(signal.generatorIntegrity||{}),traceableFeatures:{...(signal.generatorIntegrity?.traceableFeatures||{}),shadowFirstProfitabilityAdmission:true,tieredStockProfitabilityAdmission:false,eliteARuntimeEligibility:false,bTierMicroProbation:true,evidenceFirstDayTrading:true}};
 signal.schemaVersion=Math.max(44,Number(signal.schemaVersion||0));
 await Promise.all([write('docs/data/stock-tournament.json',tournament),write('docs/signal.json',signal),write('docs/data/claude-signal.json',signal)]);
-console.log(`Profitability admission: buyable=${buyable.length}; eliteA=${live.filter(x=>x.profitabilityAdmission?.state==='ELITE_RUNTIME_ELIGIBLE').length}; microB=${live.filter(x=>x.profitabilityAdmission?.state==='BEST_ACCEPTABLE_MICRO').length}; suspended=${live.filter(x=>x.profitabilityAdmission?.state==='LIVE_SUSPENDED').length}`);
+console.log(`Profitability admission: buyable=${buyable.length}; micro=${live.filter(x=>x.profitabilityAdmission?.state==='MICRO_PROBATION').length}; probation=${live.filter(x=>x.profitabilityAdmission?.state==='PROBATION').length}; suspended=${live.filter(x=>x.profitabilityAdmission?.state==='LIVE_SUSPENDED').length}`);

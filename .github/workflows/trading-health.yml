@@ -24,6 +24,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: teststock-trading-health
@@ -42,6 +43,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Capture live-runner state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner_state="$RUNNER_TEMP/teststock-live-runner-runs.json"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/live-intraday-runner.yml/runs?per_page=20" > "$runner_state"
+          echo "TESTSTOCK_RUNNER_RUNS_FILE=$runner_state" >> "$GITHUB_ENV"
 
       - name: Self-heal stale intraday execution state
         env:
