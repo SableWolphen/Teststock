@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {evaluateOptionsSeedLaneCandidate} from './options-monitor-candidates.mjs';
 
-const seedPolicy={enabled:true,maxOrderUsd:15,maxConcurrentPositions:1,maxNewPositionsPerUtcWeek:1,requiredAdmissionStates:['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'],requiredDteBucket:'STANDARD',allowedUnderlyingTypes:['STOCK','INDEX_ETF'],kind:'LONG_CALL',targetMultiplier:2,stopMultiplier:0.6,breakEvenArmMultiplier:1.2,firstLockArmMultiplier:1.35,firstLockFloorMultiplier:1.15,trailArmMultiplier:1.5,trailFraction:.8,mustBeFlatBeforeMarketClose:true,forcedExitMinutesBeforeClose:10,resetGateAfterLiveLoss:true};
-const goodCandidate={underlying:'SPY',underlyingType:'INDEX_ETF',dteBucket:'STANDARD',oneContractPremiumDollars:12};
+const seedPolicy={enabled:true,maxOrderUsd:15,maxConcurrentPositions:1,maxNewPositionsPerUtcWeek:1,requiredAdmissionStates:['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'],requiredDteBucket:'STANDARD',allowedUnderlyingTypes:['STOCK','INDEX_ETF'],kind:'LONG_CALL_OR_LONG_PUT',allowedKinds:['LONG_CALL','LONG_PUT'],targetMultiplier:2,stopMultiplier:0.6,breakEvenArmMultiplier:1.2,firstLockArmMultiplier:1.35,firstLockFloorMultiplier:1.15,trailArmMultiplier:1.5,trailFraction:.8,mustBeFlatBeforeMarketClose:true,forcedExitMinutesBeforeClose:10,resetGateAfterLiveLoss:true};
+const goodCandidate={underlying:'SPY',underlyingType:'INDEX_ETF',kind:'LONG_CALL',dteBucket:'STANDARD',oneContractPremiumDollars:12};
 
 test('SHADOW_ONLY with zero evidence blocks every candidate, however good it looks',()=>{
   const state=evaluateOptionsSeedLaneCandidate({candidate:goodCandidate,admission:{state:'SHADOW_ONLY'},seedPolicy});
@@ -61,4 +61,16 @@ test('a disabled seed lane blocks everything regardless of admission or candidat
 test('no candidate at all is a clean no-op, not an error',()=>{
   const state=evaluateOptionsSeedLaneCandidate({candidate:null,admission:{state:'LIVE_ADMITTED'},seedPolicy});
   assert.equal(state.status,'NO_CANDIDATE');
+});
+
+
+test('qualified long puts are eligible when every other gate passes',()=>{
+  const state=evaluateOptionsSeedLaneCandidate({candidate:{...goodCandidate,kind:'LONG_PUT',underlyingBias:'BEARISH'},admission:{state:'LIVE_ADMITTED'},seedPolicy});
+  assert.equal(state.status,'OPTION_SEED_LANE_BUY_TRIGGER');
+  assert.equal(state.seedLane.kind,'LONG_PUT');
+});
+
+test('unsupported option kinds fail closed',()=>{
+  const state=evaluateOptionsSeedLaneCandidate({candidate:{...goodCandidate,kind:'SHORT_CALL'},admission:{state:'LIVE_ADMITTED'},seedPolicy});
+  assert.equal(state.status,'BLOCKED_OPTION_KIND');
 });
