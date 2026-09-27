@@ -52,6 +52,8 @@ export function openNewShadowTrades({candidates=[],existingTrades=[],todayIso,no
     createdAt:nowIso,
     underlying:best.underlying,
     underlyingType:best.underlyingType||'STOCK',
+    kind:best.kind||null,
+    underlyingBias:best.underlyingBias||null,
     contract:best.contract,
     expiry:best.expiry,
     dteAtCreation:best.dte,
