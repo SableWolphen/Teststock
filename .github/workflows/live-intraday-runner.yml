@@ -62,10 +62,28 @@ jobs:
           ref: main
           fetch-depth: 1
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Verify persistent trading runtime
         shell: bash
         run: |
           set -euo pipefail
+          if ! command -v claude >/dev/null && [ -n "${APPDATA:-}" ]; then
+            npm_user_bin="$(cygpath -u "$APPDATA")/npm"
+            if [ -f "$npm_user_bin/claude.cmd" ] || [ -f "$npm_user_bin/claude.exe" ]; then
+              export PATH="$npm_user_bin:$PATH"
+              echo "$npm_user_bin" >> "$GITHUB_PATH"
+              echo "Recovered Claude CLI from the Windows user npm directory."
+            fi
+          fi
           if ! command -v claude >/dev/null && command -v powershell.exe >/dev/null; then
             claude_path=$(powershell.exe -NoProfile -Command "(Get-Command claude -ErrorAction SilentlyContinue).Source" | tr -d '\r' | tail -n 1)
             if [ -n "$claude_path" ]; then
