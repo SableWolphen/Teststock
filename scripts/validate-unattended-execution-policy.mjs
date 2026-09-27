@@ -1,5 +1,6 @@
+import { stockExecutionPolicyFailures } from './stock-execution-policy-validation.mjs';
 import fs from 'node:fs/promises';
-const read=async f=>JSON.parse(await fs.readFile(f,'utf8'));const s=await read('docs/signal.json'),p=s.claudeExecutionPolicy||{},fail=[];
+const read=async f=>JSON.parse(await fs.readFile(f,'utf8'));const s=await read('docs/signal.json'),p=s.claudeExecutionPolicy||{},fail=stockExecutionPolicyFailures(s);
 if(s.autopilot?.stockBuysRequireUserApproval!==false||s.autopilot?.automaticQualifiedStockBuys!==true)fail.push('automatic stock buys');
 if(s.autopilot?.automaticQualifiedCryptoBuys!==false)fail.push('crypto execution not disabled');
 if(s.autopilot?.automaticQualifiedOptionBuys!==true||s.autopilot?.automaticRiskReducingOptionExits!==true)fail.push('automatic option execution');

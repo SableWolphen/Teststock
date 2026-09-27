@@ -1,9 +1,10 @@
+import { stockExecutionPolicyFailures } from './stock-execution-policy-validation.mjs';
 import fs from 'node:fs/promises';
 const read=async f=>JSON.parse(await fs.readFile(f,'utf8'));
 const [s,t]=await Promise.all(['docs/signal.json','docs/data/stock-tournament.json'].map(read)),fail=[];
+fail.push(...stockExecutionPolicyFailures(s));
 const dayTradeOnlyMode=s.dayTradeOnlyEntryPolicy?.enabled===true;
 if(t.profitabilityAdmissionPolicy?.mode!=='TIERED_A_NORMAL_B_MICRO_WITH_REAL_SUSPENSION')fail.push('policy mode');
-if(s.autopilot?.requiresPerOrderApproval!==false||s.autopilot?.automaticQualifiedBuys!==true)fail.push('automatic stock policy');
 for(const x of t.liveQueue||[]){
   const a=x.profitabilityAdmission||{},blocked=['SHADOW_ONLY','LIVE_SUSPENDED'].includes(a.state);
   if(a.historicalEvidenceIsDiagnosticOnly!==true)fail.push(`${x.ticker}: historical authority`);

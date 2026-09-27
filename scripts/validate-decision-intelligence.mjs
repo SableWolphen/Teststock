@@ -1,14 +1,12 @@
+import { stockExecutionPolicyFailures } from './stock-execution-policy-validation.mjs';
 import fs from 'node:fs/promises';
 const signal=JSON.parse(await fs.readFile('docs/signal.json','utf8'));
 const tournament=JSON.parse(await fs.readFile('docs/data/stock-tournament.json','utf8'));
 const fail=[];
+fail.push(...stockExecutionPolicyFailures(signal));
 const p=tournament.decisionIntelligencePolicy;
 if(p?.mode!=='BOUNDED_DECISION_OVERLAY')fail.push('bounded overlay policy');
 if(!String(p?.authority||'').includes('Cannot create eligibility'))fail.push('non-expansive authority');
-if(signal.executionArchitecture?.mode!=='TWO_TOURNAMENTS_ONLY')fail.push('two tournaments');
-if(signal.executionArchitecture?.crossAssetSelection!==false)fail.push('no cross-asset selection');
-if(signal.autopilot?.requiresPerOrderApproval!==false)fail.push('automatic stock approval policy');
-if(signal.autopilot?.automaticQualifiedBuys!==true)fail.push('automatic qualified stock buys');
 if(signal.stockPlan?.policy?.noMargin!==true)fail.push('no margin');
 if(signal.stockPlan?.policy?.noAverageDown!==true)fail.push('no averaging down');
 const hardText=JSON.stringify(signal.hardRules||[]).toLowerCase();
