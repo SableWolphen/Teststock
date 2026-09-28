@@ -59,7 +59,16 @@ jobs:
       - name: Test market-session safety logic
         run: node --test scripts/test-nyse-session.mjs scripts/test-day-trade-dispatch.mjs
 
+      - name: Verify authoritative NYSE session
+        id: market_window
+        shell: bash
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+        run: node scripts/write-nyse-session-output.mjs "$GITHUB_OUTPUT"
+
       - name: Self-heal stale stock research during the regular session
+        if: steps.market_window.outputs.stocks == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -86,39 +95,49 @@ jobs:
           fi
 
       - name: Detect entry stop and profit triggers without an LLM
+        if: steps.market_window.outputs.stocks == 'true'
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/update-trigger-board.mjs
 
       - name: Normalize authoritative stock sizing and timing policy
+        if: steps.market_window.outputs.stocks == 'true'
         run: node scripts/normalize-trigger-board-policy.mjs
 
       - name: Enforce day-trader session and flattening policy
+        if: steps.market_window.outputs.stocks == 'true'
         run: node scripts/enforce-day-trader-trigger-policy.mjs
 
       - name: Refresh 1m and 5m intraday edge
+        if: steps.market_window.outputs.stocks == 'true'
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/apply-intraday-edge-overlay.mjs
 
       - name: Rebuild ranked trigger competition after intraday filtering
+        if: steps.market_window.outputs.stocks == 'true'
         run: node scripts/rebuild-intraday-trigger-state.mjs
 
       - name: Validate intraday edge fail closed
+        if: steps.market_window.outputs.stocks == 'true'
         run: node scripts/validate-intraday-edge-overlay.mjs
 
       - name: Validate trigger board fail closed
+        if: steps.market_window.outputs.stocks == 'true'
         run: node scripts/validate-trigger-board.mjs
 
       - name: Build compact automatic execution packet
+        if: steps.market_window.outputs.stocks == 'true'
         run: node scripts/build-execution-dispatch.mjs
 
       - name: Validate execution packet and fail closed
+        if: steps.market_window.outputs.stocks == 'true'
         run: node scripts/validate-execution-dispatch.mjs
 
       - name: Publish trigger and execution state
+        if: steps.market_window.outputs.stocks == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -142,6 +161,7 @@ jobs:
           fi
 
       - name: Wake live executor for actionable dispatch
+        if: steps.market_window.outputs.stocks == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
