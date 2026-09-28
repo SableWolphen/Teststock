@@ -1,10 +1,19 @@
-# Teststock Intelligence / ChatGPT Execution Contract
+# Teststock Intelligence / OpenAI Execution Contract
 
 Teststock is an intelligence and monitoring system only. GitHub gathers and analyzes Alpaca/provider market data, news/catalysts, historical/forward evidence, ranks candidates, monitors triggers, and publishes execution packets. GitHub/Teststock has zero independent brokerage authority and must never submit Robinhood orders.
 
-ChatGPT is the sole broker execution layer. ChatGPT reads Teststock as decision support, independently reconciles live Robinhood account/position/order state, obeys every Robinhood tool review/confirmation requirement, submits permitted stock/option buys and sells, verifies fills, and reconciles resulting state. A Teststock packet is never itself a broker order or proof of execution.
+OpenAI executor is the sole broker execution layer. OpenAI executor reads Teststock as decision support, independently reconciles live Robinhood account/position/order state, obeys every Robinhood tool review/confirmation requirement, submits permitted stock/option buys and sells, verifies fills, and reconciles resulting state. A Teststock packet is never itself a broker order or proof of execution.
 
 ## Operating mode
+
+## Automated execution mode
+
+Teststock/GitHub remains intelligence and monitoring only. The live broker executor is OpenAI through the connected Robinhood integration.
+
+Repository automation is PAPER by default. A headless runner must never place a real broker order unless the user explicitly enables live mode outside the repository. Missing or ambiguous live authorization, broker authentication, broker state, order state, or generation state means no new live risk.
+
+The OpenAI executor must preserve one logical client-order id per order, claim before submit, never blindly retry an ambiguous submission, trust only confirmed fills, and keep exits/stops ahead of new entries. No margin, averaging down, wider stops, deposits, transfers, naked option selling, option exercise, or overnight Teststock options.
+
 
 Teststock uses the repository-wide aggressive cash-only contract in `docs/AGGRESSIVE-CASH-ONLY.md`. Treat that contract as additive to every rule below. Aggressive execution may use the largest size already permitted by evidence and live risk capacity, but it never bypasses profitability admission, broker reconciliation, protection, liquidity, freshness, or cash-only limits.
 
@@ -20,10 +29,10 @@ Read current `main` only. Before any action, use the newest:
 
 Robinhood is authoritative for live buying power, positions, orders, fills, and cancellations. Never invent broker state.
 
-## ChatGPT-controlled execution
+## OpenAI executor-controlled execution
 
 ### Stocks
-- Qualified Teststock stock entries are eligible for ChatGPT execution under the user's standing authorization, but Teststock itself never places them. ChatGPT must still obey any Robinhood tool-required review or confirmation.
+- Qualified Teststock stock entries are eligible for OpenAI executor execution under the user's standing authorization, but Teststock itself never places them. OpenAI executor must still obey any Robinhood tool-required review or confirmation.
 - A high model score is not sufficient qualification. The current profitability-admission file must show `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`; `SHADOW_ONLY` cannot use a seed lane to bypass the evidence requirement.
 - This includes normal A/B/C candidates and encoded stock seed-lane candidates when their current Teststock rules permit execution.
 - Re-check every candidate immediately before submission: freshness, max entry (see bounded momentum entry below), buying power, account floor, portfolio heat, correlation, trade frequency, duplicate orders, sizing, and protection capability.
@@ -32,7 +41,7 @@ Robinhood is authoritative for live buying power, positions, orders, fills, and 
 
 
 ### Exits and protection
-- Risk-reducing exits and validated profit-taking are handled by ChatGPT for stocks/options when current policy permits them; Teststock only supplies the trigger/evidence packet.
+- Risk-reducing exits and validated profit-taking are handled by OpenAI executor for stocks/options when current policy permits them; Teststock only supplies the trigger/evidence packet.
 - Stops/exits outrank new buys.
 - After an entry fill, establish required protection immediately. If protection cannot be established, use the safest currently authorized risk-reducing action.
 
@@ -48,13 +57,13 @@ Robinhood is authoritative for live buying power, positions, orders, fills, and 
 
 ## Options
 
-Options remain a separate, evidence-gated intelligence lane for ChatGPT execution. Do not infer options authorization from stock automation; the options policy, earned admission state, live option-chain checks and account-capacity checks must all pass.
+Options remain a separate, evidence-gated intelligence lane for OpenAI executor execution. Do not infer options authorization from stock automation; the options policy, earned admission state, live option-chain checks and account-capacity checks must all pass.
 
 - `docs/data/small-account-options.json` is the research scan; `docs/data/options-shadow-trades.json` and `docs/data/options-profitability-admission.json` provide evidence before live capital is allowed.
 - The live lane is now wired into `build-execution-dispatch.mjs` as `OPTION_SEED_LANE_BUY_TRIGGER`. It remains blocked while admission is `SHADOW_ONLY` or `LIVE_SUSPENDED`.
-- When admission reaches `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`, the lane may automatically submit a whole long stock call/put contract that passes every live Claude/Robinhood check, within the current per-trade premium ceiling and aggregate cash/premium-risk limits. Existing broker options are adopted into the managed profile and counted against those limits instead of causing a mismatch-wide freeze. Duplicate exposure or insufficient remaining risk capacity still blocks that specific new entry.
+- When admission reaches `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`, the lane may automatically submit a whole long stock call/put contract that passes every live OpenAI executor/Robinhood check, within the current per-trade premium ceiling and aggregate cash/premium-risk limits. Existing broker options are adopted into the managed profile and counted against those limits instead of causing a mismatch-wide freeze. Duplicate exposure or insufficient remaining risk capacity still blocks that specific new entry.
 - Options use existing dedicated Robinhood Agentic account funds only: no deposits, bank transfers, margin, naked selling, exercise, or overnight holding. A live loss resets the options lane until fresh positive independent shadow evidence is earned.
-- The live option lane never promises profit. If the contract does not have sufficient positive evidence, liquidity, price/Greeks, or account capacity, Claude must return `NO_ACTION`. Reaching a probation tier in the admission file is evidence, not by itself a green light to submit an order — the dispatch wiring is the remaining gate.
+- The live option lane never promises profit. If the contract does not have sufficient positive evidence, liquidity, price/Greeks, or account capacity, OpenAI executor must return `NO_ACTION`. Reaching a probation tier in the admission file is evidence, not by itself a green light to submit an order — the dispatch wiring is the remaining gate.
 - Long options do not need to be held to expiration. Profitable contracts may be sold-to-close early whenever the current option exit policy produces a validated profit-taking, trailing-profit, risk-reduction, or session-cutoff exit. Expiration is a maximum lifetime, not a profit target.
 - Evaluate exits against an executable live bid, not midpoint or theoretical value. Never keep a profitable option open merely to wait for expiration when a validated exit has fired.
 - Once an option's profit floor/trailing protection ratchets upward, it may never be loosened. Sell-to-close remains the only normal exit; do not exercise simply to realize a gain.
