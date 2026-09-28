@@ -33,14 +33,11 @@ jobs:
       - name: Decide whether stocks are active
         id: market_window
         shell: bash
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: |
-          dow=$(date -u +%u)
-          hour=$(date -u +%H)
-          if [ "$dow" -ge 1 ] && [ "$dow" -le 5 ] && [ "$hour" -ge 13 ] && [ "$hour" -le 21 ]; then
-            echo "stocks=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "stocks=false" >> "$GITHUB_OUTPUT"
-          fi
+          node scripts/write-nyse-session-output.mjs "$GITHUB_OUTPUT"
 
       - name: Refresh baseline stock observations
         if: ${{ steps.market_window.outputs.stocks == 'true' }}
