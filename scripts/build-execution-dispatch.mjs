@@ -29,6 +29,9 @@ const latestFreshnessAnchor=e=>{
 };
 const boardAgeMs=ageMs(board?.publishedAt);
 const boardHealthy=board?.monitorHealth==='OK'&&boardAgeMs<=MAX_BOARD_AGE_MS;
+const LIVE_ADMISSION_STATES=new Set(['MICRO_PROBATION','PROBATION','LIVE_ADMITTED']);
+const admissionStateOf=e=>e?.profitabilityAdmission?.state||e?.profitabilityAdmission||null;
+const stockAdmissionAllowed=e=>e?.trigger!=='BUY_TRIGGER'||LIVE_ADMISSION_STATES.has(admissionStateOf(e));
 const stockEntrySessionAllowed=e=>{
   if(e?.trigger!=='BUY_TRIGGER'||e?.assetClass!=='STOCK')return true;
   const s=e.marketSession||board?.marketSession||{};
@@ -51,7 +54,7 @@ const candidates=(board?.events||[]).filter(e=>priority[e.trigger]&&!(e.trigger=
   const triggerAgeMs=ageMs(freshnessAnchor);
   const isFresh=e.trigger!=='BUY_TRIGGER'||triggerAgeMs<=MAX_ENTRY_AGE_MS;
   const sessionAllowed=stockEntrySessionAllowed(e);
-  return {...e,fingerprint,priority:priority[e.trigger],requestedAction:actionMap[e.trigger],triggerAgeMs,freshnessAnchor,expiresAt:e.trigger==='BUY_TRIGGER'&&freshnessAnchor?new Date(Date.parse(freshnessAnchor)+MAX_ENTRY_AGE_MS).toISOString():null,isFresh,sessionAllowed,isNew:true,isActionable:boardHealthy&&isFresh&&sessionAllowed};
+  return {...e,fingerprint,priority:priority[e.trigger],requestedAction:actionMap[e.trigger],triggerAgeMs,freshnessAnchor,expiresAt:e.trigger==='BUY_TRIGGER'&&freshnessAnchor?new Date(Date.parse(freshnessAnchor)+MAX_ENTRY_AGE_MS).toISOString():null,isFresh,sessionAllowed,isNew:true,isActionable:boardHealthy&&isFresh&&sessionAllowed&&stockAdmissionAllowed(e)};
 }).sort((a,b)=>b.priority-a.priority||Number(a.queueRank||999)-Number(b.queueRank||999)||String(a.ticker).localeCompare(String(b.ticker)));
 
 const hasExitEvent=candidates.some(x=>x.trigger!=='BUY_TRIGGER');
@@ -64,6 +67,7 @@ const automaticStockCandidates=hasExitEvent?[]:actionableCandidates.filter(x=>x.
 const fallbackActions=selected?.trigger==='BUY_TRIGGER'?automaticStockCandidates.slice(1):[];
 
 const seedEvents=(board?.events||[]).filter(e=>{
+  if(!LIVE_ADMISSION_STATES.has(admissionStateOf(e)))return false;
   if(e.trigger==='SEED_LANE_BUY_TRIGGER'&&e.assetClass==='STOCK')return e.seedLane?.eligible===true;
   if(e.trigger==='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'&&e.assetClass==='STOCK')return e.dayTradeSeedLane?.eligible===true;
   return false;
@@ -100,7 +104,7 @@ const seedLaneCandidates=hasExitEvent?[]:seedEvents.filter(e=>e.isActionable).ma
 
 
 const optionsPolicy=probabilityPolicy.options?.seedLane||{};
-const optionAllowedAdmission=(optionsPolicy.requiredAdmissionStates||['SHADOW_ONLY','MICRO_PROBATION','PROBATION','LIVE_ADMITTED']).includes(optionsAdmission.state);
+const optionAllowedAdmission=LIVE_ADMISSION_STATES.has(optionsAdmission.state)&&(optionsPolicy.requiredAdmissionStates||['MICRO_PROBATION','PROBATION','LIVE_ADMITTED']).includes(optionsAdmission.state);
 const optionScanFresh=ageMs(optionsScan.generatedAt)<=OPTIONS_MAX_AGE_MS;
 const localTrackedOpenOptionPositions=(executionWatchlist.positions||[]).filter(x=>x?.assetClass==='OPTION'&&String(x.status).toUpperCase()==='ACTIVE').length;
 const optionBrokerReconciliationRequired=true;
@@ -136,7 +140,7 @@ const out={
   boardAgeMs:Number.isFinite(boardAgeMs)?boardAgeMs:null,maximumBoardAgeMs:MAX_BOARD_AGE_MS,
   monitorHealth:board?.monitorHealth||'UNAVAILABLE',dispatchHealth:boardHealthy?'OK':'FAIL_CLOSED_STALE_OR_UNHEALTHY_BOARD',
   chatgptShouldRun:Boolean(pendingAction)||seedLaneCandidates.length>0||Boolean(optionCandidateCompact),chatgptShouldPollMarket:false,executionNeeded:actionableCandidates.length>0||seedLaneCandidates.length>0||Boolean(optionCandidateCompact),
-  dispatchFingerprints:[...actionableCandidates.map(x=>x.fingerprint),...seedLaneCandidates.map(x=>x.fingerprint)],priorityOrder:['TRIGGER_1_STOP','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_3_TARGET2','TRIGGER_2_TARGET1','TRIGGER_EARLY_PROFIT_TRIM','BUY_TRIGGER','OPTION_SEED_LANE_BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'],
+  dispatchFingerprints:[...actionableCandidates.map(x=>x.fingerprint),...seedLaneCandidates.map(x=>x.fingerprint),...(optionCandidateCompact?[optionCandidateCompact.fingerprint]:[])],priorityOrder:['TRIGGER_1_STOP','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_3_TARGET2','TRIGGER_2_TARGET1','TRIGGER_EARLY_PROFIT_TRIM','BUY_TRIGGER','OPTION_SEED_LANE_BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'],
   pendingAction,automaticStockCandidates,approvalCandidates:[],approvalBatchId:null,fallbackActions,seedLaneCandidates,optionCandidates:optionCandidateCompact?[optionCandidateCompact]:[],optionsLane:{status:optionLaneResult.status,admissionState:optionsAdmission.state,scanFresh:optionScanFresh,scanGeneratedAt:optionsScan.generatedAt||null,localTrackedOpenOptionPositions,brokerPositionReconciliationRequired:optionBrokerReconciliationRequired,brokerOnlyPositionsAreAdopted,newEntriesThisWeek:optionNewThisWeek,lastLiveTradeOutcome:lastOptionOutcome,rule:'Options are exceptional and evidence-gated. Local Teststock position counts are not authoritative; live Robinhood option-position and open-order reconciliation is mandatory before every new option entry. Broker positions missing from Teststock are adopted into the managed position profile instead of globally blocking the options lane. Adopted positions still count toward live cash, aggregate premium risk, duplicate-contract/symbol checks, account floor, and any current concurrency cap. Unknown or ambiguous broker order state may block only the conflicting action until reconciled. Cash-funded long options only; no exercise/overnight.'},
   crossAssetPreference:{optionsMayOutrankStocks:true,rule:'After exits, compare independently qualified option and stock opportunities by executable after-cost evidence. A qualified option may be presented ahead of stock entries, but option admission, live chain/liquidity, whole-contract cash/risk, concurrency, duplicate and session gates remain mandatory. Never force an option to satisfy a frequency target.'},
   multiStockPolicy:{enabled:true,maximumAutomaticCandidatesPerDispatch:null,capacityMode:'DYNAMIC_RISK_CASH_AND_BROKER_LIMITED',automaticQualifiedEntries:true,userApprovalRequired:false,oneWinnerDoesNotBlockOtherQualifiedStocks:true,rule:'Expose every already-qualified current-generation stock candidate in rank order. ChatGPT may execute as many as remain independently qualified after immediate broker rechecks and dynamic cash, portfolio-heat, correlation, account-floor and aggregate-stop-risk limits. Never force a trade.'},
