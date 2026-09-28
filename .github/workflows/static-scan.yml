@@ -103,22 +103,11 @@ jobs:
         id: scan_window
         shell: bash
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          EVENT_SCHEDULE: ${{ github.event.schedule }}
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: |
-          if [ "$EVENT_NAME" != "schedule" ]; then
-            echo "stocks=true" >> "$GITHUB_OUTPUT"
-            echo "deep=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          dow=$(date -u +%u)
-          hour=$(date -u +%H)
-          if [ "$dow" -ge 1 ] && [ "$dow" -le 5 ] && [ "$hour" -ge 13 ] && [ "$hour" -le 21 ]; then
-            echo "stocks=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "stocks=false" >> "$GITHUB_OUTPUT"
-          fi
-          if [ "$EVENT_SCHEDULE" = "3 * * * *" ]; then
+          node scripts/write-nyse-session-output.mjs "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "deep=true" >> "$GITHUB_OUTPUT"
           else
             echo "deep=false" >> "$GITHUB_OUTPUT"
