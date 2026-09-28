@@ -104,7 +104,7 @@ if(seedLaneConfig.enabled===true){
   const availableSlots=dailyRemaining>0?Math.max(0,maxConcurrent-openSeedTickers.size):0;
   if(availableSlots>0){
     const allowBTier=seedLaneConfig.allowBTier===true;
-    const eligiblePool=[];
+    const eligiblePool=live.filter(x=>(x.entryTier==='A'||(allowBTier&&x.entryTier==='B'))&&x.profitabilityAdmission?.state==='SHADOW_ONLY'&&!x.profitabilityAdmission?.regimeDisabled&&!x.profitabilityAdmission?.contradictoryShadow&&!openSeedTickers.has(x.ticker)&&!stoppedTodaySeedTickers.has(x.ticker));
     eligiblePool.sort((a,b)=>(a.entryTier==='A'?0:1)-(b.entryTier==='A'?0:1)||Number(a.queueRank??999)-Number(b.queueRank??999));
     for(const chosen of eligiblePool.slice(0,availableSlots)){
       const tierCap=chosen.entryTier==='B'?Number(seedLaneConfig.bTierMaxOrderUsd||seedLaneConfig.maxOrderUsd||5):Number(seedLaneConfig.maxOrderUsd||5);
@@ -134,7 +134,7 @@ if(dayTradeConfig.enabled===true){
   const availableSlots=dailyRemaining>0?Math.max(0,maxConcurrent-openTickers.size):0;
   if(availableSlots>0){
     const allowBTier=dayTradeConfig.allowBTier===true;
-    const eligiblePool=live.filter(x=>(x.entryTier==='A'||(allowBTier&&x.entryTier==='B'))&&dayTradeOnlyMode&&dayTradeAdmittedStatesAllowed.includes(x.profitabilityAdmission?.state)&&!x.profitabilityAdmission?.regimeDisabled&&!x.profitabilityAdmission?.contradictoryShadow&&!openTickers.has(x.ticker)&&!swingSelectedTickers.has(x.ticker)).sort((a,b)=>(a.entryTier==='A'?0:1)-(b.entryTier==='A'?0:1)||Number(a.queueRank??999)-Number(b.queueRank??999));
+    const eligiblePool=live.filter(x=>(x.entryTier==='A'||(allowBTier&&x.entryTier==='B'))&&(x.profitabilityAdmission?.state==='SHADOW_ONLY'||(dayTradeOnlyMode&&dayTradeAdmittedStatesAllowed.includes(x.profitabilityAdmission?.state)))&&!x.profitabilityAdmission?.regimeDisabled&&!x.profitabilityAdmission?.contradictoryShadow&&!openTickers.has(x.ticker)&&!swingSelectedTickers.has(x.ticker)).sort((a,b)=>(a.entryTier==='A'?0:1)-(b.entryTier==='A'?0:1)||Number(a.queueRank??999)-Number(b.queueRank??999));
     for(const chosen of eligiblePool.slice(0,availableSlots)){
       const tierCap=chosen.entryTier==='B'?Number(dayTradeConfig.bTierMaxOrderUsd||dayTradeConfig.maxOrderUsd||20):Number(dayTradeConfig.maxOrderUsd||20);
       // Lane-scoped target1/target2 (2026-09-22, user-requested day-trade-only phase): the shared
