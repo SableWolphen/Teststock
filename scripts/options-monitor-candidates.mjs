@@ -20,6 +20,9 @@ export function evaluateOptionsSeedLaneCandidate({
   }
   const admissionState=admission?.state||'SHADOW_ONLY';
   const requiredStates=seedPolicy.requiredAdmissionStates||['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'];
+  if(candidate&&candidate.dteBucket!==(seedPolicy.requiredDteBucket||'STANDARD')){
+    return {status:'BLOCKED_DTE_NOT_STANDARD',reason:`Candidate dteBucket is ${candidate.dteBucket}; this lane only ever considers ${seedPolicy.requiredDteBucket||'STANDARD'} contracts, at any admission state.`};
+  }
   if(!requiredStates.includes(admissionState)){
     return {status:'BLOCKED_ADMISSION',reason:`Options profitability admission state is ${admissionState}; requires one of ${requiredStates.join('/')}. The candidate is outside the policy's explicitly authorized admission states.`,admissionState};
   }
