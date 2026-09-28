@@ -1,4 +1,4 @@
-name: ChatGPT Teststock executor fallback
+name: OpenAI Teststock executor fallback
 
 # Manual/emergency fallback only. Normal live execution now happens inside the
 # persistent self-hosted intraday runner so stale queued jobs cannot accumulate.
@@ -28,7 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           command -v node >/dev/null
-          test -f .mcp.json
+          test -f .openai-mcp.json
           test -f scripts/chatgpt-executor.mjs
           test -f scripts/chatgpt-executor-prompt.md
           test -f docs/signal.json
@@ -36,10 +36,13 @@ jobs:
           test -f docs/data/trigger-board.json
           test -f docs/data/execution-watchlist.json
 
-      - name: Run one reconciled ChatGPT execution cycle
+      - name: Run one reconciled OpenAI execution cycle
         shell: bash
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ROBINHOOD_MCP_OAUTH_TOKEN: ${{ secrets.ROBINHOOD_MCP_OAUTH_TOKEN }}
+          TESTSTOCK_EXECUTION_MODE: ${{ vars.TESTSTOCK_EXECUTION_MODE || 'paper' }}
+          TESTSTOCK_LIVE_TRADING: ${{ vars.TESTSTOCK_LIVE_TRADING || 'false' }}
           PYTHONIOENCODING: utf-8
         run: |
           set -euo pipefail
@@ -50,7 +53,7 @@ jobs:
           import json,sys
           with open(sys.argv[1],'r',encoding='utf-8') as f:
               data=json.load(f)
-          print('ChatGPT fallback executor completed.')
+          print('OpenAI fallback executor completed.')
           result=data.get('result') if isinstance(data,dict) else None
           if isinstance(result,str): print(result[:1000])
           PY
