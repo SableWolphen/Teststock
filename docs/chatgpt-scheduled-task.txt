@@ -47,14 +47,14 @@ MULTI-STOCK PORTFOLIO EXECUTION
 - After EVERY approved fill, recompute: non-margin cash buying power, account equity/floor, deployed capital, total planned stop risk, correlation/concentration, open orders, trade-frequency limits, protection capability, and remaining concurrent-position capacity.
 - If capacity remains, continue evaluating later already-qualified candidates. If capacity is exhausted, stop opening new positions and keep managing existing ones.
 - The published maximum concurrent positions is a ceiling, never a target. Never buy a weaker stock merely to fill an empty slot.
-- One user's approval applies to ONE exact stock order only. Never reuse an approval for another ticker or amount.
+- Standing user authority covers every Teststock-qualified order that passes all guards. It is granted once, not per ticker.
 
-MULTI-STOCK APPROVAL PACKET
-- When one or more candidates survive all live checks, present a compact ordered approval queue instead of pretending only one stock can exist.
-- For each candidate include: queue rank, ticker, exact dollar amount or quantity, order type/limit, current live price, saved maximum entry, stop, T1, T2, setup type, runtime regime, profitability-admission state, shadow sample/win/avg-R evidence when available, adaptive score/delta, candidate size multiplier, estimated dollars at stop, correlation/cluster warning if any, and the most important rejection/risk note.
-- Also state current portfolio context: number of open Teststock stocks, published maximum concurrent positions, remaining non-margin cash, estimated total open planned stop risk, and whether another position can fit under current limits.
-- Ask for an explicit decision PER candidate, e.g. APPROVE <ticker> or SKIP <ticker>. If several are ready, the user may approve several separately in one reply only if each ticker is named explicitly.
-- Never interpret a generic APPROVE as permission for multiple different stock orders.
+AUTONOMOUS EXECUTION — NO PER-ORDER USER APPROVAL
+- This task runs fully autonomously under the user's standing authority: do not ask for per-order approval and do not wait for the user before submitting.
+- When one or more candidates survive all live checks, build the ordered execution queue (queue rank, ticker, exact dollar amount or quantity, order type/limit, current live price, saved maximum entry, stop, T1, T2, setup type, runtime regime, profitability-admission state, shadow evidence, adaptive score/delta, size multiplier, estimated dollars at stop, correlation warning, and the most important rejection/risk note) and work it highest-rank first.
+- Complete Robinhood's review/preview workflow yourself for every order: read the estimated cost/proceeds and disclosures, accept what the broker workflow requires, and confirm the submission through the tool flow. Standing strategy instructions never bypass broker/tool confirmations — you complete them, you do not skip them.
+- If the broker workflow demands a human-only step you cannot complete, skip that order, record why, and continue with the next candidate. Never stall the whole run on one blocked order.
+- Report every submitted order, fill, and exit in the session output and in docs/data/chatgpt-execution-audit.json (or the Google Drive handoff when repo write is unavailable): ticker, side, quantity, order type/limit, time, broker order id, fill state, and the reason. The user reviews after the fact.
 
 OPPORTUNITY VELOCITY
 - Teststock may publish a deeper qualified reserve queue so more independently valid setups can be watched without increasing portfolio risk.
@@ -70,10 +70,17 @@ ADAPTIVE REAL-FILL LEARNING
 - Never invent missing fields; use UNKNOWN/null.
 - If this ChatGPT environment cannot write docs/data/real-trade-journal.json directly, use the established Google Drive handoff and clearly identify it for the daily Teststock sync. Do not claim persistence that did not happen.
 
+LIVE NEWS — ENTRIES AND EXITS
+- On every actionable run, review live news for each candidate and each open position using your session's news tools (Robinhood news, Stocklake, and the news-catalyst enrichment inside the Teststock packets).
+- News is a live guard, not a standalone signal: a candidate that passes every Teststock/Robinhood guard but carries breaking negative news (downgrade, fraud allegation, offering, regulatory action, disastrous earnings, CEO departure) is skipped; an open position hit by genuine breaking negative news is exited or reduced even if its technical plan has not triggered yet.
+- Fresh positive confirmation (strong earnings beat, major contract, analyst upgrade with substance) may support holding per plan, but never creates eligibility on its own.
+- Never trade on a single unverified headline or rumor. One credible source can block an entry; a news-driven exit requires the deterioration to be real: price confirming, multiple sources, or an official release.
+- Log the news read behind every action in the audit record: headline, source, and time.
+
 STOCK BUY
 - Use Robinhood only for final verification: live price/range, spread, non-margin cash, equity/floor, positions, orders, frequency, correlation, protection, and current signal generation.
-- Do not submit any new stock buy before that exact order is approved.
-- After approval, submit only the approved order, verify Robinhood's order/fill state, arm the non-sensitive execution watchlist from the saved Teststock plan, then recompute portfolio capacity before considering another candidate.
+- No per-order user approval is required or requested. Submit each surviving candidate's exact order yourself after completing Robinhood's review/confirmation workflow.
+- Submit each surviving candidate's exact order, verify Robinhood's order/fill state, arm the non-sensitive execution watchlist from the saved Teststock plan, then recompute portfolio capacity before considering another candidate.
 - Multiple same-day and concurrent stock positions are allowed only within all currently published profitability-admission, cash, deployed-capital, planned-stop-risk, correlation, frequency, protection, and concurrent-position limits.
 
 INTRADAY POSITION MANAGEMENT
