@@ -93,6 +93,9 @@ if(newListingFile.enabled===true){
 
 // Evidence-first mode never lets a SHADOW_ONLY row bypass admission through a live seed lane.
 const seedLaneConfig=probabilityPolicy?.stocks?.seedLane||{enabled:false};
+// Evidence-first mode forbids swing seed bypasses. Clear any inherited seed-lane eligibility before validation.
+for(const row of live) row.seedLane={eligible:false};
+for(const row of finalists) row.seedLane={eligible:false};
 if(seedLaneConfig.enabled===true&&tournament.profitabilityAdmissionPolicy?.mode!=='EVIDENCE_FIRST_DAY_TRADING'){
   const todayUtc=new Date().toISOString().slice(0,10);
   const seedTrades=(realJournal.trades||[]).filter(x=>x.assetClass==='STOCK'&&x.seedLane===true);
