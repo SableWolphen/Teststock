@@ -4,6 +4,8 @@ set -euo pipefail
 # One fast local decision cycle for the persistent self-hosted Teststock runner.
 # This script does not push generated files. GitHub's normal monitor remains the
 # durable publication/audit path; this cycle exists to reduce live reaction time.
+# Session profit discipline (open drive / midday / power hour) is defined in
+# scripts/daytrader-profit-discipline.md and enforced by the day-trader engine.
 
 : "${ALPACA_API_KEY:?ALPACA_API_KEY is required}"
 : "${ALPACA_API_SECRET:?ALPACA_API_SECRET is required}"
