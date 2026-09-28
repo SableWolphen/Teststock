@@ -226,5 +226,52 @@ async function runFull() {
   }
 }
 
+async function runMcpProbe() {
+  try {
+    const response = await callResponses({
+      instructions: 'You are a read-only broker connectivity probe. Follow the user instruction literally and completely.',
+      input: [
+        'READ-ONLY BROKER CONNECTIVITY TEST. Money must not move.',
+        '',
+        'Use the robinhood-trading MCP tools to:',
+        '1. Confirm the connection works (list available tools or fetch server info).',
+        '2. Fetch the account summary: account value, buying power, cash.',
+        '3. Fetch current positions and open orders.',
+        '',
+        'ABSOLUTE RULES: Do NOT place, modify, or cancel any orders. Do NOT transfer,',
+        'deposit, or withdraw funds. Do NOT exercise options. Read-only calls only.',
+        '',
+        'Reply with a JSON object only, no other text:',
+        '{"connected": true/false, "tools_seen": [...], "account": {...}, "positions": [...], "open_orders": [...], "error": "..."}',
+        'If the MCP server rejects authentication or any call fails, set connected:false',
+        'and describe the exact error in "error".',
+      ].join('\n'),
+      tools: [{
+        type: 'mcp',
+        server_label: 'robinhood-trading',
+        server_url: mcpServerUrl(),
+        // Read-only probe: no human present; the prompt above forbids any
+        // state-changing call, and the result is audited in the workflow log.
+        require_approval: 'never',
+      }],
+      maxOutputTokens: 2000,
+      timeoutMs: 5 * 60 * 1000,
+    });
+    if (response.status && response.status !== 'completed') {
+      throw new Error(`mcp probe incomplete: status=${response.status}`);
+    }
+    const text = extractText(response);
+    const mcpCalls = [];
+    for (const item of response.output || []) {
+      if (item.type === 'mcp_call') mcpCalls.push({ name: item.name, server: item.server_label });
+      if (item.type === 'mcp_list_tools') mcpCalls.push({ list_tools: true, server: item.server_label, count: (item.tools || []).length });
+    }
+    emitSuccess({ is_error: false, probe: 'mcp', result: text, mcp_calls: mcpCalls, model: response.model, usage: response.usage || null });
+  } catch (e) {
+    emitFailure(`mcp probe failed: ${e.message}`);
+  }
+}
+
 const probe = process.argv.includes('--probe');
-await (probe ? runProbe() : runFull());
+const mcpProbe = process.argv.includes('--mcp-probe');
+await (mcpProbe ? runMcpProbe() : probe ? runProbe() : runFull());

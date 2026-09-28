@@ -7,6 +7,10 @@ on:
         description: 'Verify runner startup without invoking the trading loop or broker tools'
         type: boolean
         default: false
+      mcp_probe:
+        description: 'Run a read-only Robinhood MCP connectivity probe (no trades, no orders)'
+        type: boolean
+        default: false
   schedule:
     # Weekday regular-session wake only (UTC window spans EDT/EST); an in-job NYSE gate below is authoritative.
     - cron: '2 13-21 * * 1-5'
@@ -121,6 +125,15 @@ jobs:
           node scripts/chatgpt-executor.mjs --probe \
             > "$probe_dir/stdout.json" 2> "$probe_dir/stderr.txt" || probe_status=$?
           python scripts/record-executor-result.py "$probe_dir" "$probe_status"
+
+      - name: Probe Robinhood MCP connectivity (read-only)
+        if: ${{ inputs.mcp_probe }}
+        shell: bash
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          set -euo pipefail
+          node scripts/chatgpt-executor.mjs --mcp-probe
 
       - name: Check regular US stock session
         id: stock_session
