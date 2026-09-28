@@ -18,7 +18,7 @@ signal.optionsTradingPolicy={
   sellToCloseOnly:true,
   noNakedSelling:true,
   noCreditSpreads:true,
-  noDebitSpreadsInitially:true,
+  noDebitSpreadsInitially:false, // enabled: defined-risk debit spreads only, premium paid is the hard loss ceiling
   noStraddlesOrStrangles:true,
   noExercise:true,
   noOvernight:true,
