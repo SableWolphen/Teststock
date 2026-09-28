@@ -4,8 +4,8 @@
 // Kept separate so the gate logic can be unit tested without live data, same split as
 // crypto-monitor-candidates.mjs / test-crypto-monitoring.mjs.
 //
-// build-execution-dispatch.mjs calls this gate only when an independently qualified stock event
-// exists in the same fresh generation. SHADOW_ONLY can never create an option trigger.
+// build-execution-dispatch.mjs evaluates independently qualified option candidates from the fresh options scan.
+// SHADOW_ONLY is permitted only as the explicitly capped learning lane declared by probability-first-policy.json; all other gates remain mandatory.
 
 export function evaluateOptionsSeedLaneCandidate({
   candidate,
@@ -19,9 +19,9 @@ export function evaluateOptionsSeedLaneCandidate({
     return {status:'OPTIONS_SEED_LANE_DISABLED',reason:'probability-first-policy.json options.seedLane is not enabled.'};
   }
   const admissionState=admission?.state||'SHADOW_ONLY';
-  const requiredStates=seedPolicy.requiredAdmissionStates||['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'];
+  const requiredStates=seedPolicy.requiredAdmissionStates||['SHADOW_ONLY','MICRO_PROBATION','PROBATION','LIVE_ADMITTED'];
   if(!requiredStates.includes(admissionState)){
-    return {status:'BLOCKED_ADMISSION',reason:`Options profitability admission state is ${admissionState}; requires one of ${requiredStates.join('/')}. Zero real shadow evidence still means zero live triggers, regardless of how attractive a candidate looks today.`,admissionState};
+    return {status:'BLOCKED_ADMISSION',reason:`Options profitability admission state is ${admissionState}; requires one of ${requiredStates.join('/')}. The candidate is outside the policy's explicitly authorized admission states.`,admissionState};
   }
   if(lastLiveTradeOutcome==='LOSS'&&seedPolicy.resetGateAfterLiveLoss){
     return {status:'BLOCKED_LOSS_RESET',reason:'The last live options trade was a loss; the gate requires a fresh independent positive shadow sample before the next live entry, not just staying above the admission threshold.'};
