@@ -33,7 +33,7 @@ test('fresh stock-only policy passes the admission and broker validators without
   assert.deepEqual(stockExecutionPolicyFailures(signal),[]);
   assert.deepEqual(await read(cwd,'docs/data/chatgpt-signal.json'),signal);
   assert.deepEqual(await read(cwd,'docs/data/options-profitability-admission.json'),optionShadow);
-  assert.equal(evaluateOptionsSeedLaneCandidate({candidate:{underlying:'ABC'},admission:optionShadow,seedPolicy:{enabled:true}}).status,'BLOCKED_ADMISSION');
+  assert.equal(evaluateOptionsSeedLaneCandidate({candidate:{underlying:'ABC'},admission:optionShadow,seedPolicy:{enabled:true}}).status,'BLOCKED_DTE_NOT_STANDARD');
 
   // The legacy flag cannot compensate for a missing/disabled stock authorization,
   // weakened live guards, or a re-enabled crypto path.
