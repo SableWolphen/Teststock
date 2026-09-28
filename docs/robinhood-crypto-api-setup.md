@@ -1,6 +1,6 @@
 # Robinhood Crypto API setup for Teststock
 
-Teststock now has a 24/7 crypto execution bridge that uses Robinhood's official Crypto Trading API directly instead of waiting for the Claude Robinhood MCP connector to expose crypto order tools.
+Teststock now has a 24/7 crypto execution bridge that uses Robinhood's official Crypto Trading API directly instead of waiting for the OpenAI Robinhood MCP connector to expose crypto order tools.
 
 The bridge is fail-closed. It cannot trade until all required GitHub Actions secrets are present and explicit enablement is set. Never put these values in public files, issues, chat messages, workflow YAML, or website code.
 
