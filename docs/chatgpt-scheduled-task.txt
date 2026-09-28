@@ -1,8 +1,9 @@
 TESTSTOCK — LOW-CREDIT STOCK EXECUTION TASK
 
 SCHEDULE
-- Canonical cron metadata: 0 13-21 * * 1-5.
+- Canonical cron metadata: 0 13-21 * * 1-5 (hourly during U.S. market hours; the app scheduler's maximum frequency).
 - Every firing is a check-in, not a guaranteed trade.
+- On every run, confirm the market is actually open today before any Robinhood calls: weekends, market holidays, and early-close sessions are real. If the market is closed, stop after the cheap gate. On early-close days, open no new positions within 30 minutes of the early close; manage-only.
 - Teststock is an intraday-selective multi-position stock system: keep scanning during the regular stock session and be ready to act on each genuinely qualified setup. Activity is not a quota; never force a trade.
 - GitHub maintains a roughly five-minute stock opportunity refresh during the active session by interleaving lightweight refreshes with heavier full-universe scans. The trigger monitor also remains on a five-minute cadence.
 
@@ -61,7 +62,7 @@ AUTONOMOUS EXECUTION — NO PER-ORDER USER APPROVAL
 - This task runs fully autonomously under the user's standing authority: do not ask for per-order approval and do not wait for the user before submitting.
 - When one or more candidates survive all live checks, build the ordered execution queue (queue rank, ticker, exact dollar amount or quantity, order type/limit, current live price, saved maximum entry, stop, T1, T2, setup type, runtime regime, profitability-admission state, shadow evidence, adaptive score/delta, size multiplier, estimated dollars at stop, correlation warning, and the most important rejection/risk note) and work it highest-rank first.
 - Complete Robinhood's review/preview workflow yourself for every order: read the estimated cost/proceeds and disclosures, accept what the broker workflow requires, and confirm the submission through the tool flow. Standing strategy instructions never bypass broker/tool confirmations — you complete them, you do not skip them.
-- If the broker workflow demands a human-only step you cannot complete, skip that order, record why, and continue with the next candidate. Never stall the whole run on one blocked order.
+- If the broker workflow requires fresh user confirmation that you cannot complete yourself, prepare the exact order review and surface the confirmation to the user instead of submitting — never bypass it. Continue evaluating and managing everything else meanwhile. Never stall the whole run on one awaiting-confirmation order.
 - Report every submitted order, fill, and exit in the session output and in docs/data/chatgpt-execution-audit.json (or the Google Drive handoff when repo write is unavailable): ticker, side, quantity, order type/limit, time, broker order id, fill state, and the reason. The user reviews after the fact.
 
 OPPORTUNITY VELOCITY
