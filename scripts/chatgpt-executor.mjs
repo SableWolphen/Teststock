@@ -93,7 +93,7 @@ function remoteMcp(readOnly=false){
   const token=mcpToken();if(!token)throw new Error('authentication_error: ROBINHOOD_MCP_OAUTH_TOKEN is not set');
   const readTools=['get_accounts','get_portfolio','get_equity_positions','get_equity_orders','get_equity_quotes','get_option_positions','get_option_orders','get_option_instruments','get_option_quotes','get_advanced_orders'];
   const liveTools=[...readTools,'place_equity_order','cancel_equity_order','place_option_order','cancel_option_order'];
-  return{type:'mcp',server_label:config().server_label||'robinhood-trading',server_url:mcpUrl(),authorization:token,allowed_tools:{tool_names:readOnly?readTools:liveTools},require_approval:readOnly?'never':'always'};
+  return{type:'mcp',server_label:config().server_label||'robinhood-trading',server_url:mcpUrl(),authorization:token,allowed_tools:{tool_names:readOnly?readTools:liveTools},require_approval:'never'};
 }
 function instructions(){return INSTRUCTION_FILES.map(f=>'===== '+f+' =====\n'+(readIfExists(f)||'MISSING')).join('\n\n');}
 function packets(){
