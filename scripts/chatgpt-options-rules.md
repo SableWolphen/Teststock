@@ -1,10 +1,14 @@
 # Teststock automatic stock-options lane
 
-This lane is explicitly authorized for automatic execution only through ChatGPT + Robinhood Trading MCP. It is a separate risk lane from the stock day-trading lane.
+This lane is explicitly authorized for automatic execution only through OpenAI executor + Robinhood Trading MCP. It is a separate risk lane from the stock day-trading lane.
 
 ## Objective
 
 Seek positive risk-adjusted intraday opportunities in listed stock/ETF options when the underlying stock itself is already qualified by Teststock. Never represent any trade as guaranteed to make money. If the evidence is not strong enough after live option-chain checks, do nothing.
+
+## Admission gate
+
+New live option risk requires option profitability admission `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. `SHADOW_ONLY` and `LIVE_SUSPENDED` remain research/manage-only and cannot open a live option.
 
 ## Allowed strategy
 
@@ -28,7 +32,7 @@ A long call/put has a theoretical maximum loss equal to the premium paid, but Ro
 
 The account itself is the only funding source.
 
-Before every option entry, ChatGPT must verify through Robinhood:
+Before every option entry, OpenAI executor must verify through Robinhood:
 - current total account equity;
 - available buying power;
 - settled/available cash rules;
@@ -43,9 +47,10 @@ Hard rules:
 - No margin borrowing or leverage.
 - Never spend more premium than current available account buying power.
 - Never allow an option order to make available cash/buying power negative.
-- Maximum premium at risk on one new option position: 5% of current account equity.
-- Maximum aggregate open option premium at risk: 15% of current account equity.
-- Maximum new option premium exposure in one New York trading day: 10% of current account equity.
+- Enforce the current generated per-trade premium-risk cap.
+- Enforce the current generated aggregate open-option premium-risk cap.
+- Enforce the current generated new-premium-per-New-York-day cap.
+- Missing or contradictory generated policy fails closed; prose never raises these limits.
 - If the account is too small to buy a contract inside these limits, skip it.
 - A partial fill counts only by broker-confirmed quantity and premium.
 - Cancel/replace never creates a second independent option position.
@@ -54,14 +59,12 @@ These are maximum risk ceilings, not targets. A smaller position is required whe
 
 ## Contract selection
 
-Only consider contracts that ChatGPT can verify from the live Robinhood option chain immediately before entry:
+Only consider contracts that OpenAI executor can verify from the live Robinhood option chain immediately before entry:
 - liquid underlying stock/ETF;
 - tight bid/ask spread;
 - sufficient option volume/open interest;
-- expiration normally 14–45 calendar days away;
-- never 0DTE or 1DTE;
-- no entry when expiration is within 5 trading days;
-- generally prefer delta about 0.55–0.80;
+- expiration must satisfy the current generated minimum/maximum DTE and expiration-safety rules;
+- delta must satisfy the current generated minimum/maximum bounds;
 - avoid extremely far OTM contracts;
 - verify implied volatility, IV rank/percentile when available, theta, delta, gamma and vega;
 - verify the contract's premium and break-even;
@@ -89,7 +92,7 @@ For a long option, the paid premium is the hard worst-case loss if the contract 
 
 ## Entry quality
 
-ChatGPT must require all of the following:
+OpenAI executor must require all of the following:
 1. The underlying stock is independently qualified by Teststock.
 2. Current stock price and intraday edge remain fresh.
 3. The option-chain quote is fresh.
@@ -105,7 +108,7 @@ If the stock is qualified but no option contract passes, trade the stock only if
 
 ## Execution
 
-ChatGPT is the only execution agent. GitHub never places option orders.
+OpenAI executor is the only execution agent. GitHub never places option orders.
 
 Before BUY TO OPEN:
 - re-read the current dispatch/signal generation;
