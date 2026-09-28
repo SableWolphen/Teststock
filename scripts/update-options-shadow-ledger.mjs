@@ -47,7 +47,7 @@ for(const trade of openTrades){
 const newTrades=openNewShadowTrades({candidates:scan.candidates||[],existingTrades:ledger.trades,todayIso:marketSession.date,nowIso,maxNewPerUtcDay:25,marketSession});
 ledger.trades.push(...newTrades);
 
-ledger.trades=ledger.trades.slice(-2000);
+const terminalOptionTrades=ledger.trades.filter(t=>t.status!=='OPEN').slice(-20000);const openOptionTrades=ledger.trades.filter(t=>t.status==='OPEN').slice(-3000);ledger.trades=[...terminalOptionTrades,...openOptionTrades];
 ledger.generatedAt=nowIso;
 ledger.summary=summarizeShadowTrades(ledger.trades);
 ledger.rules=[
@@ -60,3 +60,4 @@ ledger.rules=[
 ];
 await fs.writeFile('docs/data/options-shadow-trades.json',JSON.stringify(ledger,null,2)+'\n');
 console.log(`Options shadow ledger: ${ledger.trades.length} trade(s), ${newTrades.length} new, ${JSON.stringify(ledger.summary)}`);
+
