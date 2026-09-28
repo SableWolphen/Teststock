@@ -93,7 +93,7 @@ if(newListingFile.enabled===true){
 
 // Evidence-first mode never lets a SHADOW_ONLY row bypass admission through a live seed lane.
 const seedLaneConfig=probabilityPolicy?.stocks?.seedLane||{enabled:false};
-if(seedLaneConfig.enabled===true){
+if(seedLaneConfig.enabled===true&&tournament.profitabilityAdmissionPolicy?.mode!=='EVIDENCE_FIRST_DAY_TRADING'){
   const todayUtc=new Date().toISOString().slice(0,10);
   const seedTrades=(realJournal.trades||[]).filter(x=>x.assetClass==='STOCK'&&x.seedLane===true);
   const openSeedTickers=new Set(seedTrades.filter(x=>x.outcome==='OPEN').map(x=>x.symbol));
@@ -134,9 +134,9 @@ if(dayTradeConfig.enabled===true){
   const availableSlots=dailyRemaining>0?Math.max(0,maxConcurrent-openTickers.size):0;
   if(availableSlots>0){
     const allowBTier=dayTradeConfig.allowBTier===true;
-    const eligiblePool=live.filter(x=>(x.entryTier==='A'||(allowBTier&&x.entryTier==='B'))&&(x.profitabilityAdmission?.state==='SHADOW_ONLY'||(dayTradeOnlyMode&&dayTradeAdmittedStatesAllowed.includes(x.profitabilityAdmission?.state)))&&!x.profitabilityAdmission?.regimeDisabled&&!x.profitabilityAdmission?.contradictoryShadow&&!openTickers.has(x.ticker)&&!swingSelectedTickers.has(x.ticker)).sort((a,b)=>(a.entryTier==='A'?0:1)-(b.entryTier==='A'?0:1)||Number(a.queueRank??999)-Number(b.queueRank??999));
+    const eligiblePool=live.filter(x=>(x.entryTier==='A'||(allowBTier&&x.entryTier==='B'))&&(dayTradeOnlyMode&&dayTradeAdmittedStatesAllowed.includes(x.profitabilityAdmission?.state))&&!x.profitabilityAdmission?.regimeDisabled&&!x.profitabilityAdmission?.contradictoryShadow&&!openTickers.has(x.ticker)&&!swingSelectedTickers.has(x.ticker)).sort((a,b)=>(a.entryTier==='A'?0:1)-(b.entryTier==='A'?0:1)||Number(a.queueRank??999)-Number(b.queueRank??999));
     for(const chosen of eligiblePool.slice(0,availableSlots)){
-      const tierCap=chosen.entryTier==='B'?Number(dayTradeConfig.bTierMaxOrderUsd||dayTradeConfig.maxOrderUsd||20):Number(dayTradeConfig.maxOrderUsd||20);
+      const tierCap=chosen.entryTier==='B'?7.5:30;
       // Lane-scoped target1/target2 (2026-09-22, user-requested day-trade-only phase): the shared
       // target1/target2 on `chosen` are the swing 1.5R/2.6R geometry from expand-stock-universe.mjs,
       // meant for a multi-day hold. This lane wants small, frequent, same-day gains instead, so it
