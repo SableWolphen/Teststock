@@ -100,7 +100,7 @@ const seedLaneCandidates=hasExitEvent?[]:seedEvents.filter(e=>e.isActionable).ma
 
 
 const optionsPolicy=probabilityPolicy.options?.seedLane||{};
-const optionAllowedAdmission=(optionsPolicy.requiredAdmissionStates||['MICRO_PROBATION','PROBATION','LIVE_ADMITTED']).includes(optionsAdmission.state);
+const optionAllowedAdmission=(optionsPolicy.requiredAdmissionStates||['SHADOW_ONLY','MICRO_PROBATION','PROBATION','LIVE_ADMITTED']).includes(optionsAdmission.state);
 const optionScanFresh=ageMs(optionsScan.generatedAt)<=OPTIONS_MAX_AGE_MS;
 const localTrackedOpenOptionPositions=(executionWatchlist.positions||[]).filter(x=>x?.assetClass==='OPTION'&&String(x.status).toUpperCase()==='ACTIVE').length;
 const optionBrokerReconciliationRequired=true;
@@ -113,8 +113,7 @@ let optionLaneResult={status:'OPTIONS_DISABLED'};
 let optionTrigger=null;
 if(optionsPolicy.enabled===true&&Array.isArray(optionsPolicy.allowedUnderlyingTypes)&&optionsPolicy.allowedUnderlyingTypes.includes('STOCK')&&optionAllowedAdmission&&optionScanFresh&&boardHealthy){
   const {evaluateOptionsSeedLaneCandidate}=await import('./options-monitor-candidates.mjs');
-  const stockEvents=new Set((board?.events||[]).filter(e=>e.assetClass==='STOCK'&&['BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'].includes(e.trigger)&&e.isActionable!==false).map(e=>String(e.ticker||'')));
-  const candidate=(optionsScan.candidates||[]).find(x=>x?.underlyingType==='STOCK'&&stockEvents.has(String(x.underlying||'')));
+  const candidate=(optionsScan.candidates||[]).find(x=>x?.underlyingType==='STOCK');
   optionLaneResult=evaluateOptionsSeedLaneCandidate({candidate,admission:optionsAdmission,seedPolicy:optionsPolicy,openOptionPositions:localTrackedOpenOptionPositions,newEntriesThisUtcWeek:optionNewThisWeek,lastLiveTradeOutcome:lastOptionOutcome});
   if(optionLaneResult.status==='OPTION_SEED_LANE_BUY_TRIGGER'){
     optionTrigger={
