@@ -47,7 +47,7 @@ on:
       - 'scripts/options-monitor-candidates.mjs'
       - 'scripts/chatgpt-options-rules.md'
       - 'docs/data/trade-replay.json'
-      - '.mcp.json'
+      - '.openai-mcp.json'
 
 concurrency:
   group: live-teststock-intraday-runner
@@ -131,6 +131,7 @@ jobs:
         shell: bash
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ROBINHOOD_MCP_OAUTH_TOKEN: ${{ secrets.ROBINHOOD_MCP_OAUTH_TOKEN }}
         run: |
           set -euo pipefail
           node scripts/chatgpt-executor.mjs --mcp-probe
@@ -160,6 +161,9 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ROBINHOOD_MCP_OAUTH_TOKEN: ${{ secrets.ROBINHOOD_MCP_OAUTH_TOKEN }}
+          TESTSTOCK_EXECUTION_MODE: ${{ vars.TESTSTOCK_EXECUTION_MODE || 'paper' }}
+          TESTSTOCK_LIVE_TRADING: ${{ vars.TESTSTOCK_LIVE_TRADING || 'false' }}
           PYTHONIOENCODING: utf-8
           TESTSTOCK_LEARNING_INTERVAL_SECONDS: 300
           GH_TOKEN: ${{ github.token }}
