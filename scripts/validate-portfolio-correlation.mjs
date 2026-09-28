@@ -4,12 +4,37 @@ const secret=process.env.ALPACA_API_SECRET||process.env.APCA_API_SECRET_KEY;
 if(!key||!secret)throw new Error('Missing Alpaca secrets');
 const headers={'APCA-API-KEY-ID':key,'APCA-API-SECRET-KEY':secret};
 const read=async(f,x={})=>{try{return JSON.parse(await fs.readFile(f,'utf8'));}catch{return x;}};
-const get=async u=>{const r=await fetch(u,{headers});if(!r.ok)throw new Error(`Alpaca ${r.status}: ${await r.text()}`);return r.json();};
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const get=async u=>{
+  let lastError;
+  for(let attempt=0;attempt<6;attempt++){
+    const r=await fetch(u,{headers});
+    if(r.ok)return r.json();
+    const body=await r.text();
+    lastError=new Error(`Alpaca ${r.status}: ${body}`);
+    if(r.status!==429&&r.status<500)throw lastError;
+    const retryAfter=Number(r.headers.get('retry-after')||0);
+    const waitMs=retryAfter>0?retryAfter*1000:Math.min(30000,1500*(2**attempt));
+    console.warn(`Alpaca ${r.status} on correlation fetch; retrying in ${waitMs}ms (attempt ${attempt+1}/6)`);
+    await sleep(waitMs);
+  }
+  throw lastError;
+};
 const latest=await read('docs/data/latest-500.json');
 const broad=await read('docs/data/broad-stock-universe.json');
 const symbols=[...new Set([...(latest.recommendations||[]).map(x=>x.symbol),...(broad.topCandidates||[]).map(x=>x.symbol)])].filter(Boolean).slice(0,12);
 if(symbols.length<2){await fs.writeFile('docs/data/portfolio-correlation.json',JSON.stringify({schemaVersion:1,generatedAt:new Date().toISOString(),status:'INSUFFICIENT_CANDIDATES',symbols},null,2));process.exit(0);}
-const start=new Date(Date.now()-140*86400000).toISOString().slice(0,10),q=new URLSearchParams({symbols:symbols.join(','),timeframe:'1Day',start,limit:'10000',adjustment:'all',feed:'iex'}),raw=await get(`https://data.alpaca.markets/v2/stocks/bars?${q}`),by=raw.bars||{};
+const start=new Date(Date.now()-140*86400000).toISOString().slice(0,10),q=new URLSearchParams({symbols:symbols.join(','),timeframe:'1Day',start,limit:'10000',adjustment:'all',feed:'iex'});
+let raw;
+try{
+  raw=await get(`https://data.alpaca.markets/v2/stocks/bars?${q}`);
+}catch(error){
+  const fallback={schemaVersion:1,generatedAt:new Date().toISOString(),status:'RATE_LIMITED',symbols,reason:error.message,policy:{instructions:'Correlation data unavailable after bounded retries. Fail closed for size expansion: never use missing correlation data to increase size; downstream logic may continue with normal per-position and aggregate risk caps.'}};
+  await fs.writeFile('docs/data/portfolio-correlation.json',JSON.stringify(fallback,null,2));
+  console.warn(`Correlation guard degraded gracefully after Alpaca retries: ${error.message}`);
+  process.exit(0);
+}
+const by=raw.bars||{};
 const returns={};for(const s of symbols){const b=by[s]||[],r=[];for(let i=1;i<b.length;i++)if(b[i-1].c>0)r.push({d:String(b[i].t).slice(0,10),v:b[i].c/b[i-1].c-1});returns[s]=r.slice(-90);}
 function corr(a,b){const bm=new Map(b.map(x=>[x.d,x.v])),x=[];for(const r of a)if(bm.has(r.d))x.push([r.v,bm.get(r.d)]);if(x.length<30)return null;const ax=x.reduce((s,z)=>s+z[0],0)/x.length,bx=x.reduce((s,z)=>s+z[1],0)/x.length;let num=0,da=0,db=0;for(const [u,v] of x){const du=u-ax,dv=v-bx;num+=du*dv;da+=du*du;db+=dv*dv;}return da&&db?Number((num/Math.sqrt(da*db)).toFixed(3)):null;}
 const pairs=[];for(let i=0;i<symbols.length;i++)for(let j=i+1;j<symbols.length;j++){const c=corr(returns[symbols[i]],returns[symbols[j]]);if(c!=null)pairs.push({a:symbols[i],b:symbols[j],correlation:c,high:c>=.75,veryHigh:c>=.88});}
