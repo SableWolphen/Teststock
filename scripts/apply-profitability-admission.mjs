@@ -38,7 +38,7 @@ function realStats(setup,regime){
 }
 function admission(row){
   const tier=String(row.entryTier||'A').toUpperCase();
-  const setup=norm(row.setupType||'STOCK_TREND');
+  const setup=norm(row.setupType||'TREND');
   const regime=norm(tournament?.adaptiveLearning?.currentRegime||signal?.stockTournament?.adaptiveLearning?.currentRegime||'UNKNOWN');
   const s=shadowStats(setup,regime),r=realStats(setup,regime);
   const historical={samples:Number(row.historicalSamples||row.validation?.samples||0),winRatePct:Number(row.historicalWinRate||row.validation?.winRate||0),rewardRisk:Number(row.rewardRisk||0)};
