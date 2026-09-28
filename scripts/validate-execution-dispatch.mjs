@@ -6,10 +6,10 @@ const fail=message=>{throw new Error(`Invalid execution dispatch: ${message}`);}
 
 if(![1,2,3,4].includes(dispatch.schemaVersion)) fail('unsupported schemaVersion');
 if(!['OK','FAIL_CLOSED_STALE_OR_UNHEALTHY_BOARD'].includes(dispatch.dispatchHealth)) fail('unknown dispatchHealth');
-if(dispatch.claudeShouldPollMarket!==false) fail('Claude market polling must remain disabled');
-if(dispatch.claudeShouldRun){
+if(dispatch.chatgptShouldPollMarket!==false) fail('ChatGPT market polling must remain disabled');
+if(dispatch.chatgptShouldRun){
   const action=dispatch.pendingAction;
-  if(dispatch.dispatchHealth!=='OK') fail('cannot run Claude on an unhealthy dispatch');
+  if(dispatch.dispatchHealth!=='OK') fail('cannot run ChatGPT on an unhealthy dispatch');
   if(action){
     if(!action.fingerprint) fail('actionable dispatch lacks fingerprint');
     if(action.isActionable!==true) fail('actionable dispatch must be actionable');
@@ -73,4 +73,4 @@ if(dispatch.pendingAction?.trigger==='STOCK_DAY_TRADE_FORCED_EXIT'&&Number(dispa
 if((dispatch.priorityOrder||[]).indexOf('STOCK_DAY_TRADE_FORCED_EXIT')<0||(dispatch.priorityOrder||[]).indexOf('STOCK_DAY_TRADE_FORCED_EXIT')>1)fail('day-trade forced exit priority order');
 if(dispatch.pendingAction?.trigger==='STOCK_DAY_TRADE_FORCED_EXIT'&&(automaticStockCandidates.length||seeds.length))fail('day-trade forced exit must block buys');
 
-console.log(`Execution dispatch valid: ${dispatch.claudeShouldRun?'actionable':'idle'}; automatic stock candidates ${automaticStockCandidates.length}; option candidates ${(dispatch.optionCandidates||[]).length}; seed candidates ${seeds.length}; capacity ${max===null?'dynamic':max}.`);
+console.log(`Execution dispatch valid: ${dispatch.chatgptShouldRun?'actionable':'idle'}; automatic stock candidates ${automaticStockCandidates.length}; option candidates ${(dispatch.optionCandidates||[]).length}; seed candidates ${seeds.length}; capacity ${max===null?'dynamic':max}.`);

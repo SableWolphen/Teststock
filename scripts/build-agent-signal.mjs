@@ -211,6 +211,6 @@ const signal={
   stockPlan,cryptoPlan
 };
 await fs.writeFile(path.join(outDir,'signal.json'),JSON.stringify(signal,null,2));
-await fs.writeFile(path.join(dataDir,'claude-signal.json'),JSON.stringify(signal,null,2));
+await fs.writeFile(path.join(dataDir,'chatgpt-signal.json'),JSON.stringify(signal,null,2));
 await fs.writeFile(path.join(dataDir,'crypto-signal.json'),JSON.stringify({schemaVersion:9,generatedAt:signal.generatedAt,funding:signal.funding,sizing:signal.sizing,hardAccountFloor:signal.hardAccountFloor,financialRiskGate:signal.financialRiskGate,capitalLadder:signal.capitalLadder,profitLock:signal.profitLock,circuitBreakers:signal.circuitBreakers,tradeFrequencyGuard:signal.tradeFrequencyGuard,correlationGuard:signal.correlationGuard,executionQuality:signal.executionQuality,exitAutomation:signal.exitAutomation,healthGuard:signal.healthGuard,portfolioGuard:signal.portfolioGuard,cryptoPlan},null,2));
 console.log('Generated Teststock agent signal schema v12 with explicit tier boundaries');

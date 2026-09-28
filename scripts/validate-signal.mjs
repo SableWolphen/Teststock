@@ -51,10 +51,10 @@ if(s.smallAccountAccessPolicy?.fractionalSharesAllowed!==true||s.smallAccountAcc
 if(Number(s.smallAccountAccessPolicy?.tieDefinition?.maxPortfolioOpportunityScoreDifference||99)>3)fail.push('whole-share tie score tolerance');
 if(Number(s.smallAccountAccessPolicy?.tieDefinition?.maxCostAdjustedConservativeExpectedRDifference||99)>.10)fail.push('whole-share expectancy tie tolerance');
 if(s.systemHealth?.runtimeFractionalProtection?.requiredForNewFractionalStock!==true)fail.push('fractional runtime health requirement');
-if(s.nonLlmTriggerMonitor?.enabled!==true||s.nonLlmTriggerMonitor?.claudeContinuousMarketPollingRequired!==false)fail.push('non-LLM trigger monitor');
+if(s.nonLlmTriggerMonitor?.enabled!==true||s.nonLlmTriggerMonitor?.chatgptContinuousMarketPollingRequired!==false)fail.push('non-LLM trigger monitor');
 if(Number(s.nonLlmTriggerMonitor?.monitorCadenceMinutes||99)>5)fail.push('trigger monitor cadence');
 if(s.eventDrivenExecutionDispatch?.enabled!==true)fail.push('event-driven execution dispatch');
-if(s.eventDrivenExecutionDispatch?.claudeShouldPollMarket!==false)fail.push('Claude market polling lock');
+if(s.eventDrivenExecutionDispatch?.chatgptShouldPollMarket!==false)fail.push('ChatGPT market polling lock');
 if(s.eventDrivenExecutionDispatch?.noActionBehavior!=='STOP_BEFORE_ROBINHOOD_OR_FULL_SIGNAL')fail.push('low-credit idle behavior');
 if(s.eventDrivenExecutionDispatch?.priorityOrder?.[0]!=='TRIGGER_1_STOP')fail.push('stop dispatch priority');
 if(s.eventDrivenExecutionDispatch?.stopPriority!==true)fail.push('stop priority lock');

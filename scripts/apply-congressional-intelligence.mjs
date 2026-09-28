@@ -14,5 +14,5 @@ tournament.liveFallbacks=(tournament.liveFallbacks||[]).map(enrich);
 tournament.congressionalIntelligencePolicy={mode:intel.mode,admission:intel.admission,authority:intel.authority,deduplication:intel.deduplication,decay:intel.decay,summary:intel.summary};
 signal.congressionalIntelligence={policy:tournament.congressionalIntelligencePolicy,topMatchedCandidates:[...tournament.liveQueue,...tournament.researchFinalists].filter(x=>x.congressionalIntelligence?.matched).slice(0,10).map(x=>({ticker:x.ticker||x.symbol,...x.congressionalIntelligence.signal}))};
 signal.generatorIntegrity={...(signal.generatorIntegrity||{}),traceableFeatures:{...(signal.generatorIntegrity?.traceableFeatures||{}),congressionalDisclosureShadowOverlay:true,crossSourceDisclosureDeduplication:true,disclosureDelayDecay:true}};
-await Promise.all([write('docs/data/stock-tournament.json',tournament),write('docs/signal.json',signal),write('docs/data/claude-signal.json',signal)]);
+await Promise.all([write('docs/data/stock-tournament.json',tournament),write('docs/signal.json',signal),write('docs/data/chatgpt-signal.json',signal)]);
 console.log(`Congressional overlay attached to ${tournament.liveQueue.length} live-queue and ${tournament.researchFinalists.length} research rows; live influence=off`);

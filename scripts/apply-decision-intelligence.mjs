@@ -80,5 +80,5 @@ signal.stockPlan.stockCandidateQueue=(signal.stockPlan.stockCandidateQueue||[]).
 signal.stockTournament={...(signal.stockTournament||{}),decisionIntelligencePolicy:tournament.decisionIntelligencePolicy,liveBuyChampion:tournament.liveBuyChampion,liveFallbackTickers:tournament.liveFallbacks.map(x=>x.ticker)};
 signal.generatorIntegrity={...(signal.generatorIntegrity||{}),traceableFeatures:{...(signal.generatorIntegrity?.traceableFeatures||{}),realTimeMultiStockRanking:true,setupBacktestDiagnostics:true,patternConfidence:true,screenerOverlay:true,portfolioOptimization:true,opportunityDecay:true}};
 signal.schemaVersion=Math.max(43,Number(signal.schemaVersion||0));
-await Promise.all([write('docs/data/stock-tournament.json',tournament),write('docs/signal.json',signal),write('docs/data/claude-signal.json',signal)]);
+await Promise.all([write('docs/data/stock-tournament.json',tournament),write('docs/signal.json',signal),write('docs/data/chatgpt-signal.json',signal)]);
 console.log(`Decision intelligence: ${live.length} ranked; ${buyable.length} live-eligible; champion=${buyable[0]?.ticker||'none'}; age=${scanAgeMinutes==null?'unknown':round(scanAgeMinutes,1)}m`);

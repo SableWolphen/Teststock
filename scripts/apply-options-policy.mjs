@@ -1,12 +1,12 @@
 import fs from 'node:fs/promises';
 
 const signalPath='docs/signal.json';
-const claudeSignalPath='docs/data/claude-signal.json';
+const chatgptSignalPath='docs/data/chatgpt-signal.json';
 const signal=JSON.parse(await fs.readFile(signalPath,'utf8'));
 
 signal.optionsTradingPolicy={
   enabled:true,
-  executionAgent:'CLAUDE',
+  executionAgent:'CHATGPT',
   transport:'ROBINHOOD_TRADING_MCP',
   cashOnly:true,
   accountLossCannotExceedAvailableAccountCapital:true,
@@ -66,5 +66,5 @@ signal.generatorIntegrity={
 };
 
 await fs.writeFile(signalPath,JSON.stringify(signal,null,2));
-await fs.writeFile(claudeSignalPath,JSON.stringify(signal,null,2));
+await fs.writeFile(chatgptSignalPath,JSON.stringify(signal,null,2));
 console.log('Applied guarded automatic stock-options policy: long calls/puts only, cash-funded, no exercise/overnight, hard premium caps.');

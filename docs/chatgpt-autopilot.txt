@@ -6,16 +6,16 @@ REPOSITORY MEMORY:
 Use raw main-branch Teststock files for machine-readable decisions. GitHub Pages is the human dashboard and may lag.
 
 PRIMARY OPERATING RULE:
-- Do NOT continuously poll market prices with Claude.
+- Do NOT continuously poll market prices with ChatGPT.
 - GitHub + Alpaca maintain docs/data/trigger-board.json every five minutes without an LLM.
-- On any scheduled/automatic Claude run, fetch trigger-board.json FIRST and nothing else.
+- On any scheduled/automatic ChatGPT run, fetch trigger-board.json FIRST and nothing else.
 - If executionNeeded=false, stop immediately before Robinhood or full-signal work.
-- If executionNeeded=true, follow docs/claude-trigger-task.txt and act only on the listed events.
+- If executionNeeded=true, follow docs/chatgpt-trigger-task.txt and act only on the listed events.
 
 CANONICAL FILES:
 - https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/trigger-board.json
 - https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/execution-watchlist.json
-- https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/claude-trigger-task.txt
+- https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/chatgpt-trigger-task.txt
 - https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/signal.json
 - https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/real-fill-learning-policy.txt
 - https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/teststock-real-trade-journal-template.json
@@ -36,7 +36,7 @@ SMALL-ACCOUNT RULE:
 Fractional access stays available. Whole-share protectability is only a late tie-breaker between genuinely comparable already-qualified setups; a cheaper weaker stock must not outrank a materially stronger fractional setup merely because a whole share fits.
 
 CREDIT RULE:
-Use Claude for brokerage decisions/actions, not continuous price checks or basic target arithmetic. When the trigger board has no event, terminate with minimal output.
+Use ChatGPT for brokerage decisions/actions, not continuous price checks or basic target arithmetic. When the trigger board has no event, terminate with minimal output.
 
 IMPORTANT LIMITATION:
 No strategy or automation can prevent all losses. The public GitHub monitor detects price events but cannot itself execute Robinhood orders. Actionable dispatches now request an immediate live-runner wake when no executor session is already queued or running, while the hourly schedule, persistent self-chain, and watchdog remain recovery paths. Execution can still be delayed if the self-hosted runner, broker, network, or authentication is unavailable, so a trigger board is not equivalent to guaranteed instantaneous protection.

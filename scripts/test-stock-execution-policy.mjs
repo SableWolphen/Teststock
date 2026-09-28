@@ -25,13 +25,13 @@ test('fresh stock-only policy passes the admission and broker validators without
   await write(cwd,'docs/data/stock-tournament.json',tournament);
   const optionShadow={state:'SHADOW_ONLY',sizeMultiplier:0,executionAuthorized:false};
   await write(cwd,'docs/data/options-profitability-admission.json',optionShadow);
-  for(const script of ['apply-claude-unattended-execution-policy.mjs','apply-robinhood-executable-universe.mjs','validate-profitability-admission.mjs','validate-robinhood-executable-universe.mjs','validate-unattended-execution-policy.mjs','validate-claude-hourly-approval-policy.mjs']){
+  for(const script of ['apply-chatgpt-unattended-execution-policy.mjs','apply-robinhood-executable-universe.mjs','validate-profitability-admission.mjs','validate-robinhood-executable-universe.mjs','validate-unattended-execution-policy.mjs','validate-chatgpt-hourly-approval-policy.mjs']){
     const result=run(cwd,script);assert.equal(result.status,0,`${script}: ${result.stderr}`);
   }
   const signal=await read(cwd,'docs/signal.json');
   assert.equal(signal.autopilot.automaticQualifiedBuys,undefined,'legacy cross-asset flag is unnecessary');
   assert.deepEqual(stockExecutionPolicyFailures(signal),[]);
-  assert.deepEqual(await read(cwd,'docs/data/claude-signal.json'),signal);
+  assert.deepEqual(await read(cwd,'docs/data/chatgpt-signal.json'),signal);
   assert.deepEqual(await read(cwd,'docs/data/options-profitability-admission.json'),optionShadow);
   assert.equal(evaluateOptionsSeedLaneCandidate({candidate:{underlying:'ABC'},admission:optionShadow,seedPolicy:{enabled:true}}).status,'BLOCKED_ADMISSION');
 
@@ -44,12 +44,12 @@ test('fresh stock-only policy passes the admission and broker validators without
     [['autopilot','automaticQualifiedCryptoBuys'],true],
     [['autopilot','automaticQualifiedCryptoBuys'],undefined],
     [['autopilot','directGitHubBrokerExecution'],true],
-    [['claudeExecutionPolicy','stockBuys','requireLiveBrokerRecheck'],false],
-    [['claudeExecutionPolicy','stockBuys','requireRobinhoodTradingMcp'],false],
-    [['claudeExecutionPolicy','generationMatchRequired'],false],
-    [['claudeExecutionPolicy','brokerExecutionContract','duplicateProtectionRequired'],false],
-    [['claudeExecutionPolicy','brokerExecutionContract','neverAssumeFill'],false],
-    [['claudeExecutionPolicy','brokerExecutionContract','protectionRequiredAfterEntry'],false],
+    [['chatgptExecutionPolicy','stockBuys','requireLiveBrokerRecheck'],false],
+    [['chatgptExecutionPolicy','stockBuys','requireRobinhoodTradingMcp'],false],
+    [['chatgptExecutionPolicy','generationMatchRequired'],false],
+    [['chatgptExecutionPolicy','brokerExecutionContract','duplicateProtectionRequired'],false],
+    [['chatgptExecutionPolicy','brokerExecutionContract','neverAssumeFill'],false],
+    [['chatgptExecutionPolicy','brokerExecutionContract','protectionRequiredAfterEntry'],false],
     [['executionArchitecture','crossAssetSelection'],true],
     [['executionArchitecture','tournaments','crypto','enabled'],true],
   ]){

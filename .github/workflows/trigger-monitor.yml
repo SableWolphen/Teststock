@@ -3,7 +3,7 @@ name: Monitor Teststock triggers
 on:
   workflow_dispatch:
   schedule:
-    # Refresh live entry/exit conditions every five minutes, offset from Claude.
+    # Refresh live entry/exit conditions every five minutes, offset from ChatGPT.
     - cron: '2,7,12,17,22,27,32,37,42,47,52,57 * * * *'
   push:
     branches: [main]
@@ -147,7 +147,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if ! jq -e '.claudeShouldRun == true or .executionNeeded == true' docs/data/execution-dispatch.json >/dev/null; then
+          if ! jq -e '.chatgptShouldRun == true or .executionNeeded == true' docs/data/execution-dispatch.json >/dev/null; then
             echo "Dispatch is idle; no executor wake required."
             exit 0
           fi

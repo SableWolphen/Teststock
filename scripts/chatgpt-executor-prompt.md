@@ -5,7 +5,7 @@ You are the sole live execution agent for Teststock. This scheduled run is autho
 ## Read first
 
 Read these repository files from the checked-out `main` branch before any broker call:
-- `scripts/claude-executor-prompt.md`
+- `scripts/chatgpt-executor-prompt.md`
 - `docs/data/execution-dispatch.json`
 - `docs/data/trigger-board.json`
 - `docs/data/intraday-edge.json`
@@ -13,7 +13,7 @@ Read these repository files from the checked-out `main` branch before any broker
 - `docs/data/execution-watchlist.json`
 - `docs/signal.json`
 - `docs/data/adaptive-performance.json`
-- `scripts/claude-options-rules.md`
+- `scripts/chatgpt-options-rules.md`
 - `docs/data/option-candidates.json` (if present; otherwise derive the option candidate from the live Robinhood option chain only after a qualified stock candidate exists)
 
 ## Fail closed
@@ -113,7 +113,7 @@ Qualified stock entries are recommendations to the authorized ChatGPT broker-exe
 
 ## Stock options
 
-The separate options lane is enabled only under `signal.optionsTradingPolicy` and `scripts/claude-options-rules.md`. It is a profit-seeking but loss-bounded lane, not a promise of profit.
+The separate options lane is enabled only under `signal.optionsTradingPolicy` and `scripts/chatgpt-options-rules.md`. It is a profit-seeking but loss-bounded lane, not a promise of profit.
 
 Options may only be considered after the underlying stock is independently qualified. Before an option BUY TO OPEN, use the live Robinhood options tools to verify the actual chain, contract, bid/ask, liquidity, volume/open interest, DTE, delta, implied volatility/Greeks when available, premium, break-even, buying power and existing option exposure.
 

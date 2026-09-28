@@ -159,6 +159,6 @@ signal.stockPlan.stockCandidateQueue=[...existingQueue,...newListingQueueRows].m
 signal.stockTournament={...(signal.stockTournament||{}),profitabilityAdmissionPolicy:tournament.profitabilityAdmissionPolicy,liveBuyChampion:tournament.liveBuyChampion,liveFallbackTickers:tournament.liveFallbacks.map(x=>x.ticker)};
 signal.generatorIntegrity={...(signal.generatorIntegrity||{}),traceableFeatures:{...(signal.generatorIntegrity?.traceableFeatures||{}),shadowFirstProfitabilityAdmission:true,tieredStockProfitabilityAdmission:false,eliteARuntimeEligibility:false,bTierMicroProbation:true,evidenceFirstDayTrading:true}};
 signal.schemaVersion=Math.max(44,Number(signal.schemaVersion||0));
-await Promise.all([write('docs/data/stock-tournament.json',tournament),write('docs/signal.json',signal),write('docs/data/claude-signal.json',signal)]);
+await Promise.all([write('docs/data/stock-tournament.json',tournament),write('docs/signal.json',signal),write('docs/data/chatgpt-signal.json',signal)]);
 console.log(`Profitability admission: buyable=${buyable.length}; micro=${live.filter(x=>x.profitabilityAdmission?.state==='MICRO_PROBATION').length}; probation=${live.filter(x=>x.profitabilityAdmission?.state==='PROBATION').length}; suspended=${live.filter(x=>x.profitabilityAdmission?.state==='LIVE_SUSPENDED').length}`);
 

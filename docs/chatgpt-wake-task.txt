@@ -4,7 +4,7 @@ FIRST AND CHEAPEST STEP ONLY:
 Fetch this raw-main file with a cache-buster when supported:
 https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/execution-dispatch.json
 
-If `claudeShouldRun` is false:
+If `chatgptShouldRun` is false:
 - STOP IMMEDIATELY.
 - Do not call Robinhood.
 - Do not fetch the full Teststock signal.
@@ -13,7 +13,7 @@ If `claudeShouldRun` is false:
 - A one-line `No execution action` result is enough when a visible result is required.
 - Do not rewrite the public execution audit merely to prove an idle poll; idle polls should stay cheap.
 
-If `claudeShouldRun` is true:
+If `chatgptShouldRun` is true:
 1. Read only `pendingAction` first. STOP events have priority over targets and buys.
 2. Fetch the fresh raw-main Teststock signal and the detailed `claude-scheduled-task.txt` procedure.
 3. Read live Robinhood state needed for this exact action only: account/cash for a buy; position/open sell orders for a sell; expand history only when reconciliation requires it.
@@ -24,7 +24,7 @@ If `claudeShouldRun` is true:
 8. Reconcile the private real-trade journal.
 9. After a CONFIRMED new stock/crypto fill, arm or update the public non-sensitive `docs/data/execution-watchlist.json` with ticker, asset class, stop, target1, target2 and completion flags only. Never put account IDs, balances, quantities, credentials or private brokerage data in the public repository.
 10. After Target 1 or Target 2 fills, update the corresponding completion flag. After the position is confirmed closed, mark/remove the watch item so the non-LLM monitor stops generating sell triggers.
-11. REPORT THE ACTION to `docs/data/claude-execution-audit.json` when repository write access is available. Write only these non-sensitive fields: schemaVersion, source, status, lastClaudeRun, dispatchFingerprintHandled, actionRequested, ticker, assetClass, actionResult, brokerVerified, watchlistUpdated, completedAt, notes. `brokerVerified` may be true only after Robinhood state confirms the result. Never publish balances, quantities, account IDs, credentials, client order IDs, broker order IDs, or private journal data.
+11. REPORT THE ACTION to `docs/data/chatgpt-execution-audit.json` when repository write access is available. Write only these non-sensitive fields: schemaVersion, source, status, lastChatGPTRun, dispatchFingerprintHandled, actionRequested, ticker, assetClass, actionResult, brokerVerified, watchlistUpdated, completedAt, notes. `brokerVerified` may be true only after Robinhood state confirms the result. Never publish balances, quantities, account IDs, credentials, client order IDs, broker order IDs, or private journal data.
 12. If the action could not be completed or verified, still write the audit with `actionResult` such as BLOCKED_BY_GUARD, CONFIRMATION_REQUIRED, BROKER_ERROR, or UNVERIFIED, and `brokerVerified:false`. Never claim success just because an order submission was attempted.
 13. After each confirmed stock fill, recompute remaining portfolio capacity. Process another already-qualified current-dispatch candidate only when every recomputed guard still passes. Then finish without continuing market polling.
 

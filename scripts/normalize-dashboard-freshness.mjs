@@ -12,7 +12,7 @@ html=html.replace(
 
 html=html.replace(
   /function robinhoodCrossCheckLine\(lead\)\{.*?\}\nfunction renderCrypto\(\)/s,
-  `function runtimeBrokerLine(lead){if(!lead)return '';let auditAge=age(audit?.lastClaudeRun),fresh=auditAge!=null&&auditAge<=15,verified=fresh&&audit?.brokerVerified===true;if(verified)return \`<div class="whyline">Robinhood runtime verification · \${auditAge}m ago: broker state was freshly verified by Claude through Robinhood Trading MCP. Every order still requires a new immediate pre-submit recheck.</div>\`;return '<div class="whyline"><b>Robinhood runtime check:</b> REQUIRED NOW — Claude re-fetches live price, tradability, buying power, positions, open orders, spread and duplicate state through Robinhood Trading MCP immediately before any order. No cached broker snapshot is accepted as current.</div>'}\nfunction renderCrypto()`
+  `function runtimeBrokerLine(lead){if(!lead)return '';let auditAge=age(audit?.lastChatGPTRun),fresh=auditAge!=null&&auditAge<=15,verified=fresh&&audit?.brokerVerified===true;if(verified)return \`<div class="whyline">Robinhood runtime verification · \${auditAge}m ago: broker state was freshly verified by ChatGPT through Robinhood Trading MCP. Every order still requires a new immediate pre-submit recheck.</div>\`;return '<div class="whyline"><b>Robinhood runtime check:</b> REQUIRED NOW — ChatGPT re-fetches live price, tradability, buying power, positions, open orders, spread and duplicate state through Robinhood Trading MCP immediately before any order. No cached broker snapshot is accepted as current.</div>'}\nfunction renderCrypto()`
 );
 
 html=html.replace(
@@ -29,8 +29,8 @@ html=html.replace(
 );
 html=html.replaceAll('robinhoodCrossCheckLine(lead)','runtimeBrokerLine(lead)');
 html=html.replace(
-  "[signal,board,stocks,crypto,learning,audit,corr,validation,congress,rhCross]=await Promise.all([get('docs/signal.json'),get('docs/data/trigger-board.json'),get('docs/data/stock-tournament.json'),get('docs/data/crypto-tournament.json'),get('docs/data/adaptive-performance.json'),get('docs/data/claude-execution-audit.json'),get('docs/data/portfolio-correlation.json'),get('docs/data/entry-gate-validation.json'),get('docs/data/congressional-intelligence.json'),get('docs/data/crypto-robinhood-cross-check.json')]);",
-  "[signal,board,stocks,crypto,learning,audit,corr,validation,congress]=await Promise.all([get('docs/signal.json'),get('docs/data/trigger-board.json'),get('docs/data/stock-tournament.json'),get('docs/data/crypto-tournament.json'),get('docs/data/adaptive-performance.json'),get('docs/data/claude-execution-audit.json'),get('docs/data/portfolio-correlation.json'),get('docs/data/entry-gate-validation.json'),get('docs/data/congressional-intelligence.json')]);"
+  "[signal,board,stocks,crypto,learning,audit,corr,validation,congress,rhCross]=await Promise.all([get('docs/signal.json'),get('docs/data/trigger-board.json'),get('docs/data/stock-tournament.json'),get('docs/data/crypto-tournament.json'),get('docs/data/adaptive-performance.json'),get('docs/data/chatgpt-execution-audit.json'),get('docs/data/portfolio-correlation.json'),get('docs/data/entry-gate-validation.json'),get('docs/data/congressional-intelligence.json'),get('docs/data/crypto-robinhood-cross-check.json')]);",
+  "[signal,board,stocks,crypto,learning,audit,corr,validation,congress]=await Promise.all([get('docs/signal.json'),get('docs/data/trigger-board.json'),get('docs/data/stock-tournament.json'),get('docs/data/crypto-tournament.json'),get('docs/data/adaptive-performance.json'),get('docs/data/chatgpt-execution-audit.json'),get('docs/data/portfolio-correlation.json'),get('docs/data/entry-gate-validation.json'),get('docs/data/congressional-intelligence.json')]);"
 );
 
 if(html.includes('crypto-robinhood-cross-check.json')||html.includes('Robinhood live cross-check: STALE')){
@@ -41,7 +41,7 @@ await fs.writeFile(indexPath,html);
 let crypto=await fs.readFile(cryptoPath,'utf8');
 crypto=crypto.replace(
   /<div class="warn"><b>Execution note:<\/b>.*?<\/div>/s,
-  '<div class="warn"><b>Execution note:</b> Qualified crypto is automatic through Claude and the official Robinhood Trading MCP. A fresh live broker recheck is required immediately before every order; cached broker snapshots are never treated as current.</div>'
+  '<div class="warn"><b>Execution note:</b> Qualified crypto is automatic through ChatGPT and the official Robinhood Trading MCP. A fresh live broker recheck is required immediately before every order; cached broker snapshots are never treated as current.</div>'
 );
 crypto=crypto.replace('if(!Number.isFinite(age)||age>150)return\'STALE\';','if(!Number.isFinite(age)||age>25)return\'REFRESH REQUIRED\';');
 crypto=crypto.replace("Crypto data is unavailable or stale. Do nothing.","Crypto data is unavailable or outside the freshness window. Refresh before any action.");

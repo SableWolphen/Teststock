@@ -83,5 +83,5 @@ signal.hardRules=[...(signal.hardRules||[]),
 if(signal.generatorIntegrity?.traceableFeatures)signal.generatorIntegrity.traceableFeatures.fractionalSyntheticProtection=true;
 signal.schemaVersion=Math.max(Number(signal.schemaVersion||0),22);
 await fs.writeFile(signalFile,JSON.stringify(signal,null,2));
-await fs.writeFile(path.resolve('docs/data/claude-signal.json'),JSON.stringify(signal,null,2));
+await fs.writeFile(path.resolve('docs/data/chatgpt-signal.json'),JSON.stringify(signal,null,2));
 console.log('Applied fractional-share protection policy; signal schema v22');

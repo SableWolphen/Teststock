@@ -5,7 +5,7 @@ from executor_usage_gate import reserve_wake
 
 
 class UsageGateTests(unittest.TestCase):
-    def test_idle_never_calls_claude(self):
+    def test_idle_never_calls_chatgpt(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'usage.json'
             self.assertFalse(reserve_wake(path, False, False, 1000))

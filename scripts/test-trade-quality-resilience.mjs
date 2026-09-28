@@ -1,8 +1,8 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs/promises';
-const src=await fs.readFile(new URL('./claude-trade-quality-rules.md',import.meta.url),'utf8');
+const src=await fs.readFile(new URL('./chatgpt-trade-quality-rules.md',import.meta.url),'utf8');
 const engine=await fs.readFile(new URL('./build-trade-quality-engine.mjs',import.meta.url),'utf8');
 const replay=await fs.readFile(new URL('./build-trade-replay.mjs',import.meta.url),'utf8');
-const executor=await fs.readFile(new URL('./claude-executor-prompt.md',import.meta.url),'utf8');
+const executor=await fs.readFile(new URL('./chatgpt-executor-prompt.md',import.meta.url),'utf8');
 const liveCycle=await fs.readFile(new URL('./run-live-intraday-cycle.sh',import.meta.url),'utf8');
 test('new risk fails closed on stale or broker mismatch',()=>{assert.match(src,/STOP_NEW_RISK/);assert.match(src,/brokerWatchdog/);assert.match(src,/mismatch between repository state and Robinhood/);});
 test('hypothetical outcomes never become real PnL',()=>{assert.match(src,/Never count hypothetical trades as fills or PnL/);assert.match(replay,/RESEARCH_ONLY/);assert.match(replay,/do not rewrite real broker fills or PnL/);});

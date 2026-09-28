@@ -26,5 +26,5 @@ signal.stockPlan.candidateQueuePolicy={...(signal.stockPlan.candidateQueuePolicy
 signal.generatorIntegrity={...(signal.generatorIntegrity||{}),traceableFeatures:{...(signal.generatorIntegrity?.traceableFeatures||{}),bestAcceptableStockTier:true}};
 signal.schemaVersion=Math.max(31,Number(signal.schemaVersion||0));
 await fs.writeFile(SIGNAL,JSON.stringify(signal,null,2));
-await fs.writeFile('docs/data/claude-signal.json',JSON.stringify(signal,null,2));
+await fs.writeFile('docs/data/chatgpt-signal.json',JSON.stringify(signal,null,2));
 console.log(`Best-acceptable policy applied: A=${signal.stockPlan.stockCandidateQueue.filter(x=>x.entryTier==='A').length} B=${signal.stockPlan.stockCandidateQueue.filter(x=>x.entryTier==='B').length}`);

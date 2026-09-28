@@ -127,5 +127,5 @@ signal.generatorIntegrity={...(signal.generatorIntegrity||{}),traceableFeatures:
 signal.schemaVersion=Math.max(31,Number(signal.schemaVersion||0));
 await fs.writeFile(OUT,JSON.stringify(tournament,null,2));
 await fs.writeFile(SIGNAL,JSON.stringify(signal,null,2));
-await fs.writeFile('docs/data/claude-signal.json',JSON.stringify(signal,null,2));
+await fs.writeFile('docs/data/chatgpt-signal.json',JSON.stringify(signal,null,2));
 console.log(`Up-to-20000-stock knockout applied: ${availableUniverse} actual operating companies available, ${researchFinalists.length} research finalists, ${liveQueue.length} live-queue candidates, A=${liveQueue.filter(x=>x.entryTier==='A').length}, B=${liveQueue.filter(x=>x.entryTier==='B').length}, champion=${champion?.ticker||'none'}.`);

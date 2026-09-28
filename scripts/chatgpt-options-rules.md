@@ -1,6 +1,6 @@
 # Teststock automatic stock-options lane
 
-This lane is explicitly authorized for automatic execution only through Claude + Robinhood Trading MCP. It is a separate risk lane from the stock day-trading lane.
+This lane is explicitly authorized for automatic execution only through ChatGPT + Robinhood Trading MCP. It is a separate risk lane from the stock day-trading lane.
 
 ## Objective
 
@@ -28,7 +28,7 @@ A long call/put has a theoretical maximum loss equal to the premium paid, but Ro
 
 The account itself is the only funding source.
 
-Before every option entry, Claude must verify through Robinhood:
+Before every option entry, ChatGPT must verify through Robinhood:
 - current total account equity;
 - available buying power;
 - settled/available cash rules;
@@ -54,7 +54,7 @@ These are maximum risk ceilings, not targets. A smaller position is required whe
 
 ## Contract selection
 
-Only consider contracts that Claude can verify from the live Robinhood option chain immediately before entry:
+Only consider contracts that ChatGPT can verify from the live Robinhood option chain immediately before entry:
 - liquid underlying stock/ETF;
 - tight bid/ask spread;
 - sufficient option volume/open interest;
@@ -89,7 +89,7 @@ For a long option, the paid premium is the hard worst-case loss if the contract 
 
 ## Entry quality
 
-Claude must require all of the following:
+ChatGPT must require all of the following:
 1. The underlying stock is independently qualified by Teststock.
 2. Current stock price and intraday edge remain fresh.
 3. The option-chain quote is fresh.
@@ -105,7 +105,7 @@ If the stock is qualified but no option contract passes, trade the stock only if
 
 ## Execution
 
-Claude is the only execution agent. GitHub never places option orders.
+ChatGPT is the only execution agent. GitHub never places option orders.
 
 Before BUY TO OPEN:
 - re-read the current dispatch/signal generation;

@@ -4,14 +4,14 @@ const fail=[];
 if(board.schemaVersion!==6)fail.push('schemaVersion');
 if(board.source!=='TESTSTOCK_NON_LLM_TRIGGER_MONITOR')fail.push('source');
 if(board.monitorCadenceMinutes!==5)fail.push('monitor cadence');
-if(board.claudeMarketPollingRequired!==false)fail.push('Claude polling lock');
+if(board.chatgptMarketPollingRequired!==false)fail.push('ChatGPT polling lock');
 if(board.siteAvailability!=='NYSE_STOCK_DAY_TRADING_ONLY')fail.push('stock-only site availability metadata');
 if(!['ACTIVE','REFRESHING'].includes(board.researchState))fail.push('research state');
 if(!Array.isArray(board.items)||!Array.isArray(board.events))fail.push('arrays');
 const allowed=new Set(['BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_1_STOP','TRIGGER_2_TARGET1','TRIGGER_3_TARGET2','TRIGGER_EARLY_PROFIT_TRIM']);
 for(const e of board.events||[])if(!allowed.has(e.trigger))fail.push(`unknown trigger ${e.trigger}`);
 for(const e of board.events||[]){
-  if(e.trigger==='BUY_TRIGGER'&&e.assetClass!=='STOCK')fail.push('non-stock buy sent to Claude');
+  if(e.trigger==='BUY_TRIGGER'&&e.assetClass!=='STOCK')fail.push('non-stock buy sent to ChatGPT');
   if(e.trigger==='BUY_TRIGGER'&&['SHADOW_ONLY','LIVE_SUSPENDED','UNKNOWN',undefined,null].includes(e.profitabilityAdmission))fail.push(`${e.ticker}: buy lacks profitability admission`);
   if(e.trigger==='BUY_TRIGGER'&&e.decisionIntelligenceEligible!==true)fail.push(`${e.ticker}: buy lacks decision-intelligence pass`);
   if(e.trigger==='BUY_TRIGGER'&&(e.marketSession?.calendarAvailable!==true||e.marketSession?.regularSession!==true||e.marketSession?.entryAllowed!==true||Number(e.marketSession?.minutesToClose)<20))fail.push(`${e.ticker}: stock buy outside 20-minute entry window`);

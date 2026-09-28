@@ -31,7 +31,7 @@ def record(directory, returncode):
                 "status": "FAILED" if failed else "COMPLETED", "category": category,
                 "brokerOutcome": "UNVERIFIED", "automaticRetry": False}
     (folder / "status.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
-    print("FAST_CYCLE_CLAUDE_" + metadata["status"] + " category=" + category, flush=True)
+    print("FAST_CYCLE_CHATGPT_" + metadata["status"] + " category=" + category, flush=True)
     if failed:
         print("Private stdout/stderr retained in the Sable runtime executor-diagnostics folder. Reconcile any ambiguous broker outcome before retrying.", flush=True)
     return 1 if failed else 0

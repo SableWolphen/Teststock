@@ -1,4 +1,4 @@
-name: Claude Teststock executor fallback
+name: ChatGPT Teststock executor fallback
 
 # Manual/emergency fallback only. Normal live execution now happens inside the
 # persistent self-hosted intraday runner so stale queued jobs cannot accumulate.
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: claude-teststock-executor-fallback
+  group: chatgpt-teststock-executor-fallback
   cancel-in-progress: false
 
 permissions:
@@ -27,34 +27,30 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          command -v claude >/dev/null
+          command -v node >/dev/null
           test -f .mcp.json
-          test -f scripts/claude-executor-prompt.md
+          test -f scripts/chatgpt-executor.mjs
+          test -f scripts/chatgpt-executor-prompt.md
           test -f docs/signal.json
           test -f docs/data/execution-dispatch.json
           test -f docs/data/trigger-board.json
           test -f docs/data/execution-watchlist.json
 
-      - name: Run one reconciled Claude execution cycle
+      - name: Run one reconciled ChatGPT execution cycle
         shell: bash
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           PYTHONIOENCODING: utf-8
         run: |
           set -euo pipefail
-          output_path="$(mktemp /tmp/teststock-claude-fallback.XXXXXX.json)"
+          output_path="$(mktemp /tmp/teststock-chatgpt-fallback.XXXXXX.json)"
           trap 'rm -f "$output_path"' EXIT
-          claude -p "$(cat scripts/claude-executor-prompt.md)" \
-            --mcp-config .mcp.json \
-            --allowedTools "Read,Glob,Grep,mcp__robinhood-trading" \
-            --max-turns 16 \
-            --output-format json \
-            > "$output_path"
+          node scripts/chatgpt-executor.mjs > "$output_path"
           python - "$output_path" <<'PY'
           import json,sys
           with open(sys.argv[1],'r',encoding='utf-8') as f:
               data=json.load(f)
-          print('Claude fallback executor completed.')
+          print('ChatGPT fallback executor completed.')
           result=data.get('result') if isinstance(data,dict) else None
           if isinstance(result,str): print(result[:1000])
           PY

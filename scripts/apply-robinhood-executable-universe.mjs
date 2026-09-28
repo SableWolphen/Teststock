@@ -48,6 +48,6 @@ s.generatorIntegrity={...(s.generatorIntegrity||{}),traceableFeatures:{...(s.gen
 await Promise.all([
   write('docs/data/stock-tournament.json',st),
   write('docs/signal.json',s),
-  write('docs/data/claude-signal.json',s)
+  write('docs/data/chatgpt-signal.json',s)
 ]);
 console.log(`Robinhood executable gate attached for ChatGPT Trading MCP: stocks=${st.liveQueue.length+st.researchFinalists.length}; crypto execution disabled; no broker confirmation=no order`);

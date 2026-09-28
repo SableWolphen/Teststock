@@ -26,8 +26,8 @@ on:
       - 'scripts/runner-health.mjs'
       - 'scripts/write-runner-heartbeat.mjs'
       - 'scripts/verify-runtime-prerequisites.mjs'
-      - 'scripts/claude-trade-quality-rules.md'
-      - 'scripts/claude-stock-rotation-rules.md'
+      - 'scripts/chatgpt-trade-quality-rules.md'
+      - 'scripts/chatgpt-stock-rotation-rules.md'
       - 'scripts/daytrader-profit-discipline.md'
       - 'scripts/test-trade-quality-resilience.mjs'
       - 'scripts/update-trigger-board.mjs'
@@ -37,10 +37,11 @@ on:
       - 'scripts/validate-intraday-edge-overlay.mjs'
       - 'scripts/build-execution-dispatch.mjs'
       - 'scripts/validate-execution-dispatch.mjs'
-      - 'scripts/claude-executor-prompt.md'
+      - 'scripts/chatgpt-executor.mjs'
+      - 'scripts/chatgpt-executor-prompt.md'
       - 'scripts/validate-options-policy.mjs'
       - 'scripts/options-monitor-candidates.mjs'
-      - 'scripts/claude-options-rules.md'
+      - 'scripts/chatgpt-options-rules.md'
       - 'docs/data/trade-replay.json'
       - '.mcp.json'
 
@@ -68,17 +69,6 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Set up Claude CLI
-        shell: bash
-        env:
-          DISABLE_AUTOUPDATER: '1'
-        run: |
-          set -euo pipefail
-          if ! command -v claude >/dev/null; then
-            npm install --global --no-audit --no-fund @anthropic-ai/claude-code@2.1.283
-          fi
-          claude --version
-
       - name: Verify persistent trading runtime
         shell: bash
         run: |
@@ -104,24 +94,7 @@ jobs:
               fi
             fi
           fi
-          if ! command -v claude >/dev/null && [ -n "${APPDATA:-}" ]; then
-            npm_user_bin="$(cygpath -u "$APPDATA")/npm"
-            if [ -f "$npm_user_bin/claude.cmd" ] || [ -f "$npm_user_bin/claude.exe" ]; then
-              export PATH="$npm_user_bin:$PATH"
-              echo "$npm_user_bin" >> "$GITHUB_PATH"
-              echo "Recovered Claude CLI from the Windows user npm directory."
-            fi
-          fi
-          if ! command -v claude >/dev/null && command -v powershell.exe >/dev/null; then
-            claude_path=$(powershell.exe -NoProfile -Command "(Get-Command claude -ErrorAction SilentlyContinue).Source" | tr -d '\r' | tail -n 1)
-            if [ -n "$claude_path" ]; then
-              claude_dir=$(dirname "$(cygpath -u "$claude_path")")
-              export PATH="$claude_dir:$PATH"
-              echo "$claude_dir" >> "$GITHUB_PATH"
-              echo "Recovered Claude CLI from Windows command discovery: $claude_path"
-            fi
-          fi
-          for executable in node python claude; do
+          for executable in node python; do
             if ! command -v "$executable" >/dev/null; then
               echo "::error::Runtime prerequisite failed: executable '$executable' is not on PATH"
               exit 1
@@ -134,20 +107,18 @@ jobs:
           # gate on runtime prerequisites so a test failure cannot kill live sessions.
           echo 'Persistent Teststock trading and independent background-learning lanes are present.'
 
-      - name: Verify Claude authentication without broker tools
+      - name: Verify ChatGPT authentication without broker tools
         if: ${{ inputs.verify_only }}
         shell: bash
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           set -euo pipefail
           umask 077
           mkdir -p "$HOME/.teststock-runtime/executor-diagnostics"
           probe_dir="$(mktemp -d "$HOME/.teststock-runtime/executor-diagnostics/probe.XXXXXX")"
           probe_status=0
-          claude -p "Reply with READY only. Do not take any actions." \
-            --tools "" --strict-mcp-config --mcp-config '{"mcpServers":{}}' \
-            --no-session-persistence --max-turns 1 --output-format json \
+          node scripts/chatgpt-executor.mjs --probe \
             > "$probe_dir/stdout.json" 2> "$probe_dir/stderr.txt" || probe_status=$?
           python scripts/record-executor-result.py "$probe_dir" "$probe_status"
 
@@ -175,7 +146,7 @@ jobs:
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           PYTHONIOENCODING: utf-8
           TESTSTOCK_LEARNING_INTERVAL_SECONDS: 300
           GH_TOKEN: ${{ github.token }}

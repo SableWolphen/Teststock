@@ -5,7 +5,7 @@ const s=await read('docs/signal.json');
 const p=s.optionsTradingPolicy||{};
 const fail=[];
 if(p.enabled!==true) fail.push('options policy disabled');
-if(p.executionAgent!=='CLAUDE') fail.push('execution agent');
+if(p.executionAgent!=='CHATGPT') fail.push('execution agent');
 if(p.transport!=='ROBINHOOD_TRADING_MCP') fail.push('transport');
 if(p.allowedStrategies?.join(',')!=='LONG_CALL,LONG_PUT') fail.push('allowed strategies');
 if(p.buyToOpenOnly!==true||p.sellToCloseOnly!==true) fail.push('order direction');

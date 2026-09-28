@@ -9,8 +9,8 @@
 // scraping it is both unreliable (frequent blocks/logins) and against its terms of service. Adding
 // real Twitter coverage would require a paid X API credential configured as a new repo secret.
 // Robinhood and Stocklake news are NOT fetched here either -- both are MCP tools tied to an
-// authenticated Claude session, not callable from a static script with no session context. They are
-// already required at the live pre-trade check (see claude-executor-prompt.md) before any order.
+// authenticated ChatGPT session, not callable from a static script with no session context. They are
+// already required at the live pre-trade check (see chatgpt-executor-prompt.md) before any order.
 //
 // Every source fails closed independently (a blocked/rate-limited free source just contributes zero
 // articles, never breaks the run) since none of these are trusted enough alone to justify failing

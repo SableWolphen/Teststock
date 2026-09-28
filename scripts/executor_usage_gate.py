@@ -1,4 +1,4 @@
-"""Throttle Claude executor usage while preserving urgent risk exits.
+"""Throttle ChatGPT executor usage while preserving urgent risk exits.
 
 The runner serializes cycles. Usage state lives outside the checkout so repository
 resets cannot erase cooldowns or caps. Routine reviews are deliberately sparse,
@@ -31,7 +31,7 @@ def _save(path, data):
 
 
 def reserve_wake(path, actionable=False, routine=False, now=None, *, urgent_exit=False):
-    """Reserve one Claude wake if policy allows it.
+    """Reserve one ChatGPT wake if policy allows it.
 
     Backward compatibility matters here: ``now`` remains the fourth positional
     argument used by the test suite and any older callers. ``urgent_exit`` is
