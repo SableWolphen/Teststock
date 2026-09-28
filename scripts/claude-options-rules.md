@@ -134,6 +134,6 @@ A high-confidence model can still lose money. The lane should maximize decision 
 ## Intraday profit protection
 
 - Read the current option seed-lane policy before entry. Track the highest Robinhood-confirmed executable bid after the fill.
-- At +20% versus confirmed entry premium, protection may move to break-even. At +35%, protect at least +15%. At +50%, trail no lower than 20% below the confirmed executable-bid high-water mark.
+- At +15% versus confirmed entry premium, protection may move to break-even. At +25%, protect at least +10%. At +35%, trail no lower than 15% below the confirmed executable-bid high-water mark.
 - A raised option protection floor may never move down. Reconcile any working exit before replacing it; never create duplicate sell orders.
 - Sell to close before the encoded session cutoff. Do not carry a Teststock option overnight, exercise it, or allow expiration to create stock exposure.
