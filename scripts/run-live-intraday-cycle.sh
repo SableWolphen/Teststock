@@ -74,49 +74,14 @@ node scripts/validate-execution-dispatch.mjs
 cp docs/data/execution-dispatch.json "$RUNTIME_DISPATCH_STATE"
 node scripts/build-live-trading-health.mjs
 
-should_run=$(python - "$RUNTIME_STATE_DIR" <<'PY'
-import json
-import sys
-from datetime import datetime, timezone
-from pathlib import Path
-sys.path.insert(0, 'scripts')
-from executor_usage_gate import reserve_wake
-
-def load(path, default):
-    try:
-        with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except Exception:
-        return default
-
-def age_minutes(value):
-    try:
-        dt=datetime.fromisoformat(str(value).replace('Z','+00:00'))
-        return max(0.0,(datetime.now(timezone.utc)-dt.astimezone(timezone.utc)).total_seconds()/60.0)
-    except Exception:
-        return float('inf')
-
-d=load('docs/data/execution-dispatch.json', {})
-w=load('docs/data/execution-watchlist.json', {})
-opt_admission=load('docs/data/options-profitability-admission.json', {})
-active=any(str(x.get('status','')).upper()=='ACTIVE' and str(x.get('assetClass','')).upper() in {'STOCK','OPTION'} for x in w.get('positions',[]) if isinstance(x,dict))
-opt_live=opt_admission.get('state') in {'MICRO_PROBATION','PROBATION','LIVE_ADMITTED'} and float(opt_admission.get('sizeMultiplier',0) or 0)>0
-option_routine=bool(opt_live)
-pending=d.get('pendingAction') if isinstance(d.get('pendingAction'), dict) else {}
-trigger=pending.get('trigger')
-urgent_exit=trigger in {'TRIGGER_1_STOP','STOCK_DAY_TRADE_FORCED_EXIT'}
-actionable=bool(d.get('chatgptShouldRun'))
-routine=active or option_routine
-allowed=reserve_wake(Path(sys.argv[1])/'executor-usage.json',actionable=actionable,routine=routine,urgent_exit=urgent_exit)
-print('true' if allowed else 'false')
-PY
-)
-
-if [[ "$should_run" != "true" ]]; then echo "FAST_CYCLE_NO_ACTION"; exit 0; fi
-umask 077
-mkdir -p "$RUNTIME_STATE_DIR/executor-diagnostics"
-diagnostic_dir="$(mktemp -d "$RUNTIME_STATE_DIR/executor-diagnostics/attempt.XXXXXX")"
-output_path="$diagnostic_dir/stdout.json"
-executor_status=0
-node scripts/chatgpt-executor.mjs > "$output_path" 2> "$diagnostic_dir/stderr.txt" || executor_status=$?
-python scripts/record-executor-result.py "$diagnostic_dir" "$executor_status"
+# Broker execution intentionally happens nowhere in this script.
+# Architecture (per the standing strategy spec): Teststock/GitHub is intelligence
+# only — it scans, ranks, monitors, and publishes the trigger board, dispatch,
+# and signal packets. The ChatGPT app (scheduled tasks with the connected
+# Robinhood integration) is the sole broker-action layer: it reads the published
+# dispatch, independently reconciles live Robinhood state, follows Robinhood's
+# review/confirmation workflow, submits permitted orders, and verifies fills.
+# The headless API executor path (chatgpt-executor.mjs full mode via Robinhood
+# MCP) was proven unreachable (MCP 424, 2026-09-28) and is retired; the
+# --probe / --mcp-probe modes remain as connectivity diagnostics only.
+echo "FAST_CYCLE_INTELLIGENCE_ONLY"

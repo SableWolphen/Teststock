@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 /**
- * ChatGPT (OpenAI) live execution agent for Teststock.
+ * ChatGPT (OpenAI) execution agent for Teststock — DIAGNOSTICS ONLY.
  *
- * Replaces the Claude CLI harness (`claude -p --mcp-config .mcp.json`). It reads
- * the same prompt/rulebook files, feeds the same live data-file snapshot, and
- * calls the OpenAI Responses API with the Robinhood Trading MCP server attached
- * as a tool. The API executes MCP tool calls server-side and returns the final
- * result, mirroring the old `--max-turns 16` agentic loop.
+ * RETIRED (2026-09-28): the full live execution cycle (headless API call with
+ * the Robinhood Trading MCP server attached) was proven unreachable — OpenAI's
+ * servers cannot authenticate to https://agent.robinhood.com/mcp/trading
+ * (MCP tool-list rejected, HTTP 424). The standing architecture is:
+ * Teststock/GitHub publishes intelligence (trigger board, dispatch, signals);
+ * the ChatGPT app (scheduled tasks with the connected Robinhood integration)
+ * is the sole broker-action layer. This script must never be used to place,
+ * modify, or cancel broker orders.
  *
  * Output contract (stdout): a single JSON object compatible with
  * scripts/record-executor-result.py:
@@ -14,9 +17,12 @@
  *   failure: {"is_error": true, "error": "<classification-friendly text>"} + non-zero exit
  *
  * Modes:
- *   node scripts/chatgpt-executor.mjs           full live execution cycle
- *   node scripts/chatgpt-executor.mjs --probe   lightweight auth probe (no MCP,
- *                                               no broker tools) for startup verification
+ *   node scripts/chatgpt-executor.mjs --probe      lightweight OpenAI auth probe
+ *                                                    (no MCP, no broker tools)
+ *   node scripts/chatgpt-executor.mjs --mcp-probe   read-only Robinhood MCP
+ *                                                    connectivity diagnostic
+ *   node scripts/chatgpt-executor.mjs               REFUSED — full live
+ *                                                    execution is retired (see above)
  *
  * Env:
  *   OPENAI_API_KEY        required
@@ -166,65 +172,7 @@ async function runProbe() {
   }
 }
 
-async function runFull() {
-  try {
-    const missing = [];
-    const instructions = INSTRUCTION_FILES.map((f) => {
-      const content = readIfExists(f);
-      if (content == null) { missing.push(f); return `<!-- MISSING: ${f} -->`; }
-      return content;
-    }).join('\n\n');
-
-    const snapshot = DATA_FILES.map((f) => {
-      const content = readIfExists(f);
-      if (content == null) return `--- ${f} ---\nMISSING: file not present in this checkout`;
-      // Minify JSON in-flight: the committed files are pretty-printed for humans,
-      // but whitespace is ~20% wasted input tokens on every call. Lossless.
-      let compact = content;
-      if (f.endsWith('.json')) {
-        try { compact = JSON.stringify(JSON.parse(content)); } catch { /* keep raw */ }
-      }
-      return `--- ${f} ---\n${compact}`;
-    }).join('\n\n');
-
-    const input =
-      'Live data snapshot. These are read-only copies of the repository files named in ' +
-      'the execution contract ("Read first"). Treat MISSING markers as missing files ' +
-      'under the fail-closed rule; never invent their contents.\n\n' + snapshot;
-
-    const maxToolCalls = Number(process.env.OPENAI_MAX_TOOL_CALLS || 32);
-    const response = await callResponses({
-      instructions,
-      input,
-      tools: [{
-        type: 'mcp',
-        server_label: 'robinhood-trading',
-        server_url: mcpServerUrl(),
-        // Headless scheduled execution: no human is present to approve tool calls.
-        // Every broker action remains constrained by the execution contract above.
-        require_approval: 'never',
-      }],
-      maxToolCalls,
-      timeoutMs: 8 * 60 * 1000,
-    });
-    if (response.status && response.status !== 'completed') {
-      const reason = response.incomplete_details?.reason || response.status;
-      throw new Error(`executor run incomplete: ${reason}`);
-    }
-    const text = extractText(response);
-    emitSuccess({
-      is_error: false,
-      result: text,
-      model: response.model,
-      usage: response.usage || null,
-    });
-    if (missing.length) {
-      process.stderr.write(`warning: missing prompt files: ${missing.join(', ')}\n`);
-    }
-  } catch (e) {
-    emitFailure(`executor failed: ${e.message}`);
-  }
-}
+// runFull() (headless broker execution) removed 2026-09-28: retired, see header.
 
 async function runMcpProbe() {
   try {
@@ -274,4 +222,11 @@ async function runMcpProbe() {
 
 const probe = process.argv.includes('--probe');
 const mcpProbe = process.argv.includes('--mcp-probe');
-await (mcpProbe ? runMcpProbe() : probe ? runProbe() : runFull());
+if (mcpProbe) await runMcpProbe();
+else if (probe) await runProbe();
+else {
+  // Full live execution is retired: the headless API path cannot authenticate
+  // to the Robinhood MCP (proven 2026-09-28, MCP 424). Broker actions run in
+  // the ChatGPT app via scheduled tasks reading the published dispatch.
+  emitFailure('retired: headless broker execution is disabled; execution runs in the ChatGPT app (see docs/chatgpt-autopilot.txt)');
+}

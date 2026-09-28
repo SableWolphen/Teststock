@@ -15,11 +15,11 @@ If `chatgptShouldRun` is false:
 
 If `chatgptShouldRun` is true:
 1. Read only `pendingAction` first. STOP events have priority over targets and buys.
-2. Fetch the fresh raw-main Teststock signal and the detailed `claude-scheduled-task.txt` procedure.
+2. Fetch the fresh raw-main Teststock signal and the detailed `docs/chatgpt-scheduled-task.txt` procedure.
 3. Read live Robinhood state needed for this exact action only: account/cash for a buy; position/open sell orders for a sell; expand history only when reconciliation requires it.
 4. Re-verify every applicable Teststock safety guard. A monitor trigger is a wake-up event, not authorization by itself.
 5. BUY RULE: a BUY_TRIGGER is never approval. Confirm the candidate has profitabilityAdmission PROBATION or LIVE_ADMITTED and decisionIntelligenceEligible=true, then re-check all live Teststock and Robinhood guards. If it fails before approval/submission, continue through ranked stock-only fallbackActions. Never lower a gate, chase price, use margin, or manufacture a trade.
-6. Qualified stock buys are automatic under the current Teststock execution contract; do not request per-order user approval. Submit only candidates explicitly authorized by the current actionable dispatch and only after every live Robinhood/Teststock guard passes. Risk-reducing sells and validated profit-taking are automatic when current policy permits.
+6. BUY RULE (continued): a candidate that passes every live guard is presented as one exact order (ticker, side, quantity, order type/limit, stop/targets, rationale). Complete the Robinhood review/preview workflow and obtain its required confirmation before submitting — standing strategy instructions never bypass broker/tool confirmations. Submit only explicitly confirmed orders, one at a time. Risk-reducing sells and validated profit-taking may proceed when current policy and the broker workflow permit.
 7. Verify the resulting order, fill, live position and remaining sell quantity. Never infer a fill from submission.
 8. Reconcile the private real-trade journal.
 9. After a CONFIRMED new stock/crypto fill, arm or update the public non-sensitive `docs/data/execution-watchlist.json` with ticker, asset class, stop, target1, target2 and completion flags only. Never put account IDs, balances, quantities, credentials or private brokerage data in the public repository.
