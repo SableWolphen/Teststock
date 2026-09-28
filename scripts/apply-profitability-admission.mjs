@@ -18,8 +18,8 @@ const independentMap=new Map();
 for(const x of [...resolvedShadow,...resolvedReal]){const k=[x.createdDate,x.symbol,norm(x.setupType),norm(x.runtimeRegime)].join('|'),old=independentMap.get(k);if(!old||Number(x.realizedR)<Number(old.realizedR))independentMap.set(k,x);}
 const independentResolved=[...independentMap.values()];
 const realBuckets=adaptive?.buckets||{};
-const MIN_SHADOW_MICRO=100,MIN_SHADOW=200,MIN_SHADOW_DAYS_MICRO=20,MIN_SHADOW_DAYS=30,MIN_REAL_PROBATION=8,MIN_REAL_FULL=15;
-const SHADOW_MIN_WIN=50,SHADOW_MIN_AVG_R=.10,SHADOW_MIN_PROFIT_FACTOR=1.25,REAL_MIN_AVG_R=.10;
+const MIN_SHADOW_MICRO=60,MIN_SHADOW=200,MIN_SHADOW_DAYS_MICRO=12,MIN_SHADOW_DAYS=30,MIN_REAL_PROBATION=8,MIN_REAL_FULL=15;
+const SHADOW_MIN_WIN=48,SHADOW_MIN_AVG_R=.05,SHADOW_MIN_PROFIT_FACTOR=1.15,REAL_MIN_AVG_R=.10;
 
 function shadowStats(setup,regime){
   const exact=independentResolved.filter(x=>norm(x.setupType)===setup&&norm(x.runtimeRegime)===regime);
@@ -52,7 +52,7 @@ function admission(row){
   if(negativeRealProbation){
     state='LIVE_SUSPENDED';sizeMultiplier=0;reason='Robinhood-confirmed real-fill probation is negative; live entry remains suspended.';
   }else if(earlyShadowPassed){
-    state='MICRO_PROBATION';sizeMultiplier=.25;reason='At least 100 independent positive outcomes across 20 trading days passed the after-cost evidence bar; live capital remains capped at one-quarter size.';
+    state='MICRO_PROBATION';sizeMultiplier=.25;reason='At least 60 independent positive outcomes across 12 trading days passed the after-cost evidence bar; live capital remains capped at one-quarter size.';
   }
   if(state!=='LIVE_SUSPENDED'&&shadowPassed){state='PROBATION';sizeMultiplier=.5;reason='At least 200 independent positive outcomes across 30 trading days passed; live capital remains reduced while real-fill evidence accumulates.';}
   if(state!=='LIVE_SUSPENDED'&&shadowPassed&&Number(r.samples)>=MIN_REAL_FULL&&Number(r.averageRealizedR)>=REAL_MIN_AVG_R){state='LIVE_ADMITTED';sizeMultiplier=1;reason='Forward proof and sufficient positive real-fill evidence passed.';}
@@ -149,7 +149,7 @@ if(dayTradeConfig.enabled===true){
   }
 }
 
-tournament.profitabilityAdmissionPolicy={enabled:true,mode:'EVIDENCE_FIRST_DAY_TRADING',rule:'Every stock setup remains shadow-only until at least 100 independent outcomes across 20 trading days pass positive expectancy, profit-factor, regime and safety gates. Micro probation is capped at 25%; larger size requires additional forward and Robinhood-confirmed real-fill evidence.'};
+tournament.profitabilityAdmissionPolicy={enabled:true,mode:'EVIDENCE_FIRST_DAY_TRADING',rule:'Every stock setup remains shadow-only until at least 60 independent outcomes across 12 trading days pass positive expectancy, profit-factor, regime and safety gates. Micro probation is capped at 25%; larger size requires additional forward and Robinhood-confirmed real-fill evidence.'};
 const q=new Map(live.map(x=>[x.ticker||x.symbol,x]));
 signal.stockPlan=signal.stockPlan||{};
 const existingQueue=(signal.stockPlan.stockCandidateQueue||[]).map(x=>q.has(x.ticker)?{...x,profitabilityAdmission:q.get(x.ticker).profitabilityAdmission,adaptiveSizeMultiplier:q.get(x.ticker).adaptiveSizeMultiplier,action:q.get(x.ticker).action,seedLane:q.get(x.ticker).seedLane,dayTradeSeedLane:q.get(x.ticker).dayTradeSeedLane}:x);
@@ -161,3 +161,4 @@ signal.generatorIntegrity={...(signal.generatorIntegrity||{}),traceableFeatures:
 signal.schemaVersion=Math.max(44,Number(signal.schemaVersion||0));
 await Promise.all([write('docs/data/stock-tournament.json',tournament),write('docs/signal.json',signal),write('docs/data/claude-signal.json',signal)]);
 console.log(`Profitability admission: buyable=${buyable.length}; micro=${live.filter(x=>x.profitabilityAdmission?.state==='MICRO_PROBATION').length}; probation=${live.filter(x=>x.profitabilityAdmission?.state==='PROBATION').length}; suspended=${live.filter(x=>x.profitabilityAdmission?.state==='LIVE_SUSPENDED').length}`);
+
