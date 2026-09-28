@@ -178,7 +178,13 @@ async function runFull() {
     const snapshot = DATA_FILES.map((f) => {
       const content = readIfExists(f);
       if (content == null) return `--- ${f} ---\nMISSING: file not present in this checkout`;
-      return `--- ${f} ---\n${content}`;
+      // Minify JSON in-flight: the committed files are pretty-printed for humans,
+      // but whitespace is ~20% wasted input tokens on every call. Lossless.
+      let compact = content;
+      if (f.endsWith('.json')) {
+        try { compact = JSON.stringify(JSON.parse(content)); } catch { /* keep raw */ }
+      }
+      return `--- ${f} ---\n${compact}`;
     }).join('\n\n');
 
     const input =
