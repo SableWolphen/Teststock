@@ -151,7 +151,9 @@ async function runProbe() {
       instructions: 'You are a connectivity probe. Follow the user instruction literally.',
       input: 'Reply with READY only. Do not take any actions.',
       tools: [],
-      maxOutputTokens: 16,
+      // gpt-5 is a reasoning model: the token budget must cover hidden reasoning
+      // plus the visible reply, or the response comes back "incomplete".
+      maxOutputTokens: 512,
       timeoutMs: 60000,
     });
     const text = extractText(response);
