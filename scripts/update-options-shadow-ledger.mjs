@@ -11,13 +11,33 @@ const read=async(f,x=null)=>{try{return JSON.parse(await fs.readFile(f,'utf8'));
 const key=process.env.ALPACA_API_KEY||process.env.APCA_API_KEY_ID,secret=process.env.ALPACA_API_SECRET||process.env.APCA_API_SECRET_KEY;
 if(!key||!secret)throw new Error('Missing Alpaca secrets');
 const headers={'APCA-API-KEY-ID':key,'APCA-API-SECRET-KEY':secret};
-const get=async u=>{const r=await fetch(u,{headers});if(!r.ok)throw new Error(`Alpaca ${r.status}: ${await r.text()}`);return r.json();};
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const get=async u=>{
+  let lastError;
+  for(let attempt=0;attempt<5;attempt++){
+    const r=await fetch(u,{headers});
+    if(r.ok)return r.json();
+    const body=await r.text();
+    lastError=new Error(`Alpaca ${r.status}: ${body}`);
+    if(r.status!==429&&r.status<500)throw lastError;
+    const retryAfter=Number(r.headers.get('retry-after')||0);
+    const waitMs=retryAfter>0?retryAfter*1000:Math.min(20000,1000*(2**attempt));
+    console.warn(`Alpaca ${r.status} on option snapshot fetch; retrying in ${waitMs}ms (attempt ${attempt+1}/5)`);
+    await sleep(waitMs);
+  }
+  throw lastError;
+};
 const feed=process.env.ALPACA_OPTIONS_FEED||'indicative';
+const snapshotCache=new Map();
 
 async function liveSnapshotFor(underlying,contract){
   try{
-    const q=new URLSearchParams({feed,limit:'1000'});
-    const raw=await get(`https://data.alpaca.markets/v1beta1/options/snapshots/${underlying}?${q}`);
+    let raw=snapshotCache.get(underlying);
+    if(!raw){
+      const q=new URLSearchParams({feed,limit:'1000'});
+      raw=await get(`https://data.alpaca.markets/v1beta1/options/snapshots/${underlying}?${q}`);
+      snapshotCache.set(underlying,raw);
+    }
     const s=(raw.snapshots||{})[contract];
     if(!s)return null;
     const qx=s.latestQuote||s.latest_quote||{};
