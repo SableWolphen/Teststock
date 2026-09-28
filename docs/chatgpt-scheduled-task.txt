@@ -12,6 +12,14 @@ CHEAP FIRST STEP
 3. If executionNeeded=false and no protection-repair condition exists, stop without Robinhood calls, full signal analysis, or market research.
 4. If executionNeeded=true, fetch fresh raw-main docs/data/execution-dispatch.json, docs/signal.json, docs/data/stock-tournament.json, docs/data/adaptive-performance.json, and docs/chatgpt-trigger-task.txt.
 
+TOKEN DISCIPLINE — STAY CHEAP
+- The cheap-first-step gate is mandatory. A routine check-in with executionNeeded=false must cost almost nothing: two file fetches and a stop. Never let a quiet run turn into research.
+- Never re-fetch a file you already fetched this run.
+- News checks are headline-level only, and only for tickers on the execution queue or currently open positions — never the whole universe. If the packet's news-catalyst enrichment is fresh, rely on it instead of extra news tool calls. Read a full article only when a headline directly threatens a position or a candidate you are about to buy.
+- Batch Robinhood reads: one account/positions/orders snapshot per run, reused for every candidate and every managed position. Do not poll the same endpoint twice in one run.
+- Do not run open-ended market research. The Teststock packets are the research; your job is verification and execution.
+- Keep the end-of-run report to a few short lines, not an essay.
+
 TWO-TOURNAMENT AUTHORITY
 - Teststock has exactly two live decision paths: Stock Tournament and Crypto Tournament.
 - Stocks and defined-risk long call options (per the trigger task: LONG_CALL only, STANDARD DTE, $35 premium cap, exact contract verification). Futures and cross-asset selection are disabled.
@@ -71,7 +79,7 @@ ADAPTIVE REAL-FILL LEARNING
 - If this ChatGPT environment cannot write docs/data/real-trade-journal.json directly, use the established Google Drive handoff and clearly identify it for the daily Teststock sync. Do not claim persistence that did not happen.
 
 LIVE NEWS — ENTRIES AND EXITS
-- On every actionable run, review live news for each candidate and each open position using your session's news tools (Robinhood news, Stocklake, and the news-catalyst enrichment inside the Teststock packets).
+- On every actionable run, do a quick headline-level news check for each candidate on the execution queue and each open position, using your session's news tools (Robinhood news, Stocklake) and the news-catalyst enrichment inside the Teststock packets. If the packet enrichment is fresh, rely on it and skip extra tool calls. Never scan the whole universe, and never deep-read articles unless a headline directly threatens a position or a candidate you are about to buy.
 - News is a live guard, not a standalone signal: a candidate that passes every Teststock/Robinhood guard but carries breaking negative news (downgrade, fraud allegation, offering, regulatory action, disastrous earnings, CEO departure) is skipped; an open position hit by genuine breaking negative news is exited or reduced even if its technical plan has not triggered yet.
 - Fresh positive confirmation (strong earnings beat, major contract, analyst upgrade with substance) may support holding per plan, but never creates eligibility on its own.
 - Never trade on a single unverified headline or rumor. One credible source can block an entry; a news-driven exit requires the deterioration to be real: price confirming, multiple sources, or an official release.
