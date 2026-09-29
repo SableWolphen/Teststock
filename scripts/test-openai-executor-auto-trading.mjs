@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const executor=fs.readFileSync('scripts/chatgpt-executor.mjs','utf8');
 const prompt=fs.readFileSync('scripts/chatgpt-executor-prompt.md','utf8');
+const triggerTask=fs.readFileSync('docs/chatgpt-trigger-task.txt','utf8');
 
 test('live executor exposes automatic stock and option buy/sell tools',()=>{
   for(const name of [
@@ -21,6 +22,12 @@ test('unattended executor remains explicitly gated and paper-first',()=>{
   assert.match(executor,/require_approval:'never'/);
   assert.match(prompt,/explicitly authorized unattended automatic buys and sells/i);
   assert.match(prompt,/broker-enforced confirmation/i);
+});
+
+test('trigger task is unattended for buys and sells',()=>{
+  assert.match(triggerTask,/may submit the exact qualified order automatically/i);
+  assert.doesNotMatch(triggerTask,/ask the user to approve each exact ticker/i);
+  assert.match(triggerTask,/Sell to close automatically/i);
 });
 
 test('distinct client ids are reserved for primary protection and replacement orders',()=>{
