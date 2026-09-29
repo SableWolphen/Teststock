@@ -9,7 +9,7 @@ const requiredFiles=[
   'scripts/chatgpt-stock-rotation-rules.md','scripts/daytrader-profit-discipline.md',
   'scripts/chatgpt-executor-prompt.md','scripts/chatgpt-options-rules.md',
   'scripts/options-monitor-candidates.mjs','scripts/validate-options-policy.mjs',
-  'scripts/write-runner-heartbeat.mjs',
+  'scripts/write-runner-heartbeat.mjs','scripts/check-alpaca-market-session.mjs',
 ];
 const requiredText=[
   ['scripts/run-live-intraday-cycle.sh','learning-output'],
