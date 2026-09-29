@@ -5,7 +5,7 @@
 // crypto-monitor-candidates.mjs / test-crypto-monitoring.mjs.
 //
 // build-execution-dispatch.mjs evaluates independently qualified option candidates from the fresh options scan.
-// SHADOW_ONLY is permitted only as the explicitly capped learning lane declared by probability-first-policy.json; all other gates remain mandatory.
+// Live option risk requires earned option profitability admission; SHADOW_ONLY and LIVE_SUSPENDED remain blocked.
 
 export function evaluateOptionsSeedLaneCandidate({
   candidate,
@@ -19,7 +19,10 @@ export function evaluateOptionsSeedLaneCandidate({
     return {status:'OPTIONS_SEED_LANE_DISABLED',reason:'probability-first-policy.json options.seedLane is not enabled.'};
   }
   const admissionState=admission?.state||'SHADOW_ONLY';
-  const requiredStates=seedPolicy.requiredAdmissionStates||['SHADOW_ONLY','MICRO_PROBATION','PROBATION','LIVE_ADMITTED'];
+  const requiredStates=seedPolicy.requiredAdmissionStates||['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'];
+  if(candidate&&candidate.dteBucket!==(seedPolicy.requiredDteBucket||'STANDARD')){
+    return {status:'BLOCKED_DTE_NOT_STANDARD',reason:`Candidate dteBucket is ${candidate.dteBucket}; this lane only ever considers ${seedPolicy.requiredDteBucket||'STANDARD'} contracts, at any admission state.`};
+  }
   if(!requiredStates.includes(admissionState)){
     return {status:'BLOCKED_ADMISSION',reason:`Options profitability admission state is ${admissionState}; requires one of ${requiredStates.join('/')}. The candidate is outside the policy's explicitly authorized admission states.`,admissionState};
   }

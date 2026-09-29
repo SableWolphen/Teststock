@@ -73,7 +73,7 @@ for(const [i,x] of stockCandidates.entries()){
     else if(p>max){status='DO_NOT_CHASE';reason='Price is above maximumEntry.';}
     else if(p>=min&&p<=max){status='STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER';reason=`Automatic same-day stock learning candidate is inside its buy zone with ${marketSession.minutesToClose} minutes to the authoritative close. Capped at $${Number(x.dayTradeSeedLane?.maxOrderUsd||20)} using existing Robinhood cash only and must be flat today.`;}
     // Bounded below-floor entry (2026-09-18, user request): mirrors the existing bounded
-    // above-max chase allowance (CLAUDE.md) symmetrically on the low side -- up to 1% below the
+    // above-max chase allowance (AGENTS.md) symmetrically on the low side -- up to 1% below the
     // computed minimumEntry still fires the seed-lane trigger, since it's an even smaller margin
     // of safety than a normal seed-lane fill. The live executor must apply a tightened stop and
     // reduced size to offset that, exactly as the above-max bounded allowance already requires.

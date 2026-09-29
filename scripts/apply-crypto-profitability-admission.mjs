@@ -12,7 +12,7 @@ const cryptoPolicy=policy.crypto||{};
 // Only ACCEPTED shadow trades count toward admission: these are the setups Teststock's own
 // crypto tournament actually would have bought (they cleared setupGrade A/A+, liquidity, trend,
 // and 4-hour confirmation and were the day's chosen allocation). REJECTED rows stay in
-// crypto-shadow-trades.json for opportunity-cost diagnostics only, per CLAUDE.md's rule that
+// crypto-shadow-trades.json for opportunity-cost diagnostics only, per AGENTS.md's rule that
 // backtests/historical stats are diagnostic and cannot themselves create eligibility.
 const acceptedResolved=(shadow.trades||[]).filter(x=>x.decision==='ACCEPTED'&&x.status==='RESOLVED'&&Number.isFinite(Number(x.realizedR)));
 const independentMap=new Map();

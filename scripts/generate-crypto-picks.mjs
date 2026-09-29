@@ -20,7 +20,7 @@ const sma=(a,n)=>avg(a.slice(-n));
 // pairs (including BTC/USD, which certainly has deep history). Crypto.com natively supports a 4h
 // candle interval and its ticker/volume figures are real market figures directly, with no separate
 // cross-check needed. Stocks are unaffected and continue to use Alpaca/SEC EDGAR as documented in
-// CLAUDE.md; this file is the crypto-only research pipeline.
+// AGENTS.md; this file is the crypto-only research pipeline.
 const CC='https://api.crypto.com/exchange/v1/public';
 const SCAN_LIMIT=200; // User-requested widen (2026-08-23, was 80): bounds API calls/runtime; symbols
                       // below this rank by 24h volume are very unlikely to clear the $250K/A or $2M/A+

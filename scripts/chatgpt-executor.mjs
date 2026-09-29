@@ -1,51 +1,33 @@
 #!/usr/bin/env node
 /**
- * ChatGPT (OpenAI) execution agent for Teststock — DIAGNOSTICS ONLY.
+ * OpenAI execution agent for Teststock.
  *
- * RETIRED (2026-09-28): the full live execution cycle (headless API call with
- * the Robinhood Trading MCP server attached) was proven unreachable — OpenAI's
- * servers cannot authenticate to https://agent.robinhood.com/mcp/trading
- * (MCP tool-list rejected, HTTP 424). The standing architecture is:
- * Teststock/GitHub publishes intelligence (trigger board, dispatch, signals);
- * the ChatGPT app (scheduled tasks with the connected Robinhood integration)
- * is the sole broker-action layer. This script must never be used to place,
- * modify, or cancel broker orders.
+ * Default mode is PAPER. Real Robinhood writes require BOTH:
+ *   TESTSTOCK_EXECUTION_MODE=live
+ *   TESTSTOCK_LIVE_TRADING=I_UNDERSTAND_REAL_ORDERS
  *
- * Output contract (stdout): a single JSON object compatible with
- * scripts/record-executor-result.py:
- *   success: {"is_error": false, "result": "<final text>", "model": ..., "usage": {...}}
- *   failure: {"is_error": true, "error": "<classification-friendly text>"} + non-zero exit
- *
- * Modes:
- *   node scripts/chatgpt-executor.mjs --probe      lightweight OpenAI auth probe
- *                                                    (no MCP, no broker tools)
- *   node scripts/chatgpt-executor.mjs --mcp-probe   read-only Robinhood MCP
- *                                                    connectivity diagnostic
- *   node scripts/chatgpt-executor.mjs               REFUSED — full live
- *                                                    execution is retired (see above)
- *
- * Env:
- *   OPENAI_API_KEY        required
- *   OPENAI_MODEL          optional (default "gpt-5")
- *   OPENAI_MCP_SERVER_URL optional (default: URL from .mcp.json, else Robinhood default)
- *   OPENAI_MAX_TOOL_CALLS optional (default 32, mirrors the old --max-turns 16)
+ * The live path uses the OpenAI Responses API with the authenticated Robinhood
+ * remote MCP server. No broker credential is committed or logged.
  */
+import crypto from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const API_URL = 'https://api.openai.com/v1/responses';
-const DEFAULT_MCP_URL = 'https://agent.robinhood.com/mcp/trading';
+const ROOT=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const API_URL='https://api.openai.com/v1/responses';
+const LIVE_SENTINEL='I_UNDERSTAND_REAL_ORDERS';
 
-const INSTRUCTION_FILES = [
+const INSTRUCTION_FILES=[
+  'AGENTS.md',
   'scripts/chatgpt-executor-prompt.md',
   'scripts/chatgpt-trade-quality-rules.md',
   'scripts/chatgpt-stock-rotation-rules.md',
   'scripts/chatgpt-options-rules.md',
   'scripts/daytrader-profit-discipline.md',
 ];
-const DATA_FILES = [
+const DATA_FILES=[
   'docs/data/execution-dispatch.json',
   'docs/data/trigger-board.json',
   'docs/data/intraday-edge.json',
@@ -53,180 +35,122 @@ const DATA_FILES = [
   'docs/data/execution-watchlist.json',
   'docs/signal.json',
   'docs/data/adaptive-performance.json',
-  'docs/data/option-candidates.json',
+  'docs/data/options-profitability-admission.json',
+  'docs/data/small-account-options.json',
 ];
 
-function readIfExists(rel) {
-  try {
-    return fs.readFileSync(path.join(ROOT, rel), 'utf8');
-  } catch {
-    return null;
-  }
+function readIfExists(rel){try{return fs.readFileSync(path.join(ROOT,rel),'utf8');}catch{return null;}}
+function readJson(rel){const v=readIfExists(rel);return v?JSON.parse(v):null;}
+function config(){return readJson('.openai-mcp.json')||{};}
+function executionMode(){
+  const v=String(process.env.TESTSTOCK_EXECUTION_MODE||'paper').trim().toLowerCase();
+  if(!['paper','live'].includes(v)) throw new Error('TESTSTOCK_EXECUTION_MODE must be paper or live');
+  return v;
 }
-
-function mcpServerUrl() {
-  if (process.env.OPENAI_MCP_SERVER_URL) return process.env.OPENAI_MCP_SERVER_URL;
-  try {
-    const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, '.mcp.json'), 'utf8'));
-    const url = cfg?.mcpServers?.['robinhood-trading']?.url;
-    if (typeof url === 'string' && url) return url;
-  } catch { /* fall through to default */ }
-  return DEFAULT_MCP_URL;
-}
-
-function extractText(response) {
-  const chunks = [];
-  for (const item of response.output || []) {
-    if (item.type === 'message' && Array.isArray(item.content)) {
-      for (const part of item.content) {
-        if (part.type === 'output_text' && typeof part.text === 'string') chunks.push(part.text);
-      }
-    }
-  }
+function mcpUrl(){return process.env.OPENAI_MCP_SERVER_URL||config().server_url||'https://agent.robinhood.com/mcp/trading';}
+function mcpToken(){const env=config().authorization_env||'ROBINHOOD_MCP_OAUTH_TOKEN';return process.env[env]||'';}
+function extractText(response){
+  const chunks=[];
+  for(const item of response.output||[])if(item.type==='message'&&Array.isArray(item.content))for(const part of item.content)if(part.type==='output_text'&&typeof part.text==='string')chunks.push(part.text);
   return chunks.join('\n').trim();
 }
+function mcpCallNames(response){return (response.output||[]).filter(x=>x.type==='mcp_call').map(x=>x.name).filter(Boolean);}
+function fingerprintOf(x){
+  if(!x||typeof x!=='object')return null;
+  for(const k of ['fingerprint','dispatchFingerprint','claimKey','id'])if(typeof x[k]==='string'&&x[k])return x[k];
+  return null;
+}
+function selectAction(dispatch){
+  if(!(dispatch?.chatgptShouldRun===true||dispatch?.executionNeeded===true))return null;
+  const rows=[dispatch.pendingAction,...(dispatch.optionCandidates||[]),...(dispatch.automaticStockCandidates||[]),...(dispatch.seedLaneCandidates||[]),...(dispatch.fallbackActions||[])];
+  for(const action of rows){const fingerprint=fingerprintOf(action);if(fingerprint)return{fingerprint,action};}
+  return null;
+}
+function refId(fingerprint){
+  const b=Buffer.from(crypto.createHash('sha256').update(String(fingerprint)).digest().subarray(0,16));
+  b[6]=(b[6]&15)|80;b[8]=(b[8]&63)|128;
+  const h=b.toString('hex');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);
+}
+function claim(selected,id){
+  const root=process.env.TESTSTOCK_RUNTIME_STATE_DIR||path.join(os.homedir(),'.teststock-runtime');
+  const dir=path.join(root,'executor-claims');fs.mkdirSync(dir,{recursive:true,mode:0o700});
+  const file=path.join(dir,crypto.createHash('sha256').update(selected.fingerprint).digest('hex')+'.json');
+  let fd;try{fd=fs.openSync(file,'wx',0o600);}catch(e){if(e.code==='EEXIST')return null;throw e;}
+  fs.writeFileSync(fd,JSON.stringify({fingerprint:selected.fingerprint,ref_id:id,claimedAt:new Date().toISOString(),state:'CLAIMED_BEFORE_SUBMIT'},null,2));
+  fs.closeSync(fd);return file;
+}
+function releaseClaim(file){try{if(file)fs.unlinkSync(file);}catch{}}
 
-async function callResponses({ instructions, input, tools, maxOutputTokens, timeoutMs, maxToolCalls }) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    const err = new Error('authentication_error: OPENAI_API_KEY is not set (invalid api key)');
-    err.code = 'AUTH';
-    throw err;
-  }
-  const body = {
-    model: process.env.OPENAI_MODEL || 'gpt-5',
-    instructions,
-    input,
-    tools,
-    tool_choice: 'auto',
-    store: false,
-  };
-  if (maxOutputTokens) body.max_output_tokens = maxOutputTokens;
-  if (maxToolCalls) body.max_tool_calls = maxToolCalls;
-  let res;
-  try {
-    res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-  } catch (e) {
-    const msg = String(e?.message || e);
-    if (/timeout|timed out|abort/i.test(msg)) {
-      const err = new Error(`connection error: OpenAI request timed out after ${timeoutMs}ms`);
-      err.code = 'TIMEOUT';
-      throw err;
-    }
-    const err = new Error(`connection error: ${msg}`);
-    err.code = 'CONNECTION';
-    throw err;
-  }
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    if (res.status === 401) {
-      const err = new Error(`authentication_error: OpenAI rejected the API key (invalid api key): ${text.slice(0, 200)}`);
-      err.code = 'AUTH';
-      throw err;
-    }
-    if (res.status === 429) {
-      const err = new Error(`rate_limit: OpenAI rate or usage limit hit: ${text.slice(0, 200)}`);
-      err.code = 'RATE';
-      throw err;
-    }
-    const err = new Error(`OpenAI API error ${res.status}: ${text.slice(0, 300)}`);
-    err.code = 'API';
-    throw err;
-  }
+async function callResponses({instructions,input,tools,maxOutputTokens=3000,timeoutMs=480000,maxToolCalls=24}){
+  const apiKey=process.env.OPENAI_API_KEY;
+  if(!apiKey)throw new Error('authentication_error: OPENAI_API_KEY is not set');
+  const body={model:process.env.OPENAI_MODEL||'gpt-5',instructions,input,tools,tool_choice:'auto',store:false,max_output_tokens:maxOutputTokens,max_tool_calls:maxToolCalls};
+  const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+apiKey},body:JSON.stringify(body),signal:AbortSignal.timeout(timeoutMs)});
+  if(!res.ok){const t=(await res.text().catch(()=>'' )).slice(0,400);throw new Error('OpenAI API error '+res.status+': '+t);}
   return res.json();
 }
+function remoteMcp(readOnly=false){
+  const token=mcpToken();if(!token)throw new Error('authentication_error: ROBINHOOD_MCP_OAUTH_TOKEN is not set');
+  const readTools=['get_accounts','get_portfolio','get_equity_positions','get_equity_orders','get_equity_quotes','get_option_positions','get_option_orders','get_option_instruments','get_option_quotes','get_advanced_orders'];
+  const liveTools=[...readTools,'place_equity_order','cancel_equity_order','place_option_order','cancel_option_order'];
+  return{type:'mcp',server_label:config().server_label||'robinhood-trading',server_url:mcpUrl(),authorization:token,allowed_tools:{tool_names:readOnly?readTools:liveTools},require_approval:'never'};
+}
+function instructions(){return INSTRUCTION_FILES.map(f=>'===== '+f+' =====\n'+(readIfExists(f)||'MISSING')).join('\n\n');}
+function packets(){
+  const out={};for(const f of DATA_FILES){const v=readIfExists(f);out[f]=v?JSON.parse(v):{missing:true};}return out;
+}
+function emitSuccess(x){process.stdout.write(JSON.stringify({is_error:false,...x})+'\n');}
+function emitFailure(msg){process.stdout.write(JSON.stringify({is_error:true,error:msg})+'\n');process.stderr.write(msg+'\n');process.exitCode=1;}
 
-function emitSuccess(payload) {
-  process.stdout.write(JSON.stringify(payload) + '\n');
+async function runProbe(){
+  const r=await callResponses({instructions:'Connectivity probe only.',input:'Reply READY only.',tools:[],maxOutputTokens:256,timeoutMs:60000,maxToolCalls:1});
+  emitSuccess({mode:'probe',result:extractText(r)||'READY',model:r.model});
+}
+async function runMcpProbe(){
+  const r=await callResponses({
+    instructions:'Read-only Robinhood connectivity probe. Never modify broker state.',
+    input:'Fetch account visibility, current positions and open orders using read-only tools only. Return a concise result.',
+    tools:[remoteMcp(true)],maxOutputTokens:1200
+  });
+  emitSuccess({mode:'mcp-probe',result:extractText(r),mcp_calls:mcpCallNames(r),model:r.model});
+}
+async function runPaper(){
+  const dispatch=readJson('docs/data/execution-dispatch.json')||{};
+  const selected=selectAction(dispatch);
+  emitSuccess(selected?{mode:'paper',result:'PAPER_ACTION_READY',broker_write:false,fingerprint:selected.fingerprint,ref_id:refId(selected.fingerprint),action:selected.action}:{mode:'paper',result:'NO_ACTION',broker_write:false});
+}
+async function runLive(){
+  if(process.env.TESTSTOCK_LIVE_TRADING!==LIVE_SENTINEL)throw new Error('live trading locked: set TESTSTOCK_LIVE_TRADING='+LIVE_SENTINEL+' yourself; repository defaults never enable it');
+  const dispatch=readJson('docs/data/execution-dispatch.json')||{};
+  const selected=selectAction(dispatch);
+  if(!selected)return emitSuccess({mode:'live',result:'NO_ACTION',broker_write:false});
+  const id=refId(selected.fingerprint),claimFile=claim(selected,id);
+  if(!claimFile)return emitSuccess({mode:'live',result:'NO_ACTION_ALREADY_CLAIMED',broker_write:false,fingerprint:selected.fingerprint});
+  const input=[
+    'This invocation has exactly one atomically preclaimed action. Act only on it.',
+    'Preclaimed fingerprint: '+selected.fingerprint,
+    'Required ref_id for any new order: '+id,
+    'Do not submit an independent order for another candidate in this invocation.',
+    'If any evidence, freshness, admission, account, liquidity, risk, protection, or broker gate fails, return NO_ACTION.',
+    'Never use margin, transfers, deposits, withdrawals, option exercise, naked selling, averaging down, or wider stops.',
+    'PRECLAIMED ACTION:',
+    JSON.stringify(selected.action,null,2),
+    'CURRENT PACKETS:',
+    JSON.stringify(packets())
+  ].join('\n');
+  let r;
+  try{r=await callResponses({instructions:instructions(),input,tools:[remoteMcp(false)]});}
+  catch(e){throw new Error('live executor failed after claim; claim retained for broker reconciliation: '+e.message);}
+  if(r.status&&r.status!=='completed')throw new Error('live executor incomplete after claim; claim retained for broker reconciliation: '+r.status);
+  const text=extractText(r),calls=mcpCallNames(r);
+  const writeAttempt=calls.some(n=>/^place_|^cancel_|^replace_/.test(n));
+  if(!writeAttempt&&/\bNO_ACTION\b/i.test(text))releaseClaim(claimFile);
+  emitSuccess({mode:'live',result:text||'COMPLETED',mcp_calls:calls,broker_write_attempted:writeAttempt,fingerprint:selected.fingerprint,ref_id:id,claim_retained:writeAttempt||!/\bNO_ACTION\b/i.test(text),model:r.model,usage:r.usage||null});
 }
 
-function emitFailure(message) {
-  process.stdout.write(JSON.stringify({ is_error: true, error: message }) + '\n');
-  process.stderr.write(message + '\n');
-  process.exitCode = 1;
-}
-
-async function runProbe() {
-  try {
-    const response = await callResponses({
-      instructions: 'You are a connectivity probe. Follow the user instruction literally.',
-      input: 'Reply with READY only. Do not take any actions.',
-      tools: [],
-      // gpt-5 is a reasoning model: the token budget must cover hidden reasoning
-      // plus the visible reply, or the response comes back "incomplete".
-      maxOutputTokens: 512,
-      timeoutMs: 60000,
-    });
-    const text = extractText(response);
-    if (response.status && response.status !== 'completed') {
-      throw new Error(`probe incomplete: status=${response.status}`);
-    }
-    emitSuccess({ is_error: false, result: text || 'READY', model: response.model, probe: true });
-  } catch (e) {
-    emitFailure(`probe failed: ${e.message}`);
-  }
-}
-
-// runFull() (headless broker execution) removed 2026-09-28: retired, see header.
-
-async function runMcpProbe() {
-  try {
-    const response = await callResponses({
-      instructions: 'You are a read-only broker connectivity probe. Follow the user instruction literally and completely.',
-      input: [
-        'READ-ONLY BROKER CONNECTIVITY TEST. Money must not move.',
-        '',
-        'Use the robinhood-trading MCP tools to:',
-        '1. Confirm the connection works (list available tools or fetch server info).',
-        '2. Fetch the account summary: account value, buying power, cash.',
-        '3. Fetch current positions and open orders.',
-        '',
-        'ABSOLUTE RULES: Do NOT place, modify, or cancel any orders. Do NOT transfer,',
-        'deposit, or withdraw funds. Do NOT exercise options. Read-only calls only.',
-        '',
-        'Reply with a JSON object only, no other text:',
-        '{"connected": true/false, "tools_seen": [...], "account": {...}, "positions": [...], "open_orders": [...], "error": "..."}',
-        'If the MCP server rejects authentication or any call fails, set connected:false',
-        'and describe the exact error in "error".',
-      ].join('\n'),
-      tools: [{
-        type: 'mcp',
-        server_label: 'robinhood-trading',
-        server_url: mcpServerUrl(),
-        // Read-only probe: no human present; the prompt above forbids any
-        // state-changing call, and the result is audited in the workflow log.
-        require_approval: 'never',
-      }],
-      maxOutputTokens: 2000,
-      timeoutMs: 5 * 60 * 1000,
-    });
-    if (response.status && response.status !== 'completed') {
-      throw new Error(`mcp probe incomplete: status=${response.status}`);
-    }
-    const text = extractText(response);
-    const mcpCalls = [];
-    for (const item of response.output || []) {
-      if (item.type === 'mcp_call') mcpCalls.push({ name: item.name, server: item.server_label });
-      if (item.type === 'mcp_list_tools') mcpCalls.push({ list_tools: true, server: item.server_label, count: (item.tools || []).length });
-    }
-    emitSuccess({ is_error: false, probe: 'mcp', result: text, mcp_calls: mcpCalls, model: response.model, usage: response.usage || null });
-  } catch (e) {
-    emitFailure(`mcp probe failed: ${e.message}`);
-  }
-}
-
-const probe = process.argv.includes('--probe');
-const mcpProbe = process.argv.includes('--mcp-probe');
-if (mcpProbe) await runMcpProbe();
-else if (probe) await runProbe();
-else {
-  // Full live execution is retired: the headless API path cannot authenticate
-  // to the Robinhood MCP (proven 2026-09-28, MCP 424). Broker actions run in
-  // the ChatGPT app via scheduled tasks reading the published dispatch.
-  emitFailure('retired: headless broker execution is disabled; execution runs in the ChatGPT app (see docs/chatgpt-autopilot.txt)');
-}
+try{
+  if(process.argv.includes('--probe'))await runProbe();
+  else if(process.argv.includes('--mcp-probe'))await runMcpProbe();
+  else if(executionMode()==='paper')await runPaper();
+  else await runLive();
+}catch(e){emitFailure(String(e?.message||e));}

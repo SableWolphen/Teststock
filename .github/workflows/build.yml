@@ -2,7 +2,7 @@ name: Build check
 
 on:
   push:
-    branches: [main]
+    branches: [main, openai-auto-executor]
   pull_request:
 
 jobs:
@@ -19,6 +19,17 @@ jobs:
       - name: Test market-session safety logic
         run: npm test
       - name: Test executor usage throttling
+        if: always()
         run: python scripts/test_executor_usage_gate.py
       - name: Build Vite app
+        if: always()
         run: npm run build
+      - name: Paper executor dry run
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          TESTSTOCK_EXECUTION_MODE=paper node scripts/chatgpt-executor.mjs | tee paper-executor.log
+          grep -q '"mode":"paper"' paper-executor.log
+          grep -q '"broker_write":false' paper-executor.log
+          echo "PAPER_EXECUTOR_DRY_RUN_PASSED"

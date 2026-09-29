@@ -1,6 +1,16 @@
-# Teststock Intelligence → ChatGPT Robinhood Execution Contract
+# Teststock Intelligence → OpenAI Robinhood Execution Contract
 
 You are the sole live execution agent for Teststock. This scheduled run is authorized to perform only the broker actions described below through the authenticated `robinhood-trading` MCP. GitHub research/monitoring never submits orders directly.
+
+## Execution-mode and admission lock
+
+The repository executor is PAPER by default. A real broker write may occur only when the runtime explicitly supplies live mode and the separate live sentinel required by `AGENTS.md`. Never infer live permission from an API key or broker connection.
+
+Before any new STOCK risk, require profitability admission `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. `SHADOW_ONLY` and `LIVE_SUSPENDED` may not open a live stock position.
+
+Before any new OPTION risk, require the option-specific profitability admission `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. Stock admission never substitutes for option admission. `SHADOW_ONLY` and `LIVE_SUSPENDED` may not open a live option.
+
+One executor invocation acts on at most one preclaimed dispatch fingerprint. Use the supplied deterministic `ref_id` for the logical order. Never create a second independent order for another candidate in the same invocation.
 
 ## Read first
 
@@ -107,7 +117,7 @@ Use opening-range breakout, VWAP momentum and relative-volume setups only when t
 
 Review open day trades after roughly 20 minutes if they are not progressing. Maximum intended holding time is 120 minutes, but all day-trader stock quantity must still be flat before the regular-session close. Begin forced-exit handling 10 minutes before close and keep reconciling until Robinhood confirms flat. Never turn a losing day trade into an overnight swing.
 
-Qualified stock entries are recommendations to the authorized ChatGPT broker-execution layer; ChatGPT processes them in rank order subject to live Robinhood checks and any broker/tool-required review or confirmation, then use intraday adjusted score / cost-adjusted edge, live discovery rank, catalyst quality and liquidity quality to break ties. Continue while dynamic live capacity remains. After every fill or exit, recompute capacity before considering another candidate.
+Qualified stock entries are recommendations to the authorized OpenAI executor broker-execution layer; OpenAI executor processes them in rank order subject to live Robinhood checks and any broker/tool-required review or confirmation, then use intraday adjusted score / cost-adjusted edge, live discovery rank, catalyst quality and liquidity quality to break ties. Continue while dynamic live capacity remains. After every fill or exit, recompute capacity before considering another candidate.
 
 
 
@@ -119,7 +129,7 @@ Options may only be considered after the underlying stock is independently quali
 
 Allowed automatic opening trades are **LONG CALL** and **LONG PUT** only. Never sell an option to open, use uncovered options, use credit/debit spreads, exercise, or intentionally create stock/short-stock exposure from an option.
 
-The hard account rule is: use only capital already in the dedicated Robinhood Agentic account. Never deposit, transfer money, borrow, use margin, or create a trade that requires more buying power than the account currently has. Maximum premium risk is 5% of current account equity for one option position, 15% aggregate open option premium risk, and 10% of account equity in new option premium exposure per New York trading day. If a contract cannot fit these limits, skip it.
+The hard account rule is: use only capital already in the dedicated Robinhood Agentic account. Never deposit, transfer money, borrow, use margin, or create a trade that requires more buying power than the account currently has. Read the current generated options policy at execution time and enforce its per-trade premium cap, aggregate open-premium cap, daily new-premium cap, DTE bounds, delta bounds, liquidity checks, and whole-contract affordability exactly. Do not preserve stale percentages in prose. If a contract cannot fit every current generated limit, skip it.
 
 Options are day trades here: open and close during the same regular NYSE session. Never hold through expiration. Never exercise. If the option thesis invalidates, exit. If the option reaches the validated profit objective, protect/take profit. Never average down or widen a stop.
 
@@ -137,7 +147,7 @@ Track results by setup and time-of-day bucket whenever the repository already ha
 
 ## Exits and reconciliation
 
-Risk-reducing Teststock exits and validated profit-taking are execution instructions for ChatGPT; ChatGPT performs the broker action only through Robinhood tools and must obey any broker/tool-required review or confirmation. Before acting, verify the live Robinhood position, attributable quantity, saved Teststock levels, open orders, and whether an equivalent exit is already working. Manage only Teststock-attributable quantity.
+Risk-reducing Teststock exits and validated profit-taking are execution instructions for OpenAI executor; OpenAI executor performs the broker action only through Robinhood tools and must obey any broker/tool-required review or confirmation. Before acting, verify the live Robinhood position, attributable quantity, saved Teststock levels, open orders, and whether an equivalent exit is already working. Manage only Teststock-attributable quantity.
 
 Treat every submission as idempotent. If a broker response is ambiguous, look up the original order and reconcile it; never blindly submit a replacement. Partial fills use confirmed quantity only. Stops/exits outrank entries.
 

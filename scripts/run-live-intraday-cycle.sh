@@ -74,14 +74,21 @@ node scripts/validate-execution-dispatch.mjs
 cp docs/data/execution-dispatch.json "$RUNTIME_DISPATCH_STATE"
 node scripts/build-live-trading-health.mjs
 
-# Broker execution intentionally happens nowhere in this script.
-# Architecture (per the standing strategy spec): Teststock/GitHub is intelligence
-# only — it scans, ranks, monitors, and publishes the trigger board, dispatch,
-# and signal packets. The ChatGPT app (scheduled tasks with the connected
-# Robinhood integration) is the sole broker-action layer: it reads the published
-# dispatch, independently reconciles live Robinhood state, follows Robinhood's
-# review/confirmation workflow, submits permitted orders, and verifies fills.
-# The headless API executor path (chatgpt-executor.mjs full mode via Robinhood
-# MCP) was proven unreachable (MCP 424, 2026-09-28) and is retired; the
-# --probe / --mcp-probe modes remain as connectivity diagnostics only.
-echo "FAST_CYCLE_INTELLIGENCE_ONLY"
+# OpenAI executor handoff. PAPER is the repository default and never writes to
+# Robinhood. Live mode is separately fail-closed inside chatgpt-executor.mjs and
+# requires the user's explicit runtime sentinel plus authenticated Robinhood MCP.
+execution_mode="${TESTSTOCK_EXECUTION_MODE:-paper}"
+if jq -e '.chatgptShouldRun == true or .executionNeeded == true' docs/data/execution-dispatch.json >/dev/null 2>&1; then
+  diagnostics_dir="$RUNTIME_STATE_DIR/executor-diagnostics"
+  mkdir -p "$diagnostics_dir"
+  run_dir="$(mktemp -d "$diagnostics_dir/cycle.XXXXXX")"
+  executor_status=0
+  TESTSTOCK_EXECUTION_MODE="$execution_mode" node scripts/chatgpt-executor.mjs > "$run_dir/stdout.json" 2> "$run_dir/stderr.txt" || executor_status=$?
+  if ! python scripts/record-executor-result.py "$run_dir" "$executor_status"; then
+    echo "::warning::OpenAI executor did not complete. Any live claim is retained and must be reconciled before another submission."
+    return "$executor_status" 2>/dev/null || exit "$executor_status"
+  fi
+  echo "FAST_CYCLE_OPENAI_EXECUTOR mode=$execution_mode"
+else
+  echo "FAST_CYCLE_NO_ACTION"
+fi

@@ -13,7 +13,7 @@ import fs from 'node:fs/promises';
 // window -- passing the same price/spread/delta bar does not mean equivalent risk -- so every
 // candidate is tagged with a dteBucket (0DTE/WEEKLY/STANDARD) rather than blended in as
 // equivalent. This still only widens the research scan: options remain walled off from
-// automatic execution regardless of dteBucket (see CLAUDE.md).
+// automatic execution regardless of dteBucket (see AGENTS.md).
 // Widened again 2026-09-25 at user request to include highly liquid index ETFs (SPY/QQQ/IWM/DIA).
 // The stock-derived pool explicitly excludes ETFs (expand-stock-universe.mjs's
 // looksLikeOperatingCompany filter) since its growthQuality/fundamentals methodology doesn't
