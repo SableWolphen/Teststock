@@ -74,7 +74,14 @@ export default function App(){
   const copyOptionRequest=async row=>{
     if(!row)return;
     const cp=row.kind==='LONG_PUT'?'put':'call';
-    const request='Review and buy 1 '+row.underlying+' '+row.expiry+' 
+    const request='Review and buy 1 '+row.underlying+' '+row.expiry+' strike '+row.strike+' '+cp+' in my Robinhood Agentic account only if the live quote, spread, liquidity, buying power, account floor, options admission, duplicate-order check, and every current Teststock gate still pass. Use a marketable limit at or below the live allowed premium. Do not use margin, transfers, naked options, exercise, or carry it overnight. If any gate fails, do not place the order. Contract: '+row.contract+'.';
+    try{
+      await navigator.clipboard.writeText(request);
+      setOptionNotice(row.contract+' buy request copied — paste it into ChatGPT to run the live Robinhood review.');
+    }catch{
+      setOptionNotice(request);
+    }
+  };
 
   return <main className="app-shell">
     <header className="topbar">
