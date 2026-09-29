@@ -95,13 +95,13 @@ const signal={
     intervalSemantics:'LOWER_BOUND_INCLUSIVE_UPPER_BOUND_EXCLUSIVE',
     exactBoundaryExamples:{equity80:'DEFENSE',equity100:'PROVE',equity125:'SCALE',equity150:'GROWTH'},
     tiers:[
-      {minEquity:0,maxEquityExclusive:80,label:'RECOVERY',stockAllocationMultiplier:.35,maxOptionRiskPct:0,maxPlannedStopRiskPct:1,maxDeployedPct:45,newOptionsAllowed:false},
-      {minEquity:80,maxEquityExclusive:100,label:'DEFENSE',stockAllocationMultiplier:.5,maxOptionRiskPct:0,maxPlannedStopRiskPct:1.5,maxDeployedPct:60,newOptionsAllowed:false},
-      {minEquity:100,maxEquityExclusive:125,label:'PROVE',stockAllocationMultiplier:.7,maxOptionRiskPct:5,maxPlannedStopRiskPct:2,maxDeployedPct:70,newOptionsAllowed:true},
-      {minEquity:125,maxEquityExclusive:150,label:'SCALE',stockAllocationMultiplier:.85,maxOptionRiskPct:6,maxPlannedStopRiskPct:2.25,maxDeployedPct:75,newOptionsAllowed:true},
-      {minEquity:150,maxEquityExclusive:null,label:'GROWTH',stockAllocationMultiplier:1,maxOptionRiskPct:8,maxPlannedStopRiskPct:2.5,maxDeployedPct:80,newOptionsAllowed:true}
+      {minEquity:0,maxEquityExclusive:80,label:'RECOVERY',stockAllocationMultiplier:.35,maxOptionRiskPct:0,maxOptionPlannedStopRiskPct:0,maxPlannedStopRiskPct:1,maxDeployedPct:45,newOptionsAllowed:false},
+      {minEquity:80,maxEquityExclusive:100,label:'DEFENSE',stockAllocationMultiplier:.5,maxOptionRiskPct:0,maxOptionPlannedStopRiskPct:0,maxPlannedStopRiskPct:1.5,maxDeployedPct:60,newOptionsAllowed:false},
+      {minEquity:100,maxEquityExclusive:125,label:'PROVE',stockAllocationMultiplier:.7,maxOptionRiskPct:15,maxOptionPlannedStopRiskPct:5,maxPlannedStopRiskPct:2,maxDeployedPct:70,newOptionsAllowed:true},
+      {minEquity:125,maxEquityExclusive:150,label:'SCALE',stockAllocationMultiplier:.85,maxOptionRiskPct:18,maxOptionPlannedStopRiskPct:6,maxPlannedStopRiskPct:2.25,maxDeployedPct:75,newOptionsAllowed:true},
+      {minEquity:150,maxEquityExclusive:null,label:'GROWTH',stockAllocationMultiplier:1,maxOptionRiskPct:20,maxOptionPlannedStopRiskPct:7,maxPlannedStopRiskPct:2.5,maxDeployedPct:80,newOptionsAllowed:true}
     ],
-    instructions:'Select exactly one tier using lower-bound-inclusive, upper-bound-exclusive intervals: >=0 and <80 RECOVERY; >=80 and <100 DEFENSE; >=100 and <125 PROVE; >=125 and <150 SCALE; >=150 GROWTH. Exactly $80 is DEFENSE, exactly $100 is PROVE, exactly $125 is SCALE, and exactly $150 is GROWTH. Never choose the lower tier at an exact boundary. Multiply stock allocation by stockAllocationMultiplier. Never exceed tier maxDeployedPct or planned-stop-risk cap. For options use the smaller of eliteOption.maxRiskPctOfRobinhoodBuyingPower and tier.maxOptionRiskPct. If the tier disables options, do not open one.'
+    instructions:'Select exactly one tier using lower-bound-inclusive, upper-bound-exclusive intervals: >=0 and <80 RECOVERY; >=80 and <100 DEFENSE; >=100 and <125 PROVE; >=125 and <150 SCALE; >=150 GROWTH. Exactly $80 is DEFENSE, exactly $100 is PROVE, exactly $125 is SCALE, and exactly $150 is GROWTH. Never choose the lower tier at an exact boundary. Multiply stock allocation by stockAllocationMultiplier. Never exceed tier maxDeployedPct or planned-stop-risk cap. For options, premium paid must fit the smaller of the live option-policy cap and tier.maxOptionRiskPct. Planned loss at the encoded option stop must also fit tier.maxOptionPlannedStopRiskPct. If the tier disables options, do not open one.'
   },
   profitLock:{
     mode:'TIERED_EQUITY_FLOOR',

@@ -5,7 +5,7 @@ if(s.autopilot?.stockBuysRequireUserApproval!==false||s.autopilot?.automaticQual
 if(s.autopilot?.automaticQualifiedCryptoBuys!==false)fail.push('crypto execution not disabled');
 if(s.autopilot?.automaticQualifiedOptionBuys!==true||s.autopilot?.automaticRiskReducingOptionExits!==true)fail.push('automatic option execution');
 if(p?.optionBuys?.executionOwner!=='CHATGPT'||p?.optionBuys?.explicitApprovalRequired!==false||p?.optionBuys?.cashOnly!==true||p?.optionBuys?.noMargin!==true||p?.optionBuys?.noExercise!==true||p?.optionBuys?.noOvernight!==true)fail.push('option funding/strategy guard');
-if(Number(p?.optionBuys?.maxPremiumRiskPerTradePct)!==5||Number(p?.optionBuys?.maxAggregateOpenPremiumRiskPct)!==15||Number(p?.optionBuys?.maxNewPremiumExposurePerNyDayPct)!==10)fail.push('option premium caps');
+if(Number(p?.optionBuys?.maxPremiumRiskPerTradePct)!==25||Number(p?.optionBuys?.maxAggregateOpenPremiumRiskPct)!==50||Number(p?.optionBuys?.maxNewPremiumExposurePerNyDayPct)!==35)fail.push('option premium caps');
 if(p?.stockBuys?.executionOwner!=='CHATGPT'||p?.stockBuys?.explicitApprovalRequired!==false||p?.stockBuys?.automaticWhenFullyQualifiedAndBrokerPermits!==true)fail.push('stock execution owner/rule');
 if(p?.stockBuys?.requireRobinhoodTradingMcp!==true||p?.stockBuys?.requireLiveBrokerRecheck!==true)fail.push('stock MCP recheck');
 if(p?.exits?.explicitApprovalRequired!==false||p?.exits?.automaticWhenDetectedAndBrokerPermits!==true)fail.push('automatic exits');

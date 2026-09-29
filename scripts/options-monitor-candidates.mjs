@@ -20,8 +20,14 @@ export function evaluateOptionsSeedLaneCandidate({
   }
   const admissionState=admission?.state||'SHADOW_ONLY';
   const requiredStates=seedPolicy.requiredAdmissionStates||['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'];
-  if(candidate&&candidate.dteBucket!==(seedPolicy.requiredDteBucket||'STANDARD')){
-    return {status:'BLOCKED_DTE_NOT_STANDARD',reason:`Candidate dteBucket is ${candidate.dteBucket}; this lane only ever considers ${seedPolicy.requiredDteBucket||'STANDARD'} contracts, at any admission state.`};
+  const requiredDteBucket=seedPolicy.requiredDteBucket||'STANDARD';
+  const allowedDteBuckets=Array.isArray(seedPolicy.allowedDteBuckets)&&seedPolicy.allowedDteBuckets.length
+    ? seedPolicy.allowedDteBuckets
+    : requiredDteBucket==='STANDARD_OR_WEEKLY'
+      ? ['STANDARD','WEEKLY']
+      : [requiredDteBucket];
+  if(candidate&&!allowedDteBuckets.includes(candidate.dteBucket)){
+    return {status:'BLOCKED_DTE_NOT_STANDARD',reason:`Candidate dteBucket is ${candidate.dteBucket}; lane permits ${allowedDteBuckets.join('/')}.`};
   }
   if(!requiredStates.includes(admissionState)){
     return {status:'BLOCKED_ADMISSION',reason:`Options profitability admission state is ${admissionState}; requires one of ${requiredStates.join('/')}. The candidate is outside the policy's explicitly authorized admission states.`,admissionState};
@@ -31,9 +37,6 @@ export function evaluateOptionsSeedLaneCandidate({
   }
   if(!candidate){
     return {status:'NO_CANDIDATE',reason:'No qualifying contract from the current scan.'};
-  }
-  if(candidate.dteBucket!==(seedPolicy.requiredDteBucket||'STANDARD')){
-    return {status:'BLOCKED_DTE_NOT_STANDARD',reason:`Candidate dteBucket is ${candidate.dteBucket}; this lane only ever considers ${seedPolicy.requiredDteBucket||'STANDARD'} contracts, at any admission state.`};
   }
   const allowedTypes=seedPolicy.allowedUnderlyingTypes||['INDEX_ETF'];
   if(!allowedTypes.includes(candidate.underlyingType)){

@@ -117,9 +117,20 @@ let optionLaneResult={status:'OPTIONS_DISABLED'};
 let optionTrigger=null;
 if(optionsPolicy.enabled===true&&Array.isArray(optionsPolicy.allowedUnderlyingTypes)&&optionsPolicy.allowedUnderlyingTypes.includes('STOCK')&&optionAllowedAdmission&&optionScanFresh&&boardHealthy){
   const {evaluateOptionsSeedLaneCandidate}=await import('./options-monitor-candidates.mjs');
-  const candidate=(optionsScan.candidates||[]).find(x=>x?.underlyingType==='STOCK');
-  optionLaneResult=evaluateOptionsSeedLaneCandidate({candidate,admission:optionsAdmission,seedPolicy:optionsPolicy,openOptionPositions:localTrackedOpenOptionPositions,newEntriesThisUtcWeek:optionNewThisWeek,lastLiveTradeOutcome:lastOptionOutcome});
-  if(optionLaneResult.status==='OPTION_SEED_LANE_BUY_TRIGGER'){
+  const optionPool=(optionsScan.candidates||[]).filter(x=>x?.underlyingType==='STOCK');
+  let candidate=null;
+  let firstBlockedResult=null;
+  for(const row of optionPool){
+    const result=evaluateOptionsSeedLaneCandidate({candidate:row,admission:optionsAdmission,seedPolicy:optionsPolicy,openOptionPositions:localTrackedOpenOptionPositions,newEntriesThisUtcWeek:optionNewThisWeek,lastLiveTradeOutcome:lastOptionOutcome});
+    if(!firstBlockedResult)firstBlockedResult=result;
+    if(result.status==='OPTION_SEED_LANE_BUY_TRIGGER'){
+      candidate=row;
+      optionLaneResult=result;
+      break;
+    }
+  }
+  if(!candidate&&firstBlockedResult)optionLaneResult=firstBlockedResult;
+  if(candidate&&optionLaneResult.status==='OPTION_SEED_LANE_BUY_TRIGGER'){
     optionTrigger={
       id:`OPTION:${candidate.contract}`,ticker:candidate.underlying,assetClass:'OPTION',trigger:'OPTION_SEED_LANE_BUY_TRIGGER',
       stateChangedAt:optionsScan.generatedAt,observedPrice:candidate.ask,optionContract:candidate.contract,optionKind:candidate.kind||optionLaneResult.seedLane.kind,
