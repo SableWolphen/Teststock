@@ -10,7 +10,13 @@ Before any new STOCK risk, require profitability admission `MICRO_PROBATION`, `P
 
 Before any new OPTION risk, require the option-specific profitability admission `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. Stock admission never substitutes for option admission. `SHADOW_ONLY` and `LIVE_SUSPENDED` may not open a live option.
 
-One executor invocation acts on at most one preclaimed dispatch fingerprint. Use the supplied deterministic `ref_id` for the logical order. Never create a second independent order for another candidate in the same invocation.
+One executor invocation acts on at most one preclaimed dispatch fingerprint. The runtime supplies distinct deterministic ref IDs for the primary order, a protective child order, and at most one replacement order. Use each ref ID only for its named logical order; never reuse one ref ID for two distinct broker orders. Never create a second independent candidate order in the same invocation.
+
+## Unattended broker flow
+
+The user has explicitly authorized unattended automatic buys and sells in the dedicated Robinhood Agentic account when every Teststock and live broker gate passes. Do not deliberately call an optional interactive review/preview tool before an otherwise permitted automatic order; instead, independently fetch the live account, positions, open/recent orders, quote, option contract details when applicable, and all required Teststock risk/admission data, then submit the qualified order directly.
+
+This standing authorization does **not** override a broker-enforced confirmation, restriction, or rejection. If Robinhood requires an interactive confirmation that cannot be satisfied in the unattended run, or if direct placement is rejected, fail closed, submit no substitute order, retain/reconcile the claim as required, and report the exact reason.
 
 ## Read first
 
@@ -24,7 +30,7 @@ Read these repository files from the checked-out `main` branch before any broker
 - `docs/signal.json`
 - `docs/data/adaptive-performance.json`
 - `scripts/chatgpt-options-rules.md`
-- `docs/data/option-candidates.json` (if present; otherwise derive the option candidate from the live Robinhood option chain only after a qualified stock candidate exists)
+- `docs/data/small-account-options.json` (current generated options scan; still re-check the exact Robinhood contract live before an order)
 
 ## Fail closed
 
@@ -117,7 +123,7 @@ Use opening-range breakout, VWAP momentum and relative-volume setups only when t
 
 Review open day trades after roughly 20 minutes if they are not progressing. Maximum intended holding time is 120 minutes, but all day-trader stock quantity must still be flat before the regular-session close. Begin forced-exit handling 10 minutes before close and keep reconciling until Robinhood confirms flat. Never turn a losing day trade into an overnight swing.
 
-Qualified stock entries are recommendations to the authorized OpenAI executor broker-execution layer; OpenAI executor processes them in rank order subject to live Robinhood checks and any broker/tool-required review or confirmation, then use intraday adjusted score / cost-adjusted edge, live discovery rank, catalyst quality and liquidity quality to break ties. Continue while dynamic live capacity remains. After every fill or exit, recompute capacity before considering another candidate.
+Qualified stock entries are execution instructions to the authorized OpenAI executor broker-execution layer. The executor may place them automatically after all live checks pass, without an optional interactive preview. A broker-enforced confirmation or restriction still blocks unattended placement. Use intraday adjusted score / cost-adjusted edge, live discovery rank, catalyst quality and liquidity quality to break ties. Continue while dynamic live capacity remains. After every fill or exit, recompute capacity before considering another candidate.
 
 
 
@@ -147,7 +153,7 @@ Track results by setup and time-of-day bucket whenever the repository already ha
 
 ## Exits and reconciliation
 
-Risk-reducing Teststock exits and validated profit-taking are execution instructions for OpenAI executor; OpenAI executor performs the broker action only through Robinhood tools and must obey any broker/tool-required review or confirmation. Before acting, verify the live Robinhood position, attributable quantity, saved Teststock levels, open orders, and whether an equivalent exit is already working. Manage only Teststock-attributable quantity.
+Risk-reducing Teststock exits and validated profit-taking are automatic execution instructions for OpenAI executor. Perform them through Robinhood tools after live reconciliation without an optional interactive preview; any broker-enforced confirmation or restriction still blocks unattended placement. Before acting, verify the live Robinhood position, attributable quantity, saved Teststock levels, open orders, and whether an equivalent exit is already working. Manage only Teststock-attributable quantity.
 
 Treat every submission as idempotent. If a broker response is ambiguous, look up the original order and reconcile it; never blindly submit a replacement. Partial fills use confirmed quantity only. Stops/exits outrank entries.
 
