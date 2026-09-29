@@ -18,6 +18,13 @@ import { fileURLToPath } from 'node:url';
 const ROOT=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const API_URL='https://api.openai.com/v1/responses';
 const LIVE_SENTINEL='I_UNDERSTAND_REAL_ORDERS';
+const READ_TOOLS=[
+  'get_accounts','get_portfolio','get_equity_positions','get_equity_orders','get_equity_quotes',
+  'get_option_positions','get_option_orders','get_option_chains','get_option_instruments','get_option_quotes',
+  'get_advanced_orders'
+];
+const LIVE_WRITE_TOOLS=['place_equity_order','cancel_equity_order','place_option_order','cancel_option_order'];
+const LIVE_TOOLS=[...READ_TOOLS,...LIVE_WRITE_TOOLS];
 
 const INSTRUCTION_FILES=[
   'AGENTS.md',
@@ -71,12 +78,25 @@ function refId(fingerprint){
   b[6]=(b[6]&15)|80;b[8]=(b[8]&63)|128;
   const h=b.toString('hex');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);
 }
-function claim(selected,id){
+function orderRefIds(fingerprint){
+  return{
+    primary:refId(fingerprint),
+    protection:refId(fingerprint+':protection'),
+    replacement:refId(fingerprint+':replacement')
+  };
+}
+function claim(selected,ids){
   const root=process.env.TESTSTOCK_RUNTIME_STATE_DIR||path.join(os.homedir(),'.teststock-runtime');
   const dir=path.join(root,'executor-claims');fs.mkdirSync(dir,{recursive:true,mode:0o700});
   const file=path.join(dir,crypto.createHash('sha256').update(selected.fingerprint).digest('hex')+'.json');
   let fd;try{fd=fs.openSync(file,'wx',0o600);}catch(e){if(e.code==='EEXIST')return null;throw e;}
-  fs.writeFileSync(fd,JSON.stringify({fingerprint:selected.fingerprint,ref_id:id,claimedAt:new Date().toISOString(),state:'CLAIMED_BEFORE_SUBMIT'},null,2));
+  fs.writeFileSync(fd,JSON.stringify({
+    fingerprint:selected.fingerprint,
+    ref_ids:ids,
+    claimedAt:new Date().toISOString(),
+    state:'CLAIMED_BEFORE_SUBMIT',
+    note:'Primary, protection, and one replacement child order are preclaimed for this single dispatch action. Never reuse one ref_id for two distinct orders.'
+  },null,2));
   fs.closeSync(fd);return file;
 }
 function releaseClaim(file){try{if(file)fs.unlinkSync(file);}catch{}}
@@ -91,9 +111,14 @@ async function callResponses({instructions,input,tools,maxOutputTokens=3000,time
 }
 function remoteMcp(readOnly=false){
   const token=mcpToken();if(!token)throw new Error('authentication_error: ROBINHOOD_MCP_OAUTH_TOKEN is not set');
-  const readTools=['get_accounts','get_portfolio','get_equity_positions','get_equity_orders','get_equity_quotes','get_option_positions','get_option_orders','get_option_instruments','get_option_quotes','get_advanced_orders'];
-  const liveTools=[...readTools,'place_equity_order','cancel_equity_order','place_option_order','cancel_option_order'];
-  return{type:'mcp',server_label:config().server_label||'robinhood-trading',server_url:mcpUrl(),authorization:token,allowed_tools:{tool_names:readOnly?readTools:liveTools},require_approval:'never'};
+  return{
+    type:'mcp',
+    server_label:config().server_label||'robinhood-trading',
+    server_url:mcpUrl(),
+    authorization:token,
+    allowed_tools:{tool_names:readOnly?READ_TOOLS:LIVE_TOOLS},
+    require_approval:'never'
+  };
 }
 function instructions(){return INSTRUCTION_FILES.map(f=>'===== '+f+' =====\n'+(readIfExists(f)||'MISSING')).join('\n\n');}
 function packets(){
@@ -117,19 +142,23 @@ async function runMcpProbe(){
 async function runPaper(){
   const dispatch=readJson('docs/data/execution-dispatch.json')||{};
   const selected=selectAction(dispatch);
-  emitSuccess(selected?{mode:'paper',result:'PAPER_ACTION_READY',broker_write:false,fingerprint:selected.fingerprint,ref_id:refId(selected.fingerprint),action:selected.action}:{mode:'paper',result:'NO_ACTION',broker_write:false});
+  emitSuccess(selected?{mode:'paper',result:'PAPER_ACTION_READY',broker_write:false,fingerprint:selected.fingerprint,ref_ids:orderRefIds(selected.fingerprint),action:selected.action}:{mode:'paper',result:'NO_ACTION',broker_write:false});
 }
 async function runLive(){
   if(process.env.TESTSTOCK_LIVE_TRADING!==LIVE_SENTINEL)throw new Error('live trading locked: set TESTSTOCK_LIVE_TRADING='+LIVE_SENTINEL+' yourself; repository defaults never enable it');
   const dispatch=readJson('docs/data/execution-dispatch.json')||{};
   const selected=selectAction(dispatch);
   if(!selected)return emitSuccess({mode:'live',result:'NO_ACTION',broker_write:false});
-  const id=refId(selected.fingerprint),claimFile=claim(selected,id);
+  const ids=orderRefIds(selected.fingerprint),claimFile=claim(selected,ids);
   if(!claimFile)return emitSuccess({mode:'live',result:'NO_ACTION_ALREADY_CLAIMED',broker_write:false,fingerprint:selected.fingerprint});
   const input=[
-    'This invocation has exactly one atomically preclaimed action. Act only on it.',
+    'This invocation has exactly one atomically preclaimed dispatch action. Act only on it.',
     'Preclaimed fingerprint: '+selected.fingerprint,
-    'Required ref_id for any new order: '+id,
+    'Primary broker order ref_id: '+ids.primary,
+    'Protective child order ref_id (use only after a confirmed entry fill when broker-resident protection is required): '+ids.protection,
+    'Single replacement order ref_id (use only after the original working order is conclusively cancelled/rejected and policy still permits repricing): '+ids.replacement,
+    'Never reuse a ref_id for two distinct broker orders. Never create more than one primary, one protection, and one replacement order for this dispatch action.',
+    'The user explicitly authorized unattended automatic buys and sells in the dedicated Agentic account. Skip optional interactive review/preview tools; independently perform all live quote/account/order checks, then place directly when every gate passes. If Robinhood itself requires an interactive confirmation or rejects direct placement, fail closed and return NO_ACTION with the reason.',
     'Do not submit an independent order for another candidate in this invocation.',
     'If any evidence, freshness, admission, account, liquidity, risk, protection, or broker gate fails, return NO_ACTION.',
     'Never use margin, transfers, deposits, withdrawals, option exercise, naked selling, averaging down, or wider stops.',
@@ -145,7 +174,7 @@ async function runLive(){
   const text=extractText(r),calls=mcpCallNames(r);
   const writeAttempt=calls.some(n=>/^place_|^cancel_|^replace_/.test(n));
   if(!writeAttempt&&/\bNO_ACTION\b/i.test(text))releaseClaim(claimFile);
-  emitSuccess({mode:'live',result:text||'COMPLETED',mcp_calls:calls,broker_write_attempted:writeAttempt,fingerprint:selected.fingerprint,ref_id:id,claim_retained:writeAttempt||!/\bNO_ACTION\b/i.test(text),model:r.model,usage:r.usage||null});
+  emitSuccess({mode:'live',result:text||'COMPLETED',mcp_calls:calls,broker_write_attempted:writeAttempt,fingerprint:selected.fingerprint,ref_ids:ids,claim_retained:writeAttempt||!/\bNO_ACTION\b/i.test(text),model:r.model,usage:r.usage||null});
 }
 
 try{
