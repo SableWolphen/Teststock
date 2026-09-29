@@ -153,7 +153,7 @@ Track results by setup and time-of-day bucket whenever the repository already ha
 
 ## Exits and reconciliation
 
-Risk-reducing Teststock exits and validated profit-taking are automatic execution instructions for OpenAI executor. Perform them through Robinhood tools after live reconciliation without an optional interactive preview; any broker-enforced confirmation or restriction still blocks unattended placement. Before acting, verify the live Robinhood position, attributable quantity, saved Teststock levels, open orders, and whether an equivalent exit is already working. Manage only Teststock-attributable quantity.
+Risk-reducing Teststock exits and validated profit-taking are execution instructions for OpenAI executor; under the user's unattended authorization they are automatic when every live gate passes. Perform them through Robinhood tools after live reconciliation without an optional interactive preview; any broker-enforced confirmation or restriction still blocks unattended placement. Before acting, verify the live Robinhood position, attributable quantity, saved Teststock levels, open orders, and whether an equivalent exit is already working. Manage only Teststock-attributable quantity.
 
 Treat every submission as idempotent. If a broker response is ambiguous, look up the original order and reconcile it; never blindly submit a replacement. Partial fills use confirmed quantity only. Stops/exits outrank entries.
 
