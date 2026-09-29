@@ -1,9 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Activity, AlertTriangle, BarChart3, CheckCircle2, ChevronRight, Clock3, Flame,
+  Activity, AlertTriangle, BarChart3, CheckCircle2, ChevronRight, Clock3, Copy, Flame,
   Gauge, History, LineChart, RefreshCw, Rocket, ShieldCheck, Sparkles, Target,
   TrendingUp, WalletCards, Zap
 } from 'lucide-react';
+import optionScan from '../docs/data/small-account-options.json';
+import optionAdmission from '../docs/data/options-profitability-admission.json';
+import signalSnapshot from '../docs/signal.json';
 
 const demo={
   asOf:'Demo — connect Alpaca server keys',market:'DEMO',action:'WATCH',budget:200,mode:'aggressive',
@@ -29,10 +32,13 @@ export default function App(){
   const [loading,setLoading]=useState(false),[error,setError]=useState('');
   const [paper,setPaper]=useState(()=>loadLocal('ts-paper',[]));
   const [account,setAccount]=useState(()=>loadLocal('ts-account',{value:500,monthly:250,goal:1000000}));
+  const [optionBudget,setOptionBudget]=useState(()=>loadLocal('ts-option-budget',25));
+  const [optionNotice,setOptionNotice]=useState('');
   useEffect(()=>localStorage.setItem('ts-budget',JSON.stringify(budget)),[budget]);
   useEffect(()=>localStorage.setItem('ts-mode',JSON.stringify(mode)),[mode]);
   useEffect(()=>localStorage.setItem('ts-paper',JSON.stringify(paper)),[paper]);
   useEffect(()=>localStorage.setItem('ts-account',JSON.stringify(account)),[account]);
+  useEffect(()=>localStorage.setItem('ts-option-budget',JSON.stringify(optionBudget)),[optionBudget]);
 
   const scan=async()=>{
     setLoading(true);setError('');
@@ -52,6 +58,30 @@ export default function App(){
   const closed=paper.filter(x=>x.status==='CLOSED'),wins=closed.filter(x=>x.resultPct>0),avgResult=closed.length?closed.reduce((s,x)=>s+Number(x.resultPct||0),0)/closed.length:0;
   const doubles=account.value>0?Math.ceil(Math.log2(account.goal/account.value)):0;
   const timelines=useMemo(()=>[.08,.15,.25].map(rate=>{let v=account.value,m=0;while(v<account.goal&&m<1200){v=v*(1+rate/12)+account.monthly;m++}return{rate:Math.round(rate*100),years:m/12}}),[account]);
+  const optionPolicy=signalSnapshot?.optionsTradingPolicy||{};
+  const optionRows=useMemo(()=>((optionScan?.candidates)||[])
+    .map(row=>({...row,
+      policyFit:Number(row.dte)>=Number(optionPolicy.minDte||0)
+        &&Number(row.dte)<=Number(optionPolicy.maxDte||999)
+        &&Math.abs(Number(row.delta||0))>=Number(optionPolicy.minDelta||0)
+        &&Math.abs(Number(row.delta||0))<=Number(optionPolicy.maxDelta||1)
+        &&Number(row.spreadPct||999)<=10
+        &&Number(row.oneContractPremiumDollars||Infinity)<=Number(optionBudget||0)
+    }))
+    .filter(row=>Number(row.oneContractPremiumDollars||Infinity)<=Number(optionBudget||0))
+    .slice(0,12),[optionBudget]);
+  const bestOption=optionRows.find(row=>row.policyFit)||optionRows[0]||null;
+  const copyOptionRequest=async row=>{
+    if(!row)return;
+    const cp=row.kind==='LONG_PUT'?'put':'call';
+    const request='Review and buy 1 '+row.underlying+' '+row.expiry+' strike '+row.strike+' '+cp+' in my Robinhood Agentic account only if the live quote, spread, liquidity, buying power, account floor, options admission, duplicate-order check, and every current Teststock gate still pass. Use a marketable limit at or below the live allowed premium. Do not use margin, transfers, naked options, exercise, or carry it overnight. If any gate fails, do not place the order. Contract: '+row.contract+'.';
+    try{
+      await navigator.clipboard.writeText(request);
+      setOptionNotice(row.contract+' buy request copied — paste it into ChatGPT to run the live Robinhood review.');
+    }catch{
+      setOptionNotice(request);
+    }
+  };
 
   return <main className="app-shell">
     <header className="topbar">
@@ -61,6 +91,7 @@ export default function App(){
 
     <nav className="tabs">
       <button className={tab==='today'?'active':''} onClick={()=>setTab('today')}><Zap size={16}/>Today</button>
+      <button className={tab==='options'?'active':''} onClick={()=>setTab('options')}><Rocket size={16}/>Options</button>
       <button className={tab==='paper'?'active':''} onClick={()=>setTab('paper')}><History size={16}/>Paper</button>
       <button className={tab==='plan'?'active':''} onClick={()=>setTab('plan')}><LineChart size={16}/>Road to $1M</button>
     </nav>
@@ -103,6 +134,56 @@ export default function App(){
 
       <section className="protection-card"><div className="section-title"><div><ShieldCheck size={20}/><div><span>AUTO-PROTECTION</span><h2>Reasons the engine can say “no”</h2></div></div></div><div className="protection-grid">{(data.protection||[]).map(x=><span key={x}><CheckCircle2 size={14}/>{x}</span>)}</div></section>
     </>}
+
+
+    {tab==='options'&&<section className="page-card options-page">
+      <div className="section-title">
+        <div><Rocket size={20}/><div><span>OPTIONS QUICK BUY</span><h2>Best affordable contracts, already ranked</h2></div></div>
+        <Pill t={optionAdmission.executionAuthorized?'good':'warn'}>{optionAdmission.executionAuthorized?'LIVE ADMISSION':'RESEARCH ONLY'}</Pill>
+      </div>
+      <div className="option-toolbar">
+        <div>
+          <span>Max premium per contract</span>
+          <strong>{money(optionBudget)}</strong>
+          <small>Filters the scanner before you even open an order review.</small>
+        </div>
+        <div className="option-budget-buttons">
+          {[10,15,20,25,35].map(x=><button key={x} className={Number(optionBudget)===x?'active':''} onClick={()=>setOptionBudget(x)}>${x}</button>)}
+          <input type="number" min="1" step="1" value={optionBudget} onChange={e=>setOptionBudget(Math.max(1,Number(e.target.value)||1))}/>
+        </div>
+      </div>
+
+      <div className="option-admission">
+        <ShieldCheck size={19}/>
+        <div><b>{optionAdmission.executionAuthorized?'Option lane can proceed to live broker checks':'Option lane is still locked by evidence admission'}</b>
+        <p>{optionAdmission.reason}</p></div>
+      </div>
+
+      {bestOption?<div className="best-option-card">
+        <div className="best-option-head">
+          <div><span>BEST AFFORDABLE RIGHT NOW</span><h3>{bestOption.underlying} {bestOption.expiry} ${bestOption.strike}{bestOption.kind==='LONG_PUT'?'P':'C'}</h3><p>{bestOption.contract}</p></div>
+          <div className="option-price"><small>Scanner ask</small><strong>{money(bestOption.ask)}</strong><span>{money(bestOption.oneContractPremiumDollars)} / contract</span></div>
+        </div>
+        <div className="payoff option-payoff"><Stat label="Score" value={bestOption.score}/><Stat label="Delta" value={bestOption.delta}/><Stat label="Spread" value={bestOption.spreadPct+'%'}/><Stat label="DTE" value={bestOption.dte}/></div>
+        <div className="option-actions">
+          <button className="quick-buy-btn" onClick={()=>copyOptionRequest(bestOption)}><Copy size={16}/>Copy exact buy request</button>
+          <span>{bestOption.policyFit?'Fits current contract-shape policy; live broker checks still required.':'Scanner candidate, but current execution policy would block it.'}</span>
+        </div>
+      </div>:<div className="empty"><ShieldCheck size={24}/><b>No contract fits this premium.</b><span>Raise the max premium or wait for the next scan.</span></div>}
+
+      {optionNotice&&<div className="notice"><CheckCircle2 size={18}/>{optionNotice}</div>}
+
+      <div className="options-grid">
+        {optionRows.map((row,i)=><article key={row.contract} className={row.policyFit?'option-row':'option-row blocked'}>
+          <div className="option-row-top"><Pill t={i===0?'good':'neutral'}>#{i+1}</Pill><span>{row.kind==='LONG_PUT'?'PUT':'CALL'}</span><b>{money(row.oneContractPremiumDollars)}</b></div>
+          <h3>{row.underlying} ${row.strike}{row.kind==='LONG_PUT'?'P':'C'}</h3>
+          <p>{row.expiry} · {row.dte} DTE · Δ {row.delta} · spread {row.spreadPct}%</p>
+          <div className="option-row-bottom"><span>score {row.score}</span><button onClick={()=>copyOptionRequest(row)}><Copy size={14}/>Buy request</button></div>
+        </article>)}
+      </div>
+
+      <div className="options-note"><AlertTriangle size={18}/><p>This screen makes contract selection fast, but the website does not hold Robinhood credentials. “Buy request” copies the exact contract into the ChatGPT/Robinhood review flow. Live execution still requires a fresh quote and every Teststock gate; blocked contracts stay blocked.</p></div>
+    </section>}
 
     {tab==='paper'&&<section className="page-card">
       <div className="section-title"><div><BarChart3 size={20}/><div><span>PAPER LAB</span><h2>Prove the scanner before risking real money</h2></div></div></div>
