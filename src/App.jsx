@@ -1,9 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Activity, AlertTriangle, BarChart3, CheckCircle2, ChevronRight, Clock3, Flame,
+  Activity, AlertTriangle, BarChart3, CheckCircle2, ChevronRight, Clock3, Copy, Flame,
   Gauge, History, LineChart, RefreshCw, Rocket, ShieldCheck, Sparkles, Target,
   TrendingUp, WalletCards, Zap
 } from 'lucide-react';
+import optionScan from '../docs/data/small-account-options.json';
+import optionAdmission from '../docs/data/options-profitability-admission.json';
+import signalSnapshot from '../docs/signal.json';
 
 const demo={
   asOf:'Demo — connect Alpaca server keys',market:'DEMO',action:'WATCH',budget:200,mode:'aggressive',
@@ -29,10 +32,13 @@ export default function App(){
   const [loading,setLoading]=useState(false),[error,setError]=useState('');
   const [paper,setPaper]=useState(()=>loadLocal('ts-paper',[]));
   const [account,setAccount]=useState(()=>loadLocal('ts-account',{value:500,monthly:250,goal:1000000}));
+  const [optionBudget,setOptionBudget]=useState(()=>loadLocal('ts-option-budget',25));
+  const [optionNotice,setOptionNotice]=useState('');
   useEffect(()=>localStorage.setItem('ts-budget',JSON.stringify(budget)),[budget]);
   useEffect(()=>localStorage.setItem('ts-mode',JSON.stringify(mode)),[mode]);
   useEffect(()=>localStorage.setItem('ts-paper',JSON.stringify(paper)),[paper]);
   useEffect(()=>localStorage.setItem('ts-account',JSON.stringify(account)),[account]);
+  useEffect(()=>localStorage.setItem('ts-option-budget',JSON.stringify(optionBudget)),[optionBudget]);
 
   const scan=async()=>{
     setLoading(true);setError('');
@@ -52,6 +58,147 @@ export default function App(){
   const closed=paper.filter(x=>x.status==='CLOSED'),wins=closed.filter(x=>x.resultPct>0),avgResult=closed.length?closed.reduce((s,x)=>s+Number(x.resultPct||0),0)/closed.length:0;
   const doubles=account.value>0?Math.ceil(Math.log2(account.goal/account.value)):0;
   const timelines=useMemo(()=>[.08,.15,.25].map(rate=>{let v=account.value,m=0;while(v<account.goal&&m<1200){v=v*(1+rate/12)+account.monthly;m++}return{rate:Math.round(rate*100),years:m/12}}),[account]);
+  const optionPolicy=signalSnapshot?.optionsTradingPolicy||{};
+  const optionRows=useMemo(()=>((optionScan?.candidates)||[])
+    .map(row=>({...row,
+      policyFit:Number(row.dte)>=Number(optionPolicy.minDte||0)
+        &&Number(row.dte)<=Number(optionPolicy.maxDte||999)
+        &&Math.abs(Number(row.delta||0))>=Number(optionPolicy.minDelta||0)
+        &&Math.abs(Number(row.delta||0))<=Number(optionPolicy.maxDelta||1)
+        &&Number(row.spreadPct||999)<=10
+        &&Number(row.oneContractPremiumDollars||Infinity)<=Number(optionBudget||0)
+    }))
+    .filter(row=>Number(row.oneContractPremiumDollars||Infinity)<=Number(optionBudget||0))
+    .slice(0,12),[optionBudget]);
+  const bestOption=optionRows.find(row=>row.policyFit)||optionRows[0]||null;
+  const copyOptionRequest=async row=>{
+    if(!row)return;
+    const cp=row.kind==='LONG_PUT'?'put':'call';
+    const request='Review and buy 1 '+row.underlying+' '+row.expiry+' 
+
+  return <main className="app-shell">
+    <header className="topbar">
+      <div><div className="eyebrow"><Sparkles size={14}/> TESTSTOCK</div><h1>One decision. No clutter.</h1><p>Rank the stock, compare the option structures, or tell you to keep your cash when the edge is not there.</p></div>
+      <button className="refresh" onClick={scan} disabled={loading}><RefreshCw size={18} className={loading?'spin':''}/>{loading?'Scanning…':'Scan now'}</button>
+    </header>
+
+    <nav className="tabs">
+      <button className={tab==='today'?'active':''} onClick={()=>setTab('today')}><Zap size={16}/>Today</button>
+      <button className={tab==='options'?'active':''} onClick={()=>setTab('options')}><Rocket size={16}/>Options</button>
+      <button className={tab==='paper'?'active':''} onClick={()=>setTab('paper')}><History size={16}/>Paper</button>
+      <button className={tab==='plan'?'active':''} onClick={()=>setTab('plan')}><LineChart size={16}/>Road to $1M</button>
+    </nav>
+
+    {tab==='today'&&<>
+      <section className="controls">
+        <div className="budget-control"><WalletCards size={18}/><div><span>Max loss on one idea</span><small>The app may use less, never more.</small></div><div className="budget-pills">{[50,100,200,500].map(x=><button key={x} className={budget===x?'active':''} onClick={()=>setBudget(x)}>${x}</button>)}<input value={budget} onChange={e=>setBudget(Math.max(25,Number(e.target.value)||25))}/></div></div>
+        <div className="mode-control"><span>Risk style</span><div><button className={mode==='aggressive'?'active':''} onClick={()=>setMode('aggressive')}>Aggressive</button><button className={mode==='balanced'?'active':''} onClick={()=>setMode('balanced')}>Balanced</button></div></div>
+      </section>
+      <div className="status-line"><span className={`status-dot ${data.regime?.label==='RISK OFF'?'red':''}`}/><b>{data.market}</b><span>{data.regime?.label} · regime {data.regime?.score}/100</span><span>{data.dataQuality?.optionsFeed||'—'} options</span><small>{data.asOf}</small></div>
+      {error&&<div className="notice"><AlertTriangle size={18}/>{error}</div>}
+
+      <section className={`decision-card decision-${tone(action)}`}>
+        <div className="decision-head"><div><Pill t={tone(action)}><Flame size={13}/>{action}</Pill> <Pill t={p.direction==='BULLISH'?'good':'warn'}>{p.direction}</Pill><div className="ticker"><strong>{p.symbol}</strong><span>{money(p.price)}</span></div><p>{p.setup}</p></div><div className="score"><small>SETUP</small><b>{p.score}</b><span>{p.grade}</span></div></div>
+        <div className="do-this"><Target size={22}/><div><span>DO THIS</span><strong>{p.instruction}</strong></div></div>
+        <div className="levels"><Stat label="Trigger" value={money(p.entry)}/><Stat label="Invalid beyond" value={money(p.stop)}/><Stat label="Target 1" value={money(p.target1)}/><Stat label="Stretch target" value={money(p.target2)}/></div>
+        <div className="signals">{(p.reasons||[]).map(x=><div key={x}><CheckCircle2 size={15}/>{x}</div>)}{(p.warnings||[]).map(x=><div className="warning" key={x}><AlertTriangle size={15}/>{x}</div>)}</div>
+      </section>
+
+      <section className="regime-card"><div><Activity size={20}/><span>MARKET GATE</span><strong>{data.regime?.label}</strong></div><p>{data.regime?.detail}</p><Pill t={data.regime?.label==='RISK ON'?'good':data.regime?.label==='RISK OFF'?'bad':'warn'}>{data.regime?.tradeGate}</Pill></section>
+
+      <section className="option-card">
+        <div className="section-title"><div><Rocket size={20}/><div><span>BEST QUALIFIED STRUCTURE</span><h2>{o?o.kind:'No option passed'}</h2></div></div>{o&&<Pill t={fits?'good':'bad'}>{o.dte} DTE · Q{o.qualityScore}</Pill>}</div>
+        {o?<>
+          {o.structure==='LONG'?<div className="ticket"><div><small>BUY</small><b>{p.symbol} {o.expiry} ${o.longStrike}{optionLetter}</b></div></div>:<div className="ticket"><div><small>BUY</small><b>{p.symbol} {o.expiry} ${o.longStrike}{optionLetter}</b></div><ChevronRight/><div><small>SELL</small><b>{p.symbol} {o.expiry} ${o.shortStrike}{optionLetter}</b></div></div>}
+          <div className="payoff"><Stat label="Max loss" value={money(o.maxRisk)} sub="Defined risk"/><Stat label="Max profit" value={o.maxProfit==null?'Open-ended':money(o.maxProfit)}/><Stat label="Model P(profit)" value={`${o.probProfit||0}%`} sub="Approximation, not a guarantee"/><Stat label="Breakeven" value={money(o.breakeven)}/></div>
+          <div className="greeks"><span>Δ {o.delta}</span><span>IV {Math.round(o.iv*100)}%</span><span>θ {o.theta}/day</span><span>Spread {o.spreadPct}%</span><span>Expected move {money(o.expectedMove)}</span><span>Liquidity {o.liquidityScore}/100</span></div>
+          <div className="exit-plan"><div><Clock3 size={16}/><b>Exit plan</b></div><p>{p.exitPlan?.optionTakeProfit}. {p.exitPlan?.timeStop}</p></div>
+          <button className="paper-btn" disabled={action!=='TRADE CANDIDATE'} onClick={logPaper}>{action==='TRADE CANDIDATE'?'Paper-track this setup':'Not qualified to paper-track yet'}</button>
+        </>:<div className="empty"><ShieldCheck size={24}/><b>Keep the money.</b><span>The option chain failed one or more safety/quality filters.</span></div>}
+      </section>
+
+      <section className="news-card"><div className="section-title"><div><BarChart3 size={20}/><div><span>HISTORICAL CHECK</span><h2>{p.validation?.samples||0} similar stock signals</h2></div></div></div><div className="payoff"><Stat label="Win rate" value={p.validation?.winRate==null?'—':`${p.validation.winRate}%`}/><Stat label="Avg 20-day move" value={p.validation?.avgMove==null?'—':`${p.validation.avgMove}%`}/><Stat label="Contracts scanned" value={p.contractsScanned||0}/><Stat label="Options feed" value={data.dataQuality?.optionsFeed||'—'} sub={data.dataQuality?.optionsOfficial?'Official consolidated':'Indicative / modified'}/></div><p className="muted">Historical validation is on the underlying stock signal, not a promise that the option trade will repeat that result.</p></section>
+
+      <section className="news-card"><div className="section-title"><div><Gauge size={20}/><div><span>CATALYST CHECK</span><h2>Recent news risk: {p.news?.risk||'UNKNOWN'}</h2></div></div></div>{p.news?.headlines?.length?<div className="headlines">{p.news.headlines.map(h=><p key={h}>{h}</p>)}</div>:<p className="muted">No recent headlines surfaced in the scanner response.</p>}</section>
+
+      {p.alternatives?.length>0&&<section className="next-card"><div className="section-title"><div><Rocket size={20}/><div><span>STRUCTURE RUNNER-UPS</span><h2>What the engine rejected in favor of #1</h2></div></div></div><div className="watch-grid">{p.alternatives.map((a,i)=><article key={`${a.kind}-${a.expiry}-${a.longStrike}-${a.shortStrike||i}`}><div><Pill t="neutral">#{i+2}</Pill><b>Q{a.qualityScore}</b></div><h3>{a.kind}</h3><p>{a.expiry} · {a.dte} DTE · P(profit) {a.probProfit}%</p><footer><span>Risk {money(a.maxRisk)}</span><strong>{a.returnOnRisk?`${a.returnOnRisk}% max ROR`:'Open upside'}</strong></footer></article>)}</div></section>}
+
+      <section className="next-card"><div className="section-title"><div><TrendingUp size={20}/><div><span>NEXT BEST STOCKS</span><h2>Only the strongest backups</h2></div></div></div><div className="watch-grid">{(data.cards||[]).map(c=><article key={c.symbol}><div><Pill t={c.hasOption?'good':'neutral'}>{c.label}</Pill><b>{c.score}</b></div><h3>{c.symbol} <small>{c.direction}</small></h3><p>{c.tag}</p><footer><span>{money(c.price)}</span><strong>{c.risk} risk</strong></footer></article>)}</div></section>
+
+      <section className="protection-card"><div className="section-title"><div><ShieldCheck size={20}/><div><span>AUTO-PROTECTION</span><h2>Reasons the engine can say “no”</h2></div></div></div><div className="protection-grid">{(data.protection||[]).map(x=><span key={x}><CheckCircle2 size={14}/>{x}</span>)}</div></section>
+    </>}
+
+
+    {tab==='options'&&<section className="page-card options-page">
+      <div className="section-title">
+        <div><Rocket size={20}/><div><span>OPTIONS QUICK BUY</span><h2>Best affordable contracts, already ranked</h2></div></div>
+        <Pill t={optionAdmission.executionAuthorized?'good':'warn'}>{optionAdmission.executionAuthorized?'LIVE ADMISSION':'RESEARCH ONLY'}</Pill>
+      </div>
+      <div className="option-toolbar">
+        <div>
+          <span>Max premium per contract</span>
+          <strong>{money(optionBudget)}</strong>
+          <small>Filters the scanner before you even open an order review.</small>
+        </div>
+        <div className="option-budget-buttons">
+          {[10,15,20,25,35].map(x=><button key={x} className={Number(optionBudget)===x?'active':''} onClick={()=>setOptionBudget(x)}>${x}</button>)}
+          <input type="number" min="1" step="1" value={optionBudget} onChange={e=>setOptionBudget(Math.max(1,Number(e.target.value)||1))}/>
+        </div>
+      </div>
+
+      <div className="option-admission">
+        <ShieldCheck size={19}/>
+        <div><b>{optionAdmission.executionAuthorized?'Option lane can proceed to live broker checks':'Option lane is still locked by evidence admission'}</b>
+        <p>{optionAdmission.reason}</p></div>
+      </div>
+
+      {bestOption?<div className="best-option-card">
+        <div className="best-option-head">
+          <div><span>BEST AFFORDABLE RIGHT NOW</span><h3>{bestOption.underlying} {bestOption.expiry} ${bestOption.strike}{bestOption.kind==='LONG_PUT'?'P':'C'}</h3><p>{bestOption.contract}</p></div>
+          <div className="option-price"><small>Scanner ask</small><strong>{money(bestOption.ask)}</strong><span>{money(bestOption.oneContractPremiumDollars)} / contract</span></div>
+        </div>
+        <div className="payoff option-payoff"><Stat label="Score" value={bestOption.score}/><Stat label="Delta" value={bestOption.delta}/><Stat label="Spread" value={bestOption.spreadPct+'%'}/><Stat label="DTE" value={bestOption.dte}/></div>
+        <div className="option-actions">
+          <button className="quick-buy-btn" onClick={()=>copyOptionRequest(bestOption)}><Copy size={16}/>Copy exact buy request</button>
+          <span>{bestOption.policyFit?'Fits current contract-shape policy; live broker checks still required.':'Scanner candidate, but current execution policy would block it.'}</span>
+        </div>
+      </div>:<div className="empty"><ShieldCheck size={24}/><b>No contract fits this premium.</b><span>Raise the max premium or wait for the next scan.</span></div>}
+
+      {optionNotice&&<div className="notice"><CheckCircle2 size={18}/>{optionNotice}</div>}
+
+      <div className="options-grid">
+        {optionRows.map((row,i)=><article key={row.contract} className={row.policyFit?'option-row':'option-row blocked'}>
+          <div className="option-row-top"><Pill t={i===0?'good':'neutral'}>#{i+1}</Pill><span>{row.kind==='LONG_PUT'?'PUT':'CALL'}</span><b>{money(row.oneContractPremiumDollars)}</b></div>
+          <h3>{row.underlying} ${row.strike}{row.kind==='LONG_PUT'?'P':'C'}</h3>
+          <p>{row.expiry} · {row.dte} DTE · Δ {row.delta} · spread {row.spreadPct}%</p>
+          <div className="option-row-bottom"><span>score {row.score}</span><button onClick={()=>copyOptionRequest(row)}><Copy size={14}/>Buy request</button></div>
+        </article>)}
+      </div>
+
+      <div className="options-note"><AlertTriangle size={18}/><p>This screen makes contract selection fast, but the website does not hold Robinhood credentials. “Buy request” copies the exact contract into the ChatGPT/Robinhood review flow. Live execution still requires a fresh quote and every Teststock gate; blocked contracts stay blocked.</p></div>
+    </section>}
+
+    {tab==='paper'&&<section className="page-card">
+      <div className="section-title"><div><BarChart3 size={20}/><div><span>PAPER LAB</span><h2>Prove the scanner before risking real money</h2></div></div></div>
+      <div className="paper-stats"><Stat label="Tracked" value={paper.length}/><Stat label="Closed" value={closed.length}/><Stat label="Win rate" value={closed.length?`${Math.round(wins.length/closed.length*100)}%`:'—'}/><Stat label="Avg result" value={closed.length?`${avgResult.toFixed(1)}%`:'—'}/></div>
+      {!paper.length?<div className="empty"><History size={24}/><b>No paper setups yet.</b><span>A qualified Today setup can be added with one tap.</span></div>:<div className="paper-list">{paper.map(x=><article key={x.id}><div><b>{x.symbol} · {x.direction||x.option?.side}</b><span>{x.option.kind} · {x.option.longStrike}{x.option.side==='PUT'?'P':'C'}{x.option.shortStrike?` / ${x.option.shortStrike}${x.option.side==='PUT'?'P':'C'}`:''} · {x.option.expiry}</span></div><Pill t={x.status==='OPEN'?'warn':x.resultPct>0?'good':'bad'}>{x.status==='OPEN'?'OPEN':`${x.resultPct}%`}</Pill>{x.status==='OPEN'&&<div className="result-buttons"><button onClick={()=>closePaper(x.id,50)}>+50%</button><button onClick={()=>closePaper(x.id,100)}>+100%</button><button onClick={()=>closePaper(x.id,-50)}>-50%</button><button onClick={()=>closePaper(x.id,-100)}>-100%</button></div>}</article>)}</div>}
+    </section>}
+
+    {tab==='plan'&&<section className="page-card">
+      <div className="section-title"><div><LineChart size={20}/><div><span>ROAD TO $1M</span><h2>Speed matters. Survival matters more.</h2></div></div></div>
+      <div className="plan-inputs"><label>Current investable amount<input type="number" value={account.value} onChange={e=>setAccount({...account,value:Math.max(0,Number(e.target.value))})}/></label><label>Monthly contribution<input type="number" value={account.monthly} onChange={e=>setAccount({...account,monthly:Math.max(0,Number(e.target.value))})}/></label></div>
+      <div className="goal-hero"><span>Perfect doublings from here</span><strong>{doubles}</strong><small>Useful math, not a realistic forecast of consecutive wins.</small></div>
+      <div className="scenario-grid">{timelines.map(x=><div key={x.rate}><span>{x.rate}% annualized scenario</span><strong>{x.years>=100?'100+ yrs':`${x.years.toFixed(1)} yrs`}</strong><small>with {money(account.monthly)}/mo contributions</small></div>)}</div>
+      <div className="wealth-rule"><ShieldCheck size={22}/><div><b>Teststock’s actual job</b><p>Find asymmetric opportunities while preventing one bad trade from destroying the compounding engine. There is no reliable cheap shortcut to $1M.</p></div></div>
+    </section>}
+
+    <footer className="disclaimer">Screening and paper-tracking tool only. Options can lose the full amount at risk. Probability estimates are models, not guarantees. Live quotes may be indicative or delayed depending on your Alpaca plan.</footer>
+  </main>
+}
++row.strike+' '+cp+' in my Robinhood Agentic account only if the live quote, spread, liquidity, buying power, account floor, options admission, duplicate-order check, and every current Teststock gate still pass. Use a marketable limit at or below the live allowed premium. Do not use margin, transfers, naked options, exercise, or carry it overnight. If any gate fails, do not place the order. Contract: '+row.contract+'.';
+    try{await navigator.clipboard.writeText(request);setOptionNotice(row.contract+' buy request copied — paste it into ChatGPT to run the live Robinhood review.')}
+    catch{setOptionNotice(request)}
+  };
 
   return <main className="app-shell">
     <header className="topbar">
