@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {evaluateOptionsSeedLaneCandidate} from './options-monitor-candidates.mjs';
 
-const seedPolicy={enabled:true,maxOrderUsd:15,maxConcurrentPositions:1,maxNewPositionsPerUtcWeek:1,requiredAdmissionStates:['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'],requiredDteBucket:'STANDARD',allowedUnderlyingTypes:['STOCK','INDEX_ETF'],kind:'LONG_CALL_OR_LONG_PUT',allowedKinds:['LONG_CALL','LONG_PUT'],targetMultiplier:2,stopMultiplier:0.6,breakEvenArmMultiplier:1.2,firstLockArmMultiplier:1.35,firstLockFloorMultiplier:1.15,trailArmMultiplier:1.5,trailFraction:.8,mustBeFlatBeforeMarketClose:true,forcedExitMinutesBeforeClose:10,resetGateAfterLiveLoss:true};
+const seedPolicy={enabled:true,maxOrderUsd:15,maxConcurrentPositions:1,maxNewPositionsPerUtcWeek:1,requiredAdmissionStates:['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'],requiredDteBucket:'STANDARD_OR_WEEKLY',allowedDteBuckets:['STANDARD','WEEKLY'],allowedUnderlyingTypes:['STOCK','INDEX_ETF'],kind:'LONG_CALL_OR_LONG_PUT',allowedKinds:['LONG_CALL','LONG_PUT'],targetMultiplier:2,stopMultiplier:0.6,breakEvenArmMultiplier:1.2,firstLockArmMultiplier:1.35,firstLockFloorMultiplier:1.15,trailArmMultiplier:1.5,trailFraction:.8,mustBeFlatBeforeMarketClose:true,forcedExitMinutesBeforeClose:10,resetGateAfterLiveLoss:true};
 const goodCandidate={underlying:'SPY',underlyingType:'INDEX_ETF',kind:'LONG_CALL',dteBucket:'STANDARD',oneContractPremiumDollars:12};
 
 test('SHADOW_ONLY with zero evidence blocks every candidate, however good it looks',()=>{
@@ -21,11 +21,13 @@ test('LIVE_SUSPENDED never qualifies regardless of everything else',()=>{
   assert.equal(state.status,'BLOCKED_ADMISSION');
 });
 
-test('0DTE and WEEKLY are never eligible, even at full admission',()=>{
+test('0DTE stays blocked while WEEKLY and STANDARD can qualify',()=>{
   const zeroDte=evaluateOptionsSeedLaneCandidate({candidate:{...goodCandidate,dteBucket:'0DTE'},admission:{state:'LIVE_ADMITTED'},seedPolicy});
   assert.equal(zeroDte.status,'BLOCKED_DTE_NOT_STANDARD');
   const weekly=evaluateOptionsSeedLaneCandidate({candidate:{...goodCandidate,dteBucket:'WEEKLY'},admission:{state:'LIVE_ADMITTED'},seedPolicy});
-  assert.equal(weekly.status,'BLOCKED_DTE_NOT_STANDARD');
+  assert.equal(weekly.status,'OPTION_SEED_LANE_BUY_TRIGGER');
+  const standard=evaluateOptionsSeedLaneCandidate({candidate:{...goodCandidate,dteBucket:'STANDARD'},admission:{state:'LIVE_ADMITTED'},seedPolicy});
+  assert.equal(standard.status,'OPTION_SEED_LANE_BUY_TRIGGER');
 });
 
 test('qualified stock options are eligible for the live lane',()=>{
