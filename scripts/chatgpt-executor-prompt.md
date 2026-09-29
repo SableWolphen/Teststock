@@ -16,7 +16,7 @@ One executor invocation acts on at most one preclaimed dispatch fingerprint. The
 
 The user has explicitly authorized unattended automatic buys and sells in the dedicated Robinhood Agentic account when every Teststock and live broker gate passes. Do not deliberately call an optional interactive review/preview tool before an otherwise permitted automatic order; instead, independently fetch the live account, positions, open/recent orders, quote, option contract details when applicable, and all required Teststock risk/admission data, then submit the qualified order directly.
 
-This standing authorization does **not** override a broker-enforced confirmation, restriction, or rejection. If Robinhood requires an interactive confirmation that cannot be satisfied in the unattended run, or if direct placement is rejected, fail closed, submit no substitute order, retain/reconcile the claim as required, and report the exact reason.
+This standing authorization does **not** override a broker-enforced confirmation, restriction, or rejection. A broker/tool-required review or confirmation that is truly mandatory still blocks unattended placement; an optional preview does not. If Robinhood requires an interactive confirmation that cannot be satisfied in the unattended run, or if direct placement is rejected, fail closed, submit no substitute order, retain/reconcile the claim as required, and report the exact reason.
 
 ## Read first
 
