@@ -1,18 +1,16 @@
 {
   "schemaVersion": 4,
   "source": "TESTSTOCK_EVENT_DISPATCH",
-  "generatedAt": "2026-09-30T22:57:10.355Z",
+  "generatedAt": "2026-09-30T23:15:53.795Z",
   "boardPublishedAt": "2026-09-30T22:57:09.369Z",
-  "boardAgeMs": 986,
+  "boardAgeMs": 1124426,
   "maximumBoardAgeMs": 900000,
   "monitorHealth": "OK",
-  "dispatchHealth": "OK",
-  "chatgptShouldRun": true,
+  "dispatchHealth": "FAIL_CLOSED_STALE_OR_UNHEALTHY_BOARD",
+  "chatgptShouldRun": false,
   "chatgptShouldPollMarket": false,
-  "executionNeeded": true,
-  "dispatchFingerprints": [
-    "POSITION:STOCK:CBRS|TRIGGER_1_STOP|2026-09-30T16:33:18.857Z|2026-09-30T22:57:09.369Z"
-  ],
+  "executionNeeded": false,
+  "dispatchFingerprints": [],
   "priorityOrder": [
     "TRIGGER_1_STOP",
     "STOCK_DAY_TRADE_FORCED_EXIT",
@@ -24,30 +22,7 @@
     "SEED_LANE_BUY_TRIGGER",
     "STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER"
   ],
-  "pendingAction": {
-    "fingerprint": "POSITION:STOCK:CBRS|TRIGGER_1_STOP|2026-09-30T16:33:18.857Z|2026-09-30T22:57:09.369Z",
-    "isNew": true,
-    "isActionable": true,
-    "priority": 100,
-    "assetClass": "STOCK",
-    "ticker": "CBRS",
-    "trigger": "TRIGGER_1_STOP",
-    "entryTier": null,
-    "entryTierLabel": null,
-    "entryTierSizeMultiplier": null,
-    "queueRank": 0,
-    "queueRole": null,
-    "profitabilityAdmission": null,
-    "decisionIntelligenceEligible": null,
-    "requestedAction": "VERIFY_POSITION_AND_SELL_STOP",
-    "observedPrice": 179.44,
-    "triggerStateChangedAt": "2026-09-30T16:33:18.857Z",
-    "freshnessAnchor": "2026-09-30T16:33:18.857Z",
-    "triggerAgeMs": 23031498,
-    "expiresAt": null,
-    "reason": "Saved stop/invalidation reached. ChatGPT should verify the live position and execute the supported sell immediately when permitted.",
-    "packet": "CBRS | TRIGGER_1_STOP | observed 179.44 | VERIFY_POSITION_AND_SELL_STOP"
-  },
+  "pendingAction": null,
   "automaticStockCandidates": [],
   "approvalCandidates": [],
   "approvalBatchId": null,
@@ -79,7 +54,16 @@
     "oneWinnerDoesNotBlockOtherQualifiedStocks": true,
     "rule": "Expose every already-qualified current-generation stock candidate in rank order. ChatGPT may execute as many as remain independently qualified after immediate broker rechecks and dynamic cash, portfolio-heat, correlation, account-floor and aggregate-stop-risk limits. Never force a trade."
   },
-  "queuedActions": [],
+  "queuedActions": [
+    {
+      "ticker": "CBRS",
+      "trigger": "TRIGGER_1_STOP",
+      "fingerprint": "POSITION:STOCK:CBRS|TRIGGER_1_STOP|2026-09-30T16:33:18.857Z|2026-09-30T22:57:09.369Z",
+      "isFresh": true,
+      "sessionAllowed": true,
+      "freshnessAnchor": "2026-09-30T16:33:18.857Z"
+    }
+  ],
   "noActionInstruction": "If chatgptShouldRun is false, stop immediately. Do not call Robinhood, research markets, or produce a long report.",
   "actionInstruction": "For every current trigger, including optionCandidates when present, reconcile Robinhood positions, open orders and recent order history before submission. Exit events always take priority and block every new buy for the run. Stock entries require authoritative regular-session status and at least 20 minutes to close both here and again at the broker-time recheck. For BUY_TRIGGER dispatches, process automaticStockCandidates in rank order without requesting user approval. Recheck each candidate independently immediately before submission; after every confirmed fill recompute cash, account floor, deployed capital, planned stop risk, correlation, portfolio heat, protection capability and broker/account restrictions. Skip any candidate that no longer qualifies. Seed-lane candidates remain automatic only within their encoded caps and protection requirements. A previously published fingerprint is not proof of execution. Reconcile ambiguous or partial results by original/client order ID and never blindly retry an uncertain submission.",
   "consumerContract": {
