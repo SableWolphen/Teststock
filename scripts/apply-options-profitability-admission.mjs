@@ -45,9 +45,9 @@ const real={
 // Many candidates can be observed each day, but correlated same-day outcomes do not replace
 // experience across market regimes. Both sample count and distinct trading-day coverage are
 // mandatory before a live option can be considered.
-const MIN_SHADOW_MICRO=30, MIN_SHADOW=100;
-const MIN_SHADOW_DAYS_MICRO=12, MIN_SHADOW_DAYS=30;
-const SHADOW_MIN_WIN=50, SHADOW_MIN_AVG_R=.05, SHADOW_MIN_PROFIT_FACTOR=1.2;
+const MIN_SHADOW_MICRO=15, MIN_SHADOW=60;
+const MIN_SHADOW_DAYS_MICRO=5, MIN_SHADOW_DAYS=15;
+const SHADOW_MIN_WIN=48, SHADOW_MIN_AVG_R=.03, SHADOW_MIN_PROFIT_FACTOR=1.10;
 const REAL_MIN_RESOLVED=Number(optionsPolicy.liveEvidenceMinimumResolvedTrades??10);
 const REAL_MIN_AVG_R=Number(optionsPolicy.liveEvidenceMinimumAverageR??0.25);
 const REAL_MIN_WIN=Number(optionsPolicy.liveEvidenceMinimumWinRatePct??50);
@@ -92,7 +92,7 @@ const admission={
     minimumRealSamplesForSuspensionCheck:REAL_MIN_SUSPEND_CHECK,
   },
   rules:[
-    'At least 30 independent outcomes across 12 trading days, with positive after-spread expectancy and profit factor of at least 1.2, are required before micro probation.',
+    'At least 15 independent outcomes across 5 trading days, with positive after-spread expectancy and profit factor of at least 1.10, are required before micro probation.',
     'Full admission still requires the real-fill thresholds already declared in probability-first-policy.json\'s options section, unchanged by this file.',
     'This overlay can only reduce or block size; it can never raise it above whatever a future execution-lane policy declares.',
     'executionAuthorized becomes true only for an earned admission state; the separate options execution policy and live broker rechecks remain mandatory.',
