@@ -50,7 +50,8 @@ function readIfExists(rel){try{return fs.readFileSync(path.join(ROOT,rel),'utf8'
 function readJson(rel){const v=readIfExists(rel);return v?JSON.parse(v):null;}
 function config(){return readJson('.openai-mcp.json')||{};}
 function executionMode(){
-  const v=String(process.env.TESTSTOCK_EXECUTION_MODE||'paper').trim().toLowerCase();
+  const configuredDefault=String(config().default_execution_mode||'paper').trim().toLowerCase();
+  const v=String(process.env.TESTSTOCK_EXECUTION_MODE||configuredDefault).trim().toLowerCase();
   if(!['paper','live'].includes(v)) throw new Error('TESTSTOCK_EXECUTION_MODE must be paper or live');
   return v;
 }
@@ -139,18 +140,19 @@ async function runMcpProbe(){
   });
   emitSuccess({mode:'mcp-probe',result:extractText(r),mcp_calls:mcpCallNames(r),model:r.model});
 }
+function runtimeStatus(mode){return{mode,liveSentinelPresent:process.env.TESTSTOCK_LIVE_TRADING===LIVE_SENTINEL,mcpTokenPresent:Boolean(mcpToken()),apiKeyPresent:Boolean(process.env.OPENAI_API_KEY)};}
 async function runPaper(){
   const dispatch=readJson('docs/data/execution-dispatch.json')||{};
   const selected=selectAction(dispatch);
-  emitSuccess(selected?{mode:'paper',result:'PAPER_ACTION_READY',broker_write:false,fingerprint:selected.fingerprint,ref_ids:orderRefIds(selected.fingerprint),action:selected.action}:{mode:'paper',result:'NO_ACTION',broker_write:false});
+  emitSuccess(selected?{...runtimeStatus('paper'),result:'PAPER_ACTION_READY',broker_write:false,fingerprint:selected.fingerprint,ref_ids:orderRefIds(selected.fingerprint),action:selected.action}:{...runtimeStatus('paper'),result:'NO_ACTION',broker_write:false});
 }
 async function runLive(){
   if(process.env.TESTSTOCK_LIVE_TRADING!==LIVE_SENTINEL)throw new Error('live trading locked: set TESTSTOCK_LIVE_TRADING='+LIVE_SENTINEL+' yourself; repository defaults never enable it');
   const dispatch=readJson('docs/data/execution-dispatch.json')||{};
   const selected=selectAction(dispatch);
-  if(!selected)return emitSuccess({mode:'live',result:'NO_ACTION',broker_write:false});
+  if(!selected)return emitSuccess({...runtimeStatus('live'),result:'NO_ACTION',broker_write:false});
   const ids=orderRefIds(selected.fingerprint),claimFile=claim(selected,ids);
-  if(!claimFile)return emitSuccess({mode:'live',result:'NO_ACTION_ALREADY_CLAIMED',broker_write:false,fingerprint:selected.fingerprint});
+  if(!claimFile)return emitSuccess({...runtimeStatus('live'),result:'NO_ACTION_ALREADY_CLAIMED',broker_write:false,fingerprint:selected.fingerprint});
   const input=[
     'This invocation has exactly one atomically preclaimed dispatch action. Act only on it.',
     'Preclaimed fingerprint: '+selected.fingerprint,
@@ -174,7 +176,7 @@ async function runLive(){
   const text=extractText(r),calls=mcpCallNames(r);
   const writeAttempt=calls.some(n=>/^place_|^cancel_|^replace_/.test(n));
   if(!writeAttempt&&/\bNO_ACTION\b/i.test(text))releaseClaim(claimFile);
-  emitSuccess({mode:'live',result:text||'COMPLETED',mcp_calls:calls,broker_write_attempted:writeAttempt,fingerprint:selected.fingerprint,ref_ids:ids,claim_retained:writeAttempt||!/\bNO_ACTION\b/i.test(text),model:r.model,usage:r.usage||null});
+  emitSuccess({...runtimeStatus('live'),result:text||'COMPLETED',mcp_calls:calls,broker_write_attempted:writeAttempt,fingerprint:selected.fingerprint,ref_ids:ids,claim_retained:writeAttempt||!/\bNO_ACTION\b/i.test(text),model:r.model,usage:r.usage||null});
 }
 
 try{
