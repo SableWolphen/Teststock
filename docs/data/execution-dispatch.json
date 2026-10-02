@@ -1,16 +1,19 @@
 {
   "schemaVersion": 4,
   "source": "TESTSTOCK_EVENT_DISPATCH",
-  "generatedAt": "2026-10-02T06:51:33.847Z",
-  "boardPublishedAt": "2026-10-02T06:32:59.092Z",
-  "boardAgeMs": 1114755,
+  "generatedAt": "2026-10-02T07:10:23.049Z",
+  "boardPublishedAt": "2026-10-02T07:10:21.962Z",
+  "boardAgeMs": 1087,
   "maximumBoardAgeMs": 900000,
   "monitorHealth": "OK",
-  "dispatchHealth": "FAIL_CLOSED_STALE_OR_UNHEALTHY_BOARD",
-  "chatgptShouldRun": false,
+  "dispatchHealth": "OK",
+  "chatgptShouldRun": true,
   "chatgptShouldPollMarket": false,
-  "executionNeeded": false,
-  "dispatchFingerprints": [],
+  "executionNeeded": true,
+  "dispatchFingerprints": [
+    "POSITION:STOCK:CBRS|TRIGGER_1_STOP|2026-10-01T13:45:54.671Z|2026-10-02T07:10:21.962Z",
+    "POSITION:STOCK:EQX|TRIGGER_1_STOP|2026-10-01T19:34:53.182Z|2026-10-02T07:10:21.962Z"
+  ],
   "priorityOrder": [
     "TRIGGER_1_STOP",
     "STOCK_DAY_TRADE_FORCED_EXIT",
@@ -22,7 +25,30 @@
     "SEED_LANE_BUY_TRIGGER",
     "STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER"
   ],
-  "pendingAction": null,
+  "pendingAction": {
+    "fingerprint": "POSITION:STOCK:CBRS|TRIGGER_1_STOP|2026-10-01T13:45:54.671Z|2026-10-02T07:10:21.962Z",
+    "isNew": true,
+    "isActionable": true,
+    "priority": 100,
+    "assetClass": "STOCK",
+    "ticker": "CBRS",
+    "trigger": "TRIGGER_1_STOP",
+    "entryTier": null,
+    "entryTierLabel": null,
+    "entryTierSizeMultiplier": null,
+    "queueRank": 0,
+    "queueRole": null,
+    "profitabilityAdmission": null,
+    "decisionIntelligenceEligible": null,
+    "requestedAction": "VERIFY_POSITION_AND_SELL_STOP",
+    "observedPrice": 169.51,
+    "triggerStateChangedAt": "2026-10-01T13:45:54.671Z",
+    "freshnessAnchor": "2026-10-01T13:45:54.671Z",
+    "triggerAgeMs": 62668378,
+    "expiresAt": null,
+    "reason": "Saved stop/invalidation reached. ChatGPT should verify the live position and execute the supported sell immediately when permitted.",
+    "packet": "CBRS | TRIGGER_1_STOP | observed 169.51 | VERIFY_POSITION_AND_SELL_STOP"
+  },
   "automaticStockCandidates": [],
   "approvalCandidates": [],
   "approvalBatchId": null,
@@ -54,24 +80,7 @@
     "oneWinnerDoesNotBlockOtherQualifiedStocks": true,
     "rule": "Expose every already-qualified current-generation stock candidate in rank order. ChatGPT may execute as many as remain independently qualified after immediate broker rechecks and dynamic cash, portfolio-heat, correlation, account-floor and aggregate-stop-risk limits. Never force a trade."
   },
-  "queuedActions": [
-    {
-      "ticker": "CBRS",
-      "trigger": "TRIGGER_1_STOP",
-      "fingerprint": "POSITION:STOCK:CBRS|TRIGGER_1_STOP|2026-10-01T13:45:54.671Z|2026-10-02T06:32:59.092Z",
-      "isFresh": true,
-      "sessionAllowed": true,
-      "freshnessAnchor": "2026-10-01T13:45:54.671Z"
-    },
-    {
-      "ticker": "EQX",
-      "trigger": "TRIGGER_1_STOP",
-      "fingerprint": "POSITION:STOCK:EQX|TRIGGER_1_STOP|2026-10-01T19:34:53.182Z|2026-10-02T06:32:59.092Z",
-      "isFresh": true,
-      "sessionAllowed": true,
-      "freshnessAnchor": "2026-10-01T19:34:53.182Z"
-    }
-  ],
+  "queuedActions": [],
   "noActionInstruction": "If chatgptShouldRun is false, stop immediately. Do not call Robinhood, research markets, or produce a long report.",
   "actionInstruction": "For every current trigger, including optionCandidates when present, reconcile Robinhood positions, open orders and recent order history before submission. Exit events always take priority and block every new buy for the run. Stock entries require authoritative regular-session status and at least 20 minutes to close both here and again at the broker-time recheck. For BUY_TRIGGER dispatches, process automaticStockCandidates in rank order without requesting user approval. Recheck each candidate independently immediately before submission; after every confirmed fill recompute cash, account floor, deployed capital, planned stop risk, correlation, portfolio heat, protection capability and broker/account restrictions. Skip any candidate that no longer qualifies. Seed-lane candidates remain automatic only within their encoded caps and protection requirements. A previously published fingerprint is not proof of execution. Reconcile ambiguous or partial results by original/client order ID and never blindly retry an uncertain submission.",
   "consumerContract": {
