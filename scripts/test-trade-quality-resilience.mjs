@@ -15,4 +15,4 @@ test('live cycle invokes the paper-first OpenAI executor only for actionable dis
 test('dispatch fingerprints persist outside the git worktree',()=>{assert.match(liveCycle,/\.teststock-runtime/);assert.match(liveCycle,/RUNTIME_DISPATCH_STATE/);assert.match(liveCycle,/cp docs\/data\/execution-dispatch\.json/);});
 
 const executorSource=await fs.readFile(new URL('./chatgpt-executor.mjs',import.meta.url),'utf8');
-test('real broker writes are opt-in and paper is the default',()=>{assert.match(executorSource,/TESTSTOCK_EXECUTION_MODE\|\|'paper'/);assert.match(executorSource,/I_UNDERSTAND_REAL_ORDERS/);assert.match(executorSource,/CLAIMED_BEFORE_SUBMIT/);assert.match(executorSource,/ROBINHOOD_MCP_OAUTH_TOKEN/);});
+test('real broker writes are opt-in and paper is the default',()=>{assert.match(executorSource,/config\(\)\.default_execution_mode\|\|'paper'/);assert.match(executorSource,/TESTSTOCK_EXECUTION_MODE\|\|configuredDefault/);assert.match(executorSource,/I_UNDERSTAND_REAL_ORDERS/);assert.match(executorSource,/CLAIMED_BEFORE_SUBMIT/);assert.match(executorSource,/ROBINHOOD_MCP_OAUTH_TOKEN/);});
