@@ -47,6 +47,13 @@ jobs:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: node scripts/generate-static-picks.mjs
 
+      - name: Refresh expired entry holdouts
+        if: ${{ steps.market_window.outputs.stocks == 'true' }}
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+        run: node scripts/refresh-entry-validation-if-stale.mjs
+
       - name: Reuse validated research and options evidence
         if: ${{ steps.market_window.outputs.stocks == 'true' }}
         run: |

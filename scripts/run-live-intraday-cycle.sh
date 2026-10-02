@@ -57,6 +57,10 @@ else
   echo "BACKGROUND_LEARNING_COLD_START_FALLBACK"
 fi
 
+if [[ "${TESTSTOCK_EXECUTION_MODE:-paper}" == "live" ]]; then
+  node scripts/reconcile-broker-state.mjs
+fi
+
 node scripts/build-daytrader-intelligence.mjs
 node scripts/validate-daytrader-intelligence.mjs
 node scripts/update-trigger-board.mjs
@@ -78,7 +82,8 @@ node scripts/build-live-trading-health.mjs
 # Robinhood. Live mode is separately fail-closed inside chatgpt-executor.mjs and
 # requires the user's explicit runtime sentinel plus authenticated Robinhood MCP.
 execution_mode="${TESTSTOCK_EXECUTION_MODE:-paper}"
-if jq -e '.chatgptShouldRun == true or .executionNeeded == true' docs/data/execution-dispatch.json >/dev/null 2>&1; then
+dispatch_needed=$(node scripts/dispatch-needed.mjs docs/data/execution-dispatch.json)
+if [[ "$dispatch_needed" == "true" ]]; then
   diagnostics_dir="$RUNTIME_STATE_DIR/executor-diagnostics"
   mkdir -p "$diagnostics_dir"
   run_dir="$(mktemp -d "$diagnostics_dir/cycle.XXXXXX")"
@@ -87,6 +92,9 @@ if jq -e '.chatgptShouldRun == true or .executionNeeded == true' docs/data/execu
   if ! python scripts/record-executor-result.py "$run_dir" "$executor_status"; then
     echo "::warning::OpenAI executor did not complete. Any live claim is retained and must be reconciled before another submission."
     return "$executor_status" 2>/dev/null || exit "$executor_status"
+  fi
+  if [[ "$execution_mode" == "live" ]]; then
+    node scripts/reconcile-broker-state.mjs
   fi
   echo "FAST_CYCLE_OPENAI_EXECUTOR mode=$execution_mode"
 else

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "sourceOfTruth": "ROBINHOOD_AGENTIC_ACCOUNT",
   "generatedAt": "2026-08-23T21:40:37.000Z",
-  "lastReconciledAt": "2026-09-18T12:30:00.000Z",
+  "lastReconciledAt": "2026-10-02T16:24:15.882Z",
   "trades": [
     {
       "journalId": "2026-08-20-RPRX-STOCK-REAL",
@@ -54,15 +54,18 @@
       "adverseEntrySlippagePct": null,
       "protectionMode": "SYNTHETIC",
       "protectiveExitVerified": false,
-      "finalExitAt": null,
+      "finalExitAt": "2026-09-28T14:47:36.685Z",
       "actualAverageExit": null,
       "adverseExitSlippagePct": null,
       "realizedPnlDollars": null,
       "realizedR": null,
-      "outcome": "OPEN",
+      "outcome": "UNKNOWN",
       "exitReason": null,
       "reconciledFromRobinhood": true,
-      "notes": "Backfilled 2026-08-23 from live Robinhood-confirmed position data (average_buy_price) and the already-public execution-watchlist.json stop/target levels. The buy itself predates this fix and was never logged automatically -- see docs/strategy-changelog.txt 2026-08-23 entry. Quantity/order id intentionally omitted (never committed here). setupType/runtimeRegime/riskCluster/entrySessionBucket were not captured at signal time and are honestly marked UNKNOWN rather than guessed."
+      "notes": "Backfilled 2026-08-23 from live Robinhood-confirmed position data (average_buy_price) and the already-public execution-watchlist.json stop/target levels. The buy itself predates this fix and was never logged automatically -- see docs/strategy-changelog.txt 2026-08-23 entry. Quantity/order id intentionally omitted (never committed here). setupType/runtimeRegime/riskCluster/entrySessionBucket were not captured at signal time and are honestly marked UNKNOWN rather than guessed. Reconciled closed from current Robinhood flat holdings and confirmed final sell. Final exit price is not an aggregate exit average; partial sales/additional buys require full lot reconciliation before assigning realized R or P&L.",
+      "finalExitPrice": 11.32,
+      "finalExitOrderId": "6aba7e08-928a-44eb-a469-1598cafc2f9c",
+      "lastReconciledAt": "2026-10-02T16:24:15.882Z"
     },
     {
       "journalId": "2026-09-17-HONA-STOCK-SEED-REAL",
@@ -85,15 +88,18 @@
       "adverseEntrySlippagePct": null,
       "protectionMode": "SYNTHETIC",
       "protectiveExitVerified": false,
-      "finalExitAt": null,
+      "finalExitAt": "2026-09-25T18:16:52.105Z",
       "actualAverageExit": null,
       "adverseExitSlippagePct": null,
       "realizedPnlDollars": null,
       "realizedR": null,
-      "outcome": "OPEN",
+      "outcome": "UNKNOWN",
       "exitReason": null,
       "reconciledFromRobinhood": true,
-      "notes": "Automatic stock swing seed-lane fill executed directly this session on 2026-09-17 after PR #40 relaxed requiresBrokerResidentStop to synthetic protection for this lane (position is entirely fractional, 0.057060 shares, so no broker-resident stop is possible). Live guard recheck passed before submission: no existing HONA position, no open/same-day orders, price $166.58 ask within the published entry zone, spread ~0.19%. Sized at $9.50 rather than the full $20 seed-lane cap -- the binding constraint was the fractional synthetic-stop risk cap (0.75% of live equity per fractionalProtectionPolicy), not the deployed-capital cap. This entry was added to reconcile the automated journal, which had not recorded it: the scheduled execution-check's own journal-write-at-fill step never ran for this trade since it was executed directly from an interactive session rather than the automated live-intraday-runner executor, which left seedLane.openedSeedPositionsToday reading 0 in subsequently published dispatches despite a real seed-lane position already being open for the day."
+      "notes": "Automatic stock swing seed-lane fill executed directly this session on 2026-09-17 after PR #40 relaxed requiresBrokerResidentStop to synthetic protection for this lane (position is entirely fractional, 0.057060 shares, so no broker-resident stop is possible). Live guard recheck passed before submission: no existing HONA position, no open/same-day orders, price $166.58 ask within the published entry zone, spread ~0.19%. Sized at $9.50 rather than the full $20 seed-lane cap -- the binding constraint was the fractional synthetic-stop risk cap (0.75% of live equity per fractionalProtectionPolicy), not the deployed-capital cap. This entry was added to reconcile the automated journal, which had not recorded it: the scheduled execution-check's own journal-write-at-fill step never ran for this trade since it was executed directly from an interactive session rather than the automated live-intraday-runner executor, which left seedLane.openedSeedPositionsToday reading 0 in subsequently published dispatches despite a real seed-lane position already being open for the day. Reconciled closed from current Robinhood flat holdings and confirmed final sell. Final exit price is not an aggregate exit average; partial sales/additional buys require full lot reconciliation before assigning realized R or P&L.",
+      "finalExitPrice": 157.84,
+      "finalExitOrderId": "6ab6ba93-6f03-4d9d-8af4-fe16781e7ecf",
+      "lastReconciledAt": "2026-10-02T16:24:15.882Z"
     },
     {
       "journalId": "2026-09-04-BNS-STOCK-REAL",
@@ -116,15 +122,18 @@
       "adverseEntrySlippagePct": null,
       "protectionMode": "SYNTHETIC",
       "protectiveExitVerified": false,
-      "finalExitAt": null,
+      "finalExitAt": "2026-09-24T15:16:52.257Z",
       "actualAverageExit": null,
       "adverseExitSlippagePct": null,
       "realizedPnlDollars": null,
       "realizedR": null,
-      "outcome": "OPEN",
+      "outcome": "UNKNOWN",
       "exitReason": null,
       "reconciledFromRobinhood": true,
-      "notes": "Backfilled 2026-09-18 at user request (\"add BNS and ILMN, you control everything in robinhood\"). Manual Robinhood app buy on 2026-09-04 (order 6a9af622-6d0b-4898-815b-bc42157242b5, 0.2131 fractional shares @ avg 93.84), not a Teststock-generated signal -- no plannedEntry, setupType, or session bucket were ever captured because no Teststock signal existed for it. plannedStop/target1/target2 computed retroactively using Teststock's own trailing ATR/reward-risk convention (stop = max(MA20, current price - 2.1x ATR14), targets at 2R/3R from that stop) evaluated against the live price at backfill time (94.01, ATR14 1.6921, MA20 92.14) -- not the original entry, consistent with this system's protect-winner/never-widen-stop policy. Fractional position: no broker-resident stop is possible, so protectionMode is SYNTHETIC (agent-managed, <=5 minute monitoring cadence during the regular session), same as every other fractional Teststock position."
+      "notes": "Backfilled 2026-09-18 at user request (\"add BNS and ILMN, you control everything in robinhood\"). Manual Robinhood app buy on 2026-09-04 (order 6a9af622-6d0b-4898-815b-bc42157242b5, 0.2131 fractional shares @ avg 93.84), not a Teststock-generated signal -- no plannedEntry, setupType, or session bucket were ever captured because no Teststock signal existed for it. plannedStop/target1/target2 computed retroactively using Teststock's own trailing ATR/reward-risk convention (stop = max(MA20, current price - 2.1x ATR14), targets at 2R/3R from that stop) evaluated against the live price at backfill time (94.01, ATR14 1.6921, MA20 92.14) -- not the original entry, consistent with this system's protect-winner/never-widen-stop policy. Fractional position: no broker-resident stop is possible, so protectionMode is SYNTHETIC (agent-managed, <=5 minute monitoring cadence during the regular session), same as every other fractional Teststock position. Reconciled closed from current Robinhood flat holdings and confirmed final sell. Final exit price is not an aggregate exit average; partial sales/additional buys require full lot reconciliation before assigning realized R or P&L.",
+      "finalExitPrice": 91.4401,
+      "finalExitOrderId": "6ab53ee4-ca00-4c20-8049-a319baec628f",
+      "lastReconciledAt": "2026-10-02T16:24:15.882Z"
     },
     {
       "journalId": "2026-09-04-ILMN-STOCK-REAL",
@@ -147,15 +156,18 @@
       "adverseEntrySlippagePct": null,
       "protectionMode": "SYNTHETIC",
       "protectiveExitVerified": false,
-      "finalExitAt": null,
+      "finalExitAt": "2026-09-28T14:46:51.734Z",
       "actualAverageExit": null,
       "adverseExitSlippagePct": null,
       "realizedPnlDollars": null,
       "realizedR": null,
-      "outcome": "OPEN",
+      "outcome": "UNKNOWN",
       "exitReason": null,
       "reconciledFromRobinhood": true,
-      "notes": "Backfilled 2026-09-18 at user request (\"add BNS and ILMN, you control everything in robinhood\"). Manual Robinhood app buy on 2026-09-04 (order 6a9af64b-dc86-4f5d-963a-e5fef4d4dfcb, 0.09 fractional shares @ avg 218.3929), not a Teststock-generated signal -- no plannedEntry, setupType, or session bucket were ever captured because no Teststock signal existed for it. plannedStop/target1/target2 computed retroactively using Teststock's own trailing ATR/reward-risk convention (stop = max(MA20, current price - 2.1x ATR14), targets at 2R/3R from that stop) evaluated against the live price at backfill time (247.00, ATR14 10.0998, MA20 217.5625) -- not the original entry, since the position had already moved to roughly +12% unrealized by backfill time and this system's policy is to protect winners rather than anchor to a stale entry-based stop. Note this stop intentionally trails well below current price (~8.6%, reflecting ILMN's high ~4%/day ATR) and does not lock in all of the current unrealized gain. Fractional position: no broker-resident stop is possible, so protectionMode is SYNTHETIC (agent-managed, <=5 minute monitoring cadence during the regular session), same as every other fractional Teststock position."
+      "notes": "Backfilled 2026-09-18 at user request (\"add BNS and ILMN, you control everything in robinhood\"). Manual Robinhood app buy on 2026-09-04 (order 6a9af64b-dc86-4f5d-963a-e5fef4d4dfcb, 0.09 fractional shares @ avg 218.3929), not a Teststock-generated signal -- no plannedEntry, setupType, or session bucket were ever captured because no Teststock signal existed for it. plannedStop/target1/target2 computed retroactively using Teststock's own trailing ATR/reward-risk convention (stop = max(MA20, current price - 2.1x ATR14), targets at 2R/3R from that stop) evaluated against the live price at backfill time (247.00, ATR14 10.0998, MA20 217.5625) -- not the original entry, since the position had already moved to roughly +12% unrealized by backfill time and this system's policy is to protect winners rather than anchor to a stale entry-based stop. Note this stop intentionally trails well below current price (~8.6%, reflecting ILMN's high ~4%/day ATR) and does not lock in all of the current unrealized gain. Fractional position: no broker-resident stop is possible, so protectionMode is SYNTHETIC (agent-managed, <=5 minute monitoring cadence during the regular session), same as every other fractional Teststock position. Reconciled closed from current Robinhood flat holdings and confirmed final sell. Final exit price is not an aggregate exit average; partial sales/additional buys require full lot reconciliation before assigning realized R or P&L.",
+      "finalExitPrice": 269.915,
+      "finalExitOrderId": "6aba7ddb-864b-453d-9341-98925f867021",
+      "lastReconciledAt": "2026-10-02T16:24:15.882Z"
     }
   ],
   "summary": {

@@ -20,6 +20,7 @@ const API_URL='https://api.openai.com/v1/responses';
 const LIVE_SENTINEL='I_UNDERSTAND_REAL_ORDERS';
 const READ_TOOLS=[
   'get_accounts','get_portfolio','get_equity_positions','get_equity_orders','get_equity_quotes',
+  'get_equity_tradability',
   'get_option_positions','get_option_orders','get_option_chains','get_option_instruments','get_option_quotes',
   'get_advanced_orders'
 ];
@@ -42,6 +43,8 @@ const DATA_FILES=[
   'docs/data/execution-watchlist.json',
   'docs/signal.json',
   'docs/data/adaptive-performance.json',
+  'docs/data/live-trading-health.json',
+  'docs/data/managed-position-profile.json',
   'docs/data/options-profitability-admission.json',
   'docs/data/small-account-options.json',
 ];

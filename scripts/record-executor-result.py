@@ -29,9 +29,11 @@ def record(directory, returncode):
             category = "EXECUTOR_ERROR" if isinstance(payload, dict) else "INVALID_OR_MISSING_OUTPUT"
     metadata = {"recordedAt": datetime.now(timezone.utc).isoformat(), "exitCode": returncode,
                 "status": "FAILED" if failed else "COMPLETED", "category": category,
-                "brokerOutcome": "UNVERIFIED", "automaticRetry": False}
+                "brokerOutcome": "UNVERIFIED", "automaticRetry": False,
+                "executionMode": payload.get("mode", "UNKNOWN") if isinstance(payload, dict) else "UNKNOWN",
+                "brokerWriteAttempted": payload.get("broker_write_attempted", False) if isinstance(payload, dict) else False}
     (folder / "status.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
-    print("FAST_CYCLE_CHATGPT_" + metadata["status"] + " category=" + category, flush=True)
+    print("FAST_CYCLE_CHATGPT_" + metadata["status"] + " category=" + category + " mode=" + metadata["executionMode"] + " brokerWriteAttempted=" + str(metadata["brokerWriteAttempted"]), flush=True)
     if failed:
         print("Private stdout/stderr retained in the Sable runtime executor-diagnostics folder. Reconcile any ambiguous broker outcome before retrying.", flush=True)
     return 1 if failed else 0

@@ -24,7 +24,7 @@
       "id": "STOCK:EQX",
       "assetClass": "STOCK",
       "ticker": "EQX",
-      "status": "ACTIVE",
+      "status": "CLOSED",
       "entry": 13.51,
       "stop": 10.85,
       "target1": 17.25,
@@ -36,7 +36,12 @@
       "validatedExitPolicy": null,
       "signalGeneratedAt": null,
       "armedAt": "2026-08-21T19:45:56.512Z",
-      "note": "Manual partial sell by the user 2026-09-25T18:08:47Z (placed_agent=user in Robinhood order history, not Teststock automation): 0.1 shares sold at avg $11.93, order 6ab6b8af-49e9-43d3-872b-88cf0f913b1b -- realized loss ~-$0.16 on that portion. Remaining 0.177574 shares stay ACTIVE at the unchanged $13.51 cost basis, saved stop ($10.85) and targets."
+      "note": "Manual partial sell by the user 2026-09-25T18:08:47Z (placed_agent=user in Robinhood order history, not Teststock automation): 0.1 shares sold at avg $11.93, order 6ab6b8af-49e9-43d3-872b-88cf0f913b1b -- realized loss ~-$0.16 on that portion. Remaining 0.177574 shares stay ACTIVE at the unchanged $13.51 cost basis, saved stop ($10.85) and targets. Broker reconciliation confirmed no remaining position; no exit fill or P&L inferred.",
+      "lastReconciledAt": "2026-10-02T16:24:15.882Z",
+      "closureSource": "ROBINHOOD_CONFIRMED_FLAT",
+      "closedAt": "2026-09-28T14:47:36.685Z",
+      "finalExitOrderId": "6aba7e08-928a-44eb-a469-1598cafc2f9c",
+      "finalExitPrice": 11.32
     },
     {
       "id": "STOCK:HONA",
@@ -83,7 +88,7 @@
       "id": "STOCK:ILMN",
       "assetClass": "STOCK",
       "ticker": "ILMN",
-      "status": "ACTIVE",
+      "status": "CLOSED",
       "entry": 218.44,
       "stop": 225.79,
       "target1": 289.42,
@@ -96,14 +101,18 @@
       "signalGeneratedAt": null,
       "armedAt": "2026-09-04T16:48:11.325397Z",
       "dayTradeSeedLane": false,
-      "note": "Manual Robinhood app buy on 2026-09-04 (0.09 fractional shares @ avg $218.39, order 6a9af64b-dc86-4f5d-963a-e5fef4d4dfcb), not a Teststock-generated signal. Brought under Teststock monitoring at user request on 2026-09-18: stop/target computed using Teststock's own trailing ATR/reward-risk convention (stop = max(MA20, current price - 2.1x ATR14), target1/target2 at 2R/3R from that stop), evaluated against the live price at backfill time ($247.00), not the original entry -- consistent with this system's protect-winner/never-widen-stop policy. Fractional position: no broker-resident stop is possible, so this is protected by an agent-managed synthetic stop only, requiring active monitoring at <=5 minute intervals during the regular session -- not broker-resident or guaranteed. entry field (2026-09-21) uses the true original cost basis ($218.44, Robinhood average_buy_price) for the new 5% early-profit-trim trigger. TRIGGER_EARLY_PROFIT_TRIM fired 2026-09-21 (up 10.6% from entry, observed 241.62): sold half the position, 0.045 of 0.09 shares, at avg $241.7916, Robinhood order 6ab17a9e-58ab-4163-a64d-b13acbe9b0f3 -- realized roughly $1.05 profit on the sold half, freed ~$10.88 cash. earlyTrimCompleted set true so this does not re-fire on the same cost basis; it will reset only if a future buy fill changes entry. Second, manual partial sell 2026-09-23T16:48:52Z (user-requested, cash-constrained day -- two real STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER fires on HONA that same day had to be skipped for lack of buying power): sold half the remainder, 0.0225 of 0.045 shares, at avg $254.5217, Robinhood order 6ab402f4-a236-47d0-a33c-5d1888075820 -- realized ~$0.82 profit (+16.6% on the sold portion), freed ~$5.73 cash specifically to cover the next qualified seed-lane trigger. Remaining 0.0225 shares stay at the same $218.44 cost basis, still riding toward target1 ($289.42). This was a discretionary profit-take under standing user authorization (\"sell if it made money first\"), not an automated trigger -- earlyTrimCompleted stays true, unaffected.",
-      "closedAt": null
+      "note": "Manual Robinhood app buy on 2026-09-04 (0.09 fractional shares @ avg $218.39, order 6a9af64b-dc86-4f5d-963a-e5fef4d4dfcb), not a Teststock-generated signal. Brought under Teststock monitoring at user request on 2026-09-18: stop/target computed using Teststock's own trailing ATR/reward-risk convention (stop = max(MA20, current price - 2.1x ATR14), target1/target2 at 2R/3R from that stop), evaluated against the live price at backfill time ($247.00), not the original entry -- consistent with this system's protect-winner/never-widen-stop policy. Fractional position: no broker-resident stop is possible, so this is protected by an agent-managed synthetic stop only, requiring active monitoring at <=5 minute intervals during the regular session -- not broker-resident or guaranteed. entry field (2026-09-21) uses the true original cost basis ($218.44, Robinhood average_buy_price) for the new 5% early-profit-trim trigger. TRIGGER_EARLY_PROFIT_TRIM fired 2026-09-21 (up 10.6% from entry, observed 241.62): sold half the position, 0.045 of 0.09 shares, at avg $241.7916, Robinhood order 6ab17a9e-58ab-4163-a64d-b13acbe9b0f3 -- realized roughly $1.05 profit on the sold half, freed ~$10.88 cash. earlyTrimCompleted set true so this does not re-fire on the same cost basis; it will reset only if a future buy fill changes entry. Second, manual partial sell 2026-09-23T16:48:52Z (user-requested, cash-constrained day -- two real STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER fires on HONA that same day had to be skipped for lack of buying power): sold half the remainder, 0.0225 of 0.045 shares, at avg $254.5217, Robinhood order 6ab402f4-a236-47d0-a33c-5d1888075820 -- realized ~$0.82 profit (+16.6% on the sold portion), freed ~$5.73 cash specifically to cover the next qualified seed-lane trigger. Remaining 0.0225 shares stay at the same $218.44 cost basis, still riding toward target1 ($289.42). This was a discretionary profit-take under standing user authorization (\"sell if it made money first\"), not an automated trigger -- earlyTrimCompleted stays true, unaffected. Broker reconciliation confirmed no remaining position; no exit fill or P&L inferred.",
+      "closedAt": "2026-09-28T14:46:51.734Z",
+      "lastReconciledAt": "2026-10-02T16:24:15.882Z",
+      "closureSource": "ROBINHOOD_CONFIRMED_FLAT",
+      "finalExitOrderId": "6aba7ddb-864b-453d-9341-98925f867021",
+      "finalExitPrice": 269.915
     },
     {
       "id": "STOCK:CBRS",
       "assetClass": "STOCK",
       "ticker": "CBRS",
-      "status": "ACTIVE",
+      "status": "CLOSED",
       "entry": 208.86,
       "stop": 180.74,
       "target1": 251.53,
@@ -116,17 +125,22 @@
       "signalGeneratedAt": "2026-09-21T18:39:43.586Z",
       "armedAt": "2026-09-21T18:50:29.579Z",
       "dayTradeSeedLane": false,
-      "note": "Automatic stock swing seed-lane position, three fills on 2026-09-21, same lane every time (mustBeFlatBeforeMarketClose:false): (1) 0.143772 shares @ avg $208.6636 ($30.00), order 6ab14caf-4b9f-4a00-bfc4-b82c2db58e75, filled after raising portfolioHeatPolicy.maxConcurrentPositions from 4 to 7 (PR #48) at explicit user request following a live-guard skip of MUFG/INTC/CBRS for exceeding the prior cap; (2) 0.026271 shares @ avg $209.35 ($5.50), order 6ab15367-657f-43d8-8e9f-7d6b20f8c1a9; (3) 0.050203 shares @ avg $209.1499 ($10.50), order 6ab17c75-fc49-4a82-8262-762998a20ee5, funded by cash freed from the same-day ILMN early-profit-trim sell. Every fill priced above the running average cost at the time (never averaging down). Combined position 0.220246 shares, Robinhood-reported blended cost $208.86. target1/target2 refreshed to this cycle's published levels (251.53/279.84); stop unchanged (technical level, not tied to a specific fill price). Fractional position: no broker-resident stop is possible, so this is protected by an agent-managed synthetic stop only, requiring active monitoring at <=5 minute intervals during the regular session -- not broker-resident or guaranteed. entry field kept in sync with Robinhood's live average_buy_price after each fill for the 5% early-profit-trim trigger."
+      "note": "Automatic stock swing seed-lane position, three fills on 2026-09-21, same lane every time (mustBeFlatBeforeMarketClose:false): (1) 0.143772 shares @ avg $208.6636 ($30.00), order 6ab14caf-4b9f-4a00-bfc4-b82c2db58e75, filled after raising portfolioHeatPolicy.maxConcurrentPositions from 4 to 7 (PR #48) at explicit user request following a live-guard skip of MUFG/INTC/CBRS for exceeding the prior cap; (2) 0.026271 shares @ avg $209.35 ($5.50), order 6ab15367-657f-43d8-8e9f-7d6b20f8c1a9; (3) 0.050203 shares @ avg $209.1499 ($10.50), order 6ab17c75-fc49-4a82-8262-762998a20ee5, funded by cash freed from the same-day ILMN early-profit-trim sell. Every fill priced above the running average cost at the time (never averaging down). Combined position 0.220246 shares, Robinhood-reported blended cost $208.86. target1/target2 refreshed to this cycle's published levels (251.53/279.84); stop unchanged (technical level, not tied to a specific fill price). Fractional position: no broker-resident stop is possible, so this is protected by an agent-managed synthetic stop only, requiring active monitoring at <=5 minute intervals during the regular session -- not broker-resident or guaranteed. entry field kept in sync with Robinhood's live average_buy_price after each fill for the 5% early-profit-trim trigger. Broker reconciliation confirmed no remaining position; no exit fill or P&L inferred.",
+      "lastReconciledAt": "2026-10-02T16:24:15.882Z",
+      "closureSource": "ROBINHOOD_CONFIRMED_FLAT",
+      "closedAt": "2026-09-28T14:47:23.457Z",
+      "finalExitOrderId": "6aba7dfb-4e45-4a9c-8f0c-ce9879bae405",
+      "finalExitPrice": 195.5
     },
     {
       "id": "CRYPTO:PEPE-USD",
       "assetClass": "CRYPTO",
       "ticker": "PEPE/USD",
       "status": "CLOSED",
-      "entry": 0.00000507,
-      "stop": 0.0000046,
-      "target1": 0.000007,
-      "target2": 0.000008,
+      "entry": 5.07e-06,
+      "stop": 4.6e-06,
+      "target1": 7e-06,
+      "target2": 8e-06,
       "target1Completed": false,
       "target2Completed": false,
       "earlyTrimCompleted": false,
@@ -186,5 +200,6 @@
     "signalGeneratedAt": null,
     "armedAt": null,
     "dayTradeSeedLane": false
-  }
+  },
+  "lastReconciledAt": "2026-10-02T16:24:15.882Z"
 }

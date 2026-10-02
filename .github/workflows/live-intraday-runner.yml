@@ -42,6 +42,10 @@ on:
       - 'scripts/validate-intraday-edge-overlay.mjs'
       - 'scripts/build-execution-dispatch.mjs'
       - 'scripts/validate-execution-dispatch.mjs'
+      - 'scripts/dispatch-needed.mjs'
+      - 'scripts/reconcile-broker-state.mjs'
+      - 'scripts/broker-state.mjs'
+      - 'scripts/chain-live-session.mjs'
       - 'scripts/chatgpt-executor.mjs'
       - 'scripts/chatgpt-executor-prompt.md'
       - 'scripts/validate-options-policy.mjs'
@@ -75,6 +79,11 @@ jobs:
           node-version: '22'
 
       - name: Verify persistent trading runtime
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ROBINHOOD_MCP_OAUTH_TOKEN: ${{ secrets.ROBINHOOD_MCP_OAUTH_TOKEN }}
+          TESTSTOCK_EXECUTION_MODE: ${{ vars.TESTSTOCK_EXECUTION_MODE || 'paper' }}
+          TESTSTOCK_LIVE_TRADING: ${{ vars.TESTSTOCK_LIVE_TRADING || 'false' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -201,7 +210,7 @@ jobs:
             if bash scripts/run-live-intraday-cycle.sh; then
               consecutive_cycle_failures=0
             else
-              rc=$?
+              rc=1
               consecutive_cycle_failures=$((consecutive_cycle_failures+1))
               echo "::warning::Fast intraday cycle failed with exit code ${rc}; keeping the live session alive so the next gated cycle can recover safely."
               echo "No blind broker retry is performed; the executor's next eligible wake must re-read broker state and reconcile first."
@@ -248,10 +257,4 @@ jobs:
           # always matches itself and silently skips dispatching every time (the
           # same bug confirmed live in schedule-watchdog.yml's identical pattern
           # on 2026-09-17 -- fixed there too).
-          existing=$(gh run list --workflow live-intraday-runner.yml --limit 5 --json databaseId,status 2>/dev/null || echo '[]')
-          if echo "$existing" | jq -e --argjson self "$GITHUB_RUN_ID" 'any(.[]; .databaseId!=$self and (.status=="queued" or .status=="in_progress"))' >/dev/null 2>&1; then
-            echo "Another live-intraday-runner session is already queued or in progress; not self-chaining"
-          else
-            echo "Self-chaining the next live intraday session"
-            gh workflow run live-intraday-runner.yml --ref main || echo "::warning::Self-chain dispatch failed; the hourly schedule or watchdog remains as fallback"
-          fi
+          node scripts/chain-live-session.mjs || echo "::warning::Self-chain failed; watchdog recovery remains available"

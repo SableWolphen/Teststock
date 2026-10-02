@@ -17,7 +17,8 @@ test('live executor exposes automatic stock and option buy/sell tools',()=>{
 });
 
 test('unattended executor remains explicitly gated and paper-first',()=>{
-  assert.match(executor,/TESTSTOCK_EXECUTION_MODE\|\|'paper'/);
+  assert.match(executor,/config\(\)\.default_execution_mode\|\|'paper'/);
+  assert.match(executor,/TESTSTOCK_EXECUTION_MODE\|\|configuredDefault/);
   assert.match(executor,/I_UNDERSTAND_REAL_ORDERS/);
   assert.match(executor,/require_approval:'never'/);
   assert.match(prompt,/explicitly authorized unattended automatic buys and sells/i);
