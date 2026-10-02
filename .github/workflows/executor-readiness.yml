@@ -1,4 +1,4 @@
-name: Verify execution readiness (read-only)
+name: Publish execution routing (no broker access)
 on:
   workflow_dispatch:
   push:
@@ -6,16 +6,14 @@ on:
     paths:
       - '.github/workflows/executor-readiness.yml'
       - 'scripts/check-execution-readiness.mjs'
-      - 'scripts/reconcile-broker-state.mjs'
 permissions:
   contents: write
 concurrency:
   group: executor-readiness
   cancel-in-progress: false
 jobs:
-  verify:
+  routing:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,14 +21,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify OpenAI and Robinhood without orders
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ROBINHOOD_MCP_OAUTH_TOKEN: ${{ secrets.ROBINHOOD_MCP_OAUTH_TOKEN }}
-          TESTSTOCK_EXECUTION_MODE: ${{ vars.TESTSTOCK_EXECUTION_MODE || 'paper' }}
-          TESTSTOCK_LIVE_TRADING: ${{ vars.TESTSTOCK_LIVE_TRADING || 'false' }}
+      - name: Record ChatGPT as the execution owner
         run: node scripts/check-execution-readiness.mjs
-      - name: Publish credential-free readiness result
+      - name: Publish execution routing
         shell: bash
         run: |
           set -euo pipefail
@@ -38,7 +31,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add docs/data/executor-readiness.json
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m 'Publish read-only execution readiness'
+          git commit -m 'Publish ChatGPT-connected execution routing'
           for attempt in 1 2 3; do
             git pull --rebase origin main
             if git push; then exit 0; fi

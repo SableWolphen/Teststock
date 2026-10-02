@@ -1,59 +1,21 @@
-name: OpenAI Teststock executor fallback
-
-# Manual/emergency fallback only. Normal live execution now happens inside the
-# persistent self-hosted intraday runner so stale queued jobs cannot accumulate.
+name: Publish ChatGPT execution handoff
+# GitHub produces signals only. ChatGPT's connected Robinhood tools place orders.
 on:
   workflow_dispatch:
-
-concurrency:
-  group: chatgpt-teststock-executor-fallback
-  cancel-in-progress: false
-
 permissions:
   contents: read
-
 jobs:
-  execute:
-    runs-on: [self-hosted, teststock-trader]
-    timeout-minutes: 5
+  handoff:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout latest Teststock main
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 1
-
-      - name: Verify constrained execution runtime
-        shell: bash
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Report intelligence handoff status
         run: |
-          set -euo pipefail
-          command -v node >/dev/null
-          test -f .openai-mcp.json
-          test -f scripts/chatgpt-executor.mjs
-          test -f scripts/chatgpt-executor-prompt.md
-          test -f docs/signal.json
-          test -f docs/data/execution-dispatch.json
-          test -f docs/data/trigger-board.json
-          test -f docs/data/execution-watchlist.json
-
-      - name: Run one reconciled OpenAI execution cycle
-        shell: bash
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ROBINHOOD_MCP_OAUTH_TOKEN: ${{ secrets.ROBINHOOD_MCP_OAUTH_TOKEN }}
-          TESTSTOCK_EXECUTION_MODE: ${{ vars.TESTSTOCK_EXECUTION_MODE || 'paper' }}
-          TESTSTOCK_LIVE_TRADING: ${{ vars.TESTSTOCK_LIVE_TRADING || 'false' }}
-          PYTHONIOENCODING: utf-8
-        run: |
-          set -euo pipefail
-          output_path="$(mktemp /tmp/teststock-chatgpt-fallback.XXXXXX.json)"
-          trap 'rm -f "$output_path"' EXIT
-          node scripts/chatgpt-executor.mjs > "$output_path"
-          python - "$output_path" <<'PY'
-          import json,sys
-          with open(sys.argv[1],'r',encoding='utf-8') as f:
-              data=json.load(f)
-          print('OpenAI fallback executor completed.')
-          result=data.get('result') if isinstance(data,dict) else None
-          if isinstance(result,str): print(result[:1000])
-          PY
+          needed=$(node scripts/dispatch-needed.mjs docs/data/execution-dispatch.json)
+          echo "ChatGPT connected execution requested by packet: $needed"
+          echo 'This workflow never invokes broker tools or places orders.'

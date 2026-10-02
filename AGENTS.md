@@ -10,7 +10,9 @@ OpenAI executor is the sole broker execution layer. OpenAI executor reads Testst
 
 Teststock/GitHub remains intelligence and monitoring only. The live broker executor is OpenAI through the connected Robinhood integration.
 
-Repository automation is PAPER by default. A headless runner must never place a real broker order unless the user explicitly enables live mode outside the repository. Missing or ambiguous live authorization, broker authentication, broker state, order state, or generation state means no new live risk.
+GitHub Actions is intelligence and monitoring only. It never invokes a live broker executor, requests OpenAI/Robinhood broker credentials, or submits orders. Live execution uses ChatGPT's connected Robinhood tools through the user-authorized Teststock Autopilot task or an active ChatGPT session. No GitHub API key or OAuth secret is required for that ChatGPT connection.
+
+Scheduled ChatGPT execution is hourly. It does not provide continuous or five-minute broker monitoring. Scheduled entries must have supported broker-resident protection; synthetic-only protection cannot qualify under this schedule. A repository heartbeat proves intelligence monitoring only, never the availability or response time of the ChatGPT broker executor. Options must exit by the last scheduled check before the session cutoff; never rely on an unscheduled future wake.
 
 The OpenAI executor must preserve one logical client-order id per order, claim before submit, never blindly retry an ambiguous submission, trust only confirmed fills, and keep exits/stops ahead of new entries. No margin, averaging down, wider stops, deposits, transfers, naked option selling, option exercise, or overnight Teststock options.
 

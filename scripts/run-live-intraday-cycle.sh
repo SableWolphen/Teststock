@@ -57,10 +57,6 @@ else
   echo "BACKGROUND_LEARNING_COLD_START_FALLBACK"
 fi
 
-if [[ "${TESTSTOCK_EXECUTION_MODE:-paper}" == "live" ]]; then
-  node scripts/reconcile-broker-state.mjs
-fi
-
 node scripts/build-daytrader-intelligence.mjs
 node scripts/validate-daytrader-intelligence.mjs
 node scripts/update-trigger-board.mjs
@@ -78,25 +74,11 @@ node scripts/validate-execution-dispatch.mjs
 cp docs/data/execution-dispatch.json "$RUNTIME_DISPATCH_STATE"
 node scripts/build-live-trading-health.mjs
 
-# OpenAI executor handoff. PAPER is the repository default and never writes to
-# Robinhood. Live mode is separately fail-closed inside chatgpt-executor.mjs and
-# requires the user's explicit runtime sentinel plus authenticated Robinhood MCP.
-execution_mode="${TESTSTOCK_EXECUTION_MODE:-paper}"
+# GitHub publishes intelligence only. ChatGPT's connected Robinhood integration
+# is the sole live executor; this runner never calls broker tools or the API agent.
 dispatch_needed=$(node scripts/dispatch-needed.mjs docs/data/execution-dispatch.json)
 if [[ "$dispatch_needed" == "true" ]]; then
-  diagnostics_dir="$RUNTIME_STATE_DIR/executor-diagnostics"
-  mkdir -p "$diagnostics_dir"
-  run_dir="$(mktemp -d "$diagnostics_dir/cycle.XXXXXX")"
-  executor_status=0
-  TESTSTOCK_EXECUTION_MODE="$execution_mode" node scripts/chatgpt-executor.mjs > "$run_dir/stdout.json" 2> "$run_dir/stderr.txt" || executor_status=$?
-  if ! python scripts/record-executor-result.py "$run_dir" "$executor_status"; then
-    echo "::warning::OpenAI executor did not complete. Any live claim is retained and must be reconciled before another submission."
-    return "$executor_status" 2>/dev/null || exit "$executor_status"
-  fi
-  if [[ "$execution_mode" == "live" ]]; then
-    node scripts/reconcile-broker-state.mjs
-  fi
-  echo "FAST_CYCLE_OPENAI_EXECUTOR mode=$execution_mode"
+  echo "CHATGPT_CONNECTED_EXECUTION_PACKET_READY"
 else
   echo "FAST_CYCLE_NO_ACTION"
 fi

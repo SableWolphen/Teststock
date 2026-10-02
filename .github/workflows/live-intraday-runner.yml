@@ -7,10 +7,6 @@ on:
         description: 'Verify runner startup without invoking the trading loop or broker tools'
         type: boolean
         default: false
-      mcp_probe:
-        description: 'Run a read-only Robinhood MCP connectivity probe (no trades, no orders)'
-        type: boolean
-        default: false
   schedule:
     # Weekday regular-session wake only (UTC window spans EDT/EST); an in-job NYSE gate below is authoritative.
     - cron: '2 13-21 * * 1-5'
@@ -79,11 +75,6 @@ jobs:
           node-version: '22'
 
       - name: Verify persistent trading runtime
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ROBINHOOD_MCP_OAUTH_TOKEN: ${{ secrets.ROBINHOOD_MCP_OAUTH_TOKEN }}
-          TESTSTOCK_EXECUTION_MODE: ${{ vars.TESTSTOCK_EXECUTION_MODE || 'paper' }}
-          TESTSTOCK_LIVE_TRADING: ${{ vars.TESTSTOCK_LIVE_TRADING || 'false' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -116,35 +107,10 @@ jobs:
             echo "Runtime executable found: $executable=$(command -v "$executable")"
           done
           python --version
-          node scripts/verify-runtime-prerequisites.mjs
+          TESTSTOCK_EXECUTION_MODE=paper node scripts/verify-runtime-prerequisites.mjs
           # Unit/regression tests run in Build Check; startup verification must only
           # gate on runtime prerequisites so a test failure cannot kill live sessions.
           echo 'Persistent Teststock trading and independent background-learning lanes are present.'
-
-      - name: Verify ChatGPT authentication without broker tools
-        if: ${{ inputs.verify_only }}
-        shell: bash
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          set -euo pipefail
-          umask 077
-          mkdir -p "$HOME/.teststock-runtime/executor-diagnostics"
-          probe_dir="$(mktemp -d "$HOME/.teststock-runtime/executor-diagnostics/probe.XXXXXX")"
-          probe_status=0
-          node scripts/chatgpt-executor.mjs --probe \
-            > "$probe_dir/stdout.json" 2> "$probe_dir/stderr.txt" || probe_status=$?
-          python scripts/record-executor-result.py "$probe_dir" "$probe_status"
-
-      - name: Probe Robinhood MCP connectivity (read-only)
-        if: ${{ inputs.mcp_probe }}
-        shell: bash
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ROBINHOOD_MCP_OAUTH_TOKEN: ${{ secrets.ROBINHOOD_MCP_OAUTH_TOKEN }}
-        run: |
-          set -euo pipefail
-          node scripts/chatgpt-executor.mjs --mcp-probe
 
       - name: Check regular US stock session
         id: stock_session
@@ -174,10 +140,6 @@ jobs:
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ROBINHOOD_MCP_OAUTH_TOKEN: ${{ secrets.ROBINHOOD_MCP_OAUTH_TOKEN }}
-          TESTSTOCK_EXECUTION_MODE: ${{ vars.TESTSTOCK_EXECUTION_MODE || 'paper' }}
-          TESTSTOCK_LIVE_TRADING: ${{ vars.TESTSTOCK_LIVE_TRADING || 'false' }}
           PYTHONIOENCODING: utf-8
           TESTSTOCK_LEARNING_INTERVAL_SECONDS: 300
           GH_TOKEN: ${{ github.token }}
@@ -207,7 +169,7 @@ jobs:
               echo "git reset failed this cycle (likely transient network); reusing current checkout"
             fi
 
-            if bash scripts/run-live-intraday-cycle.sh; then
+            if TESTSTOCK_EXECUTION_MODE=paper bash scripts/run-live-intraday-cycle.sh; then
               consecutive_cycle_failures=0
             else
               rc=1
