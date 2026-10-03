@@ -2,24 +2,35 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {openNewShadowTrades,resolveOptionShadowTrade,summarizeShadowTrades,TARGET_MULTIPLIER,STOP_MULTIPLIER,protectedFloor,newYorkSession} from './options-shadow-engine.mjs';
 
-const standardCandidate={underlying:'ABC',contract:'ABC260101C00100000',expiry:'2026-01-01',dte:45,dteBucket:'STANDARD',ask:2,underlyingScore:80,score:90};
-const zeroDteCandidate={underlying:'XYZ',contract:'XYZ260101C00050000',expiry:'2026-01-01',dte:0,dteBucket:'0DTE',ask:1,score:95};
+const standardCandidate={underlying:'ABC',contract:'ABC260101C00100000',expiry:'2026-01-01',dte:45,dteBucket:'STANDARD',kind:'LONG_CALL',bid:0.18,ask:0.19,oneContractPremiumDollars:19,underlyingScore:80,score:90};
+const weeklyCandidate={underlying:'DEF',contract:'DEF260101P00050000',expiry:'2026-01-01',dte:7,dteBucket:'WEEKLY',kind:'LONG_PUT',bid:0.14,ask:0.15,oneContractPremiumDollars:15,underlyingScore:82,score:92};
+const zeroDteCandidate={underlying:'XYZ',contract:'XYZ260101C00050000',expiry:'2026-01-01',dte:0,dteBucket:'0DTE',kind:'LONG_CALL',bid:0.08,ask:0.09,oneContractPremiumDollars:9,score:95};
+const expensiveCandidate={underlying:'BIG',contract:'BIG260101C00100000',expiry:'2026-01-01',dte:30,dteBucket:'STANDARD',kind:'LONG_CALL',bid:0.24,ask:0.25,oneContractPremiumDollars:25,score:99};
 
-test('only STANDARD-DTE candidates ever open a shadow trade',()=>{
-  const trades=openNewShadowTrades({candidates:[zeroDteCandidate,standardCandidate],existingTrades:[],todayIso:'2026-09-25',nowIso:'2026-09-25T10:00:00Z'});
-  assert.equal(trades.length,1);
-  assert.equal(trades[0].underlying,'ABC');
-  assert.equal(trades[0].entry,2);
-  assert.equal(trades[0].stop,round(2*STOP_MULTIPLIER));
-  assert.equal(trades[0].target,round(2*TARGET_MULTIPLIER));
-  assert.equal(trades[0].status,'OPEN');
-  assert.equal(trades[0].modelOnly,true);
+test('WEEKLY and STANDARD live-lane candidates can open while 0DTE and over-cap contracts are excluded',()=>{
+  const trades=openNewShadowTrades({candidates:[zeroDteCandidate,expensiveCandidate,weeklyCandidate,standardCandidate],existingTrades:[],todayIso:'2026-09-25',nowIso:'2026-09-25T14:35:00Z',maxNewPerUtcDay:5,maxPremiumDollars:20});
+  assert.equal(trades.length,2);
+  assert.deepEqual(trades.map(x=>x.underlying),['DEF','ABC']);
+  assert.equal(trades[1].entry,0.19);
+  assert.equal(trades[1].stop,round(0.19*STOP_MULTIPLIER));
+  assert.equal(trades[1].target,round(0.19*TARGET_MULTIPLIER));
+  assert.equal(trades[1].status,'OPEN');
+  assert.equal(trades[1].modelOnly,true);
+  assert.equal(trades[1].shadowEvidenceVersion,3);
+  assert.equal(trades[1].evidenceEligible,true);
 });
 
-test('at most one new shadow trade per UTC day',()=>{
-  const existing=[{id:'2026-09-25-OTHER',createdDate:'2026-09-25',contract:'OTHER',status:'OPEN'}];
-  const trades=openNewShadowTrades({candidates:[standardCandidate],existingTrades:existing,todayIso:'2026-09-25',nowIso:'2026-09-25T10:00:00Z',maxNewPerUtcDay:1});
+test('daily shadow batch respects its configured cap',()=>{
+  const existing=[{id:'2026-09-25-OTHER',createdDate:'2026-09-25',underlying:'OTHER',contract:'OTHER',status:'OPEN'}];
+  const trades=openNewShadowTrades({candidates:[standardCandidate],existingTrades:existing,todayIso:'2026-09-25',nowIso:'2026-09-25T14:35:00Z',maxNewPerUtcDay:1});
   assert.deepEqual(trades,[]);
+});
+
+test('only one contract per underlying is selected in the same daily batch',()=>{
+  const alternate={...standardCandidate,contract:'ABC260101C00105000',score:95,bid:0.16,ask:0.17,oneContractPremiumDollars:17};
+  const trades=openNewShadowTrades({candidates:[alternate,standardCandidate],existingTrades:[],todayIso:'2026-09-25',nowIso:'2026-09-25T14:35:00Z',maxNewPerUtcDay:5});
+  assert.equal(trades.length,1);
+  assert.equal(trades[0].contract,alternate.contract);
 });
 
 test('an already-tracked contract is never opened twice',()=>{
@@ -66,9 +77,10 @@ test('a resolved trade is never re-resolved',()=>{
 
 test('summary keeps the most adverse realized R per independent day+underlying key',()=>{
   const trades=[
-    {status:'RESOLVED',createdDate:'2026-09-01',underlying:'ABC',realizedR:2},
-    {status:'RESOLVED',createdDate:'2026-09-01',underlying:'ABC',realizedR:-1},
-    {status:'RESOLVED',createdDate:'2026-09-02',underlying:'DEF',realizedR:1.5},
+    {status:'RESOLVED',createdDate:'2026-09-01',underlying:'ABC',realizedR:2,evidenceEligible:true,shadowEvidenceVersion:3},
+    {status:'RESOLVED',createdDate:'2026-09-01',underlying:'ABC',realizedR:-1,evidenceEligible:true,shadowEvidenceVersion:3},
+    {status:'RESOLVED',createdDate:'2026-09-02',underlying:'DEF',realizedR:1.5,evidenceEligible:true,shadowEvidenceVersion:3},
+    {status:'RESOLVED',createdDate:'2026-09-02',underlying:'LEGACY',realizedR:9},
   ];
   const summary=summarizeShadowTrades(trades);
   assert.equal(summary.independentSamples,2);
@@ -94,11 +106,11 @@ test('profit floor resolves against bid instead of optimistic midpoint',()=>{
 });
 
 test('day-trade session blocks late entries and forces a bid exit',()=>{
-  const late=newYorkSession('2026-09-25T20:55:00Z');
+  const late=newYorkSession('2026-09-25T19:55:00Z');
   assert.equal(late.forcedExitDue,true);
-  assert.deepEqual(openNewShadowTrades({candidates:[standardCandidate],existingTrades:[],todayIso:late.date,nowIso:'2026-09-25T20:55:00Z',marketSession:late}),[]);
+  assert.deepEqual(openNewShadowTrades({candidates:[standardCandidate],existingTrades:[],todayIso:late.date,nowIso:'2026-09-25T19:55:00Z',marketSession:late}),[]);
   const trade={status:'OPEN',createdDate:late.date,entry:2,stop:1.2,target:4,targetR:2.5,expiry:'2026-12-01'};
-  const resolved=resolveOptionShadowTrade(trade,{bid:2.2,ask:2.3},'2026-09-25T20:55:00Z',late);
+  const resolved=resolveOptionShadowTrade(trade,{bid:2.2,ask:2.3},'2026-09-25T19:55:00Z',late);
   assert.equal(resolved.exitReason,'SESSION_CUTOFF');
   assert.equal(resolved.exitBid,2.2);
 });
