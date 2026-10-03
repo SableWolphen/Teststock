@@ -96,6 +96,14 @@ export function resolveOptionShadowTrade(trade,liveSnapshot,nowIso,marketSession
   if(trade.status!=='OPEN')return trade;
   const now=new Date(nowIso),expiry=new Date(trade.expiry+'T21:00:00Z'),pastExpiry=now>=expiry;
   const risk=trade.entry-trade.stop;
+  const createdDate=trade.createdDate||String(trade.createdAt||'').slice(0,10);
+  // A next-day snapshot is not a valid substitute for the prior session's executable
+  // 15:50-16:00 bid. Exclude the sample instead of manufacturing a late loss/win.
+  if(marketSession?.date&&marketSession.date>createdDate){
+    return {...trade,status:'UNKNOWN',outcome:null,realizedR:null,resolvedAt:nowIso,lastCheckedAt:nowIso,
+      notes:'No executable same-session exit mark was captured. A later-day snapshot is not used as a substitute.',
+      exitReason:'MISSED_SESSION_EXIT_NO_INTRADAY_MARK'};
+  }
   if(liveSnapshot&&Number(liveSnapshot.bid)>0&&Number(liveSnapshot.ask)>0){
     const bid=round(Number(liveSnapshot.bid),4),ask=round(Number(liveSnapshot.ask),4),mid=round((bid+ask)/2,4);
     const highWaterBid=round(Math.max(Number(trade.highWaterBid||0),bid),4);
@@ -111,10 +119,8 @@ export function resolveOptionShadowTrade(trade,liveSnapshot,nowIso,marketSession
     if(bid<=floor){
       return exitAt(bid,bid>trade.entry?'WIN':'LOSS',floor>trade.stop?'PROFIT_FLOOR':'STOP');
     }
-    const createdDate=trade.createdDate||String(trade.createdAt||'').slice(0,10);
     const sameDayExit=marketSession?.forcedExitDue&&marketSession.date===createdDate;
-    const missedSameDayExit=marketSession?.date&&marketSession.date>createdDate;
-    if(sameDayExit||missedSameDayExit)return exitAt(bid,bid>trade.entry?'WIN':bid<trade.entry?'LOSS':'FLAT',sameDayExit?'SESSION_CUTOFF':'LATE_SESSION_RECONCILIATION');
+    if(sameDayExit)return exitAt(bid,bid>trade.entry?'WIN':bid<trade.entry?'LOSS':'FLAT','SESSION_CUTOFF');
     if(pastExpiry){
       return exitAt(bid,bid>trade.entry?'WIN':bid<trade.entry?'LOSS':'FLAT','EXPIRY_RECONCILIATION');
     }
