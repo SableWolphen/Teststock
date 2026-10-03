@@ -74,18 +74,11 @@ node scripts/validate-execution-dispatch.mjs
 cp docs/data/execution-dispatch.json "$RUNTIME_DISPATCH_STATE"
 node scripts/build-live-trading-health.mjs
 
-# Execute a qualified dispatch through the OpenAI Responses API + authenticated
-# Robinhood remote MCP. This remains fail-closed: missing credentials, stale broker
-# state, insufficient cash, failed risk gates, or broker restrictions must produce
-# no order. The executor atomically claims one dispatch fingerprint before any write.
+# GitHub publishes intelligence only. ChatGPT's connected Robinhood integration
+# is the sole live executor; this runner never calls broker tools or the API agent.
 dispatch_needed=$(node scripts/dispatch-needed.mjs docs/data/execution-dispatch.json)
 if [[ "$dispatch_needed" == "true" ]]; then
-  : "${OPENAI_API_KEY:?OPENAI_API_KEY is required for live execution}"
-  : "${ROBINHOOD_MCP_OAUTH_TOKEN:?ROBINHOOD_MCP_OAUTH_TOKEN is required for live execution}"
-  export TESTSTOCK_EXECUTION_MODE=live
-  export TESTSTOCK_LIVE_TRADING=I_UNDERSTAND_REAL_ORDERS
-  echo "TESTSTOCK_LIVE_EXECUTOR_START"
-  node scripts/chatgpt-executor.mjs
+  echo "CHATGPT_CONNECTED_EXECUTION_PACKET_READY"
 else
   echo "FAST_CYCLE_NO_ACTION"
 fi
