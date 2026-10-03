@@ -16,7 +16,7 @@ const evidence=await read('docs/data/options-real-trade-journal.json',{summary:{
 const policy=await read('docs/data/probability-first-policy.json',{});
 const optionsPolicy=policy.options||{};
 
-const resolved=(shadow.trades||[]).filter(x=>x.status==='RESOLVED'&&Number.isFinite(Number(x.realizedR)));
+const resolved=(shadow.trades||[]).filter(x=>x.status==='RESOLVED'&&Number.isFinite(Number(x.realizedR))&&x.evidenceEligible===true&&Number(x.shadowEvidenceVersion)>=3);
 const independentMap=new Map();
 for(const x of resolved){
   const k=`${x.createdDate}|${x.underlying}`;
@@ -74,7 +74,7 @@ const admission={
   reason,
   executionAuthorized:['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(state),
   executionAuthorizedNote:'Execution authorization is earned only after the shadow evidence state reaches MICRO_PROBATION, PROBATION, or LIVE_ADMITTED. SHADOW_ONLY and LIVE_SUSPENDED remain blocked. The separate options policy and live broker rechecks still remain mandatory.',
-  shadow:{...shadowStats,independenceKey:'createdDate+underlying',duplicateResolutionRule:'Keep the most adverse realized R for duplicate keys.',scopeNote:'Paper-only shadow outcomes from update-options-shadow-ledger.mjs; at most one new sample per UTC day.'},
+  shadow:{...shadowStats,independenceKey:'createdDate+underlying',duplicateResolutionRule:'Keep the most adverse realized R for duplicate keys.',scopeNote:'Only clean v3+ paper-shadow outcomes count toward admission: at most one live-lane-aligned sample per New York trading day, with same-session executable exit evidence.'},
   real:{...real,source:'options-real-trade-journal.json'},
   thresholds:{
     minimumIndependentShadowSamplesForMicro:MIN_SHADOW_MICRO,
