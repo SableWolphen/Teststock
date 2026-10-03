@@ -1,0 +1,81 @@
+name: Options forward shadow sampler
+
+on:
+  schedule:
+    # 10:35 New York in either EDT or EST; the in-job gate selects the matching wake.
+    - cron: '35 14 * * 1-5'
+    - cron: '35 15 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: options-forward-shadow
+  cancel-in-progress: false
+
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Gate to 10:30-10:45 New York
+        id: gate
+        shell: bash
+        run: |
+          minute=$(node -e "const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value])); console.log(Number(p.hour)*60+Number(p.minute))")
+          if [ "$minute" -ge 630 ] && [ "$minute" -le 645 ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Scan fresh small-account option universe
+        if: steps.gate.outputs.run == 'true'
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          ALPACA_OPTIONS_FEED: indicative
+        run: node scripts/scan-small-account-options.mjs
+
+      - name: Open or update one clean shadow sample
+        if: steps.gate.outputs.run == 'true'
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          ALPACA_OPTIONS_FEED: indicative
+          SHADOW_OPEN_NEW: 'true'
+        run: node scripts/update-options-shadow-ledger.mjs
+
+      - name: Recompute options admission
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          node scripts/apply-options-profitability-admission.mjs
+          node scripts/validate-options-policy.mjs
+
+      - name: Publish forward shadow artifacts
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "teststock-options-forward"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/data/small-account-options.json docs/data/options-shadow-trades.json docs/data/options-profitability-admission.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Update clean forward options shadow sample"
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 2
+          done
+          exit 1
