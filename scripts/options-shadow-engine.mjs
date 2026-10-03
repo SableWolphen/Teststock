@@ -19,7 +19,7 @@ export const TRAIL_FRACTION=0.8;
 export function newYorkSession(nowIso){
   const parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(nowIso)).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
   const date=`${parts.year}-${parts.month}-${parts.day}`,minute=Number(parts.hour)*60+Number(parts.minute);
-  return {date,minute,entryAllowed:minute>=575&&minute<930,forcedExitDue:minute>=950};
+  return {date,minute,entryAllowed:minute>=575&&minute<930,forcedExitDue:minute>=950&&minute<=960};
 }
 
 export function protectedFloor(entry,highWaterBid,initialStop){
@@ -85,6 +85,8 @@ export function openNewShadowTrades({candidates=[],existingTrades=[],todayIso,no
     score:best.score??null,
     notes:null,
     modelOnly:true,
+    shadowEvidenceVersion:3,
+    evidenceEligible:true,
   }; });
 }
 
