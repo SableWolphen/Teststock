@@ -66,7 +66,8 @@ for(const trade of openTrades){
   if(idx>=0)ledger.trades[idx]=resolved;
 }
 
-const newTrades=openNewShadowTrades({
+const allowNew=String(process.env.SHADOW_OPEN_NEW||'true').toLowerCase()!=='false';
+const newTrades=allowNew?openNewShadowTrades({
   candidates:scan.candidates||[],
   existingTrades:ledger.trades,
   todayIso:marketSession.date,
@@ -75,7 +76,7 @@ const newTrades=openNewShadowTrades({
   marketSession,
   maxPremiumDollars:Number(seedPolicy.maxOrderUsd||20),
   allowedDteBuckets:Array.isArray(seedPolicy.allowedDteBuckets)&&seedPolicy.allowedDteBuckets.length?seedPolicy.allowedDteBuckets:['STANDARD','WEEKLY'],
-});
+}):[];
 ledger.trades.push(...newTrades);
 
 const terminalOptionTrades=ledger.trades.filter(t=>t.status!=='OPEN').slice(-20000);const openOptionTrades=ledger.trades.filter(t=>t.status==='OPEN').slice(-3000);ledger.trades=[...terminalOptionTrades,...openOptionTrades];
