@@ -72,7 +72,7 @@ const newTrades=allowNew?openNewShadowTrades({
   existingTrades:ledger.trades,
   todayIso:marketSession.date,
   nowIso,
-  maxNewPerUtcDay:1,
+  maxNewPerUtcDay:5,
   marketSession,
   maxPremiumDollars:Number(seedPolicy.maxOrderUsd||20),
   allowedDteBuckets:Array.isArray(seedPolicy.allowedDteBuckets)&&seedPolicy.allowedDteBuckets.length?seedPolicy.allowedDteBuckets:['STANDARD','WEEKLY'],
@@ -83,7 +83,7 @@ const terminalOptionTrades=ledger.trades.filter(t=>t.status!=='OPEN').slice(-200
 ledger.generatedAt=nowIso;
 ledger.summary=summarizeShadowTrades(ledger.trades);
 ledger.rules=[
-  'Paper-only: no order is ever placed by this script. Tracks at most one highest-scoring live-lane-eligible WEEKLY/STANDARD contract per New York trading day, subject to the active whole-contract premium cap.',
+  'Paper-only: no order is ever placed by this script. Tracks up to five highest-scoring live-lane-eligible WEEKLY/STANDARD contracts per New York trading day, with at most one contract per underlying and subject to the active whole-contract premium cap.',
   'Resolution uses real live Alpaca option quotes for the exact same contract, re-queried on every run -- never fabricates an outcome from missing data. If a contract has no snapshot data at/after its expiry, it is marked UNKNOWN rather than guessed WIN/LOSS.',
   'Entries use the displayed ask and exits use the executable bid. Midpoint marks never count as realized shadow performance.',
   'The intraday profit floor moves to break-even after +20%, locks +15% after +35%, then trails 20% below the executable bid high-water mark after +50%. It never moves down.',
