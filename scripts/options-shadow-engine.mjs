@@ -135,7 +135,7 @@ export function resolveOptionShadowTrade(trade,liveSnapshot,nowIso,marketSession
 }
 
 export function summarizeShadowTrades(trades){
-  const resolved=(trades||[]).filter(x=>x.status==='RESOLVED'&&Number.isFinite(Number(x.realizedR)));
+  const resolved=(trades||[]).filter(x=>x.status==='RESOLVED'&&Number.isFinite(Number(x.realizedR))&&x.evidenceEligible===true&&Number(x.shadowEvidenceVersion)>=3);
   const independentMap=new Map();
   for(const x of resolved){
     const k=`${x.createdDate}|${x.underlying}`;
