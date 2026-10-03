@@ -34,18 +34,23 @@ export function buildShadowTradeId(contract,createdDate){
   return `${createdDate}-${contract}`;
 }
 
-// candidates: this run's small-account-options.json candidates (STANDARD dteBucket only --
-// 0DTE/WEEKLY stay diagnostic-only and never enter the shadow-to-live pathway).
-// existingTrades: current docs/data/options-shadow-trades.json trades array.
-// Returns new trade records to append (does not mutate existingTrades).
-export function openNewShadowTrades({candidates=[],existingTrades=[],todayIso,nowIso,maxNewPerUtcDay=25,marketSession=null}={}){
+// Shadow entries mirror the live small-account option lane rather than opening a basket
+// and cherry-picking its worst member afterward. The default lane permits WEEKLY/STANDARD
+// long calls/puts and only contracts whose whole premium fits the active per-trade cap.
+// One new shadow position per day is enough to create an independent forward observation.
+export function openNewShadowTrades({candidates=[],existingTrades=[],todayIso,nowIso,maxNewPerUtcDay=1,marketSession=null,maxPremiumDollars=20,allowedDteBuckets=['STANDARD','WEEKLY']}={}){
   if(marketSession&&(!marketSession.entryAllowed||marketSession.date!==todayIso))return [];
-  const standard=candidates.filter(x=>x.dteBucket==='STANDARD'&&Number(x.ask)>0&&Number(x.dte)>0);
-  if(!standard.length)return [];
+  const eligible=candidates
+    .filter(x=>allowedDteBuckets.includes(x.dteBucket))
+    .filter(x=>['LONG_CALL','LONG_PUT'].includes(x.kind||'LONG_CALL'))
+    .filter(x=>Number(x.ask)>0&&Number(x.dte)>0)
+    .filter(x=>Number(x.oneContractPremiumDollars||Number(x.ask)*100)<=Number(maxPremiumDollars))
+    .sort((a,b)=>Number(b.score||0)-Number(a.score||0));
+  if(!eligible.length)return [];
   const trackedContracts=new Set(existingTrades.map(x=>x.contract));
   const openedToday=existingTrades.filter(x=>x.createdDate===todayIso).length;
   if(openedToday>=maxNewPerUtcDay)return [];
-  const available=standard.filter(x=>!trackedContracts.has(x.contract)).slice(0,Math.max(0,maxNewPerUtcDay-openedToday));
+  const available=eligible.filter(x=>!trackedContracts.has(x.contract)).slice(0,1);
   return available.map(best=>{ const entry=round(Number(best.ask),4); const entryBid=round(Number(best.bid||0),4); const stop=round(entry*STOP_MULTIPLIER,4); const target=round(entry*TARGET_MULTIPLIER,4); const risk=entry-stop; return {
     id:buildShadowTradeId(best.contract,todayIso),
     createdDate:todayIso,
