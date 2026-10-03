@@ -50,6 +50,8 @@ async function liveSnapshotFor(underlying,contract){
 }
 
 const scan=await read('docs/data/small-account-options.json',{candidates:[]});
+const policy=await read('docs/data/probability-first-policy.json',{options:{seedLane:{}}});
+const seedPolicy=policy.options?.seedLane||{};
 let ledger=await read('docs/data/options-shadow-trades.json',{schemaVersion:1,generatedAt:null,trades:[]});
 ledger.trades=Array.isArray(ledger.trades)?ledger.trades:[];
 
@@ -64,14 +66,23 @@ for(const trade of openTrades){
   if(idx>=0)ledger.trades[idx]=resolved;
 }
 
-const newTrades=openNewShadowTrades({candidates:scan.candidates||[],existingTrades:ledger.trades,todayIso:marketSession.date,nowIso,maxNewPerUtcDay:25,marketSession});
+const newTrades=openNewShadowTrades({
+  candidates:scan.candidates||[],
+  existingTrades:ledger.trades,
+  todayIso:marketSession.date,
+  nowIso,
+  maxNewPerUtcDay:1,
+  marketSession,
+  maxPremiumDollars:Number(seedPolicy.maxOrderUsd||20),
+  allowedDteBuckets:Array.isArray(seedPolicy.allowedDteBuckets)&&seedPolicy.allowedDteBuckets.length?seedPolicy.allowedDteBuckets:['STANDARD','WEEKLY'],
+});
 ledger.trades.push(...newTrades);
 
 const terminalOptionTrades=ledger.trades.filter(t=>t.status!=='OPEN').slice(-20000);const openOptionTrades=ledger.trades.filter(t=>t.status==='OPEN').slice(-3000);ledger.trades=[...terminalOptionTrades,...openOptionTrades];
 ledger.generatedAt=nowIso;
 ledger.summary=summarizeShadowTrades(ledger.trades);
 ledger.rules=[
-  'Paper-only: no order is ever placed by this script. Tracks the top 25 STANDARD-DTE candidates small-account-options.json finds each UTC day, up to 25 new shadow positions per day.',
+  'Paper-only: no order is ever placed by this script. Tracks at most one highest-scoring live-lane-eligible WEEKLY/STANDARD contract per New York trading day, subject to the active whole-contract premium cap.',
   'Resolution uses real live Alpaca option quotes for the exact same contract, re-queried on every run -- never fabricates an outcome from missing data. If a contract has no snapshot data at/after its expiry, it is marked UNKNOWN rather than guessed WIN/LOSS.',
   'Entries use the displayed ask and exits use the executable bid. Midpoint marks never count as realized shadow performance.',
   'The intraday profit floor moves to break-even after +20%, locks +15% after +35%, then trails 20% below the executable bid high-water mark after +50%. It never moves down.',
