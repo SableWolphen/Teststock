@@ -37,8 +37,10 @@ export function buildShadowTradeId(contract,createdDate){
 // Shadow entries mirror the live small-account option lane rather than opening a basket
 // and cherry-picking its worst member afterward. The default lane permits WEEKLY/STANDARD
 // long calls/puts and only contracts whose whole premium fits the active per-trade cap.
-// One new shadow position per day is enough to create an independent forward observation.
-export function openNewShadowTrades({candidates=[],existingTrades=[],todayIso,nowIso,maxNewPerUtcDay=1,marketSession=null,maxPremiumDollars=20,allowedDteBuckets=['STANDARD','WEEKLY']}={}){
+// Track a small diversified batch each day so the evidence set grows faster without
+// recreating the old correlated basket/worst-case bias. At most one contract per
+// underlying is opened in a given day.
+export function openNewShadowTrades({candidates=[],existingTrades=[],todayIso,nowIso,maxNewPerUtcDay=5,marketSession=null,maxPremiumDollars=20,allowedDteBuckets=['STANDARD','WEEKLY']}={}){
   if(marketSession&&(!marketSession.entryAllowed||marketSession.date!==todayIso))return [];
   const eligible=candidates
     .filter(x=>allowedDteBuckets.includes(x.dteBucket))
@@ -48,9 +50,18 @@ export function openNewShadowTrades({candidates=[],existingTrades=[],todayIso,no
     .sort((a,b)=>Number(b.score||0)-Number(a.score||0));
   if(!eligible.length)return [];
   const trackedContracts=new Set(existingTrades.map(x=>x.contract));
-  const openedToday=existingTrades.filter(x=>x.createdDate===todayIso).length;
-  if(openedToday>=maxNewPerUtcDay)return [];
-  const available=eligible.filter(x=>!trackedContracts.has(x.contract)).slice(0,1);
+  const openedToday=existingTrades.filter(x=>x.createdDate===todayIso);
+  if(openedToday.length>=maxNewPerUtcDay)return [];
+  const todayUnderlyings=new Set(openedToday.map(x=>x.underlying));
+  const remaining=Math.max(0,maxNewPerUtcDay-openedToday.length);
+  const available=[];
+  for(const candidate of eligible){
+    if(available.length>=remaining)break;
+    if(trackedContracts.has(candidate.contract))continue;
+    if(todayUnderlyings.has(candidate.underlying))continue;
+    if(available.some(x=>x.underlying===candidate.underlying))continue;
+    available.push(candidate);
+  }
   return available.map(best=>{ const entry=round(Number(best.ask),4); const entryBid=round(Number(best.bid||0),4); const stop=round(entry*STOP_MULTIPLIER,4); const target=round(entry*TARGET_MULTIPLIER,4); const risk=entry-stop; return {
     id:buildShadowTradeId(best.contract,todayIso),
     createdDate:todayIso,
