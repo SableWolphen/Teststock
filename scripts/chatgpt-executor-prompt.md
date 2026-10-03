@@ -36,6 +36,17 @@ Read these repository files from the checked-out `main` branch before any broker
 
 Do not place new risk if required files are missing, stale, contradictory, from different generations, or if Robinhood MCP authentication/account access is unavailable. Never invent balances, quotes, positions, orders, fills, protection, realized PnL, or unrealized PnL.
 
+### Mandatory cash-only pre-trade audit
+
+Immediately before every BUY or BUY TO OPEN, re-read the dedicated Agentic account from Robinhood. Use only authoritative broker-reported cash fields. Never infer or estimate a balance.
+
+For every proposed entry, print a `PRE_TRADE_AUDIT` in the executor result containing:
+- `current_settled_or_unleveraged_cash`: the broker-reported settled cash when explicitly available; otherwise use the broker-reported unleveraged buying power only if it is clearly cash-backed and no unsettled-funds restriction would make it unavailable. If neither can be established from live broker data, reject the trade.
+- `total_trade_cost`: full stock notional or whole-contract option premium plus any broker-reported/known transaction fees required for the order.
+- `remaining_cash_post_trade`: current cash minus total trade cost.
+
+If `remaining_cash_post_trade < 0`, reject automatically. Never use margin buying power, leverage, deposits, instant deposits, transfers, borrowing, or proceeds that Robinhood reports as unavailable/unsettled. Long-option premium must also fit every current generated option-risk cap. Selling options to open is prohibited by Teststock; do not create naked, cash-secured-put, covered-call, spread, exercise, or assignment exposure.
+
 Only the dedicated Robinhood Agentic account may receive new Teststock trades. No margin, leverage, averaging down, wider stops, chasing beyond Teststock maximum entry, bypassing qualification, freshness, spread/liquidity, account-floor, correlation, portfolio-heat, sizing, duplicate-order, broker/account restriction, daily-loss, or protection gates.
 
 ## Priority
