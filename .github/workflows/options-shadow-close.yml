@@ -1,0 +1,59 @@
+name: Options shadow near-close mark
+
+on:
+  schedule:
+    # One of these is 15:55 New York depending on DST; the engine only accepts 15:50-16:00.
+    - cron: '55 19 * * 1-5'
+    - cron: '55 20 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: options-forward-shadow
+  cancel-in-progress: false
+
+jobs:
+  mark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Capture executable same-session option marks
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          ALPACA_OPTIONS_FEED: indicative
+          SHADOW_OPEN_NEW: 'false'
+        run: node scripts/update-options-shadow-ledger.mjs
+
+      - name: Recompute options admission
+        run: |
+          node scripts/apply-options-profitability-admission.mjs
+          node scripts/validate-options-policy.mjs
+
+      - name: Publish near-close shadow evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "teststock-options-forward"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/data/options-shadow-trades.json docs/data/options-profitability-admission.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Capture same-session options shadow exit"
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 2
+          done
+          exit 1
