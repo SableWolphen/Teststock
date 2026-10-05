@@ -77,7 +77,7 @@ The core API still runs per-symbol historical validation and reports:
 - Paginates the option chain instead of assuming the first page contains the best contract
 - Scans the strongest candidates in parallel to reduce serverless latency
 - No 0DTE / ultra-short default trades
-- Separate XND/DJX index-options research lane: QQQ/DIA provide direction proxies only; exact XND/DJX contracts must be resolved through Robinhood and earn their own profitability admission before live use
+- Separate XND/DJX index-options lane: QQQ/DIA provide direction proxies only; exact XND/DJX contracts must be resolved through Robinhood. User-authorized `LIVE_MICRO_BOOTSTRAP` permits real-money learning at a maximum $5 premium, one new index-option position per New York trading day, and one concurrent position; later promotion still depends on separate exact-contract evidence
 - Index-option settlement metadata is explicit (XND PM-style, DJX AM-style); cash settlement/European exercise do not relax same-session exit, premium-risk, or liquidity rules
 
 ## Learning score / elite gate
