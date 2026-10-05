@@ -49,6 +49,7 @@ const DATA_FILES=[
   'docs/data/small-account-options.json',
   'docs/data/index-options-research.json',
   'docs/data/index-options-profitability-admission.json',
+  'docs/data/index-options-live-policy.json',
   'docs/data/index-options-shadow-trades.json',
   'docs/data/index-options-real-trade-journal.json',
 ];
@@ -77,7 +78,7 @@ function fingerprintOf(x){
 }
 function selectAction(dispatch){
   if(!(dispatch?.chatgptShouldRun===true||dispatch?.executionNeeded===true))return null;
-  const rows=[dispatch.pendingAction,...(dispatch.optionCandidates||[]),...(dispatch.automaticStockCandidates||[]),...(dispatch.seedLaneCandidates||[]),...(dispatch.fallbackActions||[])];
+  const rows=[dispatch.pendingAction,...(dispatch.optionCandidates||[]),...(dispatch.indexOptionResolutionRequests||[]),...(dispatch.automaticStockCandidates||[]),...(dispatch.seedLaneCandidates||[]),...(dispatch.fallbackActions||[])];
   for(const action of rows){const fingerprint=fingerprintOf(action);if(fingerprint)return{fingerprint,action};}
   return null;
 }
