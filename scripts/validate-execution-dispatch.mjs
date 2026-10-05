@@ -28,8 +28,8 @@ if(dispatch.optionsLane?.status==='OPTION_SEED_LANE_BUY_TRIGGER'&&optionCandidat
 
 const indexLane=dispatch.indexOptionsLane||{};
 const indexResearch=indexLane.researchCandidates||[];
-if(!['SHADOW_ONLY_BROKER_EVIDENCE_REQUIRED','LIVE_SUSPENDED','ADMISSION_EARNED_BROKER_RESOLUTION_REQUIRED','BLOCKED_ADMISSION','STALE_RESEARCH'].includes(indexLane.status)) fail('invalid index-options lane status');
-if(!['SHADOW_ONLY','MICRO_PROBATION','PROBATION','LIVE_ADMITTED','LIVE_SUSPENDED'].includes(indexLane.admissionState)) fail('invalid index-options admission state');
+if(!['LIVE_MICRO_BOOTSTRAP','SHADOW_ONLY_BROKER_EVIDENCE_REQUIRED','LIVE_SUSPENDED','ADMISSION_EARNED_BROKER_RESOLUTION_REQUIRED','BLOCKED_ADMISSION','STALE_RESEARCH'].includes(indexLane.status)) fail('invalid index-options lane status');
+if(!['LIVE_MICRO_BOOTSTRAP','SHADOW_ONLY','MICRO_PROBATION','PROBATION','LIVE_ADMITTED','LIVE_SUSPENDED'].includes(indexLane.admissionState)) fail('invalid index-options admission state');
 if(indexLane.executionCandidatePublished!==false) fail('index-options lane must not publish an exact broker order candidate before live Robinhood contract resolution');
 if(indexResearch.some(x=>!['XND','DJX'].includes(x.indexSymbol))) fail('index-options research contains unsupported index');
 if(indexResearch.some(x=>x.brokerContractResolutionRequired!==true)) fail('index-options research must require broker contract resolution');
