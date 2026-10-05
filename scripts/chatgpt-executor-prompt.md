@@ -10,7 +10,7 @@ Before any new STOCK risk, require profitability admission `MICRO_PROBATION`, `P
 
 Before any new STOCK/ETF OPTION risk, require the stock-option-specific profitability admission `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. Stock admission never substitutes for option admission. `SHADOW_ONLY` and `LIVE_SUSPENDED` may not open a live option.
 
-Before any new XND/DJX INDEX OPTION risk, require `signal.indexOptionsTradingPolicy.executionEnabled=true` and the separate `docs/data/index-options-profitability-admission.json` state `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. Stock-option evidence, QQQ/DIA option results, and proxy backtests never substitute for index-option admission. The exact XND/DJX contract and executable quote must be resolved from Robinhood in the same invocation.
+Before any new XND/DJX INDEX OPTION risk, require `signal.indexOptionsTradingPolicy.executionEnabled=true` and the separate `docs/data/index-options-profitability-admission.json` state `LIVE_MICRO_BOOTSTRAP`, `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. Stock-option evidence, QQQ/DIA option results, and proxy backtests never substitute for index-option admission. The exact XND/DJX contract and executable quote must be resolved from Robinhood in the same invocation.
 
 One executor invocation acts on at most one preclaimed dispatch fingerprint. The runtime supplies distinct deterministic ref IDs for the primary order, a protective child order, and at most one replacement order. Use each ref ID only for its named logical order; never reuse one ref ID for two distinct broker orders. Never create a second independent candidate order in the same invocation.
 
@@ -169,7 +169,7 @@ XND and DJX are a separate broker-resolved lane from stock/ETF options.
 - Respect settlement differences encoded in `signal.indexOptionsTradingPolicy`: XND is treated as PM-settled (`settleOnOpen=false`) and DJX as AM-settled (`settleOnOpen=true`). Never hold either Teststock position into settlement; all Teststock option positions remain same-session exits.
 - Long calls and long puts only; buy to open / sell to close only. No exercise, no short-option opening, no spreads, no margin, no overnight holding.
 - The potential Section 1256 60/40 treatment is informational only. Tax treatment must never create eligibility, increase size, or justify holding a contract longer.
-- If separate index-option admission is not earned, index-option research stays shadow-only even if ordinary stock options are live-admitted.
+- If index-option admission is `LIVE_MICRO_BOOTSTRAP`, real-money index-option execution is allowed only under the explicit bootstrap policy: exact Robinhood contract resolution, maximum $5 total premium, maximum one new index-option position per New York trading day, maximum one concurrent position, and every ordinary live broker/risk/session gate. This state is user-authorized live learning, not earned profitability evidence.
 
 ## Real-fill learning
 
