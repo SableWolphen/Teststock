@@ -14,7 +14,7 @@ if(dispatch.chatgptShouldRun){
     if(!action.fingerprint) fail('actionable dispatch lacks fingerprint');
     if(action.isActionable!==true) fail('actionable dispatch must be actionable');
     if(action.trigger==='BUY_TRIGGER'&&(!action.expiresAt||Date.parse(action.expiresAt)<=Date.parse(dispatch.generatedAt))) fail('entry is expired');
-  }else if(!(dispatch.seedLaneCandidates||[]).some(x=>x?.fingerprint)&&!(dispatch.optionCandidates||[]).some(x=>x?.fingerprint)) fail('actionable dispatch lacks a normal, seed, or option fingerprint');
+  }else if(!(dispatch.seedLaneCandidates||[]).some(x=>x?.fingerprint)&&!(dispatch.optionCandidates||[]).some(x=>x?.fingerprint)&&!(dispatch.indexOptionResolutionRequests||[]).some(x=>x?.fingerprint)) fail('actionable dispatch lacks a normal, seed, option, or index-option resolution fingerprint');
 }
 if((dispatch.fallbackActions||[]).some(action=>action.trigger!=='BUY_TRIGGER')) fail('fallback sequence may contain only buy actions');
 if(dispatch.pendingAction?.trigger!=='BUY_TRIGGER'&&(dispatch.pendingAction?.trigger!=='OPTION_SEED_LANE_BUY_TRIGGER')&&(dispatch.fallbackActions||[]).length) fail('exit dispatch cannot contain buy fallbacks');
@@ -30,12 +30,22 @@ const indexLane=dispatch.indexOptionsLane||{};
 const indexResearch=indexLane.researchCandidates||[];
 if(!['SHADOW_ONLY_BROKER_EVIDENCE_REQUIRED','LIVE_SUSPENDED','ADMISSION_EARNED_BROKER_RESOLUTION_REQUIRED','BLOCKED_ADMISSION','STALE_RESEARCH'].includes(indexLane.status)) fail('invalid index-options lane status');
 if(!['SHADOW_ONLY','MICRO_PROBATION','PROBATION','LIVE_ADMITTED','LIVE_SUSPENDED'].includes(indexLane.admissionState)) fail('invalid index-options admission state');
-if(indexLane.executionCandidatePublished!==false) fail('index-options lane must not publish a broker order candidate before exact Robinhood contract resolution');
+if(indexLane.executionCandidatePublished!==false) fail('index-options lane must not publish an exact broker order candidate before live Robinhood contract resolution');
 if(indexResearch.some(x=>!['XND','DJX'].includes(x.indexSymbol))) fail('index-options research contains unsupported index');
 if(indexResearch.some(x=>x.brokerContractResolutionRequired!==true)) fail('index-options research must require broker contract resolution');
 if(indexResearch.some(x=>x.liveExecutionEligible!==false)) fail('index-options research rows cannot be directly executable');
 if(indexResearch.some(x=>x.indexSymbol==='XND'&&x.proxySymbol!=='QQQ')) fail('XND proxy must be QQQ');
 if(indexResearch.some(x=>x.indexSymbol==='DJX'&&x.proxySymbol!=='DIA')) fail('DJX proxy must be DIA');
+
+const indexRequests=dispatch.indexOptionResolutionRequests||[];
+if(indexRequests.some(x=>x.trigger!=='INDEX_OPTION_RESOLUTION_REQUEST'||x.assetClass!=='INDEX_OPTION')) fail('invalid index-option resolution request');
+if(indexRequests.some(x=>!['XND','DJX'].includes(x.ticker))) fail('unsupported index-option resolution symbol');
+if(indexRequests.some(x=>x.admissionState!=='LIVE_MICRO_BOOTSTRAP'&&x.admissionState!=='MICRO_PROBATION'&&x.admissionState!=='PROBATION'&&x.admissionState!=='LIVE_ADMITTED')) fail('index-option resolution request lacks live admission');
+if(indexRequests.some(x=>Number(x.maxOrderUsd)<=0||Number(x.maxOrderUsd)>5)) fail('index-option resolution request exceeds $5 bootstrap cap');
+if(indexRequests.some(x=>Number(x.maxNewPositionsPerNyDay)!==1||Number(x.maxConcurrentPositions)!==1)) fail('index-option bootstrap frequency/concurrency cap');
+if(indexRequests.some(x=>x.brokerContractResolutionRequired!==true||!Array.isArray(x.allowedKinds)||!x.allowedKinds.length)) fail('index-option resolution request missing broker resolution/kind');
+if(indexRequests.length>1) fail('only one index-option resolution request may be published per dispatch');
+if(indexRequests.length&&dispatch.indexOptionsLane?.resolutionRequestPublished!==true) fail('index-option resolution request not reflected in lane state');
 
 const automaticStockCandidates=dispatch.automaticStockCandidates||[];
 if(automaticStockCandidates.some(action=>action.trigger!=='BUY_TRIGGER')) fail('automaticStockCandidates may contain only BUY_TRIGGER actions');
@@ -84,4 +94,4 @@ if(dispatch.pendingAction?.trigger==='STOCK_DAY_TRADE_FORCED_EXIT'&&Number(dispa
 if((dispatch.priorityOrder||[]).indexOf('STOCK_DAY_TRADE_FORCED_EXIT')<0||(dispatch.priorityOrder||[]).indexOf('STOCK_DAY_TRADE_FORCED_EXIT')>1)fail('day-trade forced exit priority order');
 if(dispatch.pendingAction?.trigger==='STOCK_DAY_TRADE_FORCED_EXIT'&&(automaticStockCandidates.length||seeds.length))fail('day-trade forced exit must block buys');
 
-console.log(`Execution dispatch valid: ${dispatch.chatgptShouldRun?'actionable':'idle'}; automatic stock candidates ${automaticStockCandidates.length}; option candidates ${(dispatch.optionCandidates||[]).length}; index-option research ${indexResearch.length}; seed candidates ${seeds.length}; capacity ${max===null?'dynamic':max}.`);
+console.log(`Execution dispatch valid: ${dispatch.chatgptShouldRun?'actionable':'idle'}; automatic stock candidates ${automaticStockCandidates.length}; option candidates ${(dispatch.optionCandidates||[]).length}; index-option resolution requests ${indexRequests.length}; index-option research ${indexResearch.length}; seed candidates ${seeds.length}; capacity ${max===null?'dynamic':max}.`);
