@@ -71,6 +71,17 @@ Options remain a separate, evidence-gated intelligence lane for OpenAI executor 
 - Once an option's profit floor/trailing protection ratchets upward, it may never be loosened. Sell-to-close remains the only normal exit; do not exercise simply to realize a gain.
 - Options shadow evidence is intraday and executable-price based: entry ask, exit bid, no midpoint fills. It requires at least 50 independent outcomes across 20 trading days and profit factor of at least 1.30 before micro probation. Profit floors may only move upward, and every position must be flat by the session cutoff.
 
+### XND / DJX index options
+
+- XND and DJX are a distinct index-options lane with their own files: `docs/data/index-options-research.json`, `docs/data/index-options-shadow-trades.json`, `docs/data/index-options-profitability-admission.json`, and `docs/data/index-options-real-trade-journal.json`.
+- QQQ and DIA may provide research direction/regime context for XND and DJX respectively, but ETF option results never count as index-option evidence.
+- Live XND/DJX risk is forbidden while index-option admission is `SHADOW_ONLY` or `LIVE_SUSPENDED`. Stock-option admission never substitutes for index-option admission.
+- Resolve the exact XND/DJX chain and contract through Robinhood immediately before any index-option action. Broker tradability, bid/ask, liquidity, DTE, premium and whole-contract affordability are mandatory.
+- XND and DJX are encoded as cash-settled European-style products with no early assignment risk. XND is treated as PM-settled (`settleOnOpen=false`); DJX is treated as AM-settled (`settleOnOpen=true`). Teststock still closes every option the same session and never intentionally holds into settlement or expiration.
+- Long call / long put only, buy to open / sell to close only. No spreads, naked selling, exercise, margin, deposits, transfers, or overnight holding.
+- Potential Section 1256 60/40 treatment is informational only. Tax treatment may never create eligibility, increase size, or justify holding longer.
+- Index-option micro probation requires at least 50 independent exact-contract shadow outcomes across 20 trading days with positive expectancy and profit factor >= 1.30, as enforced by the generated index admission file.
+
 ## Broad historical market learning
 
 Teststock also maintains `docs/data/web-market-history-learning.json`, built from broad provider-hosted US-equity history rather than only repository trade records.
