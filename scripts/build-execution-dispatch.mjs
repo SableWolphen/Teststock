@@ -8,6 +8,8 @@ const board=await read(BOARD,null);
 const signal=await read(SIGNAL,{});
 const optionsScan=await read('docs/data/small-account-options.json',{candidates:[]});
 const optionsAdmission=await read('docs/data/options-profitability-admission.json',{state:'SHADOW_ONLY',sizeMultiplier:0});
+const indexOptionsResearch=await read('docs/data/index-options-research.json',{candidates:[]});
+const indexOptionsAdmission=await read('docs/data/index-options-profitability-admission.json',{state:'SHADOW_ONLY',sizeMultiplier:0,executionAuthorized:false});
 const probabilityPolicy=await read('docs/data/probability-first-policy.json',{options:{seedLane:{enabled:false}}});
 const executionWatchlist=await read('docs/data/execution-watchlist.json',{positions:[]});
 const optionsRealJournal=await read('docs/data/options-real-trade-journal.json',{trades:[],summary:{}});
@@ -146,6 +148,32 @@ const optionCandidateCompact=optionTrigger?{
   optionContract:optionTrigger.optionContract,optionKind:optionTrigger.optionKind,expiry:optionTrigger.expiry,dte:optionTrigger.dte,dteBucket:optionTrigger.dteBucket,strike:optionTrigger.strike,bid:optionTrigger.bid,ask:optionTrigger.ask,mid:optionTrigger.mid,spreadPct:optionTrigger.spreadPct,delta:optionTrigger.delta,iv:optionTrigger.iv,maxOrderUsd:optionTrigger.maxOrderUsd,admissionState:optionTrigger.admissionState,profitProtection:optionTrigger.profitProtection,requestedAction:optionTrigger.requestedAction,triggerStateChangedAt:optionTrigger.stateChangedAt,freshnessAnchor:optionTrigger.stateChangedAt,triggerAgeMs:ageMs(optionTrigger.stateChangedAt),reason:optionTrigger.reason,packet:`${optionTrigger.ticker} | ${optionTrigger.optionKind} | ${optionTrigger.optionContract} | premium ${optionTrigger.ask} | ${optionTrigger.requestedAction}`
 }:null;
 
+const indexResearchSourceAt=indexOptionsResearch.sourceOptionsScanGeneratedAt||indexOptionsResearch.generatedAt||null;
+const indexOptionsResearchFresh=ageMs(indexResearchSourceAt)<=OPTIONS_MAX_AGE_MS;
+const indexOptionResearchCandidates=(indexOptionsResearch.candidates||[]).filter(x=>['XND','DJX'].includes(x?.indexSymbol)).map(x=>({
+  indexSymbol:x.indexSymbol,
+  proxySymbol:x.proxySymbol,
+  proxyBias:x.proxyBias,
+  proxyPrice:x.proxyPrice??null,
+  proxyScore:x.proxyScore??null,
+  researchStatus:x.researchStatus,
+  brokerContractResolutionRequired:x.brokerContractResolutionRequired===true,
+  brokerResolution:x.brokerResolution??null,
+  settlement:x.settlement??null,
+  liveExecutionEligible:false,
+}));
+const indexOptionsLane={
+  status:!indexOptionsResearchFresh?'STALE_RESEARCH':indexOptionsAdmission.state==='SHADOW_ONLY'?'SHADOW_ONLY_BROKER_EVIDENCE_REQUIRED':indexOptionsAdmission.state==='LIVE_SUSPENDED'?'LIVE_SUSPENDED':indexOptionsAdmission.executionAuthorized===true?'ADMISSION_EARNED_BROKER_RESOLUTION_REQUIRED':'BLOCKED_ADMISSION',
+  admissionState:indexOptionsAdmission.state||'SHADOW_ONLY',
+  admissionSizeMultiplier:Number(indexOptionsAdmission.sizeMultiplier||0),
+  researchFresh:indexOptionsResearchFresh,
+  researchGeneratedAt:indexOptionsResearch.generatedAt||null,
+  sourceOptionsScanGeneratedAt:indexOptionsResearch.sourceOptionsScanGeneratedAt||null,
+  executionCandidatePublished:false,
+  researchCandidates:indexOptionResearchCandidates,
+  rule:'XND/DJX are a separate shadow-first index-options lane. QQQ/DIA provide research direction only. No index-option execution candidate is published until exact Robinhood contract evidence has earned separate index-option admission and the live broker contract/quote is resolved.'
+};
+
 const out={
   schemaVersion:4,source:'TESTSTOCK_EVENT_DISPATCH',generatedAt:nowIso,boardPublishedAt:board?.publishedAt||null,
   boardAgeMs:Number.isFinite(boardAgeMs)?boardAgeMs:null,maximumBoardAgeMs:MAX_BOARD_AGE_MS,
@@ -153,7 +181,8 @@ const out={
   chatgptShouldRun:Boolean(pendingAction)||seedLaneCandidates.length>0||Boolean(optionCandidateCompact),chatgptShouldPollMarket:false,executionNeeded:actionableCandidates.length>0||seedLaneCandidates.length>0||Boolean(optionCandidateCompact),
   dispatchFingerprints:[...actionableCandidates.map(x=>x.fingerprint),...seedLaneCandidates.map(x=>x.fingerprint),...(optionCandidateCompact?[optionCandidateCompact.fingerprint]:[])],priorityOrder:['TRIGGER_1_STOP','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_3_TARGET2','TRIGGER_2_TARGET1','TRIGGER_EARLY_PROFIT_TRIM','BUY_TRIGGER','OPTION_SEED_LANE_BUY_TRIGGER','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'],
   pendingAction,automaticStockCandidates,approvalCandidates:[],approvalBatchId:null,fallbackActions,seedLaneCandidates,optionCandidates:optionCandidateCompact?[optionCandidateCompact]:[],optionsLane:{status:optionLaneResult.status,admissionState:optionsAdmission.state,scanFresh:optionScanFresh,scanGeneratedAt:optionsScan.generatedAt||null,localTrackedOpenOptionPositions,brokerPositionReconciliationRequired:optionBrokerReconciliationRequired,brokerOnlyPositionsAreAdopted,newEntriesThisWeek:optionNewThisWeek,lastLiveTradeOutcome:lastOptionOutcome,rule:'Options are exceptional and evidence-gated. Local Teststock position counts are not authoritative; live Robinhood option-position and open-order reconciliation is mandatory before every new option entry. Broker positions missing from Teststock are adopted into the managed position profile instead of globally blocking the options lane. Adopted positions still count toward live cash, aggregate premium risk, duplicate-contract/symbol checks, account floor, and any current concurrency cap. Unknown or ambiguous broker order state may block only the conflicting action until reconciled. Cash-funded long options only; no exercise/overnight.'},
-  crossAssetPreference:{optionsMayOutrankStocks:true,rule:'After exits, compare independently qualified option and stock opportunities by executable after-cost evidence. A qualified option may be presented ahead of stock entries, but option admission, live chain/liquidity, whole-contract cash/risk, concurrency, duplicate and session gates remain mandatory. Never force an option to satisfy a frequency target.'},
+  indexOptionsLane,
+  crossAssetPreference:{optionsMayOutrankStocks:true,rule:'After exits, compare independently qualified option and stock opportunities by executable after-cost evidence. Stock/ETF options and XND/DJX index options use separate admission ledgers; neither may borrow the other\'s evidence. A qualified option may be presented ahead of stock entries only after its own admission, live chain/liquidity, whole-contract cash/risk, concurrency, duplicate and session gates pass. Never force an option to satisfy a frequency target.'},
   multiStockPolicy:{enabled:true,maximumAutomaticCandidatesPerDispatch:null,capacityMode:'DYNAMIC_RISK_CASH_AND_BROKER_LIMITED',automaticQualifiedEntries:true,userApprovalRequired:false,oneWinnerDoesNotBlockOtherQualifiedStocks:true,rule:'Expose every already-qualified current-generation stock candidate in rank order. ChatGPT may execute as many as remain independently qualified after immediate broker rechecks and dynamic cash, portfolio-heat, correlation, account-floor and aggregate-stop-risk limits. Never force a trade.'},
   queuedActions:permittedCandidates.filter(x=>!x.isActionable).map(x=>({ticker:x.ticker,trigger:x.trigger,fingerprint:x.fingerprint,isFresh:x.isFresh,sessionAllowed:x.sessionAllowed??true,freshnessAnchor:x.freshnessAnchor??null})),
   noActionInstruction:'If chatgptShouldRun is false, stop immediately. Do not call Robinhood, research markets, or produce a long report.',

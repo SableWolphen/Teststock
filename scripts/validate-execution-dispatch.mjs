@@ -26,6 +26,17 @@ if(optionCandidates.some(x=>Number(x.maxOrderUsd)<=0||Number(x.maxOrderUsd)>15))
 if(optionCandidates.some(x=>x.admissionState!=='MICRO_PROBATION'&&x.admissionState!=='PROBATION'&&x.admissionState!=='LIVE_ADMITTED')) fail('option candidate lacks earned admission');
 if(dispatch.optionsLane?.status==='OPTION_SEED_LANE_BUY_TRIGGER'&&optionCandidates.length!==1) fail('option lane status must expose exactly one candidate');
 
+const indexLane=dispatch.indexOptionsLane||{};
+const indexResearch=indexLane.researchCandidates||[];
+if(!['SHADOW_ONLY_BROKER_EVIDENCE_REQUIRED','LIVE_SUSPENDED','ADMISSION_EARNED_BROKER_RESOLUTION_REQUIRED','BLOCKED_ADMISSION','STALE_RESEARCH'].includes(indexLane.status)) fail('invalid index-options lane status');
+if(!['SHADOW_ONLY','MICRO_PROBATION','PROBATION','LIVE_ADMITTED','LIVE_SUSPENDED'].includes(indexLane.admissionState)) fail('invalid index-options admission state');
+if(indexLane.executionCandidatePublished!==false) fail('index-options lane must not publish a broker order candidate before exact Robinhood contract resolution');
+if(indexResearch.some(x=>!['XND','DJX'].includes(x.indexSymbol))) fail('index-options research contains unsupported index');
+if(indexResearch.some(x=>x.brokerContractResolutionRequired!==true)) fail('index-options research must require broker contract resolution');
+if(indexResearch.some(x=>x.liveExecutionEligible!==false)) fail('index-options research rows cannot be directly executable');
+if(indexResearch.some(x=>x.indexSymbol==='XND'&&x.proxySymbol!=='QQQ')) fail('XND proxy must be QQQ');
+if(indexResearch.some(x=>x.indexSymbol==='DJX'&&x.proxySymbol!=='DIA')) fail('DJX proxy must be DIA');
+
 const automaticStockCandidates=dispatch.automaticStockCandidates||[];
 if(automaticStockCandidates.some(action=>action.trigger!=='BUY_TRIGGER')) fail('automaticStockCandidates may contain only BUY_TRIGGER actions');
 if(automaticStockCandidates.some(action=>action.assetClass!=='STOCK')) fail('automaticStockCandidates may contain only stocks');
@@ -73,4 +84,4 @@ if(dispatch.pendingAction?.trigger==='STOCK_DAY_TRADE_FORCED_EXIT'&&Number(dispa
 if((dispatch.priorityOrder||[]).indexOf('STOCK_DAY_TRADE_FORCED_EXIT')<0||(dispatch.priorityOrder||[]).indexOf('STOCK_DAY_TRADE_FORCED_EXIT')>1)fail('day-trade forced exit priority order');
 if(dispatch.pendingAction?.trigger==='STOCK_DAY_TRADE_FORCED_EXIT'&&(automaticStockCandidates.length||seeds.length))fail('day-trade forced exit must block buys');
 
-console.log(`Execution dispatch valid: ${dispatch.chatgptShouldRun?'actionable':'idle'}; automatic stock candidates ${automaticStockCandidates.length}; option candidates ${(dispatch.optionCandidates||[]).length}; seed candidates ${seeds.length}; capacity ${max===null?'dynamic':max}.`);
+console.log(`Execution dispatch valid: ${dispatch.chatgptShouldRun?'actionable':'idle'}; automatic stock candidates ${automaticStockCandidates.length}; option candidates ${(dispatch.optionCandidates||[]).length}; index-option research ${indexResearch.length}; seed candidates ${seeds.length}; capacity ${max===null?'dynamic':max}.`);

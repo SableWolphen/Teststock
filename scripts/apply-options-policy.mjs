@@ -3,6 +3,10 @@ import fs from 'node:fs/promises';
 const signalPath='docs/signal.json';
 const chatgptSignalPath='docs/data/chatgpt-signal.json';
 const signal=JSON.parse(await fs.readFile(signalPath,'utf8'));
+const read=async(f,x)=>{try{return JSON.parse(await fs.readFile(f,'utf8'));}catch{return x;}};
+const indexResearch=await read('docs/data/index-options-research.json',{candidates:[]});
+const indexAdmission=await read('docs/data/index-options-profitability-admission.json',{state:'SHADOW_ONLY',sizeMultiplier:0,executionAuthorized:false});
+const indexExecutionAuthorized=['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(indexAdmission.state)&&indexAdmission.executionAuthorized===true;
 
 signal.optionsTradingPolicy={
   enabled:true,
@@ -44,9 +48,51 @@ signal.optionsTradingPolicy={
   optionsApprovalRequiredAtBroker:true
 };
 
+signal.indexOptionsTradingPolicy={
+  enabled:true,
+  researchEnabled:true,
+  executionEnabled:indexExecutionAuthorized,
+  executionAgent:'CHATGPT',
+  transport:'ROBINHOOD_TRADING_MCP',
+  separateAdmissionRequired:true,
+  admissionState:indexAdmission.state,
+  admissionSizeMultiplier:Number(indexAdmission.sizeMultiplier||0),
+  allowedIndexes:['XND','DJX'],
+  allowedStrategies:['LONG_CALL','LONG_PUT'],
+  buyToOpenOnly:true,
+  sellToCloseOnly:true,
+  cashOnly:true,
+  noMargin:true,
+  noDeposits:true,
+  noBankTransfers:true,
+  noExercise:true,
+  noOvernight:true,
+  brokerContractResolutionRequired:true,
+  brokerQuoteRequired:true,
+  exactContractEvidenceRequired:true,
+  proxyResearchOnly:true,
+  proxyMap:{XND:'QQQ',DJX:'DIA'},
+  underlyingQualification:'QQQ/DIA may establish direction and regime context only. They never substitute for live XND/DJX contract resolution or separate index-option profitability admission.',
+  settlement:{
+    XND:{cashSettled:true,exerciseStyle:'EUROPEAN',earlyAssignmentRisk:false,settleOnOpen:false,settlementWindow:'PM'},
+    DJX:{cashSettled:true,exerciseStyle:'EUROPEAN',earlyAssignmentRisk:false,settleOnOpen:true,settlementWindow:'AM'}
+  },
+  taxContext:{
+    potentialSection1256Treatment:true,
+    generalRule:'Qualifying Section 1256 index options are generally treated 60% long-term and 40% short-term and may be subject to year-end mark-to-market.',
+    informationalOnly:true,
+    affectsEligibility:false,
+    verifyWithTaxProfessional:true
+  },
+  researchCandidates:indexResearch.candidates||[],
+  riskRule:'Index options remain defined-risk long premium only. Premium paid, live spread/slippage, account cash, capital-tier risk, same-day exit, and all broker protections remain hard gates.',
+  admissionRule:'Index options may never borrow stock-option admission. SHADOW_ONLY and LIVE_SUSPENDED cannot open live index-option risk.',
+};
+
 signal.autopilot={
   ...(signal.autopilot||{}),
   automaticQualifiedOptionBuys:true,
+  automaticQualifiedIndexOptionBuys:indexExecutionAuthorized,
   automaticOptionRiskReducingExits:true,
   optionUserApprovalRequired:false,
   optionsFundingSource:'EXISTING_ROBINHOOD_AGENTIC_ACCOUNT_ONLY',
@@ -61,7 +107,9 @@ signal.generatorIntegrity={
     ...(signal.generatorIntegrity?.traceableFeatures||{}),
     automaticQualifiedOptionExecution:true,
     optionsCashOnly:true,
-    optionsHardAccountLossCap:true
+    optionsHardAccountLossCap:true,
+    indexOptionsSeparateAdmission:true,
+    indexOptionsBrokerResolved:true
   }
 };
 

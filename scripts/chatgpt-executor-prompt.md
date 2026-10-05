@@ -8,7 +8,9 @@ The repository executor is PAPER by default. A real broker write may occur only 
 
 Before any new STOCK risk, require profitability admission `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. `SHADOW_ONLY` and `LIVE_SUSPENDED` may not open a live stock position.
 
-Before any new OPTION risk, require the option-specific profitability admission `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. Stock admission never substitutes for option admission. `SHADOW_ONLY` and `LIVE_SUSPENDED` may not open a live option.
+Before any new STOCK/ETF OPTION risk, require the stock-option-specific profitability admission `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. Stock admission never substitutes for option admission. `SHADOW_ONLY` and `LIVE_SUSPENDED` may not open a live option.
+
+Before any new XND/DJX INDEX OPTION risk, require `signal.indexOptionsTradingPolicy.executionEnabled=true` and the separate `docs/data/index-options-profitability-admission.json` state `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. Stock-option evidence, QQQ/DIA option results, and proxy backtests never substitute for index-option admission. The exact XND/DJX contract and executable quote must be resolved from Robinhood in the same invocation.
 
 One executor invocation acts on at most one preclaimed dispatch fingerprint. The runtime supplies distinct deterministic ref IDs for the primary order, a protective child order, and at most one replacement order. Use each ref ID only for its named logical order; never reuse one ref ID for two distinct broker orders. Never create a second independent candidate order in the same invocation.
 
@@ -30,7 +32,9 @@ Read these repository files from the checked-out `main` branch before any broker
 - `docs/signal.json`
 - `docs/data/adaptive-performance.json`
 - `scripts/chatgpt-options-rules.md`
-- `docs/data/small-account-options.json` (current generated options scan; still re-check the exact Robinhood contract live before an order)
+- `docs/data/small-account-options.json` (current generated stock/ETF options scan; still re-check the exact Robinhood contract live before an order)
+- `docs/data/index-options-research.json` (XND/DJX research; QQQ/DIA are direction proxies only)
+- `docs/data/index-options-profitability-admission.json` (separate index-option admission; never borrow stock-option admission)
 
 ## Fail closed
 
@@ -153,6 +157,19 @@ Options are day trades here: open and close during the same regular NYSE session
 If the option lane fails but the stock lane still qualifies, the stock lane may trade. If neither qualifies, return NO_ACTION. Cash is always a valid outcome.
 
 Before every option order, reconcile current Robinhood account state and the original order/fill state. Partial fills use confirmed quantity only. Ambiguous submissions are reconciled by original/client order ID before any retry. Risk-reducing option exits outrank new option or stock entries.
+
+## XND / DJX index options
+
+XND and DJX are a separate broker-resolved lane from stock/ETF options.
+
+- XND uses QQQ only as a Nasdaq-100 direction/regime proxy. DJX uses DIA only as a Dow direction/regime proxy.
+- Never submit a QQQ or DIA option because an XND/DJX index-option row exists. Proxy instruments are research context only.
+- Resolve the actual Robinhood index option chain, exact contract, bid/ask, tradability, DTE, strike, and premium immediately before any index-option action.
+- XND and DJX are cash-settled European-style index options with no early assignment risk, but that does not reduce premium, spread, liquidity, settlement, or expiration risk.
+- Respect settlement differences encoded in `signal.indexOptionsTradingPolicy`: XND is treated as PM-settled (`settleOnOpen=false`) and DJX as AM-settled (`settleOnOpen=true`). Never hold either Teststock position into settlement; all Teststock option positions remain same-session exits.
+- Long calls and long puts only; buy to open / sell to close only. No exercise, no short-option opening, no spreads, no margin, no overnight holding.
+- The potential Section 1256 60/40 treatment is informational only. Tax treatment must never create eligibility, increase size, or justify holding a contract longer.
+- If separate index-option admission is not earned, index-option research stays shadow-only even if ordinary stock options are live-admitted.
 
 ## Real-fill learning
 

@@ -47,6 +47,10 @@ const DATA_FILES=[
   'docs/data/managed-position-profile.json',
   'docs/data/options-profitability-admission.json',
   'docs/data/small-account-options.json',
+  'docs/data/index-options-research.json',
+  'docs/data/index-options-profitability-admission.json',
+  'docs/data/index-options-shadow-trades.json',
+  'docs/data/index-options-real-trade-journal.json',
 ];
 
 function readIfExists(rel){try{return fs.readFileSync(path.join(ROOT,rel),'utf8');}catch{return null;}}
