@@ -1,9 +1,9 @@
 {
   "schemaVersion": 4,
   "source": "TESTSTOCK_EVENT_DISPATCH",
-  "generatedAt": "2026-10-05T17:31:34.915Z",
-  "boardPublishedAt": "2026-10-05T17:31:34.421Z",
-  "boardAgeMs": 494,
+  "generatedAt": "2026-10-05T17:42:21.711Z",
+  "boardPublishedAt": "2026-10-05T17:42:21.092Z",
+  "boardAgeMs": 619,
   "maximumBoardAgeMs": 900000,
   "monitorHealth": "OK",
   "dispatchHealth": "OK",
@@ -41,9 +41,20 @@
     "lastLiveTradeOutcome": null,
     "rule": "Options are exceptional and evidence-gated. Local Teststock position counts are not authoritative; live Robinhood option-position and open-order reconciliation is mandatory before every new option entry. Broker positions missing from Teststock are adopted into the managed position profile instead of globally blocking the options lane. Adopted positions still count toward live cash, aggregate premium risk, duplicate-contract/symbol checks, account floor, and any current concurrency cap. Unknown or ambiguous broker order state may block only the conflicting action until reconciled. Cash-funded long options only; no exercise/overnight."
   },
+  "indexOptionsLane": {
+    "status": "STALE_RESEARCH",
+    "admissionState": "SHADOW_ONLY",
+    "admissionSizeMultiplier": 0,
+    "researchFresh": false,
+    "researchGeneratedAt": null,
+    "sourceOptionsScanGeneratedAt": null,
+    "executionCandidatePublished": false,
+    "researchCandidates": [],
+    "rule": "XND/DJX are a separate shadow-first index-options lane. QQQ/DIA provide research direction only. No index-option execution candidate is published until exact Robinhood contract evidence has earned separate index-option admission and the live broker contract/quote is resolved."
+  },
   "crossAssetPreference": {
     "optionsMayOutrankStocks": true,
-    "rule": "After exits, compare independently qualified option and stock opportunities by executable after-cost evidence. A qualified option may be presented ahead of stock entries, but option admission, live chain/liquidity, whole-contract cash/risk, concurrency, duplicate and session gates remain mandatory. Never force an option to satisfy a frequency target."
+    "rule": "After exits, compare independently qualified option and stock opportunities by executable after-cost evidence. Stock/ETF options and XND/DJX index options use separate admission ledgers; neither may borrow the other's evidence. A qualified option may be presented ahead of stock entries only after its own admission, live chain/liquidity, whole-contract cash/risk, concurrency, duplicate and session gates pass. Never force an option to satisfy a frequency target."
   },
   "multiStockPolicy": {
     "enabled": true,
