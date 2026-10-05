@@ -45,7 +45,9 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
           ALPACA_OPTIONS_FEED: indicative
-        run: node scripts/scan-small-account-options.mjs
+        run: |
+          node scripts/scan-small-account-options.mjs
+          node scripts/build-index-options-research.mjs
 
       - name: Open or update one clean shadow sample
         if: steps.gate.outputs.run == 'true'
@@ -60,7 +62,7 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         run: |
           node scripts/apply-options-profitability-admission.mjs
-          node scripts/validate-options-policy.mjs
+          node scripts/apply-index-options-profitability-admission.mjs
 
       - name: Publish forward shadow artifacts
         if: steps.gate.outputs.run == 'true'
@@ -69,7 +71,7 @@ jobs:
           set -euo pipefail
           git config user.name "teststock-options-forward"
           git config user.email "actions@users.noreply.github.com"
-          git add docs/data/small-account-options.json docs/data/options-shadow-trades.json docs/data/options-profitability-admission.json
+          git add docs/data/small-account-options.json docs/data/options-shadow-trades.json docs/data/options-profitability-admission.json docs/data/index-options-research.json docs/data/index-options-profitability-admission.json docs/data/index-options-shadow-trades.json docs/data/index-options-real-trade-journal.json
           git diff --cached --quiet && exit 0
           git commit -m "Update clean forward options shadow sample"
           for attempt in 1 2 3 4; do
