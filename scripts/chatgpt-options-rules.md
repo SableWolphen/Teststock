@@ -1,6 +1,6 @@
-# Teststock automatic stock-options lane
+# Teststock automatic stock/ETF + index-options lanes
 
-This lane is explicitly authorized for automatic execution only through OpenAI executor + Robinhood Trading MCP. It is a separate risk lane from the stock day-trading lane.
+These lanes are explicitly authorized for automatic execution only through OpenAI executor + Robinhood Trading MCP after their own profitability admission is earned. Stock/ETF options and XND/DJX index options are separate evidence/risk lanes from each other and from stock day trading.
 
 ## Objective
 
@@ -130,6 +130,23 @@ For SELL TO CLOSE:
 - prefer the fastest risk-appropriate supported exit;
 - reconcile the original order if ambiguous;
 - never exercise.
+
+## XND and DJX index-options lane
+
+XND and DJX are not ordinary equity-option underlyings and never borrow stock/ETF option evidence.
+
+- XND research uses QQQ only as a Nasdaq-100 direction/regime proxy.
+- DJX research uses DIA only as a Dow direction/regime proxy.
+- QQQ/DIA option trades never count as XND/DJX shadow or live evidence.
+- New live XND/DJX risk requires the separate index-options admission state `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED` plus `signal.indexOptionsTradingPolicy.executionEnabled=true`.
+- The exact index chain and contract must be resolved live through Robinhood immediately before entry. Verify tradability, strike, expiration, bid/ask, liquidity, DTE, premium and whole-contract affordability.
+- XND is encoded as cash-settled, European-style and PM-settled (`settleOnOpen=false`). DJX is encoded as cash-settled, European-style and AM-settled (`settleOnOpen=true`).
+- No early assignment risk does not mean no risk. Spread, premium loss, settlement behavior, time decay and expiration remain material.
+- Teststock still closes index options the same session and never intentionally holds into settlement or expiration.
+- Long call / long put only, buy to open / sell to close only. No spreads, short option opening, exercise, margin, deposits, transfers or overnight holding.
+- Potential Section 1256 60/40 treatment is informational only and never creates eligibility or raises size.
+
+Index-option forward evidence must use the exact Robinhood-resolved contract: executable ask for entry and executable bid for exit. The initial lane requires at least 50 independent resolved outcomes across 20 trading days with profit factor >= 1.30 before micro probation; later promotion remains subject to the generated admission file and Robinhood-confirmed real fills.
 
 ## No-profit guarantee
 
