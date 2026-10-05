@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-05T17:48:19.772Z",
+  "state": "SHADOW_ONLY",
+  "sizeMultiplier": 0,
+  "executionAuthorized": false,
+  "reason": "XND/DJX have not yet earned separate broker-resolved forward evidence. ETF proxy performance never counts as index-option admission.",
+  "scope": [
+    "XND",
+    "DJX"
+  ],
+  "shadow": {
+    "samples": 0,
+    "distinctTradingDays": 0,
+    "winRatePct": null,
+    "averageR": null,
+    "profitFactor": null,
+    "independenceKey": "createdDate+indexSymbol",
+    "source": "index-options-shadow-trades.json",
+    "exactContractEvidenceRequired": true
+  },
+  "real": {
+    "samples": 0,
+    "winRatePct": null,
+    "averageRealizedR": null,
+    "source": "index-options-real-trade-journal.json"
+  },
+  "thresholds": {
+    "micro": {
+      "samples": 50,
+      "days": 20,
+      "winRatePct": 50,
+      "averageR": 0.05,
+      "profitFactor": 1.3
+    },
+    "probation": {
+      "samples": 100,
+      "days": 30,
+      "winRatePct": 50,
+      "averageR": 0.08,
+      "profitFactor": 1.35
+    },
+    "live": {
+      "samples": 10,
+      "winRatePct": 50,
+      "averageR": 0.25
+    }
+  },
+  "rules": [
+    "Only exact XND/DJX contracts resolved from Robinhood count; QQQ/DIA or other ETF option outcomes never count.",
+    "Entry evidence uses executable ask and exit evidence uses executable bid, not midpoint or theoretical value.",
+    "At least 50 independent broker-resolved outcomes across 20 trading days and profit factor >= 1.30 are required before micro probation.",
+    "A live loss can reduce or suspend future risk; this file can never raise account or premium-risk ceilings."
+  ]
+}

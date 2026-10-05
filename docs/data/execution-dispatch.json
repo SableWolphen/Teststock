@@ -1,9 +1,9 @@
 {
   "schemaVersion": 4,
   "source": "TESTSTOCK_EVENT_DISPATCH",
-  "generatedAt": "2026-10-05T17:42:21.711Z",
-  "boardPublishedAt": "2026-10-05T17:42:21.092Z",
-  "boardAgeMs": 619,
+  "generatedAt": "2026-10-05T17:51:02.052Z",
+  "boardPublishedAt": "2026-10-05T17:51:00.326Z",
+  "boardAgeMs": 1726,
   "maximumBoardAgeMs": 900000,
   "monitorHealth": "OK",
   "dispatchHealth": "OK",
@@ -32,8 +32,8 @@
   "optionsLane": {
     "status": "OPTIONS_DISABLED",
     "admissionState": "SHADOW_ONLY",
-    "scanFresh": false,
-    "scanGeneratedAt": "2026-10-03T01:55:26.855Z",
+    "scanFresh": true,
+    "scanGeneratedAt": "2026-10-05T17:48:19.251Z",
     "localTrackedOpenOptionPositions": 0,
     "brokerPositionReconciliationRequired": true,
     "brokerOnlyPositionsAreAdopted": true,
@@ -42,14 +42,71 @@
     "rule": "Options are exceptional and evidence-gated. Local Teststock position counts are not authoritative; live Robinhood option-position and open-order reconciliation is mandatory before every new option entry. Broker positions missing from Teststock are adopted into the managed position profile instead of globally blocking the options lane. Adopted positions still count toward live cash, aggregate premium risk, duplicate-contract/symbol checks, account floor, and any current concurrency cap. Unknown or ambiguous broker order state may block only the conflicting action until reconciled. Cash-funded long options only; no exercise/overnight."
   },
   "indexOptionsLane": {
-    "status": "STALE_RESEARCH",
+    "status": "SHADOW_ONLY_BROKER_EVIDENCE_REQUIRED",
     "admissionState": "SHADOW_ONLY",
     "admissionSizeMultiplier": 0,
-    "researchFresh": false,
-    "researchGeneratedAt": null,
-    "sourceOptionsScanGeneratedAt": null,
+    "researchFresh": true,
+    "researchGeneratedAt": "2026-10-05T17:48:19.413Z",
+    "sourceOptionsScanGeneratedAt": "2026-10-05T17:48:19.413Z",
     "executionCandidatePublished": false,
-    "researchCandidates": [],
+    "researchCandidates": [
+      {
+        "indexSymbol": "XND",
+        "proxySymbol": "QQQ",
+        "proxyBias": "BULLISH",
+        "proxyPrice": 755.18,
+        "proxyScore": 8.3,
+        "researchStatus": "BROKER_SHADOW_SAMPLE_READY",
+        "brokerContractResolutionRequired": true,
+        "brokerResolution": {
+          "chainSymbol": "XND",
+          "allowedKinds": [
+            "LONG_CALL"
+          ],
+          "minDte": 3,
+          "maxDte": 45,
+          "requiresLiveTradability": true,
+          "requiresLiveBidAsk": true,
+          "requiresLiveLiquidityCheck": true,
+          "requiresWholeContractCashCheck": true
+        },
+        "settlement": {
+          "cashSettled": true,
+          "exerciseStyle": "EUROPEAN",
+          "earlyAssignmentRisk": false,
+          "settleOnOpen": false,
+          "settlementWindow": "PM"
+        },
+        "liveExecutionEligible": false
+      },
+      {
+        "indexSymbol": "DJX",
+        "proxySymbol": "DIA",
+        "proxyBias": "UNKNOWN",
+        "proxyPrice": null,
+        "proxyScore": null,
+        "researchStatus": "WAIT_PROXY_DIRECTION",
+        "brokerContractResolutionRequired": true,
+        "brokerResolution": {
+          "chainSymbol": "DJX",
+          "allowedKinds": [],
+          "minDte": 3,
+          "maxDte": 45,
+          "requiresLiveTradability": true,
+          "requiresLiveBidAsk": true,
+          "requiresLiveLiquidityCheck": true,
+          "requiresWholeContractCashCheck": true
+        },
+        "settlement": {
+          "cashSettled": true,
+          "exerciseStyle": "EUROPEAN",
+          "earlyAssignmentRisk": false,
+          "settleOnOpen": true,
+          "settlementWindow": "AM"
+        },
+        "liveExecutionEligible": false
+      }
+    ],
     "rule": "XND/DJX are a separate shadow-first index-options lane. QQQ/DIA provide research direction only. No index-option execution candidate is published until exact Robinhood contract evidence has earned separate index-option admission and the live broker contract/quote is resolved."
   },
   "crossAssetPreference": {
