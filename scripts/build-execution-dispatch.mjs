@@ -164,16 +164,17 @@ const indexOptionResearchCandidates=(indexOptionsResearch.candidates||[]).filter
   liveExecutionEligible:false,
 }));
 const indexSession=board?.marketSession||{};
+const indexLiveAllowed=['LIVE_MICRO_BOOTSTRAP','MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(indexOptionsAdmission.state)&&indexOptionsAdmission.executionAuthorized===true;
 const indexBootstrapAllowed=indexOptionsAdmission.state==='LIVE_MICRO_BOOTSTRAP'&&indexOptionsLivePolicy.enabled===true&&indexOptionsAdmission.executionAuthorized===true;
 const indexResolutionPool=indexOptionResearchCandidates
   .filter(x=>x.researchStatus==='BROKER_SHADOW_SAMPLE_READY'&&['BULLISH','BEARISH'].includes(x.proxyBias))
   .sort((a,b)=>Number(b.proxyScore||0)-Number(a.proxyScore||0));
-const indexResolutionRequest=(!hasExitEvent&&boardHealthy&&indexOptionsResearchFresh&&indexBootstrapAllowed&&indexSession.calendarAvailable===true&&indexSession.regularSession===true&&Number(indexSession.minutesToClose)>=Number(indexOptionsLivePolicy.entryCutoffMinutesBeforeClose||45)&&indexResolutionPool.length)?{
+const indexResolutionRequest=(!hasExitEvent&&boardHealthy&&indexOptionsResearchFresh&&indexLiveAllowed&&indexSession.calendarAvailable===true&&indexSession.regularSession===true&&Number(indexSession.minutesToClose)>=Number(indexOptionsLivePolicy.entryCutoffMinutesBeforeClose||45)&&indexResolutionPool.length)?{
   fingerprint:`INDEX_OPTION_RESOLVE|${indexResolutionPool[0].indexSymbol}|${indexResolutionPool[0].proxyBias}|${indexOptionsResearch.generatedAt||indexResearchSourceAt}`,
   isNew:true,isActionable:true,priority:44,assetClass:'INDEX_OPTION',ticker:indexResolutionPool[0].indexSymbol,trigger:'INDEX_OPTION_RESOLUTION_REQUEST',
   proxySymbol:indexResolutionPool[0].proxySymbol,proxyBias:indexResolutionPool[0].proxyBias,proxyPrice:indexResolutionPool[0].proxyPrice,proxyScore:indexResolutionPool[0].proxyScore,
   allowedKinds:indexResolutionPool[0].brokerResolution?.allowedKinds||[],minDte:Number(indexOptionsLivePolicy.minDte||3),maxDte:Number(indexOptionsLivePolicy.maxDte||45),
-  maxOrderUsd:Number(indexOptionsLivePolicy.maxOrderUsd||5),maxNewPositionsPerNyDay:Number(indexOptionsLivePolicy.maxNewPositionsPerNyDay||1),maxConcurrentPositions:Number(indexOptionsLivePolicy.maxConcurrentPositions||1),
+  maxOrderUsd:Math.min(5,Number(indexOptionsLivePolicy.maxOrderUsd||5)),maxNewPositionsPerNyDay:Number(indexOptionsLivePolicy.maxNewPositionsPerNyDay||1),maxConcurrentPositions:Number(indexOptionsLivePolicy.maxConcurrentPositions||1),
   mustBeFlatBeforeMarketClose:indexOptionsLivePolicy.mustBeFlatBeforeMarketClose===true,forcedExitMinutesBeforeClose:Number(indexOptionsLivePolicy.forcedExitMinutesBeforeClose||10),
   admissionState:indexOptionsAdmission.state,requestedAction:'RESOLVE_EXACT_ROBINHOOD_INDEX_OPTION_AND_EXECUTE_MICRO_IF_ALL_LIVE_GATES_PASS',
   brokerContractResolutionRequired:true,reason:'User-authorized XND/DJX live micro bootstrap. Research proxy supplies direction only; Robinhood must resolve the exact index contract and executable quote before any order.'
@@ -189,7 +190,7 @@ const indexOptionsLane={
   resolutionRequestPublished:Boolean(indexResolutionRequest),
   liveBootstrap:indexBootstrapAllowed?indexOptionsLivePolicy:null,
   researchCandidates:indexOptionResearchCandidates,
-  rule:'XND/DJX use QQQ/DIA for direction only. In LIVE_MICRO_BOOTSTRAP, Teststock may publish one broker-resolution request capped at $5; Robinhood must still resolve the exact contract, bid/ask, liquidity, affordability and duplicate state before any real-money order.'
+  rule:'XND/DJX use QQQ/DIA for direction only. LIVE_MICRO_BOOTSTRAP and later evidence-earned live states may publish one broker-resolution request capped at $5 under the current small-account policy; Robinhood must still resolve the exact contract, bid/ask, liquidity, affordability and duplicate state before any real-money order.'
 };
 
 const out={
