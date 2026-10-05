@@ -77,6 +77,8 @@ The core API still runs per-symbol historical validation and reports:
 - Paginates the option chain instead of assuming the first page contains the best contract
 - Scans the strongest candidates in parallel to reduce serverless latency
 - No 0DTE / ultra-short default trades
+- Separate XND/DJX index-options research lane: QQQ/DIA provide direction proxies only; exact XND/DJX contracts must be resolved through Robinhood and earn their own profitability admission before live use
+- Index-option settlement metadata is explicit (XND PM-style, DJX AM-style); cash settlement/European exercise do not relax same-session exit, premium-risk, or liquidity rules
 
 ## Learning score / elite gate
 The free static scan adds a second score on top of the core setup score. It considers:
@@ -92,6 +94,8 @@ A core TRADE CANDIDATE is downgraded to WATCH if too few independent learning co
 The live day-trading lane does not promote a stock setup from model score alone. A setup remains shadow-only until it has at least 100 independent resolved outcomes across 20 trading days, positive after-cost expectancy, and a profit factor of at least 1.25. Passing that bar permits only quarter-size micro probation. Larger probation requires at least 200 outcomes across 30 days, and normal size still requires positive Robinhood-confirmed real-fill evidence.
 
 Options use a separate, stricter ledger. Shadow entries use the displayed ask and exits use the executable bid. New entries stop at 15:30 New York time and all paper positions are closed from 15:50 onward. The paper exit floor moves to break-even after a 20% gain, locks part of the gain after 35%, and trails the executable bid high-water mark after 50%. At least 50 independent option outcomes across 20 trading days with profit factor of at least 1.30 are required before quarter-size micro probation can become eligible.
+
+XND/DJX use an additional **separate** index-options ledger. QQQ/DIA research can point Teststock toward a bullish or bearish index thesis, but it never counts as an XND/DJX fill. Index-option evidence counts only when the exact Robinhood-resolved contract is tracked using executable ask at entry and executable bid at exit. That lane also starts at `SHADOW_ONLY` and requires at least 50 independent exact-contract outcomes across 20 trading days with profit factor of at least 1.30 before micro probation.
 
 Multiple same-day candidates speed observation, but do not replace evidence across distinct trading days and market conditions.
 
