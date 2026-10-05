@@ -6,6 +6,7 @@ const round=(n,d=2)=>Number(Number(n||0).toFixed(d));
 
 const shadow=await read('docs/data/index-options-shadow-trades.json',{trades:[]});
 const realJournal=await read('docs/data/index-options-real-trade-journal.json',{trades:[],summary:{}});
+const livePolicy=await read('docs/data/index-options-live-policy.json',{enabled:false});
 const resolved=(shadow.trades||[]).filter(x=>
   x?.status==='RESOLVED' &&
   x?.evidenceEligible===true &&
@@ -46,7 +47,7 @@ const passes=t=>shadowStats.samples>=t.samples&&shadowStats.distinctTradingDays>
   Number(shadowStats.winRatePct)>=t.winRatePct&&Number(shadowStats.averageR)>=t.averageR&&
   Number(shadowStats.profitFactor)>=t.profitFactor;
 
-let state='SHADOW_ONLY',sizeMultiplier=0,reason='XND/DJX have not yet earned separate broker-resolved forward evidence. ETF proxy performance never counts as index-option admission.';
+let state=livePolicy.enabled===true?'LIVE_MICRO_BOOTSTRAP':'SHADOW_ONLY',sizeMultiplier=livePolicy.enabled===true?.05:0,reason=livePolicy.enabled===true?'User-authorized XND/DJX real-money micro bootstrap is active. This is not earned profitability admission; exact live Robinhood contract checks and the dedicated $5/day bootstrap caps still apply.':'XND/DJX have not yet earned separate broker-resolved forward evidence. ETF proxy performance never counts as index-option admission.';
 if(passes(MICRO)){state='MICRO_PROBATION';sizeMultiplier=.25;reason='Index options passed the strict broker-resolved micro-probation shadow threshold; live execution still requires every broker/account/contract gate.';}
 if(passes(PROBATION)){state='PROBATION';sizeMultiplier=.5;reason='Index options passed the stricter probation shadow threshold; live size remains reduced until real-fill evidence is positive.';}
 if(passes(PROBATION)&&real.samples>=LIVE.samples&&Number(real.winRatePct)>=LIVE.winRatePct&&Number(real.averageRealizedR)>=LIVE.averageR){
@@ -60,7 +61,8 @@ const out={
   generatedAt:new Date().toISOString(),
   state,
   sizeMultiplier,
-  executionAuthorized:['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(state),
+  executionAuthorized:['LIVE_MICRO_BOOTSTRAP','MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(state),
+  bootstrapLivePolicy:livePolicy.enabled===true?livePolicy:null,
   reason,
   scope:['XND','DJX'],
   shadow:{...shadowStats,independenceKey:'createdDate+indexSymbol',source:'index-options-shadow-trades.json',exactContractEvidenceRequired:true},
@@ -69,7 +71,8 @@ const out={
   rules:[
     'Only exact XND/DJX contracts resolved from Robinhood count; QQQ/DIA or other ETF option outcomes never count.',
     'Entry evidence uses executable ask and exit evidence uses executable bid, not midpoint or theoretical value.',
-    'At least 50 independent broker-resolved outcomes across 20 trading days and profit factor >= 1.30 are required before micro probation.',
+    'LIVE_MICRO_BOOTSTRAP is a user-authorized real-money learning override, not earned evidence. It is capped by index-options-live-policy.json and may never be represented as MICRO_PROBATION.',
+    'At least 50 independent broker-resolved outcomes across 20 trading days and profit factor >= 1.30 are required before evidence-earned micro probation.',
     'A live loss can reduce or suspend future risk; this file can never raise account or premium-risk ceilings.',
   ],
 };

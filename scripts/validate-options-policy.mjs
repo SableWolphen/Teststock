@@ -31,8 +31,15 @@ if(ip.proxyResearchOnly!==true||ip.proxyMap?.XND!=='QQQ'||ip.proxyMap?.DJX!=='DI
 if(ip.settlement?.XND?.cashSettled!==true||ip.settlement?.XND?.exerciseStyle!=='EUROPEAN'||ip.settlement?.XND?.settleOnOpen!==false) fail.push('XND settlement');
 if(ip.settlement?.DJX?.cashSettled!==true||ip.settlement?.DJX?.exerciseStyle!=='EUROPEAN'||ip.settlement?.DJX?.settleOnOpen!==true) fail.push('DJX settlement');
 if(ip.taxContext?.informationalOnly!==true||ip.taxContext?.affectsEligibility!==false) fail.push('index options tax eligibility guard');
-if(ip.executionEnabled===true&&!['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(ip.admissionState)) fail.push('index options execution admission');
+if(ip.executionEnabled===true&&!['LIVE_MICRO_BOOTSTRAP','MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(ip.admissionState)) fail.push('index options execution admission');
+if(ip.admissionState==='LIVE_MICRO_BOOTSTRAP'){
+  const b=ip.liveBootstrap||{};
+  if(b.enabled!==true||b.mode!=='USER_AUTHORIZED_LIVE_MICRO_BOOTSTRAP') fail.push('index options bootstrap policy');
+  if(Number(b.maxOrderUsd)!==5||Number(b.maxNewPositionsPerNyDay)!==1||Number(b.maxConcurrentPositions)!==1) fail.push('index options bootstrap caps');
+  if(b.requiresExactRobinhoodContract!==true||b.requiresLiveBidAsk!==true||b.requiresLiveLiquidityCheck!==true||b.requiresWholeContractCashCheck!==true) fail.push('index options bootstrap broker checks');
+  if(b.cashOnly!==true||b.marginAllowed!==false||b.noDeposits!==true||b.noTransfers!==true||b.noExercise!==true) fail.push('index options bootstrap funding/exercise guard');
+}
 if(ip.executionEnabled!==true&&s.autopilot?.automaticQualifiedIndexOptionBuys===true) fail.push('index options autopilot enabled before admission');
 
 if(fail.length) throw new Error('options policy validation failed: '+[...new Set(fail)].join(', '));
-console.log('options policy valid: stock/ETF options plus separate XND/DJX shadow-first index-options lane; cash-funded, broker-resolved, no exercise/overnight');
+console.log('options policy valid: stock/ETF options plus separate XND/DJX broker-resolved lane with user-authorized $5 micro-live bootstrap; cash-funded, no exercise/overnight');

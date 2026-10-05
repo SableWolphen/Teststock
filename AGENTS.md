@@ -59,7 +59,7 @@ Robinhood is authoritative for live buying power, positions, orders, fills, and 
 
 ## Options
 
-Options remain a separate, evidence-gated intelligence lane for OpenAI executor execution. Do not infer options authorization from stock automation; the options policy, earned admission state, live option-chain checks and account-capacity checks must all pass.
+Options remain separate from stock automation. Stock/ETF options are evidence-gated. XND/DJX additionally support the explicit user-authorized `LIVE_MICRO_BOOTSTRAP` state; it permits real-money learning only under the dedicated $5/one-new-position-per-NY-day/one-concurrent-position caps and live Robinhood contract checks.
 
 - `docs/data/small-account-options.json` is the research scan; `docs/data/options-shadow-trades.json` and `docs/data/options-profitability-admission.json` provide evidence before live capital is allowed.
 - The live lane is now wired into `build-execution-dispatch.mjs` as `OPTION_SEED_LANE_BUY_TRIGGER`. It remains blocked while admission is `SHADOW_ONLY` or `LIVE_SUSPENDED`.
@@ -75,12 +75,12 @@ Options remain a separate, evidence-gated intelligence lane for OpenAI executor 
 
 - XND and DJX are a distinct index-options lane with their own files: `docs/data/index-options-research.json`, `docs/data/index-options-shadow-trades.json`, `docs/data/index-options-profitability-admission.json`, and `docs/data/index-options-real-trade-journal.json`.
 - QQQ and DIA may provide research direction/regime context for XND and DJX respectively, but ETF option results never count as index-option evidence.
-- Live XND/DJX risk is forbidden while index-option admission is `SHADOW_ONLY` or `LIVE_SUSPENDED`. Stock-option admission never substitutes for index-option admission.
+- Live XND/DJX risk is allowed in `LIVE_MICRO_BOOTSTRAP` under the explicit maximum $5 total premium, one new position per New York trading day, and one concurrent position caps; it remains forbidden in `SHADOW_ONLY` or `LIVE_SUSPENDED`. Stock-option admission never substitutes for index-option admission.
 - Resolve the exact XND/DJX chain and contract through Robinhood immediately before any index-option action. Broker tradability, bid/ask, liquidity, DTE, premium and whole-contract affordability are mandatory.
 - XND and DJX are encoded as cash-settled European-style products with no early assignment risk. XND is treated as PM-settled (`settleOnOpen=false`); DJX is treated as AM-settled (`settleOnOpen=true`). Teststock still closes every option the same session and never intentionally holds into settlement or expiration.
 - Long call / long put only, buy to open / sell to close only. No spreads, naked selling, exercise, margin, deposits, transfers, or overnight holding.
 - Potential Section 1256 60/40 treatment is informational only. Tax treatment may never create eligibility, increase size, or justify holding longer.
-- Index-option micro probation requires at least 50 independent exact-contract shadow outcomes across 20 trading days with positive expectancy and profit factor >= 1.30, as enforced by the generated index admission file.
+- Evidence-earned index-option micro probation still requires at least 50 independent exact-contract outcomes across 20 trading days with positive expectancy and profit factor >= 1.30. `LIVE_MICRO_BOOTSTRAP` does not satisfy or fake that evidence threshold.
 
 ## Broad historical market learning
 

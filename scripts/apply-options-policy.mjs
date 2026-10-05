@@ -6,7 +6,8 @@ const signal=JSON.parse(await fs.readFile(signalPath,'utf8'));
 const read=async(f,x)=>{try{return JSON.parse(await fs.readFile(f,'utf8'));}catch{return x;}};
 const indexResearch=await read('docs/data/index-options-research.json',{candidates:[]});
 const indexAdmission=await read('docs/data/index-options-profitability-admission.json',{state:'SHADOW_ONLY',sizeMultiplier:0,executionAuthorized:false});
-const indexExecutionAuthorized=['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(indexAdmission.state)&&indexAdmission.executionAuthorized===true;
+const indexLivePolicy=await read('docs/data/index-options-live-policy.json',{enabled:false,maxOrderUsd:0,maxNewPositionsPerNyDay:0,maxConcurrentPositions:0});
+const indexExecutionAuthorized=['LIVE_MICRO_BOOTSTRAP','MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(indexAdmission.state)&&indexAdmission.executionAuthorized===true;
 
 signal.optionsTradingPolicy={
   enabled:true,
@@ -57,6 +58,7 @@ signal.indexOptionsTradingPolicy={
   separateAdmissionRequired:true,
   admissionState:indexAdmission.state,
   admissionSizeMultiplier:Number(indexAdmission.sizeMultiplier||0),
+  liveBootstrap:indexAdmission.state==='LIVE_MICRO_BOOTSTRAP'?indexLivePolicy:null,
   allowedIndexes:['XND','DJX'],
   allowedStrategies:['LONG_CALL','LONG_PUT'],
   buyToOpenOnly:true,
@@ -86,7 +88,7 @@ signal.indexOptionsTradingPolicy={
   },
   researchCandidates:indexResearch.candidates||[],
   riskRule:'Index options remain defined-risk long premium only. Premium paid, live spread/slippage, account cash, capital-tier risk, same-day exit, and all broker protections remain hard gates.',
-  admissionRule:'Index options may never borrow stock-option admission. SHADOW_ONLY and LIVE_SUSPENDED cannot open live index-option risk.',
+  admissionRule:'Index options may never borrow stock-option admission. LIVE_MICRO_BOOTSTRAP is an explicit user-authorized real-money learning state, not earned evidence; it is capped by the dedicated $5/day live-bootstrap policy. SHADOW_ONLY and LIVE_SUSPENDED cannot open live index-option risk.',
 };
 
 signal.autopilot={
@@ -109,7 +111,8 @@ signal.generatorIntegrity={
     optionsCashOnly:true,
     optionsHardAccountLossCap:true,
     indexOptionsSeparateAdmission:true,
-    indexOptionsBrokerResolved:true
+    indexOptionsBrokerResolved:true,
+    indexOptionsLiveMicroBootstrap:true
   }
 };
 
