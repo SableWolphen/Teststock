@@ -35,6 +35,7 @@ Read these repository files from the checked-out `main` branch before any broker
 - `docs/data/small-account-options.json` (current generated stock/ETF options scan; still re-check the exact Robinhood contract live before an order)
 - `docs/data/index-options-research.json` (XND/DJX research; QQQ/DIA are direction proxies only)
 - `docs/data/index-options-profitability-admission.json` (separate index-option admission; never borrow stock-option admission)
+- `docs/data/index-options-live-policy.json` (user-authorized live micro bootstrap caps for XND/DJX)
 
 ## Fail closed
 
