@@ -1,6 +1,6 @@
 # Teststock automatic stock/ETF + index-options lanes
 
-These lanes are explicitly authorized for automatic execution only through OpenAI executor + Robinhood Trading MCP after their own profitability admission is earned. Stock/ETF options and XND/DJX index options are separate evidence/risk lanes from each other and from stock day trading.
+These lanes are explicitly authorized for automatic execution only through OpenAI executor + Robinhood Trading MCP. Stock/ETF options remain evidence-gated. XND/DJX additionally permit a user-authorized `LIVE_MICRO_BOOTSTRAP` state that uses real money under strict $5/one-per-day caps while still tracking evidence separately.
 
 ## Objective
 
@@ -138,7 +138,7 @@ XND and DJX are not ordinary equity-option underlyings and never borrow stock/ET
 - XND research uses QQQ only as a Nasdaq-100 direction/regime proxy.
 - DJX research uses DIA only as a Dow direction/regime proxy.
 - QQQ/DIA option trades never count as XND/DJX shadow or live evidence.
-- New live XND/DJX risk requires the separate index-options admission state `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED` plus `signal.indexOptionsTradingPolicy.executionEnabled=true`.
+- New live XND/DJX risk requires `signal.indexOptionsTradingPolicy.executionEnabled=true` and the separate index-options state `LIVE_MICRO_BOOTSTRAP`, `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. `LIVE_MICRO_BOOTSTRAP` is user-authorized live learning, not earned evidence.
 - The exact index chain and contract must be resolved live through Robinhood immediately before entry. Verify tradability, strike, expiration, bid/ask, liquidity, DTE, premium and whole-contract affordability.
 - XND is encoded as cash-settled, European-style and PM-settled (`settleOnOpen=false`). DJX is encoded as cash-settled, European-style and AM-settled (`settleOnOpen=true`).
 - No early assignment risk does not mean no risk. Spread, premium loss, settlement behavior, time decay and expiration remain material.
@@ -146,7 +146,7 @@ XND and DJX are not ordinary equity-option underlyings and never borrow stock/ET
 - Long call / long put only, buy to open / sell to close only. No spreads, short option opening, exercise, margin, deposits, transfers or overnight holding.
 - Potential Section 1256 60/40 treatment is informational only and never creates eligibility or raises size.
 
-Index-option forward evidence must use the exact Robinhood-resolved contract: executable ask for entry and executable bid for exit. The initial lane requires at least 50 independent resolved outcomes across 20 trading days with profit factor >= 1.30 before micro probation; later promotion remains subject to the generated admission file and Robinhood-confirmed real fills.
+Index-option evidence must use the exact Robinhood-resolved contract: executable ask for entry and executable bid for exit. `LIVE_MICRO_BOOTSTRAP` stays capped at $5 total premium, one new index-option position per New York trading day, and one concurrent position. At least 50 independent exact-contract outcomes across 20 trading days with profit factor >= 1.30 are still required before evidence-earned micro probation; bootstrap trades do not magically satisfy that threshold.
 
 ## No-profit guarantee
 
