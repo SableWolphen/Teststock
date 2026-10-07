@@ -155,14 +155,14 @@ jobs:
             echo "No fast-refresh changes to publish"
           else
             git commit -m "Fast refresh Teststock opportunities"
-            for attempt in 1 2 3; do
+            for attempt in 1 2 3 4 5 6 7 8; do
               git pull --rebase -X theirs origin main
               if git push; then
                 exit 0
               fi
               echo "Push attempt $attempt failed; retrying transient GitHub failure..." >&2
-              sleep $((attempt * 3))
+              sleep $((attempt * 5))
             done
-            echo "Unable to publish fast refresh after 3 attempts." >&2
+            echo "Unable to publish fast refresh after 8 attempts." >&2
             exit 1
           fi
