@@ -1,9 +1,9 @@
 {
   "schemaVersion": 4,
   "source": "TESTSTOCK_EVENT_DISPATCH",
-  "generatedAt": "2026-10-08T22:53:32.779Z",
-  "boardPublishedAt": "2026-10-08T22:53:31.296Z",
-  "boardAgeMs": 1483,
+  "generatedAt": "2026-10-08T22:55:01.037Z",
+  "boardPublishedAt": "2026-10-08T22:54:59.911Z",
+  "boardAgeMs": 1126,
   "maximumBoardAgeMs": 900000,
   "monitorHealth": "OK",
   "dispatchHealth": "OK",
@@ -34,6 +34,7 @@
   "optionsLane": {
     "status": "OPTIONS_DISABLED",
     "admissionState": "SHADOW_ONLY",
+    "userAuthorizedLiveCashBootstrap": true,
     "scanFresh": false,
     "scanGeneratedAt": "2026-10-08T19:17:40.851Z",
     "localTrackedOpenOptionPositions": 0,
@@ -41,7 +42,7 @@
     "brokerOnlyPositionsAreAdopted": true,
     "newEntriesThisWeek": 0,
     "lastLiveTradeOutcome": null,
-    "rule": "Options are exceptional and evidence-gated. Local Teststock position counts are not authoritative; live Robinhood option-position and open-order reconciliation is mandatory before every new option entry. Broker positions missing from Teststock are adopted into the managed position profile instead of globally blocking the options lane. Adopted positions still count toward live cash, aggregate premium risk, duplicate-contract/symbol checks, account floor, and any current concurrency cap. Unknown or ambiguous broker order state may block only the conflicting action until reconciled. Cash-funded long options only; no exercise/overnight."
+    "rule": "Options are cash-funded long calls/puts only. Earned admission remains preferred, but the explicit user-authorized live-cash bootstrap may publish SHADOW_ONLY candidates while LIVE_SUSPENDED stays blocked. Robinhood option-position/order state, <=10% spread, real volume/open interest, tradability, whole-contract cash/unleveraged buying power, duplicate state and same-day exit remain mandatory; no exercise/overnight."
   },
   "indexOptionsLane": {
     "status": "STALE_RESEARCH",
@@ -61,7 +62,7 @@
         "DJX"
       ],
       "state": "LIVE_MICRO_BOOTSTRAP",
-      "maxOrderUsd": 5,
+      "maxOrderUsd": null,
       "maxNewPositionsPerNyDay": 1,
       "maxConcurrentPositions": 1,
       "minDte": 3,
@@ -86,7 +87,8 @@
         "resolvedRealLossesToSuspend": 3,
         "negativeAverageRMinimumSamples": 3
       },
-      "rule": "User explicitly disabled shadow-only gating for XND/DJX. Permit real-money micro bootstrap trades only after fresh Teststock proxy direction plus exact live Robinhood index-contract resolution. This override does not count as earned profitability evidence and cannot raise risk beyond $5 premium or one new index-option position per New York trading day."
+      "rule": "User-authorized XND/DJX live bootstrap. Permit real-money long calls/puts only after fresh Teststock proxy direction plus exact live Robinhood contract resolution. There is no fixed repository premium cap: the whole contract plus known fees must fit fresh available cash/unleveraged buying power in the dedicated account. One new index-option position per New York trading day, one concurrent position, same-session exit, no margin, no exercise.",
+      "affordabilityMode": "LIVE_UNLEVERAGED_CASH"
     },
     "researchCandidates": [
       {
@@ -144,7 +146,7 @@
         "liveExecutionEligible": false
       }
     ],
-    "rule": "XND/DJX use QQQ/DIA for direction only. LIVE_MICRO_BOOTSTRAP and later evidence-earned live states may publish one broker-resolution request capped at $5 under the current small-account policy; Robinhood must still resolve the exact contract, bid/ask, liquidity, affordability and duplicate state before any real-money order."
+    "rule": "XND/DJX use QQQ/DIA for direction only. LIVE_MICRO_BOOTSTRAP and later evidence-earned live states may publish one broker-resolution request with no fixed repository premium cap; Robinhood fresh cash/unleveraged buying power is the hard affordability ceiling, and exact contract, bid/ask, liquidity, affordability, duplicate-state and session checks remain mandatory."
   },
   "crossAssetPreference": {
     "optionsMayOutrankStocks": true,
@@ -161,7 +163,7 @@
   },
   "queuedActions": [],
   "noActionInstruction": "If chatgptShouldRun is false, stop immediately. Do not call Robinhood, research markets, or produce a long report.",
-  "actionInstruction": "For every current trigger, including optionCandidates and indexOptionResolutionRequests when present, reconcile Robinhood positions, open orders and recent order history before submission. INDEX_OPTION_RESOLUTION_REQUEST is not an exact contract order: resolve the live Robinhood XND/DJX chain first, choose only a long call/put matching the encoded direction and DTE bounds, require total one-contract premium <= maxOrderUsd, and skip if spread/liquidity/cash/duplicate/session/profitability guards fail. Exit events always take priority and block every new buy for the run. Stock entries require authoritative regular-session status and at least 20 minutes to close both here and again at the broker-time recheck. For BUY_TRIGGER dispatches, process automaticStockCandidates in rank order without requesting user approval. Recheck each candidate independently immediately before submission; after every confirmed fill recompute cash, account floor, deployed capital, planned stop risk, correlation, portfolio heat, protection capability and broker/account restrictions. Skip any candidate that no longer qualifies. Seed-lane candidates remain automatic only within their encoded caps and protection requirements. A previously published fingerprint is not proof of execution. Reconcile ambiguous or partial results by original/client order ID and never blindly retry an uncertain submission.",
+  "actionInstruction": "For every current trigger, including optionCandidates and indexOptionResolutionRequests when present, reconcile Robinhood positions, open orders and recent order history before submission. INDEX_OPTION_RESOLUTION_REQUEST is not an exact contract order: resolve the live Robinhood XND/DJX chain first, choose only a long call/put matching the encoded direction and DTE bounds, and require the total one-contract premium plus known fees to fit fresh Robinhood cash/unleveraged buying power (and any non-null encoded maxOrderUsd if present); skip if spread/liquidity/cash/duplicate/session/profitability guards fail. Exit events always take priority and block every new buy for the run. Stock entries require authoritative regular-session status and at least 20 minutes to close both here and again at the broker-time recheck. For BUY_TRIGGER dispatches, process automaticStockCandidates in rank order without requesting user approval. Recheck each candidate independently immediately before submission; after every confirmed fill recompute cash, account floor, deployed capital, planned stop risk, correlation, portfolio heat, protection capability and broker/account restrictions. Skip any candidate that no longer qualifies. Seed-lane candidates remain automatic only within their encoded caps and protection requirements. A previously published fingerprint is not proof of execution. Reconcile ambiguous or partial results by original/client order ID and never blindly retry an uncertain submission.",
   "consumerContract": {
     "invokeOnlyWhen": "chatgptShouldRun === true",
     "atomicClaimKey": "candidate.fingerprint",
