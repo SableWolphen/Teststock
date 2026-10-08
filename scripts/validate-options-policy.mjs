@@ -11,9 +11,9 @@ if(p.allowedStrategies?.join(',')!=='LONG_CALL,LONG_PUT') fail.push('allowed str
 if(p.buyToOpenOnly!==true||p.sellToCloseOnly!==true) fail.push('order direction');
 if(p.noNakedSelling!==true||p.noExercise!==true||p.noOvernight!==true) fail.push('unsafe strategy guard');
 if(p.noMargin!==true||p.noDeposits!==true||p.noBankTransfers!==true) fail.push('funding guard');
-if(Number(p.maxPremiumRiskPerTradePct)!==25) fail.push('per-trade premium cap');
-if(Number(p.maxAggregateOpenPremiumRiskPct)!==50) fail.push('aggregate premium cap');
-if(Number(p.maxNewPremiumExposurePerNyDayPct)!==35) fail.push('daily premium cap');
+if(Number(p.maxPremiumRiskPerTradePct)!==100) fail.push('per-trade cash ceiling');
+if(Number(p.maxAggregateOpenPremiumRiskPct)!==100) fail.push('aggregate cash ceiling');
+if(Number(p.maxNewPremiumExposurePerNyDayPct)!==100) fail.push('daily cash ceiling');
 if(Number(p.minDte)!==3||Number(p.maxDte)!==45||Number(p.expirationSafetyTradingDays)!==5) fail.push('expiration bounds');
 if(Number(p.minDelta)!==0.25||Number(p.maxDelta)!==0.80) fail.push('delta bounds');
 if(p.underlyingMustBeQualifiedStock!==true) fail.push('underlying qualification');
@@ -35,11 +35,11 @@ if(ip.executionEnabled===true&&!['LIVE_MICRO_BOOTSTRAP','MICRO_PROBATION','PROBA
 if(ip.admissionState==='LIVE_MICRO_BOOTSTRAP'){
   const b=ip.liveBootstrap||{};
   if(b.enabled!==true||b.mode!=='USER_AUTHORIZED_LIVE_MICRO_BOOTSTRAP') fail.push('index options bootstrap policy');
-  if(Number(b.maxOrderUsd)!==5||Number(b.maxNewPositionsPerNyDay)!==1||Number(b.maxConcurrentPositions)!==1) fail.push('index options bootstrap caps');
+  if(b.maxOrderUsd!==null||b.affordabilityMode!=='LIVE_UNLEVERAGED_CASH'||Number(b.maxNewPositionsPerNyDay)!==1||Number(b.maxConcurrentPositions)!==1) fail.push('index options bootstrap cash policy');
   if(b.requiresExactRobinhoodContract!==true||b.requiresLiveBidAsk!==true||b.requiresLiveLiquidityCheck!==true||b.requiresWholeContractCashCheck!==true) fail.push('index options bootstrap broker checks');
   if(b.cashOnly!==true||b.marginAllowed!==false||b.noDeposits!==true||b.noTransfers!==true||b.noExercise!==true) fail.push('index options bootstrap funding/exercise guard');
 }
 if(ip.executionEnabled!==true&&s.autopilot?.automaticQualifiedIndexOptionBuys===true) fail.push('index options autopilot enabled before admission');
 
 if(fail.length) throw new Error('options policy validation failed: '+[...new Set(fail)].join(', '));
-console.log('options policy valid: stock/ETF options plus separate XND/DJX broker-resolved lane with user-authorized $5 micro-live bootstrap; cash-funded, no exercise/overnight');
+console.log('options policy valid: stock/ETF options plus separate XND/DJX broker-resolved lane with user-authorized live-cash bootstrap; cash-funded, no exercise/overnight');
