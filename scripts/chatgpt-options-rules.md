@@ -1,6 +1,6 @@
 # Teststock automatic stock/ETF + index-options lanes
 
-These lanes are explicitly authorized for automatic execution only through OpenAI executor + Robinhood Trading MCP. Stock/ETF options remain evidence-gated. XND/DJX additionally permit a user-authorized `LIVE_MICRO_BOOTSTRAP` state that uses real money under strict $5/one-per-day caps while still tracking evidence separately.
+These lanes are explicitly authorized for automatic execution only through OpenAI executor + Robinhood Trading MCP. Earned stock/ETF option admission remains preferred, but the generated policy may explicitly enable a user-authorized cash-only live bootstrap from `SHADOW_ONLY`; `LIVE_SUSPENDED` remains blocked. XND/DJX separately permit `LIVE_MICRO_BOOTSTRAP`. Live Robinhood cash/unleveraged buying power, not a fixed repo dollar cap, is the affordability ceiling.
 
 ## Objective
 
@@ -8,7 +8,7 @@ Seek positive risk-adjusted intraday opportunities in listed stock/ETF options w
 
 ## Admission gate
 
-New live option risk requires option profitability admission `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. `SHADOW_ONLY` and `LIVE_SUSPENDED` remain research/manage-only and cannot open a live option.
+New live option risk normally requires option profitability admission `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. `SHADOW_ONLY` may open only when the current generated policy explicitly enables `userAuthorizedLiveCashBootstrap`; `LIVE_SUSPENDED` can never open new live option risk.
 
 ## Allowed strategy
 
@@ -146,7 +146,7 @@ XND and DJX are not ordinary equity-option underlyings and never borrow stock/ET
 - Long call / long put only, buy to open / sell to close only. No spreads, short option opening, exercise, margin, deposits, transfers or overnight holding.
 - Potential Section 1256 60/40 treatment is informational only and never creates eligibility or raises size.
 
-Index-option evidence must use the exact Robinhood-resolved contract: executable ask for entry and executable bid for exit. `LIVE_MICRO_BOOTSTRAP` stays capped at $5 total premium, one new index-option position per New York trading day, and one concurrent position. At least 50 independent exact-contract outcomes across 20 trading days with profit factor >= 1.30 are still required before evidence-earned micro probation; bootstrap trades do not magically satisfy that threshold.
+Index-option evidence must use the exact Robinhood-resolved contract: executable ask for entry and executable bid for exit. `LIVE_MICRO_BOOTSTRAP` allows one new index-option position per New York trading day and one concurrent position; whole-contract premium plus known fees must fit fresh Robinhood cash/unleveraged buying power. At least 50 independent exact-contract outcomes across 20 trading days with profit factor >= 1.30 are still required before evidence-earned micro probation; bootstrap trades do not magically satisfy that threshold.
 
 ## No-profit guarantee
 
