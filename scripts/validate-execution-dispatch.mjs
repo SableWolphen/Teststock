@@ -21,9 +21,10 @@ if(dispatch.pendingAction?.trigger!=='BUY_TRIGGER'&&(dispatch.pendingAction?.tri
 const optionCandidates=dispatch.optionCandidates||[];
 if(optionCandidates.some(x=>x.trigger!=='OPTION_SEED_LANE_BUY_TRIGGER'||x.assetClass!=='OPTION')) fail('invalid option candidate');
 if(optionCandidates.some(x=>!x.optionContract||!['LONG_CALL','LONG_PUT'].includes(x.optionKind))) fail('option candidate missing long option contract/kind');
-if(optionCandidates.some(x=>Number(x.dte)<14||Number(x.dte)>45||x.dteBucket!=='STANDARD')) fail('option candidate outside standard DTE bounds');
-if(optionCandidates.some(x=>Number(x.maxOrderUsd)<=0||Number(x.maxOrderUsd)>15)) fail('option candidate exceeds lane premium cap');
-if(optionCandidates.some(x=>x.admissionState!=='MICRO_PROBATION'&&x.admissionState!=='PROBATION'&&x.admissionState!=='LIVE_ADMITTED')) fail('option candidate lacks earned admission');
+if(optionCandidates.some(x=>Number(x.dte)<2||Number(x.dte)>45||!['STANDARD','WEEKLY'].includes(x.dteBucket))) fail('option candidate outside permitted weekly/standard DTE bounds');
+if(optionCandidates.some(x=>x.maxOrderUsd!==null&&(!(Number(x.maxOrderUsd)>0)))) fail('option candidate has invalid optional premium cap');
+if(optionCandidates.some(x=>!['SHADOW_ONLY','MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(x.admissionState))) fail('option candidate has unsupported admission/bootstrap state');
+if(optionCandidates.some(x=>x.admissionState==='SHADOW_ONLY'&&dispatch.optionsLane?.userAuthorizedLiveCashBootstrap!==true)) fail('SHADOW_ONLY option candidate lacks explicit user-authorized cash bootstrap');
 if(dispatch.optionsLane?.status==='OPTION_SEED_LANE_BUY_TRIGGER'&&optionCandidates.length!==1) fail('option lane status must expose exactly one candidate');
 
 const indexLane=dispatch.indexOptionsLane||{};
@@ -41,7 +42,7 @@ const indexRequests=dispatch.indexOptionResolutionRequests||[];
 if(indexRequests.some(x=>x.trigger!=='INDEX_OPTION_RESOLUTION_REQUEST'||x.assetClass!=='INDEX_OPTION')) fail('invalid index-option resolution request');
 if(indexRequests.some(x=>!['XND','DJX'].includes(x.ticker))) fail('unsupported index-option resolution symbol');
 if(indexRequests.some(x=>x.admissionState!=='LIVE_MICRO_BOOTSTRAP'&&x.admissionState!=='MICRO_PROBATION'&&x.admissionState!=='PROBATION'&&x.admissionState!=='LIVE_ADMITTED')) fail('index-option resolution request lacks live admission');
-if(indexRequests.some(x=>Number(x.maxOrderUsd)<=0||Number(x.maxOrderUsd)>5)) fail('index-option resolution request exceeds $5 bootstrap cap');
+if(indexRequests.some(x=>x.maxOrderUsd!==null&&(!(Number(x.maxOrderUsd)>0)))) fail('index-option resolution request has invalid optional premium cap');
 if(indexRequests.some(x=>Number(x.maxNewPositionsPerNyDay)!==1||Number(x.maxConcurrentPositions)!==1)) fail('index-option bootstrap frequency/concurrency cap');
 if(indexRequests.some(x=>x.brokerContractResolutionRequired!==true||!Array.isArray(x.allowedKinds)||!x.allowedKinds.length)) fail('index-option resolution request missing broker resolution/kind');
 if(indexRequests.length>1) fail('only one index-option resolution request may be published per dispatch');
