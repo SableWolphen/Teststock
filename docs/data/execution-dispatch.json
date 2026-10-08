@@ -1,16 +1,18 @@
 {
   "schemaVersion": 4,
   "source": "TESTSTOCK_EVENT_DISPATCH",
-  "generatedAt": "2026-10-08T13:38:50.925Z",
-  "boardPublishedAt": "2026-10-08T13:38:48.364Z",
-  "boardAgeMs": 2561,
+  "generatedAt": "2026-10-08T13:42:21.567Z",
+  "boardPublishedAt": "2026-10-08T13:42:19.912Z",
+  "boardAgeMs": 1655,
   "maximumBoardAgeMs": 900000,
   "monitorHealth": "OK",
   "dispatchHealth": "OK",
-  "chatgptShouldRun": false,
+  "chatgptShouldRun": true,
   "chatgptShouldPollMarket": false,
-  "executionNeeded": false,
-  "dispatchFingerprints": [],
+  "executionNeeded": true,
+  "dispatchFingerprints": [
+    "INDEX_OPTION_RESOLVE|DJX|BEARISH|2026-10-08T13:40:24.431Z"
+  ],
   "priorityOrder": [
     "TRIGGER_1_STOP",
     "STOCK_DAY_TRADE_FORCED_EXIT",
@@ -30,12 +32,40 @@
   "fallbackActions": [],
   "seedLaneCandidates": [],
   "optionCandidates": [],
-  "indexOptionResolutionRequests": [],
+  "indexOptionResolutionRequests": [
+    {
+      "fingerprint": "INDEX_OPTION_RESOLVE|DJX|BEARISH|2026-10-08T13:40:24.431Z",
+      "isNew": true,
+      "isActionable": true,
+      "priority": 44,
+      "assetClass": "INDEX_OPTION",
+      "ticker": "DJX",
+      "trigger": "INDEX_OPTION_RESOLUTION_REQUEST",
+      "proxySymbol": "DIA",
+      "proxyBias": "BEARISH",
+      "proxyPrice": 509.56,
+      "proxyScore": 11.7,
+      "allowedKinds": [
+        "LONG_PUT"
+      ],
+      "minDte": 3,
+      "maxDte": 45,
+      "maxOrderUsd": 5,
+      "maxNewPositionsPerNyDay": 1,
+      "maxConcurrentPositions": 1,
+      "mustBeFlatBeforeMarketClose": true,
+      "forcedExitMinutesBeforeClose": 10,
+      "admissionState": "LIVE_MICRO_BOOTSTRAP",
+      "requestedAction": "RESOLVE_EXACT_ROBINHOOD_INDEX_OPTION_AND_EXECUTE_MICRO_IF_ALL_LIVE_GATES_PASS",
+      "brokerContractResolutionRequired": true,
+      "reason": "User-authorized XND/DJX live micro bootstrap. Research proxy supplies direction only; Robinhood must resolve the exact index contract and executable quote before any order."
+    }
+  ],
   "optionsLane": {
     "status": "OPTIONS_DISABLED",
     "admissionState": "SHADOW_ONLY",
-    "scanFresh": false,
-    "scanGeneratedAt": "2026-10-08T02:41:32.228Z",
+    "scanFresh": true,
+    "scanGeneratedAt": "2026-10-08T13:40:23.043Z",
     "localTrackedOpenOptionPositions": 0,
     "brokerPositionReconciliationRequired": true,
     "brokerOnlyPositionsAreAdopted": true,
@@ -44,14 +74,14 @@
     "rule": "Options are exceptional and evidence-gated. Local Teststock position counts are not authoritative; live Robinhood option-position and open-order reconciliation is mandatory before every new option entry. Broker positions missing from Teststock are adopted into the managed position profile instead of globally blocking the options lane. Adopted positions still count toward live cash, aggregate premium risk, duplicate-contract/symbol checks, account floor, and any current concurrency cap. Unknown or ambiguous broker order state may block only the conflicting action until reconciled. Cash-funded long options only; no exercise/overnight."
   },
   "indexOptionsLane": {
-    "status": "STALE_RESEARCH",
+    "status": "LIVE_MICRO_BOOTSTRAP",
     "admissionState": "LIVE_MICRO_BOOTSTRAP",
     "admissionSizeMultiplier": 0.05,
-    "researchFresh": false,
-    "researchGeneratedAt": "2026-10-07T19:24:38.498Z",
-    "sourceOptionsScanGeneratedAt": "2026-10-07T19:24:38.498Z",
+    "researchFresh": true,
+    "researchGeneratedAt": "2026-10-08T13:40:24.431Z",
+    "sourceOptionsScanGeneratedAt": "2026-10-08T13:40:24.431Z",
     "executionCandidatePublished": false,
-    "resolutionRequestPublished": false,
+    "resolutionRequestPublished": true,
     "liveBootstrap": {
       "schemaVersion": 1,
       "enabled": true,
@@ -93,8 +123,8 @@
         "indexSymbol": "XND",
         "proxySymbol": "QQQ",
         "proxyBias": "MIXED",
-        "proxyPrice": 756.79,
-        "proxyScore": 3.3,
+        "proxyPrice": 753.81,
+        "proxyScore": 5.8,
         "researchStatus": "WAIT_PROXY_DIRECTION",
         "brokerContractResolutionRequired": true,
         "brokerResolution": {
@@ -119,14 +149,16 @@
       {
         "indexSymbol": "DJX",
         "proxySymbol": "DIA",
-        "proxyBias": "MIXED",
-        "proxyPrice": 511.1,
-        "proxyScore": 4.4,
-        "researchStatus": "WAIT_PROXY_DIRECTION",
+        "proxyBias": "BEARISH",
+        "proxyPrice": 509.56,
+        "proxyScore": 11.7,
+        "researchStatus": "BROKER_SHADOW_SAMPLE_READY",
         "brokerContractResolutionRequired": true,
         "brokerResolution": {
           "chainSymbol": "DJX",
-          "allowedKinds": [],
+          "allowedKinds": [
+            "LONG_PUT"
+          ],
           "minDte": 3,
           "maxDte": 45,
           "requiresLiveTradability": true,
