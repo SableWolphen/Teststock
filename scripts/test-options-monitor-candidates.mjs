@@ -16,6 +16,16 @@ test('a real MICRO_PROBATION admission with a qualifying candidate fires the tri
   assert.equal(state.seedLane.maxOrderUsd,15);
 });
 
+
+test('explicit user cash bootstrap allows SHADOW_ONLY with no fixed repository premium cap',()=>{
+  const bootstrapPolicy={...seedPolicy,userAuthorizedLiveCashBootstrap:true,bootstrapAllowedAdmissionStates:['SHADOW_ONLY'],maxOrderUsd:null,maxConcurrentPositions:2,maxNewPositionsPerUtcWeek:15};
+  const state=evaluateOptionsSeedLaneCandidate({candidate:{...goodCandidate,oneContractPremiumDollars:80},admission:{state:'SHADOW_ONLY'},seedPolicy:bootstrapPolicy});
+  assert.equal(state.status,'OPTION_SEED_LANE_BUY_TRIGGER');
+  assert.equal(state.seedLane.maxOrderUsd,null);
+  assert.equal(state.seedLane.affordabilityMode,'LIVE_UNLEVERAGED_CASH');
+  assert.equal(state.seedLane.userAuthorizedLiveCashBootstrap,true);
+});
+
 test('LIVE_SUSPENDED never qualifies regardless of everything else',()=>{
   const state=evaluateOptionsSeedLaneCandidate({candidate:goodCandidate,admission:{state:'LIVE_SUSPENDED'},seedPolicy});
   assert.equal(state.status,'BLOCKED_ADMISSION');
