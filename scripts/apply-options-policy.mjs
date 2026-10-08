@@ -30,9 +30,9 @@ signal.optionsTradingPolicy={
   underlyingMustBeQualifiedStock:true,
   liveOptionChainRequired:true,
   liveBrokerRecheckRequired:true,
-  maxPremiumRiskPerTradePct:25,
-  maxAggregateOpenPremiumRiskPct:50,
-  maxNewPremiumExposurePerNyDayPct:35,
+  maxPremiumRiskPerTradePct:100,
+  maxAggregateOpenPremiumRiskPct:100,
+  maxNewPremiumExposurePerNyDayPct:100,
   minDte:3,
   maxDte:45,
   expirationSafetyTradingDays:5,
@@ -41,7 +41,7 @@ signal.optionsTradingPolicy={
   minLiquidity:'EXITABLE_WITH_LIVE_SPREAD_CHECK',
   entryStyle:'MARKETABLE_LIMIT_WITH_MAX_PREMIUM',
   exitStyle:'FASTEST_SUPPORTED_RISK_APPROPRIATE_SELL_TO_CLOSE',
-  riskRule:'Premium paid is the hard position-level loss ceiling; total new premium may never exceed current available account buying power or the encoded account percentage caps.',
+  riskRule:'Premium paid is the hard position-level loss ceiling. There is no fixed repository dollar cap; total premium plus known fees may never exceed fresh available cash/unleveraged buying power in the dedicated account.',
   dayTradeRule:'Every Teststock option position is opened and closed during the same regular NYSE session. Never carry through expiration.',
   fallbackRule:'If no option contract passes every live gate, do not force an option trade. The independently qualified stock lane may trade instead.',
   exerciseRule:'Never exercise automatically. Close the option contract before expiration and never allow exercise to create stock or short-stock exposure.',
@@ -88,7 +88,7 @@ signal.indexOptionsTradingPolicy={
   },
   researchCandidates:indexResearch.candidates||[],
   riskRule:'Index options remain defined-risk long premium only. Premium paid, live spread/slippage, account cash, capital-tier risk, same-day exit, and all broker protections remain hard gates.',
-  admissionRule:'Index options may never borrow stock-option admission. LIVE_MICRO_BOOTSTRAP is an explicit user-authorized real-money learning state, not earned evidence; it is capped by the dedicated $5/day live-bootstrap policy. SHADOW_ONLY and LIVE_SUSPENDED cannot open live index-option risk.',
+  admissionRule:'Index options may never borrow stock-option admission. LIVE_MICRO_BOOTSTRAP is an explicit user-authorized real-money learning state, not earned evidence. There is no fixed repository premium cap; Robinhood fresh available cash/unleveraged buying power is the hard affordability ceiling. SHADOW_ONLY and LIVE_SUSPENDED cannot open live index-option risk.',
 };
 
 signal.autopilot={
@@ -118,4 +118,4 @@ signal.generatorIntegrity={
 
 await fs.writeFile(signalPath,JSON.stringify(signal,null,2));
 await fs.writeFile(chatgptSignalPath,JSON.stringify(signal,null,2));
-console.log('Applied guarded automatic stock-options policy: long calls/puts only, cash-funded, no exercise/overnight, hard premium caps.');
+console.log('Applied guarded automatic stock-options policy: long calls/puts only, cash-funded, no exercise/overnight, live Robinhood cash is the affordability ceiling.');
