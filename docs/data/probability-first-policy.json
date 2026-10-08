@@ -100,9 +100,15 @@
     "liveEvidenceMinimumWinRatePct": 50,
     "seedLane": {
       "enabled": true,
-      "maxOrderUsd": 20,
-      "maxConcurrentPositions": 1,
-      "maxNewPositionsPerUtcWeek": 8,
+      "userAuthorizedLiveCashBootstrap": true,
+      "bootstrapAllowedAdmissionStates": [
+        "SHADOW_ONLY"
+      ],
+      "maxOrderUsd": null,
+      "affordabilityMode": "LIVE_UNLEVERAGED_CASH",
+      "maxConcurrentPositions": 2,
+      "maxNewPositionsPerUtcWeek": 15,
+      "maxNewPositionsPerNyDay": 3,
       "requiredAdmissionStates": [
         "MICRO_PROBATION",
         "PROBATION",
@@ -133,9 +139,9 @@
       "entryCutoffMinutesBeforeClose": 45,
       "forcedExitMinutesBeforeClose": 10,
       "resetGateAfterLiveLoss": true,
-      "rule": "Small-account option lane: up to 8 cash-funded long options per UTC week (max 1 concurrent), with a $20 premium cap per new contract so one-contract sizing can fit a roughly $100 account without using margin. STANDARD contracts remain preferred, but liquid WEEKLY contracts may qualify after live spread, volume/open-interest, IV, momentum and tradability checks. Day-trader style: bank profits fast. Take-profit objective is 1.35x entry premium (+35%); protection moves to break-even at +15%, locks at least +10% once up 25%, and trails no lower than 15% below the high-water mark once up 35%. Stop stays at 0.65x premium (-35%) and protection may only move upward. Entry uses a marketable limit within the encoded premium cap. All positions must be sold to close before the session ends -- never hold to expiration."
+      "rule": "User-authorized cash-only live bootstrap: SHADOW_ONLY may publish a live candidate, but LIVE_SUSPENDED remains blocked. There is no fixed repository premium cap; immediately before every order Robinhood must prove the whole contract plus known fees fits fresh available cash/unleveraged buying power. STANDARD contracts remain preferred, liquid WEEKLY contracts may qualify, bid/ask spread must pass the live execution gate, and real volume/open interest, tradability, duplicate-order, session, and same-day exit checks remain mandatory. Never use margin or force a trade."
     },
-    "instructions": "Small-account option entries use relaxed research thresholds so more legitimate setups can qualify, but live broker data, positive cost-adjusted expectancy, liquidity, tradability, buying power and defined-risk controls remain mandatory. ChatGPT must confirm live contract data before entry. One whole contract must still fit both the active capital-tier premium cap and the option-specific planned-stop-risk cap. The lane should prefer an affordable qualifying contract rather than blocking on a higher-scoring contract that is too expensive."
+    "instructions": "Small-account option entries use relaxed research thresholds so more legitimate setups can qualify, but live broker data, liquidity, tradability, buying power and defined-risk controls remain mandatory. ChatGPT must confirm live contract data before entry. The dedicated account's fresh cash/unleveraged buying power is the hard affordability ceiling; no fixed repository premium amount may override it. Prefer a liquid affordable contract and WAIT if none passes every live gate."
   },
   "crypto": {
     "researchMode": "ACTIVE_24_7_MORE_OPPORTUNITIES",
