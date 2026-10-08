@@ -8,7 +8,7 @@ The repository executor is PAPER by default. A real broker write may occur only 
 
 Before any new STOCK risk, require profitability admission `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. `SHADOW_ONLY` and `LIVE_SUSPENDED` may not open a live stock position.
 
-Before any new STOCK/ETF OPTION risk, require the stock-option-specific profitability admission `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. Stock admission never substitutes for option admission. `SHADOW_ONLY` and `LIVE_SUSPENDED` may not open a live option.
+Before any new STOCK/ETF OPTION risk, normally require the stock-option-specific profitability admission `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. Stock admission never substitutes for option admission. `SHADOW_ONLY` may open only when the current generated option policy explicitly enables `userAuthorizedLiveCashBootstrap`; `LIVE_SUSPENDED` may never open a live option.
 
 Before any new XND/DJX INDEX OPTION risk, require `signal.indexOptionsTradingPolicy.executionEnabled=true` and the separate `docs/data/index-options-profitability-admission.json` state `LIVE_MICRO_BOOTSTRAP`, `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. Stock-option evidence, QQQ/DIA option results, and proxy backtests never substitute for index-option admission. The exact XND/DJX contract and executable quote must be resolved from Robinhood in the same invocation.
 
@@ -151,7 +151,7 @@ Options may only be considered after the underlying stock is independently quali
 
 Allowed automatic opening trades are **LONG CALL** and **LONG PUT** only. Never sell an option to open, use uncovered options, use credit/debit spreads, exercise, or intentionally create stock/short-stock exposure from an option.
 
-The hard account rule is: use only capital already in the dedicated Robinhood Agentic account. Never deposit, transfer money, borrow, use margin, or create a trade that requires more buying power than the account currently has. Read the current generated options policy at execution time and enforce its per-trade premium cap, aggregate open-premium cap, daily new-premium cap, DTE bounds, delta bounds, liquidity checks, and whole-contract affordability exactly. Do not preserve stale percentages in prose. If a contract cannot fit every current generated limit, skip it.
+The hard account rule is: use only capital already in the dedicated Robinhood Agentic account. Never deposit, transfer money, borrow, use margin, or create a trade that requires more buying power than the account currently has. Read the current generated options policy at execution time. When its affordability mode is `LIVE_UNLEVERAGED_CASH`, there is no fixed repository dollar premium cap: require the whole contract plus known fees to fit fresh available cash/unleveraged buying power. Continue to enforce DTE, delta, <=10% spread, real volume/open interest, liquidity, duplicate-order, concurrency, session, and same-day-exit guards. If a contract fails any live limit, skip it.
 
 Options are day trades here: open and close during the same regular NYSE session. Never hold through expiration. Never exercise. If the option thesis invalidates, exit. If the option reaches the validated profit objective, protect/take profit. Never average down or widen a stop.
 
@@ -170,7 +170,7 @@ XND and DJX are a separate broker-resolved lane from stock/ETF options.
 - Respect settlement differences encoded in `signal.indexOptionsTradingPolicy`: XND is treated as PM-settled (`settleOnOpen=false`) and DJX as AM-settled (`settleOnOpen=true`). Never hold either Teststock position into settlement; all Teststock option positions remain same-session exits.
 - Long calls and long puts only; buy to open / sell to close only. No exercise, no short-option opening, no spreads, no margin, no overnight holding.
 - The potential Section 1256 60/40 treatment is informational only. Tax treatment must never create eligibility, increase size, or justify holding a contract longer.
-- If index-option admission is `LIVE_MICRO_BOOTSTRAP`, real-money index-option execution is allowed only under the explicit bootstrap policy: exact Robinhood contract resolution, maximum $5 total premium, maximum one new index-option position per New York trading day, maximum one concurrent position, and every ordinary live broker/risk/session gate. This state is user-authorized live learning, not earned profitability evidence.
+- If index-option admission is `LIVE_MICRO_BOOTSTRAP`, real-money index-option execution is allowed only under the explicit bootstrap policy: exact Robinhood contract resolution, whole-contract premium plus known fees fully covered by fresh cash/unleveraged buying power, maximum one new index-option position per New York trading day, maximum one concurrent position, and every ordinary live broker/risk/session gate. There is no fixed repository dollar premium cap in `LIVE_UNLEVERAGED_CASH` mode. This state is user-authorized live learning, not earned profitability evidence.
 
 ## Real-fill learning
 
