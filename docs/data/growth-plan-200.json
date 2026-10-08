@@ -1,12 +1,12 @@
 {
   "schemaVersion": 11,
-  "generatedAt": "2026-10-08T19:31:13.535Z",
-  "asOf": "2026-10-08T19:31:01.211Z",
+  "generatedAt": "2026-10-08T19:44:38.149Z",
+  "asOf": "2026-10-08T19:44:34.187Z",
   "budget": 200,
   "market": "OPEN",
   "session": {
     "isOpen": true,
-    "timestamp": "2026-10-08T15:30:55.96005308-04:00",
+    "timestamp": "2026-10-08T15:44:33.28251024-04:00",
     "nextOpen": "2026-10-09T09:30:00-04:00",
     "nextClose": "2026-10-08T16:00:00-04:00",
     "label": "OPEN"
@@ -135,9 +135,81 @@
     "optionsLocked": false,
     "reason": "Scanner/model trade-history is diagnostic only. It must never pause or size live Robinhood trading. Live outcome brakes are computed only from confirmed Robinhood fills/history at runtime."
   },
-  "action": "WAIT",
+  "action": "TRADE CANDIDATE",
   "confidence": "CASH",
-  "ranked": [],
+  "ranked": [
+    {
+      "rank": 1,
+      "symbol": "SMCI",
+      "sector": "Other",
+      "price": 42.29,
+      "score": 96,
+      "entry": 45.68,
+      "stop": 39.34,
+      "target1": 55.19,
+      "target2": 62.16,
+      "allocation": 200,
+      "shares": 4.3783,
+      "estimatedCost": 200,
+      "maxLossAtStop": 27.76,
+      "riskWeight": 100,
+      "fundamentals": {
+        "source": "SEC EDGAR",
+        "filedThrough": "2026-08-31",
+        "coverage": 5,
+        "score": 61,
+        "revenueGrowth": 77.8,
+        "quarterlyRevenueGrowth": 80.4,
+        "netMargin": 5.7,
+        "operatingCashFlowPositive": false,
+        "operatingCashFlowYield": null,
+        "liabilityRatio": 55,
+        "shareDilution": 10.6,
+        "pe": 23.9,
+        "priceToSales": 0.9,
+        "estimatedNextReport": "2026-11-30",
+        "label": "ACCEPTABLE"
+      },
+      "validation": {
+        "samples": 9,
+        "winRate": 67,
+        "avgMove": 5.6
+      },
+      "corporateActions": {
+        "source": "Alpaca corporate actions",
+        "risk": "NONE",
+        "events": []
+      },
+      "holdingStyle": "Position trade: several weeks to several months",
+      "reviewCadence": "Weekly",
+      "rewardRiskTarget1": 1.5,
+      "rewardRiskTarget2": 2.6,
+      "rewardRisk": 2.6,
+      "rewardRiskQualificationTarget": "TARGET2",
+      "expectancy": {
+        "expectedR": 1.41,
+        "conservativeExpectedR": 0.98,
+        "costAdjustedConservativeExpectedR": 0.96,
+        "assumedRoundTripFrictionPct": 0.3,
+        "frictionR": 0.022
+      },
+      "adaptivePerformance": {
+        "samples": 0,
+        "wins": 0,
+        "losses": 0,
+        "winRate": null,
+        "sizeMultiplier": 1,
+        "qualityAdjustment": 0,
+        "label": "UNPROVEN",
+        "source": "MODEL_RESEARCH_ONLY",
+        "modelReportedSizeMultiplier": 1,
+        "canIncreaseLiveSize": false,
+        "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+      },
+      "growthQuality": 100,
+      "portfolioOpportunityScore": 118.25
+    }
+  ],
   "allocations": [],
   "keepCashDollars": 200,
   "estimatedPortfolioStopLoss": 0,
@@ -148,12 +220,12 @@
     "dte": null,
     "checks": {
       "exists": false,
-      "tradeCandidate": false,
+      "tradeCandidate": true,
       "bullish": false,
-      "quality": false,
+      "quality": true,
       "learning": true,
       "historical": false,
-      "expectancy": false,
+      "expectancy": true,
       "rewardRisk": false,
       "market": true,
       "sector": true,
@@ -165,12 +237,12 @@
     },
     "contract": null,
     "probabilityFirstResearchChecks": {
-      "underlyingGrowthQuality": false,
+      "underlyingGrowthQuality": true,
       "samples": false,
-      "winRate": false,
-      "expectancy": false,
-      "costAdjustedExpectancy": false,
-      "rewardRisk": false
+      "winRate": true,
+      "expectancy": true,
+      "costAdjustedExpectancy": true,
+      "rewardRisk": true
     },
     "liveEvidenceGate": {
       "required": true,
@@ -204,9 +276,30 @@
       "TRENDING_DOWN",
       "UNKNOWN"
     ],
-    "eventBySymbol": {},
+    "eventBySymbol": {
+      "SMCI": {
+        "stockBlocked": false,
+        "optionBlocked": false,
+        "daysToEstimatedReport": 54,
+        "corporateActionRisk": "NONE",
+        "reasons": []
+      }
+    },
     "blockedSymbols": [],
-    "rejectedCandidates": [],
+    "rejectedCandidates": [
+      {
+        "symbol": "SMCI",
+        "entry": 45.68,
+        "stop": 39.34,
+        "target1": 55.19,
+        "target2": 62.16,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "reasons": [
+          "Did not clear one or more stock eligibility/position-sizing gates"
+        ]
+      }
+    ],
     "automaticLooseningAllowed": false,
     "note": "The overall validation status is diagnostic and must not freeze unrelated stock regimes. Block or reduce only the CURRENT runtime regime according to runtimePolicy. MIXED is disabled. CALM remains blocked when its own holdouts fail. Sparse regimes stay reduced. TRENDING_UP stays eligible when its own policy allows it."
   },
