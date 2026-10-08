@@ -18,7 +18,7 @@ async function fixture({stale=false}={}){
   const researchAt=new Date(now-(stale?30:1)*60_000).toISOString();
   const research={generatedAt:researchAt,sourceOptionsScanGeneratedAt:researchAt,candidates:[{indexSymbol:'XND',proxySymbol:'QQQ',proxyBias:'BULLISH',proxyPrice:756,proxyScore:9,researchStatus:'BROKER_SHADOW_SAMPLE_READY',brokerContractResolutionRequired:true,brokerResolution:{chainSymbol:'XND',allowedKinds:['LONG_CALL']},settlement:{cashSettled:true,exerciseStyle:'EUROPEAN',settleOnOpen:false}}]};
   const admission={state:'LIVE_MICRO_BOOTSTRAP',sizeMultiplier:.05,executionAuthorized:true};
-  const policy={enabled:true,mode:'USER_AUTHORIZED_LIVE_MICRO_BOOTSTRAP',maxOrderUsd:5,maxNewPositionsPerNyDay:1,maxConcurrentPositions:1,minDte:3,maxDte:45,entryCutoffMinutesBeforeClose:45,forcedExitMinutesBeforeClose:10,mustBeFlatBeforeMarketClose:true};
+  const policy={enabled:true,mode:'USER_AUTHORIZED_LIVE_MICRO_BOOTSTRAP',maxOrderUsd:null,affordabilityMode:'LIVE_UNLEVERAGED_CASH',maxNewPositionsPerNyDay:1,maxConcurrentPositions:1,minDte:3,maxDte:45,entryCutoffMinutesBeforeClose:45,forcedExitMinutesBeforeClose:10,mustBeFlatBeforeMarketClose:true};
   const boardPath=path.join(dir,'board.json'),signalPath=path.join(dir,'signal.json'),outPath=path.join(dir,'out.json');
   await Promise.all([
     fs.writeFile(boardPath,JSON.stringify(board)),
@@ -32,7 +32,7 @@ async function fixture({stale=false}={}){
   return JSON.parse(await fs.readFile(outPath,'utf8'));
 }
 
-test('LIVE_MICRO_BOOTSTRAP publishes one $5 XND broker-resolution request',async()=>{
+test('LIVE_MICRO_BOOTSTRAP publishes one cash-affordable XND broker-resolution request',async()=>{
   const out=await fixture();
   assert.equal(out.chatgptShouldRun,true);
   assert.equal(out.executionNeeded,true);
@@ -42,7 +42,8 @@ test('LIVE_MICRO_BOOTSTRAP publishes one $5 XND broker-resolution request',async
   const x=out.indexOptionResolutionRequests[0];
   assert.equal(x.ticker,'XND');
   assert.equal(x.trigger,'INDEX_OPTION_RESOLUTION_REQUEST');
-  assert.equal(x.maxOrderUsd,5);
+  assert.equal(x.maxOrderUsd,null);
+  assert.equal(x.affordabilityMode,'LIVE_UNLEVERAGED_CASH');
   assert.equal(x.maxNewPositionsPerNyDay,1);
   assert.equal(x.maxConcurrentPositions,1);
   assert.deepEqual(x.allowedKinds,['LONG_CALL']);
