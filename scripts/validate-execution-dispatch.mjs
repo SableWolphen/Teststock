@@ -87,8 +87,13 @@ if(dispatch.manualExecutionOnly===true){
 }
 if(dispatch.consumerContract?.multipleConcurrentStocksAllowed!==true) fail('multi-stock capability must be explicit');
 if(dispatch.multiStockPolicy?.enabled!==true) fail('multiStockPolicy must be enabled');
-if(dispatch.multiStockPolicy?.automaticQualifiedEntries!==true) fail('automatic stock policy must be enabled');
-if(dispatch.multiStockPolicy?.userApprovalRequired!==false) fail('multiStockPolicy still requires approval');
+if(dispatch.manualExecutionOnly===true){
+  if(dispatch.multiStockPolicy?.automaticQualifiedEntries!==false) fail('manual-only multiStockPolicy must disable automatic entries');
+  if(dispatch.multiStockPolicy?.userApprovalRequired!==true) fail('manual-only multiStockPolicy must require manual execution');
+}else{
+  if(dispatch.multiStockPolicy?.automaticQualifiedEntries!==true) fail('automatic stock policy must be enabled');
+  if(dispatch.multiStockPolicy?.userApprovalRequired!==false) fail('multiStockPolicy still requires approval');
+}
 if(dispatch.pendingAction?.trigger==='BUY_TRIGGER'&&automaticStockCandidates.length&&automaticStockCandidates[0].fingerprint!==dispatch.pendingAction.fingerprint) fail('pendingAction must match first automatic stock candidate');
 
 const seeds=dispatch.seedLaneCandidates||[];
