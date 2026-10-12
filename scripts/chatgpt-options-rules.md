@@ -6,6 +6,11 @@ These lanes are explicitly authorized for automatic execution only through OpenA
 
 Seek positive risk-adjusted intraday opportunities in listed stock/ETF options when the underlying stock itself is already qualified by Teststock. Never represent any trade as guaranteed to make money. If the evidence is not strong enough after live option-chain checks, do nothing.
 
+
+## Executor capability gate
+
+This gate outranks every admission/bootstrap state. Before any BUY TO OPEN, read `docs/data/executor-capabilities.json`. New live option risk is forbidden unless the current execution layer has all of: `liveOrderSubmission=true`, `liveOptionEntrySubmission=true`, `liveOptionExitSubmission=true`, and `liveOptionExitVerifiedThisSession=true`. If any field is false, missing, stale, or contradictory, fail closed: research/monitoring may continue, but do not authorize or submit a new live option position. A successful Robinhood review/preview is not proof that a real sell-to-close can be submitted. Same-session exit capability must be verified before entry, not discovered after a fill.
+
 ## Admission gate
 
 New live option risk normally requires option profitability admission `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`. `SHADOW_ONLY` may open only when the current generated policy explicitly enables `userAuthorizedLiveCashBootstrap`; `LIVE_SUSPENDED` can never open new live option risk.
