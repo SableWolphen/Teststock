@@ -12,6 +12,7 @@ const indexOptionsResearch=await read('docs/data/index-options-research.json',{c
 const indexOptionsAdmission=await read('docs/data/index-options-profitability-admission.json',{state:'SHADOW_ONLY',sizeMultiplier:0,executionAuthorized:false});
 const indexOptionsLivePolicy=await read('docs/data/index-options-live-policy.json',{enabled:false,maxOrderUsd:0,maxNewPositionsPerNyDay:0,maxConcurrentPositions:0,entryCutoffMinutesBeforeClose:45});
 const probabilityPolicy=await read('docs/data/probability-first-policy.json',{options:{seedLane:{enabled:false}}});
+const executorCapability=await read('docs/data/executor-capabilities.json',{mode:'MANUAL_ONLY_FAIL_CLOSED',liveOrderSubmission:false,liveEquityEntrySubmission:false,liveEquityExitSubmission:false,liveOptionEntrySubmission:false,liveOptionExitSubmission:false,liveOptionExitVerifiedThisSession:false});
 const executionWatchlist=await read('docs/data/execution-watchlist.json',{positions:[]});
 const optionsRealJournal=await read('docs/data/options-real-trade-journal.json',{trades:[],summary:{}});
 const now=new Date();
@@ -20,6 +21,12 @@ const MAX_BOARD_AGE_MS=15*60*1000;
 const MAX_ENTRY_AGE_MS=10*60*1000;
 const STOCK_ENTRY_CUTOFF_MINUTES=20;
 const OPTIONS_MAX_AGE_MS=15*60*1000;
+
+// Fail closed: Teststock may publish research, but it may not authorize new live risk
+// unless this exact execution layer has verified both entry and risk-reducing exit submission.
+const executorOptionEntryAllowed=executorCapability.liveOrderSubmission===true&&executorCapability.liveOptionEntrySubmission===true&&executorCapability.liveOptionExitSubmission===true&&executorCapability.liveOptionExitVerifiedThisSession===true;
+const executorEquityEntryAllowed=executorCapability.liveOrderSubmission===true&&executorCapability.liveEquityEntrySubmission===true&&executorCapability.liveEquityExitSubmission===true;
+const executorRiskCreationAllowed=executorOptionEntryAllowed||executorEquityEntryAllowed;
 
 const priority={TRIGGER_1_STOP:100,STOCK_DAY_TRADE_FORCED_EXIT:100,TRIGGER_3_TARGET2:80,TRIGGER_2_TARGET1:70,TRIGGER_EARLY_PROFIT_TRIM:60,BUY_TRIGGER:50};
 const actionMap={TRIGGER_1_STOP:'VERIFY_POSITION_AND_SELL_STOP',STOCK_DAY_TRADE_FORCED_EXIT:'VERIFY_DAY_TRADE_POSITION_AND_EXIT_ALL_TESTSTOCK_QUANTITY',TRIGGER_3_TARGET2:'VERIFY_POSITION_AND_EXECUTE_TARGET2_OR_RUNNER',TRIGGER_2_TARGET1:'VERIFY_POSITION_AND_EXECUTE_TARGET1',TRIGGER_EARLY_PROFIT_TRIM:'VERIFY_POSITION_AND_SELL_HALF_TO_LOCK_GAIN',BUY_TRIGGER:'VERIFY_LIVE_GUARDS_AND_EXECUTE_IF_STILL_ELIGIBLE'};
@@ -57,7 +64,7 @@ const candidates=(board?.events||[]).filter(e=>priority[e.trigger]&&!(e.trigger=
   const triggerAgeMs=ageMs(freshnessAnchor);
   const isFresh=e.trigger!=='BUY_TRIGGER'||triggerAgeMs<=MAX_ENTRY_AGE_MS;
   const sessionAllowed=stockEntrySessionAllowed(e);
-  return {...e,fingerprint,priority:priority[e.trigger],requestedAction:actionMap[e.trigger],triggerAgeMs,freshnessAnchor,expiresAt:e.trigger==='BUY_TRIGGER'&&freshnessAnchor?new Date(Date.parse(freshnessAnchor)+MAX_ENTRY_AGE_MS).toISOString():null,isFresh,sessionAllowed,isNew:true,isActionable:boardHealthy&&isFresh&&sessionAllowed&&stockAdmissionAllowed(e)};
+  return {...e,fingerprint,priority:priority[e.trigger],requestedAction:actionMap[e.trigger],triggerAgeMs,freshnessAnchor,expiresAt:e.trigger==='BUY_TRIGGER'&&freshnessAnchor?new Date(Date.parse(freshnessAnchor)+MAX_ENTRY_AGE_MS).toISOString():null,isFresh,sessionAllowed,isNew:true,isActionable:boardHealthy&&isFresh&&sessionAllowed&&stockAdmissionAllowed(e)&&(e.trigger!=='BUY_TRIGGER'||executorEquityEntryAllowed)};
 }).sort((a,b)=>b.priority-a.priority||Number(a.queueRank||999)-Number(b.queueRank||999)||String(a.ticker).localeCompare(String(b.ticker)));
 
 const hasExitEvent=candidates.some(x=>x.trigger!=='BUY_TRIGGER');
@@ -80,7 +87,7 @@ const seedEvents=(board?.events||[]).filter(e=>{
   const triggerAgeMs=ageMs(freshnessAnchor);
   const isFresh=triggerAgeMs<=MAX_ENTRY_AGE_MS;
   const stockSeedSessionAllowed=e.assetClass!=='STOCK'||stockEntrySessionAllowed({...e,trigger:'BUY_TRIGGER'});
-  return {...e,fingerprint,triggerAgeMs,freshnessAnchor,isFresh,sessionAllowed:stockSeedSessionAllowed,isNew:true,isActionable:boardHealthy&&isFresh&&stockSeedSessionAllowed};
+  return {...e,fingerprint,triggerAgeMs,freshnessAnchor,isFresh,sessionAllowed:stockSeedSessionAllowed,isNew:true,isActionable:boardHealthy&&isFresh&&stockSeedSessionAllowed&&executorEquityEntryAllowed};
 });
 const compactSeed=e=>{const lane=e.dayTradeSeedLane?.eligible===true?e.dayTradeSeedLane:e.seedLane;return ({
   fingerprint:e.fingerprint,assetClass:e.assetClass,ticker:e.ticker,trigger:e.trigger,
@@ -118,9 +125,9 @@ const optionWeekStart=(()=>{const d=new Date(now);const day=d.getUTCDay();d.setU
 const optionNewThisWeek=(optionsRealJournal.trades||[]).filter(x=>String(x.createdAt||x.openedAt||'').slice(0,10)>=optionWeekStart).length;
 const lastOptionTrade=[...(optionsRealJournal.trades||[])].sort((a,b)=>Date.parse(b.closedAt||b.resolvedAt||b.createdAt||0)-Date.parse(a.closedAt||a.resolvedAt||a.createdAt||0))[0];
 const lastOptionOutcome=lastOptionTrade?.outcome||lastOptionTrade?.statusOutcome||null;
-let optionLaneResult={status:'OPTIONS_DISABLED'};
+let optionLaneResult={status:executorOptionEntryAllowed?'OPTIONS_DISABLED':'EXECUTOR_EXIT_UNAVAILABLE'};
 let optionTrigger=null;
-if(optionsPolicy.enabled===true&&Array.isArray(optionsPolicy.allowedUnderlyingTypes)&&optionsPolicy.allowedUnderlyingTypes.includes('STOCK')&&optionAllowedAdmission&&optionScanFresh&&boardHealthy){
+if(executorOptionEntryAllowed&&optionsPolicy.enabled===true&&Array.isArray(optionsPolicy.allowedUnderlyingTypes)&&optionsPolicy.allowedUnderlyingTypes.includes('STOCK')&&optionAllowedAdmission&&optionScanFresh&&boardHealthy){
   const {evaluateOptionsSeedLaneCandidate}=await import('./options-monitor-candidates.mjs');
   const allowedOptionUnderlyingTypes=Array.isArray(optionsPolicy.allowedUnderlyingTypes)&&optionsPolicy.allowedUnderlyingTypes.length?optionsPolicy.allowedUnderlyingTypes:['STOCK'];
   const optionPool=(optionsScan.candidates||[]).filter(x=>allowedOptionUnderlyingTypes.includes(x?.underlyingType));
@@ -172,7 +179,7 @@ const indexBootstrapAllowed=indexOptionsAdmission.state==='LIVE_MICRO_BOOTSTRAP'
 const indexResolutionPool=indexOptionResearchCandidates
   .filter(x=>x.researchStatus==='BROKER_SHADOW_SAMPLE_READY'&&['BULLISH','BEARISH'].includes(x.proxyBias))
   .sort((a,b)=>Number(b.proxyScore||0)-Number(a.proxyScore||0));
-const indexResolutionRequest=(!hasExitEvent&&boardHealthy&&indexOptionsResearchFresh&&indexLiveAllowed&&indexSession.calendarAvailable===true&&indexSession.regularSession===true&&Number(indexSession.minutesToClose)>=Number(indexOptionsLivePolicy.entryCutoffMinutesBeforeClose||45)&&indexResolutionPool.length)?{
+const indexResolutionRequest=(executorOptionEntryAllowed&&!hasExitEvent&&boardHealthy&&indexOptionsResearchFresh&&indexLiveAllowed&&indexSession.calendarAvailable===true&&indexSession.regularSession===true&&Number(indexSession.minutesToClose)>=Number(indexOptionsLivePolicy.entryCutoffMinutesBeforeClose||45)&&indexResolutionPool.length)?{
   fingerprint:`INDEX_OPTION_RESOLVE|${indexResolutionPool[0].indexSymbol}|${indexResolutionPool[0].proxyBias}|${indexOptionsResearch.generatedAt||indexResearchSourceAt}`,
   isNew:true,isActionable:true,priority:44,assetClass:'INDEX_OPTION',ticker:indexResolutionPool[0].indexSymbol,trigger:'INDEX_OPTION_RESOLUTION_REQUEST',
   proxySymbol:indexResolutionPool[0].proxySymbol,proxyBias:indexResolutionPool[0].proxyBias,proxyPrice:indexResolutionPool[0].proxyPrice,proxyScore:indexResolutionPool[0].proxyScore,
@@ -183,7 +190,7 @@ const indexResolutionRequest=(!hasExitEvent&&boardHealthy&&indexOptionsResearchF
   brokerContractResolutionRequired:true,reason:'User-authorized XND/DJX live micro bootstrap. Research proxy supplies direction only; Robinhood must resolve the exact index contract and executable quote before any order.'
 }:null;
 const indexOptionsLane={
-  status:!indexOptionsResearchFresh?'STALE_RESEARCH':indexOptionsAdmission.state==='LIVE_SUSPENDED'?'LIVE_SUSPENDED':indexBootstrapAllowed?'LIVE_MICRO_BOOTSTRAP':indexOptionsAdmission.state==='SHADOW_ONLY'?'SHADOW_ONLY_BROKER_EVIDENCE_REQUIRED':indexOptionsAdmission.executionAuthorized===true?'ADMISSION_EARNED_BROKER_RESOLUTION_REQUIRED':'BLOCKED_ADMISSION',
+  status:!executorOptionEntryAllowed?'EXECUTOR_EXIT_UNAVAILABLE':!indexOptionsResearchFresh?'STALE_RESEARCH':indexOptionsAdmission.state==='LIVE_SUSPENDED'?'LIVE_SUSPENDED':indexBootstrapAllowed?'LIVE_MICRO_BOOTSTRAP':indexOptionsAdmission.state==='SHADOW_ONLY'?'SHADOW_ONLY_BROKER_EVIDENCE_REQUIRED':indexOptionsAdmission.executionAuthorized===true?'ADMISSION_EARNED_BROKER_RESOLUTION_REQUIRED':'BLOCKED_ADMISSION',
   admissionState:indexOptionsAdmission.state||'SHADOW_ONLY',
   admissionSizeMultiplier:Number(indexOptionsAdmission.sizeMultiplier||0),
   researchFresh:indexOptionsResearchFresh,
@@ -198,6 +205,8 @@ const indexOptionsLane={
 
 const out={
   schemaVersion:4,source:'TESTSTOCK_EVENT_DISPATCH',generatedAt:nowIso,boardPublishedAt:board?.publishedAt||null,
+  executorCapability:{...executorCapability,riskCreationAllowed:executorRiskCreationAllowed,optionEntryAllowed:executorOptionEntryAllowed,equityEntryAllowed:executorEquityEntryAllowed},
+  riskCreationBlockedByExecutor:!executorRiskCreationAllowed,manualExecutionOnly:!executorRiskCreationAllowed,
   boardAgeMs:Number.isFinite(boardAgeMs)?boardAgeMs:null,maximumBoardAgeMs:MAX_BOARD_AGE_MS,
   monitorHealth:board?.monitorHealth||'UNAVAILABLE',dispatchHealth:boardHealthy?'OK':'FAIL_CLOSED_STALE_OR_UNHEALTHY_BOARD',
   chatgptShouldRun:Boolean(pendingAction)||seedLaneCandidates.length>0||Boolean(optionCandidateCompact)||Boolean(indexResolutionRequest),chatgptShouldPollMarket:false,executionNeeded:actionableCandidates.length>0||seedLaneCandidates.length>0||Boolean(optionCandidateCompact)||Boolean(indexResolutionRequest),
@@ -205,11 +214,11 @@ const out={
   pendingAction,automaticStockCandidates,approvalCandidates:[],approvalBatchId:null,fallbackActions,seedLaneCandidates,optionCandidates:optionCandidateCompact?[optionCandidateCompact]:[],indexOptionResolutionRequests:indexResolutionRequest?[indexResolutionRequest]:[],optionsLane:{status:optionLaneResult.status,admissionState:optionsAdmission.state,userAuthorizedLiveCashBootstrap:optionBootstrapAllowed,scanFresh:optionScanFresh,scanGeneratedAt:optionsScan.generatedAt||null,localTrackedOpenOptionPositions,brokerPositionReconciliationRequired:optionBrokerReconciliationRequired,brokerOnlyPositionsAreAdopted,newEntriesThisWeek:optionNewThisWeek,lastLiveTradeOutcome:lastOptionOutcome,rule:'Options are cash-funded long calls/puts only. Earned admission remains preferred, but the explicit user-authorized live-cash bootstrap may publish SHADOW_ONLY candidates while LIVE_SUSPENDED stays blocked. Robinhood option-position/order state, <=10% spread, real volume/open interest, tradability, whole-contract cash/unleveraged buying power, duplicate state and same-day exit remain mandatory; no exercise/overnight.'},
   indexOptionsLane,
   crossAssetPreference:{optionsMayOutrankStocks:true,rule:'After exits, compare independently qualified option and stock opportunities by executable after-cost evidence. Stock/ETF options and XND/DJX index options use separate admission ledgers; neither may borrow the other\'s evidence. A qualified option may be presented ahead of stock entries only after its own admission, live chain/liquidity, whole-contract cash/risk, concurrency, duplicate and session gates pass. Never force an option to satisfy a frequency target.'},
-  multiStockPolicy:{enabled:true,maximumAutomaticCandidatesPerDispatch:null,capacityMode:'DYNAMIC_RISK_CASH_AND_BROKER_LIMITED',automaticQualifiedEntries:true,userApprovalRequired:false,oneWinnerDoesNotBlockOtherQualifiedStocks:true,rule:'Expose every already-qualified current-generation stock candidate in rank order. ChatGPT may execute as many as remain independently qualified after immediate broker rechecks and dynamic cash, portfolio-heat, correlation, account-floor and aggregate-stop-risk limits. Never force a trade.'},
+  multiStockPolicy:{enabled:true,maximumAutomaticCandidatesPerDispatch:null,capacityMode:'DYNAMIC_RISK_CASH_AND_BROKER_LIMITED',automaticQualifiedEntries:true,userApprovalRequired:!executorRiskCreationAllowed,oneWinnerDoesNotBlockOtherQualifiedStocks:true,rule:'Expose every already-qualified current-generation stock candidate in rank order. ChatGPT may execute as many as remain independently qualified after immediate broker rechecks and dynamic cash, portfolio-heat, correlation, account-floor and aggregate-stop-risk limits. Never force a trade.'},
   queuedActions:permittedCandidates.filter(x=>!x.isActionable).map(x=>({ticker:x.ticker,trigger:x.trigger,fingerprint:x.fingerprint,isFresh:x.isFresh,sessionAllowed:x.sessionAllowed??true,freshnessAnchor:x.freshnessAnchor??null})),
   noActionInstruction:'If chatgptShouldRun is false, stop immediately. Do not call Robinhood, research markets, or produce a long report.',
   actionInstruction:'For every current trigger, including optionCandidates and indexOptionResolutionRequests when present, reconcile Robinhood positions, open orders and recent order history before submission. INDEX_OPTION_RESOLUTION_REQUEST is not an exact contract order: resolve the live Robinhood XND/DJX chain first, choose only a long call/put matching the encoded direction and DTE bounds, and require the total one-contract premium plus known fees to fit fresh Robinhood cash/unleveraged buying power (and any non-null encoded maxOrderUsd if present); skip if spread/liquidity/cash/duplicate/session/profitability guards fail. Exit events always take priority and block every new buy for the run. Stock entries require authoritative regular-session status and at least 20 minutes to close both here and again at the broker-time recheck. For BUY_TRIGGER dispatches, process automaticStockCandidates in rank order without requesting user approval. Recheck each candidate independently immediately before submission; after every confirmed fill recompute cash, account floor, deployed capital, planned stop risk, correlation, portfolio heat, protection capability and broker/account restrictions. Skip any candidate that no longer qualifies. Seed-lane candidates remain automatic only within their encoded caps and protection requirements. A previously published fingerprint is not proof of execution. Reconcile ambiguous or partial results by original/client order ID and never blindly retry an uncertain submission.',
-  consumerContract:{invokeOnlyWhen:'chatgptShouldRun === true',atomicClaimKey:'candidate.fingerprint',maximumNewBuysPerDispatch:null,capacityMode:'DYNAMIC_RISK_CASH_AND_BROKER_LIMITED',approvalMode:'NONE_AUTOMATIC',userApprovalRequired:false,automaticQualifiedStocks:true,automaticQualifiedStockOptions:true,multipleConcurrentStocksAllowed:true,fallbackRule:'Process all already-qualified stock candidates in order. Failed candidates fall through. Confirmed fills dynamically reduce remaining capacity before the next candidate.',duplicateRule:'Before every order, reconcile current Robinhood positions, open orders and recent order history. One logical trigger may create at most one live broker entry; ambiguous submissions must be reconciled before any replacement.',retryRule:'After an ambiguous response, reconcile by original/client order ID and broker state. Never create a replacement order until the original is conclusively cancelled or rejected.',creditRule:'Use one ChatGPT run for the ordered candidate sequence where practical. The runner usage gate limits repeated invocations; broker reconciliation prevents duplicate orders when a still-current trigger is redispatched.'},
+  consumerContract:{invokeOnlyWhen:'chatgptShouldRun === true',atomicClaimKey:'candidate.fingerprint',maximumNewBuysPerDispatch:null,capacityMode:'DYNAMIC_RISK_CASH_AND_BROKER_LIMITED',approvalMode:executorRiskCreationAllowed?'NONE_AUTOMATIC':'MANUAL_ONLY_EXECUTOR_BLOCKED',userApprovalRequired:false,automaticQualifiedStocks:executorEquityEntryAllowed,automaticQualifiedStockOptions:executorOptionEntryAllowed,multipleConcurrentStocksAllowed:true,fallbackRule:'Process all already-qualified stock candidates in order. Failed candidates fall through. Confirmed fills dynamically reduce remaining capacity before the next candidate.',duplicateRule:'Before every order, reconcile current Robinhood positions, open orders and recent order history. One logical trigger may create at most one live broker entry; ambiguous submissions must be reconciled before any replacement.',retryRule:'After an ambiguous response, reconcile by original/client order ID and broker state. Never create a replacement order until the original is conclusively cancelled or rejected.',creditRule:'Use one ChatGPT run for the ordered candidate sequence where practical. The runner usage gate limits repeated invocations; broker reconciliation prevents duplicate orders when a still-current trigger is redispatched.'},
   stockApprovalNotification:{needed:false,batchId:null,tickers:[],instruction:'Stock approval notifications are disabled because qualified stock entries are automatic.'},
   stopPriorityRule:'A stop event outranks profit targets and buys. When any exit event exists, do not evaluate or submit a new buy.',
   wakeBridge:{status:'DISPATCH_PACKET_READY_FOR_CHATGPT_EXECUTOR',note:'GitHub/Teststock generates intelligence packets only. The authorized ChatGPT execution layer independently verifies live Robinhood state and performs permitted broker actions through Robinhood tools; Teststock never submits orders.'}
