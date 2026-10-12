@@ -29,7 +29,7 @@ if(dispatch.optionsLane?.status==='OPTION_SEED_LANE_BUY_TRIGGER'&&optionCandidat
 
 const indexLane=dispatch.indexOptionsLane||{};
 const indexResearch=indexLane.researchCandidates||[];
-if(!['LIVE_MICRO_BOOTSTRAP','SHADOW_ONLY_BROKER_EVIDENCE_REQUIRED','LIVE_SUSPENDED','ADMISSION_EARNED_BROKER_RESOLUTION_REQUIRED','BLOCKED_ADMISSION','STALE_RESEARCH'].includes(indexLane.status)) fail('invalid index-options lane status');
+if(!['LIVE_MICRO_BOOTSTRAP','SHADOW_ONLY_BROKER_EVIDENCE_REQUIRED','LIVE_SUSPENDED','ADMISSION_EARNED_BROKER_RESOLUTION_REQUIRED','BLOCKED_ADMISSION','STALE_RESEARCH','EXECUTOR_EXIT_UNAVAILABLE'].includes(indexLane.status)) fail('invalid index-options lane status');
 if(!['LIVE_MICRO_BOOTSTRAP','SHADOW_ONLY','MICRO_PROBATION','PROBATION','LIVE_ADMITTED','LIVE_SUSPENDED'].includes(indexLane.admissionState)) fail('invalid index-options admission state');
 if(indexLane.executionCandidatePublished!==false) fail('index-options lane must not publish an exact broker order candidate before live Robinhood contract resolution');
 if(indexResearch.some(x=>!['XND','DJX'].includes(x.indexSymbol))) fail('index-options research contains unsupported index');
@@ -74,10 +74,17 @@ if(dispatch.schemaVersion>=4){
   if(!Number.isInteger(legacyMax)||legacyMax<1||legacyMax>4) fail('legacy maximumNewBuysPerDispatch must be an integer from 1 to 4');
   if(automaticStockCandidates.length>legacyMax) fail('automaticStockCandidates exceeds maximumNewBuysPerDispatch');
 }
-if(dispatch.consumerContract?.approvalMode!=='NONE_AUTOMATIC') fail('approvalMode must be NONE_AUTOMATIC');
-if(dispatch.consumerContract?.userApprovalRequired!==false) fail('user approval must be false');
-if(dispatch.consumerContract?.automaticQualifiedStocks!==true) fail('automaticQualifiedStocks must be true');
-if(dispatch.consumerContract?.automaticQualifiedStockOptions!==true) fail('automaticQualifiedStockOptions must be true');
+if(dispatch.manualExecutionOnly===true){
+  if(dispatch.consumerContract?.approvalMode!=='MANUAL_ONLY_EXECUTOR_BLOCKED') fail('manual-only dispatch must expose MANUAL_ONLY_EXECUTOR_BLOCKED approval mode');
+  if(dispatch.consumerContract?.automaticQualifiedStocks!==false) fail('manual-only dispatch cannot auto-execute stocks');
+  if(dispatch.consumerContract?.automaticQualifiedStockOptions!==false) fail('manual-only dispatch cannot auto-execute stock options');
+  if((dispatch.automaticStockCandidates||[]).length||(dispatch.seedLaneCandidates||[]).length||(dispatch.optionCandidates||[]).length||(dispatch.indexOptionResolutionRequests||[]).length) fail('manual-only dispatch cannot publish new-risk execution candidates');
+}else{
+  if(dispatch.consumerContract?.approvalMode!=='NONE_AUTOMATIC') fail('approvalMode must be NONE_AUTOMATIC');
+  if(dispatch.consumerContract?.userApprovalRequired!==false) fail('user approval must be false');
+  if(dispatch.consumerContract?.automaticQualifiedStocks!==true) fail('automaticQualifiedStocks must be true');
+  if(dispatch.consumerContract?.automaticQualifiedStockOptions!==true) fail('automaticQualifiedStockOptions must be true');
+}
 if(dispatch.consumerContract?.multipleConcurrentStocksAllowed!==true) fail('multi-stock capability must be explicit');
 if(dispatch.multiStockPolicy?.enabled!==true) fail('multiStockPolicy must be enabled');
 if(dispatch.multiStockPolicy?.automaticQualifiedEntries!==true) fail('automatic stock policy must be enabled');
