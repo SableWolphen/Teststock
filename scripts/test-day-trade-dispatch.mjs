@@ -21,7 +21,7 @@ async function build(events,dir=null){
   await fs.writeFile(path.join(data,'executor-capabilities.json'),JSON.stringify({liveOrderSubmission:true,liveEquityEntrySubmission:true,liveEquityExitSubmission:true,liveOptionEntrySubmission:true,liveOptionExitSubmission:true,liveOptionExitVerifiedThisSession:true}));
   await fs.writeFile(boardPath,JSON.stringify({publishedAt:new Date().toISOString(),monitorHealth:'OK',marketSession:openSession,events}));
   await fs.writeFile(signalPath,JSON.stringify(signal));
-  await exec(process.execPath,[script,boardPath,signalPath,outPath]);
+  await exec(process.execPath,[script,boardPath,signalPath,outPath],{env:{...process.env,TESTSTOCK_EXECUTOR_CAPABILITY_FILE:path.join(data,'executor-capabilities.json')}});
   await exec(process.execPath,[validator,outPath]);
   return {out:JSON.parse(await fs.readFile(outPath,'utf8')),dir};
 }
