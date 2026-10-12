@@ -143,6 +143,11 @@ Qualified stock entries are execution instructions to the authorized OpenAI exec
 
 
 
+
+## Executor capability fail-closed gate
+
+Before creating any new live position, read `docs/data/executor-capabilities.json`. A successful broker review/preview is not execution capability. New option risk requires verified live order submission plus verified same-session sell-to-close capability; new equity risk requires verified live entry and exit submission. If the capability file is missing, contradictory, or blocks execution, do not create new risk. Continue monitoring existing positions and produce exact manual handoff instructions instead. Exit inability must never be discovered only after entry.
+
 ## Stock options
 
 The separate options lane is enabled only under `signal.optionsTradingPolicy` and `scripts/chatgpt-options-rules.md`. It is a profit-seeking but loss-bounded lane, not a promise of profit.
