@@ -10,6 +10,8 @@
  * remote MCP server. No broker credential is committed or logged.
  */
 import crypto from 'node:crypto';
+import {evaluateTradingReadiness} from './trading-readiness.mjs';
+import {tradingCircuitBreaker} from './trading-decision-engine.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -159,6 +161,22 @@ async function runLive(){
   const dispatch=readJson('docs/data/execution-dispatch.json')||{};
   const selected=selectAction(dispatch);
   if(!selected)return emitSuccess({...runtimeStatus('live'),result:'NO_ACTION',broker_write:false});
+  // A repository flag alone cannot establish broker capabilities. An independent,
+  // fresh runtime attestation must be supplied by the verified execution operator.
+  // Missing evidence always fails closed; risk-reducing exits remain eligible for
+  // manual handling and are not falsely reported as completed here.
+  const action=selected.action||{};
+  const isExit=/SELL|EXIT|STOP|TARGET|CLOSE|TRIM/i.test(String(action.requestedAction||action.trigger||''));
+  if(!isExit){
+    const capability=readJson('docs/data/executor-capabilities.json')||{};
+    const attestation=readJson('docs/data/unattended-runtime-attestation.json')||{};
+    const readiness=evaluateTradingReadiness({capability,broker:attestation.broker,scheduler:attestation.scheduler,reconciliation:attestation.reconciliation});
+    const isOption=action.assetClass==='OPTION';
+    if(!(isOption?readiness.optionReady:readiness.stockReady))return emitSuccess({...runtimeStatus('live'),result:'NO_ACTION_UNVERIFIED_UNATTENDED_EXECUTION',broker_write:false,checks:readiness.checks});
+    const equity=attestation.equity;
+    const brake=tradingCircuitBreaker({equity:equity?.current,dayStartEquity:equity?.dayStart,peakEquity:equity?.peak});
+    if(!brake.allowNewEntries)return emitSuccess({...runtimeStatus('live'),result:'NO_ACTION_RISK_CIRCUIT_BREAKER',broker_write:false,reason:brake.reason});
+  }
   const ids=orderRefIds(selected.fingerprint),claimFile=claim(selected,ids);
   if(!claimFile)return emitSuccess({...runtimeStatus('live'),result:'NO_ACTION_ALREADY_CLAIMED',broker_write:false,fingerprint:selected.fingerprint});
   const input=[
