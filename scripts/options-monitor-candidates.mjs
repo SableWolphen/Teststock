@@ -57,6 +57,7 @@ export function evaluateOptionsSeedLaneCandidate({
   const rawMaxOrderUsd=seedPolicy.maxOrderUsd;
   const maxOrderUsd=rawMaxOrderUsd===null||rawMaxOrderUsd===undefined?null:Number(rawMaxOrderUsd);
   const hasFixedPremiumCap=Number.isFinite(maxOrderUsd)&&maxOrderUsd>0;
+  if(!hasFixedPremiumCap) return {status:'BLOCKED_PREMIUM_CAP',reason:'A finite positive reviewed premium cap is required; zero, null and missing caps never mean unlimited risk.'};
   const premium=Number(candidate.oneContractPremiumDollars||0);
   if(!(premium>0)){
     return {status:'BLOCKED_PREMIUM_CAP',reason:'One-contract premium is missing or invalid.'};

@@ -83,3 +83,10 @@ test('unsupported option kinds fail closed',()=>{
   const state=evaluateOptionsSeedLaneCandidate({candidate:{...goodCandidate,kind:'SHORT_CALL'},admission:{state:'LIVE_ADMITTED'},seedPolicy});
   assert.equal(state.status,'BLOCKED_OPTION_KIND');
 });
+
+test('zero, missing, null and invalid premium caps never mean unlimited risk',()=>{
+ for(const maxOrderUsd of [0,null,undefined,-1,'not-a-number',Infinity]) {
+  const state=evaluateOptionsSeedLaneCandidate({candidate:goodCandidate,admission:{state:'MICRO_PROBATION'},seedPolicy:{...seedPolicy,maxOrderUsd}});
+  assert.equal(state.status,'BLOCKED_PREMIUM_CAP');
+ }
+});

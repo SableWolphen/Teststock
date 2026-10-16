@@ -177,7 +177,7 @@ const indexOptionResearchCandidates=(indexOptionsResearch.candidates||[]).filter
   liveExecutionEligible:false,
 }));
 const indexSession=board?.marketSession||{};
-const indexLiveAllowed=SAFETY_POLICY.liveExecutionEnabled&&earnedAdmission(indexOptionsAdmission.state)&&indexOptionsAdmission.executionAuthorized===true;
+const indexLiveAllowed=SAFETY_POLICY.liveExecutionEnabled&&indexOptionsLivePolicy.enabled===true&&Number.isFinite(Number(indexOptionsLivePolicy.maxOrderUsd))&&Number(indexOptionsLivePolicy.maxOrderUsd)>0&&earnedAdmission(indexOptionsAdmission.state)&&indexOptionsAdmission.executionAuthorized===true;
 const indexBootstrapAllowed=false;
 const indexResolutionPool=indexOptionResearchCandidates
   .filter(x=>x.researchStatus==='BROKER_SHADOW_SAMPLE_READY'&&['BULLISH','BEARISH'].includes(x.proxyBias))
@@ -187,7 +187,7 @@ const indexResolutionRequest=(executorOptionEntryAllowed&&!hasExitEvent&&boardHe
   isNew:true,isActionable:true,priority:44,assetClass:'INDEX_OPTION',ticker:indexResolutionPool[0].indexSymbol,trigger:'INDEX_OPTION_RESOLUTION_REQUEST',
   proxySymbol:indexResolutionPool[0].proxySymbol,proxyBias:indexResolutionPool[0].proxyBias,proxyPrice:indexResolutionPool[0].proxyPrice,proxyScore:indexResolutionPool[0].proxyScore,
   allowedKinds:indexResolutionPool[0].brokerResolution?.allowedKinds||[],minDte:Number(indexOptionsLivePolicy.minDte||3),maxDte:Number(indexOptionsLivePolicy.maxDte||45),
-  maxOrderUsd:Number(indexOptionsLivePolicy.maxOrderUsd)>0?Number(indexOptionsLivePolicy.maxOrderUsd):null,affordabilityMode:Number(indexOptionsLivePolicy.maxOrderUsd)>0?'FIXED_PREMIUM_CAP':'LIVE_UNLEVERAGED_CASH',maxNewPositionsPerNyDay:Number(indexOptionsLivePolicy.maxNewPositionsPerNyDay||1),maxConcurrentPositions:Number(indexOptionsLivePolicy.maxConcurrentPositions||1),
+  maxOrderUsd:Number(indexOptionsLivePolicy.maxOrderUsd)>0?Number(indexOptionsLivePolicy.maxOrderUsd):0,affordabilityMode:Number(indexOptionsLivePolicy.maxOrderUsd)>0?'FIXED_PREMIUM_CAP':'LIVE_UNLEVERAGED_CASH',maxNewPositionsPerNyDay:Number(indexOptionsLivePolicy.maxNewPositionsPerNyDay||1),maxConcurrentPositions:Number(indexOptionsLivePolicy.maxConcurrentPositions||1),
   mustBeFlatBeforeMarketClose:indexOptionsLivePolicy.mustBeFlatBeforeMarketClose===true,forcedExitMinutesBeforeClose:Number(indexOptionsLivePolicy.forcedExitMinutesBeforeClose||10),
   admissionState:indexOptionsAdmission.state,requestedAction:'RESOLVE_EXACT_ROBINHOOD_INDEX_OPTION_AND_EXECUTE_MICRO_IF_ALL_LIVE_GATES_PASS',
   brokerContractResolutionRequired:true,reason:'User-authorized XND/DJX live micro bootstrap. Research proxy supplies direction only; Robinhood must resolve the exact index contract and executable quote before any order.'
