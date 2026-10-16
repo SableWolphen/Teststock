@@ -128,3 +128,13 @@ Before any live deployment, independent evidence must establish all of the follo
 | Deployment | Reviewed supported executor wiring and explicit live release after the above pass. Windows read-only MCP must not silently acquire write access. |
 
 October 16 connection testing verified local Alpaca paper clock/calendar/IEX bars. Full historical validation ran successfully but returned `RED_FLAG` for CALM. That is an evidence failure rather than a connectivity failure. The local monitor continues independently with real-money submission disabled.
+
+### Recovery, watchdog and expanded read-only reconciliation
+
+The crypto reader uses `rhs_account_number` from the pinned eligible brokerage account, pages both position and order results, and retains explicit blockers for non-fiat exposure or working/unknown orders. Crypto orders are read-only observations; their fills, protection and strategy admission are not asserted. Reader failure never implies empty holdings. The aggregate `allAssetReconciliationComplete` remains false because advanced-order relationships still lack an exposed reader.
+
+Monitor startup serializes lock recovery. It archives an abandoned lock only when the recorded process is demonstrably absent (`ESRCH`). Live PIDs, permission errors and invalid owners remain blocked. A crash during recovery can leave `monitor.lock.recovery`; an operator must verify no recovery worker is active before removing that guard. PID reuse causes a safe refusal. The tests kill an isolated monitor child and verify its restart stays read-only; this does not certify all Windows/credential outage cases.
+
+Install the independent local watchdog with `./scripts/windows/Install-Watchdog.ps1`. It copies its standalone script into the private runtime so repository branch changes cannot remove the scheduled action. The separate `Teststock Read-only Watchdog` task runs every minute while the user is logged in. It detects missing/stale/future heartbeats, broker/data failures, incomplete reconciliation, STOP and unexpected live flags. Private `alerts.jsonl` records incident/recovery transitions and `watchdog-status.json` records active codes. Repeated incidents are deduplicated across process restarts. A stale watchdog lock requires operator inspection; no lock is blindly removed.
+
+These are **local-file alerts only**. Notification delivery to the user and user receipt are unverified; there is no email/SMS/push integration. A healthy watchdog, a passing fixture crash test or a recovered monitor never authorizes a broker order or clears strategy/protection gates.
