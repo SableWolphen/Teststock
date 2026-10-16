@@ -165,3 +165,7 @@ Before any broker submission, the execution runtime must atomically claim the se
 When multiple fresh buy triggers qualify, the execution packet ranks them, but each executor invocation preclaims and handles only one logical action. A failed candidate is left for a later freshly generated dispatch rather than creating an unclaimed second order in the same invocation. Stops and other position-protection events exclude all new buys until they are resolved.
 
 The repository is **paper by default**. `TESTSTOCK_EXECUTION_MODE` defaults to `paper`, which can produce a broker-ready dry-run action but never calls Robinhood. Real orders require the user to set `TESTSTOCK_EXECUTION_MODE=live` and separately set `TESTSTOCK_LIVE_TRADING=I_UNDERSTAND_REAL_ORDERS`; live mode also requires `OPENAI_API_KEY` and a private `ROBINHOOD_MCP_OAUTH_TOKEN`. None of those live values are committed or enabled by the workflow defaults. The MCP tool allowlist excludes funding, transfers, withdrawals and option exercise.
+
+## Safe Windows setup
+
+See [Windows read-only monitor](docs/WINDOWS-MONITOR.md) for installation, Task Scheduler, private logs, supported authentication and go-live gates. The legacy live executor is now hard-disabled pending independent entry/exit and authorization verification; the older live-mode environment instructions above no longer enable orders.

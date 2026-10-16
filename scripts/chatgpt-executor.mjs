@@ -157,6 +157,7 @@ async function runPaper(){
   emitSuccess(selected?{...runtimeStatus('paper'),result:'PAPER_ACTION_READY',broker_write:false,fingerprint:selected.fingerprint,ref_ids:orderRefIds(selected.fingerprint),action:selected.action}:{...runtimeStatus('paper'),result:'NO_ACTION',broker_write:false});
 }
 async function runLive(){
+  throw new Error('LIVE_DISABLED: Windows setup is read-only; supported authentication, entry/exit protection and explicit authorization require independent verification and reviewed implementation before enabling writes');
   if(process.env.TESTSTOCK_LIVE_TRADING!==LIVE_SENTINEL)throw new Error('live trading locked: set TESTSTOCK_LIVE_TRADING='+LIVE_SENTINEL+' yourself; repository defaults never enable it');
   const dispatch=readJson('docs/data/execution-dispatch.json')||{};
   const selected=selectAction(dispatch);
