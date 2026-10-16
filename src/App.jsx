@@ -37,6 +37,7 @@ export default function App(){
   const [optionNotice,setOptionNotice]=useState('');
   const [optionQuery,setOptionQuery]=useState('');
   const [optionSide,setOptionSide]=useState('ALL');
+  const [optionSort,setOptionSort]=useState('score');
   const liveOptionsReady = Number.isFinite(Date.parse(executorCapabilities?.verifiedAt||'')) && Date.now()-Date.parse(executorCapabilities.verifiedAt)>=0 && Date.now()-Date.parse(executorCapabilities.verifiedAt)<3600000 && executorCapabilities?.liveOptionEntrySubmission === true && executorCapabilities?.liveOptionExitSubmission === true && executorCapabilities?.liveOptionExitVerifiedThisSession === true;
   const executionStatus = liveOptionsReady ? 'Live option capability reported — independently verify with broker before any order' : 'MANUAL ONLY — real-money options execution is not verified';
   useEffect(()=>localStorage.setItem('ts-budget',JSON.stringify(budget)),[budget]);
@@ -76,11 +77,14 @@ export default function App(){
     .filter(row=>Number(row.oneContractPremiumDollars||Infinity)<=Number(optionBudget||0))
     .filter(row=>!optionQuery||String(row.underlying||'').toUpperCase().includes(optionQuery.trim().toUpperCase()))
     .filter(row=>optionSide==='ALL'||(optionSide==='PUT'?row.kind==='LONG_PUT':row.kind!=='LONG_PUT'))
-    .slice(0,20),[optionBudget,optionQuery,optionSide]);
+    .sort((a,b)=>optionSort==='premium'?Number(a.oneContractPremiumDollars)-Number(b.oneContractPremiumDollars):optionSort==='spread'?Number(a.spreadPct)-Number(b.spreadPct):Number(b.score)-Number(a.score))
+    .slice(0,20),[optionBudget,optionQuery,optionSide,optionSort]);
   const bestOption=optionRows.find(row=>row.policyFit)||optionRows[0]||null;
+  const optionSnapshotAgeHours=(Date.now()-Date.parse(optionScan?.sourceSnapshotAsOf||optionScan?.generatedAt||''))/3600000;
+  const optionSnapshotFresh=Number.isFinite(optionSnapshotAgeHours)&&optionSnapshotAgeHours>=0&&optionSnapshotAgeHours<1;
   const copyOptionRequest=async row=>{
     if(!row)return;
-    if(!liveOptionsReady){setOptionNotice('MANUAL_ONLY_BLOCKED: This site cannot verify both live entry and same-session exit. Research only; no buy request generated.');return;}
+    if(!liveOptionsReady||!optionSnapshotFresh){setOptionNotice('LIVE_ORDER_BLOCKED: A fresh scanner snapshot and verified same-session entry/exit capability are required. Research only; no buy request generated.');return;}
     const cp=row.kind==='LONG_PUT'?'put':'call';
     const request='Review and buy 1 '+row.underlying+' '+row.expiry+' strike '+row.strike+' '+cp+' in my Robinhood Agentic account only if the live quote, spread, liquidity, buying power, account floor, options admission, duplicate-order check, and every current Teststock gate still pass. Use a marketable limit at or below the live allowed premium. Do not use margin, transfers, naked options, exercise, or carry it overnight. If any gate fails, do not place the order. Contract: '+row.contract+'.';
     try{
@@ -150,6 +154,7 @@ export default function App(){
         <div><Rocket size={20}/><div><span>OPTIONS QUICK BUY</span><h2>Find affordable calls and puts quickly</h2></div></div>
         <Pill t={optionAdmission.executionAuthorized?'good':'warn'}>{optionAdmission.executionAuthorized?'LIVE ADMISSION':'RESEARCH ONLY'}</Pill>
       </div>
+      <p className="muted">Saved scan: {optionScan?.sourceSnapshotAsOf||'unknown'} · {optionSnapshotFresh?'Recent snapshot; broker recheck still required':'Stale snapshot — live requests blocked'}. Showing up to 20 matching contracts.</p>
       <div className="option-toolbar">
         <label style={{display:'grid',gap:6,minWidth:160}}>Find a ticker<input aria-label="Filter option ticker" placeholder="Search ticker, e.g. SOFI" value={optionQuery} onChange={e=>setOptionQuery(e.target.value)}/></label>
         <label style={{display:'grid',gap:6}}>Direction<select aria-label="Filter option direction" value={optionSide} onChange={e=>setOptionSide(e.target.value)}><option value="ALL">Calls and puts</option><option value="CALL">Calls</option><option value="PUT">Puts</option></select></label>
@@ -158,6 +163,7 @@ export default function App(){
           <strong>{money(optionBudget)}</strong>
           <small>Filters the scanner before you even open an order review.</small>
         </div>
+        <label style={{display:'grid',gap:6}}>Sort by<select aria-label="Sort options" value={optionSort} onChange={e=>setOptionSort(e.target.value)}><option value="score">Highest score</option><option value="premium">Lowest premium</option><option value="spread">Tightest spread</option></select></label>
         <div className="option-budget-buttons">
           {[10,15,20,25,35].map(x=><button key={x} className={Number(optionBudget)===x?'active':''} onClick={()=>setOptionBudget(x)}>${x}</button>)}
           <input type="number" min="1" step="1" value={optionBudget} onChange={e=>setOptionBudget(Math.max(1,Number(e.target.value)||1))}/>
@@ -177,7 +183,7 @@ export default function App(){
         </div>
         <div className="payoff option-payoff"><Stat label="Score" value={bestOption.score}/><Stat label="Delta" value={bestOption.delta}/><Stat label="Spread" value={bestOption.spreadPct+'%'}/><Stat label="DTE" value={bestOption.dte}/></div>
         <div className="option-actions">
-          <button className="quick-buy-btn" onClick={()=>copyOptionRequest(bestOption)}><Copy size={16}/>Copy exact buy request</button>
+          <button className="quick-buy-btn" disabled={!liveOptionsReady||!optionSnapshotFresh||!bestOption.policyFit} onClick={()=>copyOptionRequest(bestOption)}><Copy size={16}/>Copy exact buy request</button>
           <span>{bestOption.policyFit?'Fits current contract-shape policy; live broker checks still required.':'Scanner candidate, but current execution policy would block it.'}</span>
         </div>
       </div>:<div className="empty"><ShieldCheck size={24}/><b>No matching contract in this saved scan.</b><span>Change ticker, direction, or budget; this is not a live broker option chain.</span></div>}
@@ -189,7 +195,7 @@ export default function App(){
           <div className="option-row-top"><Pill t={i===0?'good':'neutral'}>#{i+1}</Pill><span>{row.kind==='LONG_PUT'?'PUT':'CALL'}</span><b>{money(row.oneContractPremiumDollars)}</b></div>
           <h3>{row.underlying} ${row.strike}{row.kind==='LONG_PUT'?'P':'C'}</h3>
           <p>{row.expiry} · {row.dte} DTE · Δ {row.delta} · spread {row.spreadPct}%</p>
-          <div className="option-row-bottom"><span>score {row.score}</span><button onClick={()=>copyOptionRequest(row)}><Copy size={14}/>Buy request</button></div>
+          <div className="option-row-bottom"><span>score {row.score}</span><button disabled={!liveOptionsReady||!optionSnapshotFresh||!row.policyFit} onClick={()=>copyOptionRequest(row)}><Copy size={14}/>Buy request</button></div>
         </article>)}
       </div>
 
