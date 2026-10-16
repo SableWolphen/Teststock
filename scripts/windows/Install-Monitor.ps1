@@ -1,5 +1,6 @@
 param([switch]$RegisterTask)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'Hidden-TaskAction.ps1')
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $node = (Get-Command node -ErrorAction Stop).Source
 $nodeVersionText = & $node --version
@@ -17,7 +18,7 @@ $env:TESTSTOCK_RUNTIME_STATE_DIR = $state
 if ($LASTEXITCODE -notin @(0,2)) { throw 'Monitor smoke check failed.' }
 if ($RegisterTask) {
   $runner = Join-Path $repo 'scripts/windows-monitor.mjs'
-  $action = New-ScheduledTaskAction -Execute $node -Argument "`"$runner`" --state-dir `"$state`"" -WorkingDirectory $repo
+  $action = New-TeststockHiddenTaskAction -Node $node -Runner $runner -State $state -Name monitor -WorkingDirectory $repo
   $trigger = New-ScheduledTaskTrigger -AtLogOn -User $identity
   $principal = New-ScheduledTaskPrincipal -UserId $identity -LogonType Interactive -RunLevel Limited
   $settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero) -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
