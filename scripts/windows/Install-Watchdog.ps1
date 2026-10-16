@@ -1,5 +1,6 @@
 param()
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'Hidden-TaskAction.ps1')
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $node = (Get-Command node -ErrorAction Stop).Source
 $state = Join-Path $env:LOCALAPPDATA 'Teststock/runtime'
@@ -10,7 +11,7 @@ $runner = Join-Path $toolsDir 'monitor-watchdog.mjs'
 Copy-Item -LiteralPath (Join-Path $repo 'scripts/monitor-watchdog.mjs') -Destination $runner -Force
 Copy-Item -LiteralPath (Join-Path $repo 'scripts/monitor-lock.mjs') -Destination (Join-Path $toolsDir 'monitor-lock.mjs') -Force
 $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-$action = New-ScheduledTaskAction -Execute $node -Argument "`"$runner`" --state-dir `"$state`"" -WorkingDirectory $state
+$action = New-TeststockHiddenTaskAction -Node $node -Runner $runner -State $state -Name watchdog -WorkingDirectory $state
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)
 $principal = New-ScheduledTaskPrincipal -UserId $identity -LogonType Interactive -RunLevel Limited
 $settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit (New-TimeSpan -Minutes 1) -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
