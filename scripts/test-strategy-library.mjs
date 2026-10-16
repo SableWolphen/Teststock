@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {STRATEGIES,evaluateResearchTrade,rankStrategyResults} from './strategy-library.mjs';
+test('catalog has five attributable research concepts',()=>{assert.equal(STRATEGIES.length,5);assert.ok(STRATEGIES.every(s=>s.source.startsWith('https://')))});
+test('missing data never triggers a trade',()=>assert.equal(evaluateResearchTrade({strategyId:'news-momentum'}).signal,'NO_DATA'));
+test('strong breakout creates research signal only',()=>{const bars=[{high:10,low:9,close:9.5,vwap:9.5},{high:10,low:9.5,close:9.8,vwap:9.6},{high:11,low:10,close:11,vwap:10}];const r=evaluateResearchTrade({strategyId:'opening-range-breakout',bars,relativeVolume:3});assert.equal(r.signal,'LONG_RESEARCH');assert.equal(r.automaticSubmissionAuthorized,false)});
+test('results require out of sample evidence',()=>{const [r]=rankStrategyResults([{strategyId:'a',trades:40,wins:25,grossProfit:500,grossLoss:200,fees:40,slippage:20,maxDrawdownPct:10,outOfSample:false}]);assert.equal(r.eligible,false);assert.equal(r.netProfit,240)});
