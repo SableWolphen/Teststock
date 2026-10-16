@@ -14,7 +14,7 @@ export async function readPages(client,name,args,key,{maxPages=100}={}) {
   const data=unwrapRead(await client.call(name,{...args,...(cursor?{cursor}:{})}));
   if(!Array.isArray(data[key])||data[key].some(x=>!x||typeof x!=='object')) throw Error('INVALID_BROKER_PAGE');
   for(const row of data[key]) {
-   const id=row.id||row.option_id||row.symbol;
+   const id=row.id||row.option_id||row.symbol||row.currency?.code;
    if(typeof id!=='string'||!id||ids.has(id)) throw Error('DUPLICATE_OR_MISSING_BROKER_ID');
    ids.add(id);rows.push(row);
   }
@@ -75,8 +75,23 @@ export async function collectReadOnlySnapshot(client,{accountFingerprint,now=()=
  const optionOrders=await readPages(client,'get_option_orders',{account_number:account},'orders');
  const orderState=describeOrders(equityOrders,optionOrders);
  if(now()-started>maxDurationMs) throw Error('RECONCILIATION_TOO_SLOW');
- // Advanced orders and crypto are deliberately not claimed complete: this runtime has no verified readers for them.
- const blockers=['ADVANCED_ORDER_COVERAGE_UNVERIFIED','CRYPTO_COVERAGE_NOT_IMPLEMENTED',...orderState.issues];
+ // Crypto is read for exposure reconciliation only; no crypto execution/fill claims.
+ let cryptoPositions=[],cryptoOrders=[],cryptoReadComplete=false;
+ const cryptoBlockers=[];
+ if(typeof eligible[0].rhs_account_number==='string'&&/^\d+$/.test(eligible[0].rhs_account_number)) {
+  try {
+   const args={rhs_account_number:eligible[0].rhs_account_number};
+   cryptoPositions=await readPages(client,'get_crypto_positions',args,'results');
+   cryptoOrders=await readPages(client,'get_crypto_orders',args,'results');
+   for(const p of cryptoPositions) if(!p.currency?.code||p.quantity===null||p.quantity===undefined||p.quantity===''||!Number.isFinite(Number(p.quantity))||Number(p.quantity)<0) throw Error('INVALID_CRYPTO_POSITION');
+   for(const o of cryptoOrders) if(!o.id||typeof o.state!=='string') throw Error('INVALID_CRYPTO_ORDER');
+   cryptoReadComplete=true;
+   if(cryptoPositions.some(p=>p.currency.type!=='fiat'&&Number(p.quantity)>0)) cryptoBlockers.push('CRYPTO_EXPOSURE_REQUIRES_REVIEW');
+   if(cryptoOrders.some(o=>!TERMINAL.has(o.state))) cryptoBlockers.push('CRYPTO_WORKING_ORDERS_REQUIRE_REVIEW');
+  } catch {cryptoBlockers.push('CRYPTO_RECONCILIATION_UNVERIFIED');}
+ } else cryptoBlockers.push('CRYPTO_ACCOUNT_ID_UNVERIFIED');
+ if(now()-started>maxDurationMs) throw Error('RECONCILIATION_TOO_SLOW');
+ const blockers=['ADVANCED_ORDER_COVERAGE_UNVERIFIED',...cryptoBlockers,...orderState.issues];
  if([...equities,...options].some(p=>Number(p.quantity)<0||p.type==='short')) blockers.push('SHORT_POSITION_REQUIRES_REVIEW');
- return {schemaVersion:1,generatedAt:new Date(now()).toISOString(),accountFingerprint:fingerprint,scope:'EQUITY_AND_OPTION_READS',positionsReadComplete:true,orderHistoryReadComplete:true,allAssetReconciliationComplete:false,liveEnabled:false,entryAllowed:false,blockers,equities,options,...orderState,managedPositions:[...equities.map(p=>({...p,asset:'EQUITY'})),...options.map(p=>({...p,asset:'OPTION'}))]};
+ return {schemaVersion:2,generatedAt:new Date(now()).toISOString(),accountFingerprint:fingerprint,scope:'EQUITY_OPTION_AND_CRYPTO_READS',positionsReadComplete:true,orderHistoryReadComplete:true,cryptoReadComplete,cryptoPositions,cryptoOrders,allAssetReconciliationComplete:false,liveEnabled:false,entryAllowed:false,blockers,equities,options,...orderState,managedPositions:[...equities.map(p=>({...p,asset:'EQUITY'})),...options.map(p=>({...p,asset:'OPTION'}))]};
 }

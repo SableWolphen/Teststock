@@ -68,11 +68,19 @@ test('legacy enabled index policy cannot create bootstrap admission with zero ev
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'index-legacy-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const data=path.join(dir,'docs/data');fs.mkdirSync(data,{recursive:true});fs.writeFileSync(path.join(data,'index-options-live-policy.json'),JSON.stringify({enabled:true,maxOrderUsd:null}));
  const child=spawnSync(process.execPath,[path.resolve('scripts/apply-index-options-profitability-admission.mjs')],{cwd:dir,encoding:'utf8'});assert.equal(child.status,0,child.stderr);const out=JSON.parse(fs.readFileSync(path.join(data,'index-options-profitability-admission.json')));assert.equal(out.state,'SHADOW_ONLY');assert.equal(out.bootstrapLivePolicy,null);assert.equal(out.executionAuthorized,false);
 });
-test('crashed monitor retains its lock and prevents an unattended duplicate restart',async t=>{
+test('crashed monitor restarts after proving the old process is dead without granting trading authority',async t=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'crash-drill-'));const env={...process.env,TESTSTOCK_RUNTIME_STATE_DIR:root,ROBINHOOD_MCP_OAUTH_TOKEN:''};
  const child=spawn(process.execPath,['scripts/windows-monitor.mjs'],{env,stdio:['ignore','pipe','pipe']});
  t.after(()=>{if(child.exitCode===null)child.kill();fs.rmSync(root,{recursive:true,force:true});});
  await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('monitor startup timed out')),5000);child.stdout.once('data',()=>{clearTimeout(timer);resolve();});child.once('error',reject);});
  const ended=once(child,'exit');child.kill('SIGKILL');await ended;
- const restarted=spawnSync(process.execPath,['scripts/windows-monitor.mjs','--once'],{env,encoding:'utf8'});assert.equal(restarted.status,1);assert.equal(fs.existsSync(path.join(root,'monitor.lock')),true);
+ const restarted=spawnSync(process.execPath,['scripts/windows-monitor.mjs','--once'],{env,encoding:'utf8'});assert.equal(restarted.status,2);assert.equal(fs.existsSync(path.join(root,'monitor.lock')),false);assert.ok(fs.readdirSync(root).some(n=>n.startsWith('monitor.lock.abandoned-')));assert.equal(JSON.parse(fs.readFileSync(path.join(root,'status.json'))).liveEnabled,false);
+});
+
+test('crypto reconciliation uses the numeric brokerage id, pages results and preserves unsupported exposure blockers',async()=>{
+ const args=[];const client=mock({get_accounts:()=>wrap({accounts:[{...account,rhs_account_number:'123456'}]}),get_crypto_positions:a=>{args.push(a);return wrap({results:[{currency:{code:'BTC',type:'cryptocurrency'},quantity:'0.1'}]});},get_crypto_orders:a=>{args.push(a);return wrap({results:[{id:'crypto-order',state:'new_broker_state'}]});}});
+ const s=await collectReadOnlySnapshot(client);assert.equal(s.cryptoReadComplete,true);assert.equal(s.cryptoPositions.length,1);assert.ok(args.every(a=>a.rhs_account_number==='123456'&&!a.account_number));assert.ok(s.blockers.includes('CRYPTO_EXPOSURE_REQUIRES_REVIEW'));assert.ok(s.blockers.includes('CRYPTO_WORKING_ORDERS_REQUIRE_REVIEW'));assert.equal(s.allAssetReconciliationComplete,false);
+});
+test('unavailable crypto reader cannot erase previously unknown coverage',async()=>{
+ const s=await collectReadOnlySnapshot(mock({get_accounts:()=>wrap({accounts:[{...account,rhs_account_number:'123456'}]}),get_crypto_positions:()=>{throw Error('private token');}}));assert.equal(s.cryptoReadComplete,false);assert.ok(s.blockers.includes('CRYPTO_RECONCILIATION_UNVERIFIED'));assert.doesNotMatch(JSON.stringify(s),/private token/);
 });

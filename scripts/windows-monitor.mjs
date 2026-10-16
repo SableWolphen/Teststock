@@ -5,8 +5,9 @@ import {fileURLToPath} from 'node:url';
 import {vault, accessToken} from './robinhood-oauth.mjs';
 import {collectReadOnlySnapshot} from './monitor-reconciliation.mjs';
 import {probeStoredAlpaca} from './alpaca-data-client.mjs';
+import {acquireMonitorLock} from './monitor-lock.mjs';
 
-export const READ_TOOLS = Object.freeze(['get_accounts', 'get_equity_quotes', 'get_equity_positions', 'get_option_positions', 'get_equity_orders', 'get_option_orders']);
+export const READ_TOOLS = Object.freeze(['get_accounts', 'get_equity_quotes', 'get_equity_positions', 'get_option_positions', 'get_equity_orders', 'get_option_orders', 'get_crypto_positions', 'get_crypto_orders']);
 export class ReadOnlyMcp {
   constructor({token, tokenProvider, transport=fetch}) { this.token=token; this.tokenProvider=tokenProvider; this.transport=transport; this.id=0; }
   async rpc(method, params) {
@@ -134,8 +135,7 @@ async function main() {
   if(!root||!path.isAbsolute(root)) throw new Error('Set an absolute private TESTSTOCK_RUNTIME_STATE_DIR');
   fs.mkdirSync(root,{recursive:true});
   const lock=path.join(root,'monitor.lock');
-  let fd; try { fd=fs.openSync(lock,'wx',0o600); } catch { throw new Error('MONITOR_LOCKED: check for an existing process before manually removing a crash lock'); }
-  fs.writeFileSync(fd,JSON.stringify({pid:process.pid,at:new Date().toISOString()})); fs.closeSync(fd);
+  acquireMonitorLock(lock);
   let stopped=false; process.on('SIGINT',()=>{stopped=true;}); process.on('SIGTERM',()=>{stopped=true;});
   let settings={};
   try { settings=JSON.parse(fs.readFileSync(path.join(root,'monitor.json'),'utf8')); }
