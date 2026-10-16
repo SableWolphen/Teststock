@@ -24,8 +24,10 @@ const OPTIONS_MAX_AGE_MS=15*60*1000;
 
 // Fail closed: Teststock may publish research, but it may not authorize new live risk
 // unless this exact execution layer has verified both entry and risk-reducing exit submission.
-const executorOptionEntryAllowed=executorCapability.liveOrderSubmission===true&&executorCapability.liveOptionEntrySubmission===true&&executorCapability.liveOptionExitSubmission===true&&executorCapability.liveOptionExitVerifiedThisSession===true;
-const executorEquityEntryAllowed=executorCapability.liveOrderSubmission===true&&executorCapability.liveEquityEntrySubmission===true&&executorCapability.liveEquityExitSubmission===true;
+const capabilityVerifiedAtMs=Date.parse(executorCapability.verifiedAt||'');
+const capabilityFresh=Number.isFinite(capabilityVerifiedAtMs)&&capabilityVerifiedAtMs<=now.getTime()&&now.getTime()-capabilityVerifiedAtMs<=60*60*1000;
+const executorOptionEntryAllowed=capabilityFresh&&executorCapability.liveOrderSubmission===true&&executorCapability.liveOptionEntrySubmission===true&&executorCapability.liveOptionExitSubmission===true&&executorCapability.liveOptionExitVerifiedThisSession===true;
+const executorEquityEntryAllowed=capabilityFresh&&executorCapability.liveOrderSubmission===true&&executorCapability.liveEquityEntrySubmission===true&&executorCapability.liveEquityExitSubmission===true;
 const executorRiskCreationAllowed=executorOptionEntryAllowed||executorEquityEntryAllowed;
 
 const priority={TRIGGER_1_STOP:100,STOCK_DAY_TRADE_FORCED_EXIT:100,TRIGGER_3_TARGET2:80,TRIGGER_2_TARGET1:70,TRIGGER_EARLY_PROFIT_TRIM:60,BUY_TRIGGER:50};
@@ -205,7 +207,7 @@ const indexOptionsLane={
 
 const out={
   schemaVersion:4,source:'TESTSTOCK_EVENT_DISPATCH',generatedAt:nowIso,boardPublishedAt:board?.publishedAt||null,
-  executorCapability:{...executorCapability,riskCreationAllowed:executorRiskCreationAllowed,optionEntryAllowed:executorOptionEntryAllowed,equityEntryAllowed:executorEquityEntryAllowed},
+  executorCapability:{...executorCapability,capabilityFresh,capabilityMaxAgeMinutes:60,riskCreationAllowed:executorRiskCreationAllowed,optionEntryAllowed:executorOptionEntryAllowed,equityEntryAllowed:executorEquityEntryAllowed},
   riskCreationBlockedByExecutor:!executorRiskCreationAllowed,manualExecutionOnly:!executorRiskCreationAllowed,
   boardAgeMs:Number.isFinite(boardAgeMs)?boardAgeMs:null,maximumBoardAgeMs:MAX_BOARD_AGE_MS,
   monitorHealth:board?.monitorHealth||'UNAVAILABLE',dispatchHealth:boardHealthy?'OK':'FAIL_CLOSED_STALE_OR_UNHEALTHY_BOARD',

@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {planTradingCycle} from './autonomous-cycle-planner.mjs';
+test('no broker verification means no new orders',()=>{const r=planTradingCycle({marketOpen:true,cash:100});assert.equal(r.automaticSubmissionAuthorized,false);assert.ok(r.blockers.includes('BROKER_ENTRY_EXIT_UNVERIFIED'));});
+test('queued sell gets priority over new entries',()=>{const r=planTradingCycle({marketOpen:true,positions:[{optionId:'abc',expiry:'2026-10-16'}],orders:[{state:'queued',legs:[{option_id:'abc'}]}],now:'2026-10-16T15:00:00Z'});assert.equal(r.nextAction,'MANAGE_EXISTING_OR_WAIT');assert.ok(r.alerts[0].reasons.includes('RECONCILE_PENDING_SELL'));});
+test('kill switch blocks',()=>{assert.ok(planTradingCycle({marketOpen:true,killSwitch:true}).blockers.includes('KILL_SWITCH'));});

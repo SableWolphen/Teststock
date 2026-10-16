@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "mode": "RESEARCH_ONLY",
+  "sources": [
+    {
+      "id": "sec-edgar",
+      "url": "https://data.sec.gov/",
+      "data": [
+        "filings",
+        "companyfacts"
+      ],
+      "license": "public",
+      "auth": "none",
+      "usage": "fundamental and event research",
+      "freshness": "filing timestamp",
+      "constraints": [
+        "User-Agent with contact",
+        "respect SEC fair-access policy",
+        "no direct trading from filings alone"
+      ]
+    },
+    {
+      "id": "fred",
+      "url": "https://api.stlouisfed.org/fred/",
+      "data": [
+        "economic indicators",
+        "release calendars"
+      ],
+      "auth": "api-key",
+      "usage": "macro regime and event risk",
+      "freshness": "observation and release timestamps",
+      "constraints": [
+        "avoid look-ahead bias",
+        "historical vintages for backtests"
+      ]
+    },
+    {
+      "id": "nasdaq-data-link",
+      "url": "https://data.nasdaq.com/",
+      "data": [
+        "historical bars",
+        "market datasets"
+      ],
+      "auth": "dataset-dependent",
+      "usage": "research and backtests",
+      "freshness": "provider timestamps",
+      "constraints": [
+        "verify subscription and redistribution rights",
+        "not assumed free or real-time"
+      ]
+    }
+  ],
+  "admissionRules": [
+    "Research sources cannot override broker-authoritative quotes, buying power, positions, or orders",
+    "Reject missing or stale timestamps",
+    "Never trade on unverified or scraped performance claims",
+    "Use walk-forward out-of-sample tests and after-spread returns",
+    "No live execution until independent broker entry and exit attestation is verified"
+  ]
+}

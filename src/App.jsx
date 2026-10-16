@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import optionScan from '../docs/data/small-account-options.json';
 import optionAdmission from '../docs/data/options-profitability-admission.json';
+import executorCapabilities from '../docs/data/executor-capabilities.json';
 import signalSnapshot from '../docs/signal.json';
 
 const demo={
@@ -31,9 +32,14 @@ export default function App(){
   const [mode,setMode]=useState(()=>loadLocal('ts-mode','aggressive')),[tab,setTab]=useState('today');
   const [loading,setLoading]=useState(false),[error,setError]=useState('');
   const [paper,setPaper]=useState(()=>loadLocal('ts-paper',[]));
-  const [account,setAccount]=useState(()=>loadLocal('ts-account',{value:500,monthly:250,goal:1000000}));
+  const [account,setAccount]=useState(()=>loadLocal('ts-account',{value:76.21,monthly:0,goal:100000000}));
   const [optionBudget,setOptionBudget]=useState(()=>loadLocal('ts-option-budget',25));
   const [optionNotice,setOptionNotice]=useState('');
+  const [optionQuery,setOptionQuery]=useState('');
+  const [optionSide,setOptionSide]=useState('ALL');
+  const [optionSort,setOptionSort]=useState('score');
+  const liveOptionsReady = Number.isFinite(Date.parse(executorCapabilities?.verifiedAt||'')) && Date.now()-Date.parse(executorCapabilities.verifiedAt)>=0 && Date.now()-Date.parse(executorCapabilities.verifiedAt)<3600000 && executorCapabilities?.liveOptionEntrySubmission === true && executorCapabilities?.liveOptionExitSubmission === true && executorCapabilities?.liveOptionExitVerifiedThisSession === true;
+  const executionStatus = liveOptionsReady ? 'Live option capability reported — independently verify with broker before any order' : 'MANUAL ONLY — real-money options execution is not verified';
   useEffect(()=>localStorage.setItem('ts-budget',JSON.stringify(budget)),[budget]);
   useEffect(()=>localStorage.setItem('ts-mode',JSON.stringify(mode)),[mode]);
   useEffect(()=>localStorage.setItem('ts-paper',JSON.stringify(paper)),[paper]);
@@ -69,10 +75,16 @@ export default function App(){
         &&Number(row.oneContractPremiumDollars||Infinity)<=Number(optionBudget||0)
     }))
     .filter(row=>Number(row.oneContractPremiumDollars||Infinity)<=Number(optionBudget||0))
-    .slice(0,12),[optionBudget]);
+    .filter(row=>!optionQuery||String(row.underlying||'').toUpperCase().includes(optionQuery.trim().toUpperCase()))
+    .filter(row=>optionSide==='ALL'||(optionSide==='PUT'?row.kind==='LONG_PUT':row.kind!=='LONG_PUT'))
+    .sort((a,b)=>optionSort==='premium'?Number(a.oneContractPremiumDollars)-Number(b.oneContractPremiumDollars):optionSort==='spread'?Number(a.spreadPct)-Number(b.spreadPct):Number(b.score)-Number(a.score))
+    .slice(0,20),[optionBudget,optionQuery,optionSide,optionSort]);
   const bestOption=optionRows.find(row=>row.policyFit)||optionRows[0]||null;
+  const optionSnapshotAgeHours=(Date.now()-Date.parse(optionScan?.sourceSnapshotAsOf||optionScan?.generatedAt||''))/3600000;
+  const optionSnapshotFresh=Number.isFinite(optionSnapshotAgeHours)&&optionSnapshotAgeHours>=0&&optionSnapshotAgeHours<1;
   const copyOptionRequest=async row=>{
     if(!row)return;
+    if(!liveOptionsReady||!optionSnapshotFresh){setOptionNotice('LIVE_ORDER_BLOCKED: A fresh scanner snapshot and verified same-session entry/exit capability are required. Research only; no buy request generated.');return;}
     const cp=row.kind==='LONG_PUT'?'put':'call';
     const request='Review and buy 1 '+row.underlying+' '+row.expiry+' strike '+row.strike+' '+cp+' in my Robinhood Agentic account only if the live quote, spread, liquidity, buying power, account floor, options admission, duplicate-order check, and every current Teststock gate still pass. Use a marketable limit at or below the live allowed premium. Do not use margin, transfers, naked options, exercise, or carry it overnight. If any gate fails, do not place the order. Contract: '+row.contract+'.';
     try{
@@ -89,11 +101,12 @@ export default function App(){
       <button className="refresh" onClick={scan} disabled={loading}><RefreshCw size={18} className={loading?'spin':''}/>{loading?'Scanning…':'Scan now'}</button>
     </header>
 
+    <section role="status" aria-live="polite" style={{padding:"16px",border:"1px solid #e0a75d",borderRadius:16,marginBottom:16,background:"rgba(224,167,93,.10)"}}><strong><ShieldCheck size={17} style={{verticalAlign:"middle",marginRight:8}}/>{executionStatus}</strong><p style={{margin:"8px 0 0"}}>Options are supported for research and paper tracking. Live option entries stay disabled until verified entry AND same-session sell-to-close capability are available. A preview is not a fill. Quotes must use executable bid for exits, ask for entries; wide spreads, zero bids, and near-expiration contracts can cause major losses.</p><small>Capability verification: {executorCapabilities?.verifiedAt||"unknown"} · Status: {executorCapabilities?.mode||"unknown"}</small></section>
     <nav className="tabs">
       <button className={tab==='today'?'active':''} onClick={()=>setTab('today')}><Zap size={16}/>Today</button>
       <button className={tab==='options'?'active':''} onClick={()=>setTab('options')}><Rocket size={16}/>Options</button>
       <button className={tab==='paper'?'active':''} onClick={()=>setTab('paper')}><History size={16}/>Paper</button>
-      <button className={tab==='plan'?'active':''} onClick={()=>setTab('plan')}><LineChart size={16}/>Road to $1M</button>
+      <button className={tab==='plan'?'active':''} onClick={()=>setTab('plan')}><LineChart size={16}/>Road to $100M</button>
     </nav>
 
     {tab==='today'&&<>
@@ -138,15 +151,19 @@ export default function App(){
 
     {tab==='options'&&<section className="page-card options-page">
       <div className="section-title">
-        <div><Rocket size={20}/><div><span>OPTIONS QUICK BUY</span><h2>Best affordable contracts, already ranked</h2></div></div>
+        <div><Rocket size={20}/><div><span>OPTIONS QUICK BUY</span><h2>Find affordable calls and puts quickly</h2></div></div>
         <Pill t={optionAdmission.executionAuthorized?'good':'warn'}>{optionAdmission.executionAuthorized?'LIVE ADMISSION':'RESEARCH ONLY'}</Pill>
       </div>
+      <p className="muted">Saved scan: {optionScan?.sourceSnapshotAsOf||'unknown'} · {optionSnapshotFresh?'Recent snapshot; broker recheck still required':'Stale snapshot — live requests blocked'}. Showing up to 20 matching contracts.</p>
       <div className="option-toolbar">
+        <label style={{display:'grid',gap:6,minWidth:160}}>Find a ticker<input aria-label="Filter option ticker" placeholder="Search ticker, e.g. SOFI" value={optionQuery} onChange={e=>setOptionQuery(e.target.value)}/></label>
+        <label style={{display:'grid',gap:6}}>Direction<select aria-label="Filter option direction" value={optionSide} onChange={e=>setOptionSide(e.target.value)}><option value="ALL">Calls and puts</option><option value="CALL">Calls</option><option value="PUT">Puts</option></select></label>
         <div>
           <span>Max premium per contract</span>
           <strong>{money(optionBudget)}</strong>
           <small>Filters the scanner before you even open an order review.</small>
         </div>
+        <label style={{display:'grid',gap:6}}>Sort by<select aria-label="Sort options" value={optionSort} onChange={e=>setOptionSort(e.target.value)}><option value="score">Highest score</option><option value="premium">Lowest premium</option><option value="spread">Tightest spread</option></select></label>
         <div className="option-budget-buttons">
           {[10,15,20,25,35].map(x=><button key={x} className={Number(optionBudget)===x?'active':''} onClick={()=>setOptionBudget(x)}>${x}</button>)}
           <input type="number" min="1" step="1" value={optionBudget} onChange={e=>setOptionBudget(Math.max(1,Number(e.target.value)||1))}/>
@@ -161,15 +178,15 @@ export default function App(){
 
       {bestOption?<div className="best-option-card">
         <div className="best-option-head">
-          <div><span>BEST AFFORDABLE RIGHT NOW</span><h3>{bestOption.underlying} {bestOption.expiry} ${bestOption.strike}{bestOption.kind==='LONG_PUT'?'P':'C'}</h3><p>{bestOption.contract}</p></div>
+          <div><span>TOP SCANNER MATCH — VERIFY QUOTE</span><h3>{bestOption.underlying} {bestOption.expiry} ${bestOption.strike}{bestOption.kind==='LONG_PUT'?'P':'C'}</h3><p>{bestOption.contract}</p></div>
           <div className="option-price"><small>Scanner ask</small><strong>{money(bestOption.ask)}</strong><span>{money(bestOption.oneContractPremiumDollars)} / contract</span></div>
         </div>
         <div className="payoff option-payoff"><Stat label="Score" value={bestOption.score}/><Stat label="Delta" value={bestOption.delta}/><Stat label="Spread" value={bestOption.spreadPct+'%'}/><Stat label="DTE" value={bestOption.dte}/></div>
         <div className="option-actions">
-          <button className="quick-buy-btn" onClick={()=>copyOptionRequest(bestOption)}><Copy size={16}/>Copy exact buy request</button>
+          <button className="quick-buy-btn" disabled={!liveOptionsReady||!optionSnapshotFresh||!bestOption.policyFit} onClick={()=>copyOptionRequest(bestOption)}><Copy size={16}/>Copy exact buy request</button>
           <span>{bestOption.policyFit?'Fits current contract-shape policy; live broker checks still required.':'Scanner candidate, but current execution policy would block it.'}</span>
         </div>
-      </div>:<div className="empty"><ShieldCheck size={24}/><b>No contract fits this premium.</b><span>Raise the max premium or wait for the next scan.</span></div>}
+      </div>:<div className="empty"><ShieldCheck size={24}/><b>No matching contract in this saved scan.</b><span>Change ticker, direction, or budget; this is not a live broker option chain.</span></div>}
 
       {optionNotice&&<div className="notice"><CheckCircle2 size={18}/>{optionNotice}</div>}
 
@@ -178,7 +195,7 @@ export default function App(){
           <div className="option-row-top"><Pill t={i===0?'good':'neutral'}>#{i+1}</Pill><span>{row.kind==='LONG_PUT'?'PUT':'CALL'}</span><b>{money(row.oneContractPremiumDollars)}</b></div>
           <h3>{row.underlying} ${row.strike}{row.kind==='LONG_PUT'?'P':'C'}</h3>
           <p>{row.expiry} · {row.dte} DTE · Δ {row.delta} · spread {row.spreadPct}%</p>
-          <div className="option-row-bottom"><span>score {row.score}</span><button onClick={()=>copyOptionRequest(row)}><Copy size={14}/>Buy request</button></div>
+          <div className="option-row-bottom"><span>score {row.score}</span><button disabled={!liveOptionsReady||!optionSnapshotFresh||!row.policyFit} onClick={()=>copyOptionRequest(row)}><Copy size={14}/>Buy request</button></div>
         </article>)}
       </div>
 
@@ -192,11 +209,11 @@ export default function App(){
     </section>}
 
     {tab==='plan'&&<section className="page-card">
-      <div className="section-title"><div><LineChart size={20}/><div><span>ROAD TO $1M</span><h2>Speed matters. Survival matters more.</h2></div></div></div>
+      <div className="section-title"><div><LineChart size={20}/><div><span>ROAD TO $100M</span><h2>Speed matters. Survival matters more.</h2></div></div></div>
       <div className="plan-inputs"><label>Current investable amount<input type="number" value={account.value} onChange={e=>setAccount({...account,value:Math.max(0,Number(e.target.value))})}/></label><label>Monthly contribution<input type="number" value={account.monthly} onChange={e=>setAccount({...account,monthly:Math.max(0,Number(e.target.value))})}/></label></div>
       <div className="goal-hero"><span>Perfect doublings from here</span><strong>{doubles}</strong><small>Useful math, not a realistic forecast of consecutive wins.</small></div>
       <div className="scenario-grid">{timelines.map(x=><div key={x.rate}><span>{x.rate}% annualized scenario</span><strong>{x.years>=100?'100+ yrs':`${x.years.toFixed(1)} yrs`}</strong><small>with {money(account.monthly)}/mo contributions</small></div>)}</div>
-      <div className="wealth-rule"><ShieldCheck size={22}/><div><b>Teststock’s actual job</b><p>Find asymmetric opportunities while preventing one bad trade from destroying the compounding engine. There is no reliable cheap shortcut to $1M.</p></div></div>
+      <div className="wealth-rule"><ShieldCheck size={22}/><div><b>Teststock’s actual job</b><p>Find asymmetric opportunities while preventing one bad trade from destroying the compounding engine. There is no reliable cheap shortcut to $100M.</p></div></div>
     </section>}
 
     <footer className="disclaimer">Screening and paper-tracking tool only. Options can lose the full amount at risk. Probability estimates are models, not guarantees. Live quotes may be indicative or delayed depending on your Alpaca plan.</footer>

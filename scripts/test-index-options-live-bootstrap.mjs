@@ -26,7 +26,7 @@ async function fixture({stale=false}={}){
     fs.writeFile(path.join(data,'index-options-research.json'),JSON.stringify(research)),
     fs.writeFile(path.join(data,'index-options-profitability-admission.json'),JSON.stringify(admission)),
     fs.writeFile(path.join(data,'index-options-live-policy.json'),JSON.stringify(policy)),
-    fs.writeFile(path.join(data,'executor-capabilities.json'),JSON.stringify({liveOrderSubmission:true,liveEquityEntrySubmission:true,liveEquityExitSubmission:true,liveOptionEntrySubmission:true,liveOptionExitSubmission:true,liveOptionExitVerifiedThisSession:true})),
+    fs.writeFile(path.join(data,'executor-capabilities.json'),JSON.stringify({verifiedAt:new Date(now).toISOString(),liveOrderSubmission:true,liveEquityEntrySubmission:true,liveEquityExitSubmission:true,liveOptionEntrySubmission:true,liveOptionExitSubmission:true,liveOptionExitVerifiedThisSession:true})),
   ]);
   await exec(process.execPath,[builder,boardPath,signalPath,outPath],{cwd:dir});
   await exec(process.execPath,[validator,outPath],{cwd:dir});

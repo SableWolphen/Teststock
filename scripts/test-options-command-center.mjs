@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {screenOptions,exitPriority,orderReadiness} from './options-command-center.mjs';
+const base={symbol:'SOFI',optionId:'contract-1',type:'call',strike:16,underlyingPrice:15.2,bid:.10,ask:.11,volume:5000,openInterest:8000,expiry:'2026-10-23',quoteTime:'2026-10-16T14:30:00Z'};
+test('liquid affordable call is eligible with fresh quotes',()=>{const r=screenOptions([base],{cash:51,now:'2026-10-16T14:31:00Z'});assert.equal(r[0].eligible,true);assert.equal(r[0].premium,11);});
+test('stale and zero-bid options cannot pass',()=>{const r=screenOptions([{...base,bid:0,quoteTime:'2026-10-15T20:00:00Z'}],{cash:51,now:'2026-10-16T14:31:00Z'});assert.equal(r[0].eligible,false);assert.ok(r[0].reasons.includes('STALE_QUOTE'));});
+test('insufficient cash blocks and no auto submission',()=>{assert.equal(screenOptions([base],{cash:.21,now:'2026-10-16T14:31:00Z'})[0].eligible,false);assert.equal(orderReadiness({brokerConfirmed:true,quoteFresh:true,exitVerified:true,availableCash:51,cost:11}).automaticSubmissionAuthorized,false);});
+test('pending sales take priority without creating duplicate orders',()=>{assert.equal(exitPriority([{expiry:'2026-10-16',pendingSell:true}], '2026-10-16T14:30:00Z')[0].priority,'REVIEW_NOW');});

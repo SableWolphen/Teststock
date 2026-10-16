@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {evaluateTradingReadiness as evaluate} from './trading-readiness.mjs';
+const now=Date.parse('2026-10-16T15:00:00Z');
+const capability={verifiedAt:new Date(now-60000).toISOString(),liveOrderSubmission:true,liveEquityEntrySubmission:true,liveEquityExitSubmission:true,liveOptionEntrySubmission:true,liveOptionExitSubmission:true,liveOptionExitVerifiedThisSession:true};
+const broker={agenticAllowed:true,optionLevel:'option_level_2'};
+const scheduler={healthy:true,exitEscalationVerified:true};
+const reconciliation={positions:true,orders:true,fills:true};
+const check=(patch={})=>evaluate({capability,broker,scheduler,reconciliation,now,...patch});
+test('all independent proofs are required',()=>{assert.equal(check().stockReady,true);assert.equal(check().optionReady,true);});
+test('stale capability blocks both assets',()=>{const r=check({capability:{...capability,verifiedAt:new Date(now-3600001).toISOString()}});assert.equal(r.stockReady,false);assert.equal(r.optionReady,false);});
+test('option exits missing blocks options but not stocks',()=>{const r=check({capability:{...capability,liveOptionExitVerifiedThisSession:false}});assert.equal(r.optionReady,false);assert.equal(r.stockReady,true);});
+test('scheduler or broker reconciliation failure blocks all new entries',()=>{for(const patch of [{scheduler:{healthy:false,exitEscalationVerified:true}},{reconciliation:{positions:true,orders:false,fills:true}}]){assert.equal(check(patch).mode,'MANUAL_ONLY_FAIL_CLOSED');}});
+test('permissions alone never authorize orders',()=>{const r=evaluate({broker,now});assert.equal(r.mode,'MANUAL_ONLY_FAIL_CLOSED');});

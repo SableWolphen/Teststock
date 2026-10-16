@@ -18,7 +18,7 @@ async function build(events,dir=null){
   dir=dir||await fs.mkdtemp(path.join(os.tmpdir(),'teststock-day-dispatch-'));
   const boardPath=path.join(dir,'board.json'),signalPath=path.join(dir,'signal.json'),outPath=path.join(dir,'out.json');
   const data=path.join(dir,'docs','data');await fs.mkdir(data,{recursive:true});
-  await fs.writeFile(path.join(data,'executor-capabilities.json'),JSON.stringify({liveOrderSubmission:true,liveEquityEntrySubmission:true,liveEquityExitSubmission:true,liveOptionEntrySubmission:true,liveOptionExitSubmission:true,liveOptionExitVerifiedThisSession:true}));
+  await fs.writeFile(path.join(data,'executor-capabilities.json'),JSON.stringify({verifiedAt:new Date().toISOString(),liveOrderSubmission:true,liveEquityEntrySubmission:true,liveEquityExitSubmission:true,liveOptionEntrySubmission:true,liveOptionExitSubmission:true,liveOptionExitVerifiedThisSession:true}));
   await fs.writeFile(boardPath,JSON.stringify({publishedAt:new Date().toISOString(),monitorHealth:'OK',marketSession:openSession,events}));
   await fs.writeFile(signalPath,JSON.stringify(signal));
   await exec(process.execPath,[script,boardPath,signalPath,outPath],{env:{...process.env,TESTSTOCK_EXECUTOR_CAPABILITY_FILE:path.join(data,'executor-capabilities.json')}});
