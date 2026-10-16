@@ -51,7 +51,9 @@ export async function startAlpacaSetup(root,{onReady,transport=fetch,store=alpac
  const token=crypto.randomBytes(32).toString('base64url');let origin;let saved=false;let busy=false;let settle;
  const completed=new Promise(resolve=>{settle=resolve;});
  const server=http.createServer(async(req,res)=>{
-  res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Content-Security-Policy',"default-src 'none'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'");
+  // no-referrer makes browser navigation POSTs send Origin: null, rejecting our
+  // own form. same-origin preserves the local origin without leaking it off-site.
+  res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','same-origin');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Content-Security-Policy',"default-src 'none'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'");
   const validHost=req.headers.host===new URL(origin).host;
   if(!validHost) {res.writeHead(403);res.end();return;}
   if(req.method==='GET'&&req.url===`/setup/${token}`) {res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(html(token));return;}

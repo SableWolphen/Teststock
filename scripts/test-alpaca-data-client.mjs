@@ -35,9 +35,11 @@ test('local setup rejects cross-origin submissions and saves only after all read
  let rejectAuthentication=true;
  const pending=startAlpacaSetup(root,{timeoutMs:5000,onReady:resolveUrl,transport:async url=>rejectAuthentication?new Response('private upstream error must never appear',{status:401}):currentTransport(url),store:{save:value=>{saved=value;}}});
  const setupUrl=await ready;const setup=await fetch(setupUrl);assert.equal(setup.status,200);assert.match(setup.headers.get('content-security-policy'),/form-action 'self'/);assert.match(await setup.text(),/type="password"/);
+ assert.equal(setup.headers.get('referrer-policy'),'same-origin');
  const postUrl=setupUrl.replace('/setup/','/configure/');const origin=new URL(setupUrl).origin;
  const body=new URLSearchParams({key:credentials.key,secret:credentials.secret});
  const rejected=await fetch(postUrl,{method:'POST',headers:{Origin:'https://evil.example'},body});assert.equal(rejected.status,403);assert.equal(reads,0);assert.equal(saved,undefined);
+ const opaque=await fetch(postUrl,{method:'POST',headers:{Origin:'null'},body});assert.equal(opaque.status,403);assert.equal(saved,undefined);
  const failed=await fetch(postUrl,{method:'POST',headers:{Origin:origin},body});assert.equal(failed.status,200);const feedback=await failed.text();assert.match(feedback,/Connection not saved/);assert.match(feedback,/ALPACA_HTTP_401/);assert.doesNotMatch(feedback,/private upstream|paper-secret/);assert.equal(saved,undefined);
  rejectAuthentication=false;
  const result=await fetch(postUrl,{method:'POST',headers:{Origin:origin},body});assert.equal(result.status,200);assert.equal((await pending).connected,true);assert.deepEqual(saved,credentials);assert.equal(reads,3);
