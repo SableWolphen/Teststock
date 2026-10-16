@@ -12,9 +12,9 @@ if(p.allowedStrategies?.join(',')!=='LONG_CALL,LONG_PUT') fail.push('allowed str
 if(p.buyToOpenOnly!==true||p.sellToCloseOnly!==true) fail.push('order direction');
 if(p.noNakedSelling!==true||p.noExercise!==true||p.noOvernight!==true) fail.push('unsafe strategy guard');
 if(p.noMargin!==true||p.noDeposits!==true||p.noBankTransfers!==true) fail.push('funding guard');
-if(Number(p.maxPremiumRiskPerTradePct)!==100) fail.push('per-trade cash ceiling');
-if(Number(p.maxAggregateOpenPremiumRiskPct)!==100) fail.push('aggregate cash ceiling');
-if(Number(p.maxNewPremiumExposurePerNyDayPct)!==100) fail.push('daily cash ceiling');
+if(Number(p.maxPremiumRiskPerTradePct)!==25) fail.push('per-trade cash ceiling');
+if(Number(p.maxAggregateOpenPremiumRiskPct)!==50) fail.push('aggregate cash ceiling');
+if(Number(p.maxNewPremiumExposurePerNyDayPct)!==35) fail.push('daily cash ceiling');
 if(Number(p.minDte)!==3||Number(p.maxDte)!==45||Number(p.expirationSafetyTradingDays)!==5) fail.push('expiration bounds');
 if(Number(p.minDelta)!==0.25||Number(p.maxDelta)!==0.80) fail.push('delta bounds');
 if(p.underlyingMustBeQualifiedStock!==true) fail.push('underlying qualification');

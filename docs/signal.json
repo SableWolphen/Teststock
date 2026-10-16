@@ -281,18 +281,18 @@
     "maxConcurrentTeststockPositions": 8
   },
   "autopilot": {
-    "enabled": true,
+    "enabled": false,
     "requiresPerOrderApproval": false,
-    "scope": "Dedicated Robinhood Agentic account; stock execution only. Crypto execution is disabled. Qualified stock options may execute automatically under the separate cash-only options policy.",
+    "scope": "Dedicated Robinhood Agentic account; stock execution only. Crypto execution is disabled. All stock/option execution is locked by safety-policy.mjs; evidence is observation only.",
     "executionAgent": "CHATGPT",
     "stockBuysRequireCurrentBatchApproval": false,
     "stockBuysRequireUserApproval": false,
-    "automaticQualifiedStockBuys": true,
+    "automaticQualifiedStockBuys": false,
     "automaticQualifiedCryptoBuys": false,
     "cryptoBuysRequireUserApproval": false,
     "automaticQualifiedOptionBuys": false,
-    "automaticRiskReducingOptionExits": true,
-    "automaticRiskReducingExits": true,
+    "automaticRiskReducingOptionExits": false,
+    "automaticRiskReducingExits": false,
     "directGitHubBrokerExecution": false,
     "automaticQualifiedIndexOptionBuys": false,
     "automaticOptionRiskReducingExits": false,
@@ -1649,7 +1649,7 @@
       "dayTradeOnlyEntryPolicy": true,
       "chatgptUnattendedExecutionPolicy": true,
       "chatgptSoleExecutionAgent": true,
-      "automaticStockExecution": true,
+      "automaticStockExecution": false,
       "automaticCryptoExecution": false,
       "idleProtectionReconciliation": true,
       "robinhoodTradingMcpExecution": true,
@@ -2298,12 +2298,12 @@
     "optionsAdmissionRef": "docs/data/options-profitability-admission.json"
   },
   "chatgptExecutionPolicy": {
-    "enabled": true,
+    "enabled": false,
     "role": "SOLE_EXECUTION_AGENT",
     "schedule": {
       "cron": "*/5 * * * *",
       "timezone": "UTC",
-      "note": "A persistent authorized ChatGPT runtime checks Teststock every five minutes. GitHub scanning remains separate from broker execution."
+      "note": "Live ChatGPT scheduling is disabled and unverified. The installed Windows monitor performs read-only polling; GitHub scanning remains separate."
     },
     "triggerBoardFirst": true,
     "triggerBoardPath": "docs/data/trigger-board.json",
@@ -2322,7 +2322,7 @@
     "optionBuys": {
       "executionOwner": "CHATGPT",
       "explicitApprovalRequired": false,
-      "automaticWhenFullyQualifiedAndBrokerPermits": true,
+      "automaticWhenFullyQualifiedAndBrokerPermits": false,
       "allowedStrategies": [
         "LONG_CALL",
         "LONG_PUT"
@@ -2344,7 +2344,7 @@
     "stockBuys": {
       "executionOwner": "CHATGPT",
       "explicitApprovalRequired": false,
-      "automaticWhenFullyQualifiedAndBrokerPermits": true,
+      "automaticWhenFullyQualifiedAndBrokerPermits": false,
       "appliesTo": [
         "STOCK_A",
         "STOCK_B",
@@ -2365,7 +2365,7 @@
     },
     "exits": {
       "explicitApprovalRequired": false,
-      "automaticWhenDetectedAndBrokerPermits": true,
+      "automaticWhenDetectedAndBrokerPermits": false,
       "appliesTo": [
         "STOCK",
         "OPTION"
@@ -3078,16 +3078,16 @@
     "sellToCloseOnly": true,
     "noNakedSelling": true,
     "noCreditSpreads": true,
-    "noDebitSpreadsInitially": false,
+    "noDebitSpreadsInitially": true,
     "noStraddlesOrStrangles": true,
     "noExercise": true,
     "noOvernight": true,
     "underlyingMustBeQualifiedStock": true,
     "liveOptionChainRequired": true,
     "liveBrokerRecheckRequired": true,
-    "maxPremiumRiskPerTradePct": 100,
-    "maxAggregateOpenPremiumRiskPct": 100,
-    "maxNewPremiumExposurePerNyDayPct": 100,
+    "maxPremiumRiskPerTradePct": 25,
+    "maxAggregateOpenPremiumRiskPct": 50,
+    "maxNewPremiumExposurePerNyDayPct": 35,
     "minDte": 3,
     "maxDte": 45,
     "expirationSafetyTradingDays": 5,
@@ -3293,7 +3293,7 @@
     "stock": {
       "gate": "CHATGPT_ROBINHOOD_TRADING_MCP_EXACT_SYMBOL_CHECK",
       "perOrderApprovalStillRequired": false,
-      "automaticQualifiedBuys": true,
+      "automaticQualifiedBuys": false,
       "scanBroadlyTradeOnlyBrokerSupported": true
     },
     "crypto": {

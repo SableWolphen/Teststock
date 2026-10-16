@@ -1,3 +1,4 @@
+import {SAFETY_POLICY} from './safety-policy.mjs';
 import fs from 'node:fs/promises';
 const read=async f=>JSON.parse(await fs.readFile(f,'utf8'));
 const write=(f,x)=>fs.writeFile(f,JSON.stringify(x,null,2));
@@ -36,7 +37,7 @@ const policy={
   discoveryScope:'BROAD_GLOBAL_INFORMATION_WITH_US_BROKER_EXECUTION',
   discoveryRule:'Global news, catalysts and research may influence ranking, but live capital is restricted to exact securities and contracts independently verified as tradable in the authenticated Robinhood Agentic account.',
   discoveryVsExecution:'Research sources may discover candidates; only exact candidates independently verified through the authenticated Robinhood Trading MCP immediately before submission may be ordered.',
-  stock:{gate:'CHATGPT_ROBINHOOD_TRADING_MCP_EXACT_SYMBOL_CHECK',perOrderApprovalStillRequired:false,automaticQualifiedBuys:true,scanBroadlyTradeOnlyBrokerSupported:true},
+  stock:{gate:'CHATGPT_ROBINHOOD_TRADING_MCP_EXACT_SYMBOL_CHECK',perOrderApprovalStillRequired:false,automaticQualifiedBuys:SAFETY_POLICY.liveExecutionEnabled,scanBroadlyTradeOnlyBrokerSupported:true},
   crypto:{enabled:false,automaticQualifiedBuys:false},
   directGitHubBrokerExecutionAllowed:false,
   failClosed:true,

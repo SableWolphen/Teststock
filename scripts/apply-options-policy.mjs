@@ -24,16 +24,16 @@ signal.optionsTradingPolicy={
   sellToCloseOnly:true,
   noNakedSelling:true,
   noCreditSpreads:true,
-  noDebitSpreadsInitially:false, // enabled: defined-risk debit spreads only, premium paid is the hard loss ceiling
+  noDebitSpreadsInitially:true, // long calls/puts only; no spread execution
   noStraddlesOrStrangles:true,
   noExercise:true,
   noOvernight:true,
   underlyingMustBeQualifiedStock:true,
   liveOptionChainRequired:true,
   liveBrokerRecheckRequired:true,
-  maxPremiumRiskPerTradePct:100,
-  maxAggregateOpenPremiumRiskPct:100,
-  maxNewPremiumExposurePerNyDayPct:100,
+  maxPremiumRiskPerTradePct:25,
+  maxAggregateOpenPremiumRiskPct:50,
+  maxNewPremiumExposurePerNyDayPct:35,
   minDte:3,
   maxDte:45,
   expirationSafetyTradingDays:5,
@@ -119,4 +119,4 @@ signal.generatorIntegrity={
 
 await fs.writeFile(signalPath,JSON.stringify(signal,null,2));
 await fs.writeFile(chatgptSignalPath,JSON.stringify(signal,null,2));
-console.log('Applied guarded automatic stock-options policy: long calls/puts only, cash-funded, no exercise/overnight, live Robinhood cash is the affordability ceiling.');
+console.log('Applied locked stock-options policy: bootstrap disabled, long calls/puts research only, no exercise/overnight.');

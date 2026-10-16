@@ -39,7 +39,7 @@ test('fresh stock-only policy passes the admission and broker validators without
   // weakened live guards, or a re-enabled crypto path.
   for(const [keys,value] of [
     [['autopilot','automaticQualifiedStockBuys'],undefined],
-    [['autopilot','automaticQualifiedStockBuys'],false],
+    [['autopilot','automaticQualifiedStockBuys'],true],
     [['autopilot','requiresPerOrderApproval'],true],
     [['autopilot','automaticQualifiedCryptoBuys'],true],
     [['autopilot','automaticQualifiedCryptoBuys'],undefined],

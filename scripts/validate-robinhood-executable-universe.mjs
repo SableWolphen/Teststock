@@ -1,3 +1,4 @@
+import {SAFETY_POLICY} from './safety-policy.mjs';
 import { stockExecutionPolicyFailures } from './stock-execution-policy-validation.mjs';
 import fs from 'node:fs/promises';
 const read=async f=>JSON.parse(await fs.readFile(f,'utf8'));
@@ -7,7 +8,7 @@ const fail=stockExecutionPolicyFailures(s);
 const p=s.robinhoodExecutableUniversePolicy;
 if(p?.mode!=='ROBINHOOD_EXECUTABLE_FINALISTS_ONLY'||p?.failClosed!==true||p?.noBrokerConfirmationMeansNoOrder!==true)fail.push('fail-closed policy');
 if(p?.executionAgent!=='CHATGPT'||p?.brokerLane!=='ROBINHOOD_TRADING_MCP'||p?.directGitHubBrokerExecutionAllowed!==false)fail.push('ChatGPT MCP policy');
-if(p?.stock?.perOrderApprovalStillRequired!==false||p?.stock?.automaticQualifiedBuys!==true||s.autopilot?.stockBuysRequireUserApproval!==false||s.autopilot?.automaticQualifiedStockBuys!==true)fail.push('automatic stock execution');
+if(p?.stock?.perOrderApprovalStillRequired!==false||p?.stock?.automaticQualifiedBuys!==SAFETY_POLICY.liveExecutionEnabled||s.autopilot?.stockBuysRequireUserApproval!==false||s.autopilot?.automaticQualifiedStockBuys!==SAFETY_POLICY.liveExecutionEnabled)fail.push('automatic stock execution');
 
 for(const x of [...(st.liveQueue||[]),...(st.researchFinalists||[])]){
   if(x.brokerEligibility?.broker!=='ROBINHOOD_TRADING_MCP'||x.brokerEligibility?.assetClass!=='STOCK'||x.brokerEligibility?.status!=='CHATGPT_RUNTIME_VERIFICATION_REQUIRED'||x.brokerEligibility?.liveOrderAllowed!==false)fail.push(`${x.ticker}: stock broker gate`);
