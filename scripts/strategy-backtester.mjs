@@ -17,7 +17,7 @@ export function backtest(bars,{strategyId,initialCash=1000,allocation=0.1,feePer
    const exit=Number(b.open)<=stop?Number(b.open):Number(b.low)<=stop?stop:Number(b.high)>=target?target:i===bars.length-1?Number(b.close):null;
    if(exit!==null){
     const executionExit=exit*(1-slippageBps/10000),gross=(exit-position.entry)*position.qty,net=(executionExit-position.entryFill)*position.qty-2*feePerTrade;
-    grossProfit+=Math.max(0,gross);grossLoss+=Math.max(0,-gross);slippage+=(position.entry-price*0)+(position.entry-position.entryFill)*-position.qty+(exit-executionExit)*position.qty;fees+=2*feePerTrade;cash+=net;if(net>0)wins++;
+    grossProfit+=Math.max(0,gross);grossLoss+=Math.max(0,-gross);slippage+=(position.entryFill-position.entry)*position.qty+(exit-executionExit)*position.qty;fees+=2*feePerTrade;cash+=net;if(net>0)wins++;
     trades.push({entryTime:position.time,exitTime:b.time,entry:position.entryFill,exit:executionExit,quantity:position.qty,net});position=null;
    }
   }
