@@ -9,6 +9,7 @@ export const DATA_READS=Object.freeze({
  clock:'https://paper-api.alpaca.markets/v2/clock',
  calendar:'https://paper-api.alpaca.markets/v2/calendar',
  bars:'https://data.alpaca.markets/v2/stocks/bars',
+ quotes:'https://data.alpaca.markets/v2/stocks/quotes/latest',
 });
 export const alpacaVault=root=>vault(root,{filename:'alpaca-data.dpapi'});
 export function validateCredentials(value) {
@@ -19,9 +20,9 @@ export class AlpacaDataReader {
  constructor({credentials,transport=fetch}) {this.credentials=validateCredentials(credentials);this.transport=transport;}
  async read(name,parameters={}) {
   if(!Object.hasOwn(DATA_READS,name)) throw Error('ALPACA_READ_ONLY_DENIED');
-  const allowed=name==='clock'?[]:name==='calendar'?['start','end']:['symbols','timeframe','start','end','limit','feed','page_token','adjustment','sort'];
+  const allowed=name==='clock'?[]:name==='calendar'?['start','end']:name==='quotes'?['symbols','feed']:['symbols','timeframe','start','end','limit','feed','page_token','adjustment','sort'];
   if(Object.keys(parameters).some(k=>!allowed.includes(k))) throw Error('ALPACA_INVALID_QUERY');
-  if(name==='bars'&&parameters.feed!=='iex') throw Error('ALPACA_IEX_REQUIRED');
+  if(['bars','quotes'].includes(name)&&parameters.feed!=='iex') throw Error('ALPACA_IEX_REQUIRED');
   const url=new URL(DATA_READS[name]);for(const [key,value] of Object.entries(parameters))url.searchParams.set(key,String(value));
   const response=await this.transport(url.href,{method:'GET',headers:{'APCA-API-KEY-ID':this.credentials.key,'APCA-API-SECRET-KEY':this.credentials.secret,Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(15000)});
   if(!response.ok) throw Error(`ALPACA_HTTP_${response.status}`);
