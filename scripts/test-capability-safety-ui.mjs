@@ -15,9 +15,9 @@ test('entry authorization requires a recent execution capability attestation',()
 test('options require independently verified same-session exit capability',()=>{
   assert.match(dispatch,/liveOptionExitSubmission===true&&executorCapability\.liveOptionExitVerifiedThisSession===true/);
   assert.match(ui,/liveOptionExitVerifiedThisSession === true/);
-  assert.match(ui,/MANUAL_ONLY_BLOCKED/);
+  assert.match(ui,/MANUAL ONLY/);
 });
 
 test('options buy request is not generated while execution is blocked',()=>{
-  assert.match(ui,/if\(!liveOptionsReady\)\{setOptionNotice\('MANUAL_ONLY_BLOCKED:/);
+  assert.match(ui,/if\(!liveOptionsReady\|\|!optionSnapshotFresh\)\{setOptionNotice\('LIVE_ORDER_BLOCKED:/);
 });
