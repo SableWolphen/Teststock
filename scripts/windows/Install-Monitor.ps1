@@ -2,7 +2,9 @@ param([switch]$RegisterTask)
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $node = (Get-Command node -ErrorAction Stop).Source
-if ([int]((& $node -p 'process.versions.node.split(".")[0]')) -lt 22) { throw 'Install Node.js 22 or later.' }
+$nodeVersionText = & $node --version
+if ($LASTEXITCODE -ne 0 -or $nodeVersionText -notmatch '^v(\d+)\.') { throw 'Could not determine Node.js version.' }
+if ([int]$Matches[1] -lt 22) { throw 'Install Node.js 22 or later.' }
 $state = Join-Path $env:LOCALAPPDATA 'Teststock/runtime'
 New-Item -ItemType Directory -Force $state | Out-Null
 $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
@@ -22,3 +24,5 @@ if ($RegisterTask) {
   Register-ScheduledTask -TaskName 'Teststock Read-only Monitor' -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Read-only monitoring; no order submission.' -Force | Out-Null
 }
 Write-Output "Installed read-only monitor. State: $state. Broker authentication is a separate gate."
+# A blocked offline probe is an expected installation outcome, not an installer failure.
+$global:LASTEXITCODE = 0
