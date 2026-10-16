@@ -22,4 +22,3 @@ if ($RegisterTask) {
   Register-ScheduledTask -TaskName 'Teststock Read-only Monitor' -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Read-only monitoring; no order submission.' -Force | Out-Null
 }
 Write-Output "Installed read-only monitor. State: $state. Broker authentication is a separate gate."
-

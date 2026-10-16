@@ -135,5 +135,3 @@ async function main() {
   } while(!stopped); } finally { fs.unlinkSync(lock); }
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) main().catch(()=>{process.stderr.write('MONITOR_FAILED: inspect private state and configuration\n');process.exitCode=1;});
-
-

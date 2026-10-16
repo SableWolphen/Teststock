@@ -53,4 +53,3 @@ Live implementation requires a separate reviewed code change. Before that change
 6. Explicit user authorization for the exact account, asset classes, risk limits and entry/exit behavior, satisfying current broker tool requirements. Do not infer that old repository statements verify this user's current permission.
 
 No real-money order was placed to validate any of these gates. Historical README live flags and execution prompts do not override this hard lock.
-
