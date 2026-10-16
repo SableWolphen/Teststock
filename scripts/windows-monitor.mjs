@@ -8,6 +8,8 @@ export const READ_TOOLS = Object.freeze(['get_accounts', 'get_equity_quotes']);
 export class ReadOnlyMcp {
   constructor({token, tokenProvider, transport=fetch}) { this.token=token; this.tokenProvider=tokenProvider; this.transport=transport; this.id=0; }
   async rpc(method, params) {
+    if(!['initialize','notifications/initialized','tools/call'].includes(method)||
+       (method==='tools/call'&&!READ_TOOLS.includes(params?.name))) throw new Error('READ_ONLY_TOOL_DENIED');
     const headers={'Content-Type':'application/json',Accept:'application/json, text/event-stream'};
     const token=this.tokenProvider?await this.tokenProvider():this.token;
     if(token) headers.Authorization=`Bearer ${token}`;
