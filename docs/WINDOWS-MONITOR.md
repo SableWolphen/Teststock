@@ -109,3 +109,22 @@ Protection drills have no broker transport. They test confirmation/freshness, wh
 Robinhood's review tools require the user to supply the exact symbol, quantity or dollar amount, order type and applicable prices. Non-submitting previews can be requested once those inputs are supplied. A successful preview does not place an order or verify actual fills, protection creation, cancellation/replacement, or outage recovery. No preview, credential, passing test or market-open deadline overrides `safety-policy.mjs`.
 
 Official references checked October 16, 2026: [Alpaca authentication](https://docs.alpaca.markets/us/docs/authentication), [Alpaca paper trading and simulation limits](https://docs.alpaca.markets/us/docs/paper-trading), [Robinhood agent trading tools](https://robinhood.com/us/en/support/articles/trading-with-your-agent/).
+
+### Complete cycle replay and remaining acceptance gates
+
+Run `node scripts/run-cycle-replay.mjs` for a deterministic integration drill using synthetic fixtures only. It exercises the real reconciliation and protection evaluators across acknowledged entry, ambiguous acknowledgement, partial fill, matching stop, stale outage state, pending stop cancellation, working exit, flat reconciliation and repeated restart input. It has no broker transport. Its synthetic fills and gross P&L must never enter strategy admission, the real trade journal, or broker capability attestations. A passing replay does not establish that a broker order was placed or that crash recovery/alerts were verified operationally.
+
+The readiness evaluator respects the canonical deployment lock even with affirmative capability attestations. The GitHub readiness generator explicitly reports broker execution as unverified; GitHub cannot verify the connected ChatGPT executor.
+
+Before any live deployment, independent evidence must establish all of the following:
+
+| Gate | Required evidence |
+| --- | --- |
+| Strategy admission | Positive independent forward outcomes meeting canonical sample/day/profit-factor floors; failing holdouts remain blocked. Do not lower thresholds or tune from holdouts. |
+| Broker execution | Supported executor entry and exit, broker-confirmed executions, per-order broker approval requirements satisfied, and reconciled remaining holdings. A preview is insufficient. |
+| Protection | Broker-resident protection for the actual filled quantity; verified pending cancel/replacement and simultaneous exit behavior; session validity and failure escalation. |
+| Reconciliation | Coverage of every in-scope position and order, including advanced-order relationships; unsupported assets must be explicitly isolated and cannot be claimed protected. |
+| Operations | Observed restart, expired credentials, stale data, outage, kill-switch and alert-delivery tests under the intended schedule; monitor heartbeat alone is insufficient. |
+| Deployment | Reviewed supported executor wiring and explicit live release after the above pass. Windows read-only MCP must not silently acquire write access. |
+
+October 16 connection testing verified local Alpaca paper clock/calendar/IEX bars. Full historical validation ran successfully but returned `RED_FLAG` for CALM. That is an evidence failure rather than a connectivity failure. The local monitor continues independently with real-money submission disabled.
