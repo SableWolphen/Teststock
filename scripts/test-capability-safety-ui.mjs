@@ -8,8 +8,8 @@ const ui=fs.readFileSync('src/App.jsx','utf8');
 test('entry authorization requires a recent execution capability attestation',()=>{
   assert.match(dispatch,/capabilityFresh=Number\.isFinite\(capabilityVerifiedAtMs\)/);
   assert.match(dispatch,/now\.getTime\(\)-capabilityVerifiedAtMs<=60\*60\*1000/);
-  assert.match(dispatch,/executorOptionEntryAllowed=capabilityFresh&&/);
-  assert.match(dispatch,/executorEquityEntryAllowed=capabilityFresh&&/);
+  assert.match(dispatch,/executorOptionEntryAllowed=SAFETY_POLICY.liveExecutionEnabled&&capabilityFresh&&/);
+  assert.match(dispatch,/executorEquityEntryAllowed=SAFETY_POLICY.liveExecutionEnabled&&capabilityFresh&&/);
 });
 
 test('options require independently verified same-session exit capability',()=>{

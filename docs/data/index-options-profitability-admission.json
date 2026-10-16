@@ -1,47 +1,11 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-15T17:44:43.446Z",
-  "state": "LIVE_MICRO_BOOTSTRAP",
-  "sizeMultiplier": 0.05,
-  "executionAuthorized": true,
-  "bootstrapLivePolicy": {
-    "schemaVersion": 1,
-    "enabled": true,
-    "mode": "USER_AUTHORIZED_LIVE_MICRO_BOOTSTRAP",
-    "allowedIndexes": [
-      "XND",
-      "DJX"
-    ],
-    "state": "LIVE_MICRO_BOOTSTRAP",
-    "maxOrderUsd": null,
-    "maxNewPositionsPerNyDay": 1,
-    "maxConcurrentPositions": 1,
-    "minDte": 3,
-    "maxDte": 45,
-    "entryCutoffMinutesBeforeClose": 45,
-    "forcedExitMinutesBeforeClose": 10,
-    "mustBeFlatBeforeMarketClose": true,
-    "requiresExactRobinhoodContract": true,
-    "requiresLiveBidAsk": true,
-    "requiresLiveLiquidityCheck": true,
-    "requiresWholeContractCashCheck": true,
-    "cashOnly": true,
-    "marginAllowed": false,
-    "noDeposits": true,
-    "noTransfers": true,
-    "noExercise": true,
-    "allowedKinds": [
-      "LONG_CALL",
-      "LONG_PUT"
-    ],
-    "lossReset": {
-      "resolvedRealLossesToSuspend": 3,
-      "negativeAverageRMinimumSamples": 3
-    },
-    "rule": "User-authorized XND/DJX live bootstrap. Permit real-money long calls/puts only after fresh Teststock proxy direction plus exact live Robinhood contract resolution. There is no fixed repository premium cap: the whole contract plus known fees must fit fresh available cash/unleveraged buying power in the dedicated account. One new index-option position per New York trading day, one concurrent position, same-session exit, no margin, no exercise.",
-    "affordabilityMode": "LIVE_UNLEVERAGED_CASH"
-  },
-  "reason": "User-authorized XND/DJX real-money micro bootstrap is active. This is not earned profitability admission; exact live Robinhood contract checks and the dedicated $5/day bootstrap caps still apply.",
+  "generatedAt": "2026-10-16T12:32:18.956Z",
+  "state": "SHADOW_ONLY",
+  "sizeMultiplier": 0,
+  "executionAuthorized": false,
+  "bootstrapLivePolicy": null,
+  "reason": "Exact-contract forward evidence is required. Live bootstrap overrides are disabled by safety-policy.mjs.",
   "scope": [
     "XND",
     "DJX"
@@ -86,7 +50,7 @@
   "rules": [
     "Only exact XND/DJX contracts resolved from Robinhood count; QQQ/DIA or other ETF option outcomes never count.",
     "Entry evidence uses executable ask and exit evidence uses executable bid, not midpoint or theoretical value.",
-    "LIVE_MICRO_BOOTSTRAP is a user-authorized real-money learning override, not earned evidence. It is capped by index-options-live-policy.json and may never be represented as MICRO_PROBATION.",
+    "Live bootstrap is disabled. Evidence admission cannot override the canonical live-execution lock.",
     "At least 50 independent broker-resolved outcomes across 20 trading days and profit factor >= 1.30 are required before evidence-earned micro probation.",
     "A live loss can reduce or suspend future risk; this file can never raise account or premium-risk ceilings."
   ]

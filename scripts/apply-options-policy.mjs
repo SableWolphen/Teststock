@@ -1,3 +1,4 @@
+import {SAFETY_POLICY, earnedAdmission} from './safety-policy.mjs';
 import fs from 'node:fs/promises';
 
 const signalPath='docs/signal.json';
@@ -7,10 +8,10 @@ const read=async(f,x)=>{try{return JSON.parse(await fs.readFile(f,'utf8'));}catc
 const indexResearch=await read('docs/data/index-options-research.json',{candidates:[]});
 const indexAdmission=await read('docs/data/index-options-profitability-admission.json',{state:'SHADOW_ONLY',sizeMultiplier:0,executionAuthorized:false});
 const indexLivePolicy=await read('docs/data/index-options-live-policy.json',{enabled:false,maxOrderUsd:0,maxNewPositionsPerNyDay:0,maxConcurrentPositions:0});
-const indexExecutionAuthorized=['LIVE_MICRO_BOOTSTRAP','MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(indexAdmission.state)&&indexAdmission.executionAuthorized===true;
+const indexExecutionAuthorized=SAFETY_POLICY.liveExecutionEnabled&&earnedAdmission(indexAdmission.state)&&indexAdmission.executionAuthorized===true;
 
 signal.optionsTradingPolicy={
-  enabled:true,
+  enabled:false,
   executionAgent:'CHATGPT',
   transport:'ROBINHOOD_TRADING_MCP',
   cashOnly:true,
@@ -23,16 +24,16 @@ signal.optionsTradingPolicy={
   sellToCloseOnly:true,
   noNakedSelling:true,
   noCreditSpreads:true,
-  noDebitSpreadsInitially:false, // enabled: defined-risk debit spreads only, premium paid is the hard loss ceiling
+  noDebitSpreadsInitially:true, // long calls/puts only; no spread execution
   noStraddlesOrStrangles:true,
   noExercise:true,
   noOvernight:true,
   underlyingMustBeQualifiedStock:true,
   liveOptionChainRequired:true,
   liveBrokerRecheckRequired:true,
-  maxPremiumRiskPerTradePct:100,
-  maxAggregateOpenPremiumRiskPct:100,
-  maxNewPremiumExposurePerNyDayPct:100,
+  maxPremiumRiskPerTradePct:25,
+  maxAggregateOpenPremiumRiskPct:50,
+  maxNewPremiumExposurePerNyDayPct:35,
   minDte:3,
   maxDte:45,
   expirationSafetyTradingDays:5,
@@ -88,15 +89,15 @@ signal.indexOptionsTradingPolicy={
   },
   researchCandidates:indexResearch.candidates||[],
   riskRule:'Index options remain defined-risk long premium only. Premium paid, live spread/slippage, account cash, capital-tier risk, same-day exit, and all broker protections remain hard gates.',
-  admissionRule:'Index options may never borrow stock-option admission. LIVE_MICRO_BOOTSTRAP is an explicit user-authorized real-money learning state, not earned evidence. There is no fixed repository premium cap; Robinhood fresh available cash/unleveraged buying power is the hard affordability ceiling. SHADOW_ONLY and LIVE_SUSPENDED cannot open live index-option risk.',
+  admissionRule:'Separate exact-contract evidence is required. Bootstrap is disabled. No live order is authorized while safety-policy.mjs has liveExecutionEnabled=false.',
 };
 
 signal.autopilot={
   ...(signal.autopilot||{}),
-  automaticQualifiedOptionBuys:true,
+  automaticQualifiedOptionBuys:false,
   automaticQualifiedIndexOptionBuys:indexExecutionAuthorized,
-  automaticOptionRiskReducingExits:true,
-  optionUserApprovalRequired:false,
+  automaticOptionRiskReducingExits:false,
+  optionUserApprovalRequired:true,
   optionsFundingSource:'EXISTING_ROBINHOOD_AGENTIC_ACCOUNT_ONLY',
   optionsNoMargin:true,
   optionsNoDeposits:true,
@@ -107,7 +108,7 @@ signal.generatorIntegrity={
   ...(signal.generatorIntegrity||{}),
   traceableFeatures:{
     ...(signal.generatorIntegrity?.traceableFeatures||{}),
-    automaticQualifiedOptionExecution:true,
+    automaticQualifiedOptionExecution:false,
     optionsCashOnly:true,
     optionsHardAccountLossCap:true,
     indexOptionsSeparateAdmission:true,
@@ -118,4 +119,4 @@ signal.generatorIntegrity={
 
 await fs.writeFile(signalPath,JSON.stringify(signal,null,2));
 await fs.writeFile(chatgptSignalPath,JSON.stringify(signal,null,2));
-console.log('Applied guarded automatic stock-options policy: long calls/puts only, cash-funded, no exercise/overnight, live Robinhood cash is the affordability ceiling.');
+console.log('Applied locked stock-options policy: bootstrap disabled, long calls/puts research only, no exercise/overnight.');

@@ -1,3 +1,4 @@
+import {SAFETY_POLICY, earnedAdmission} from './safety-policy.mjs';
 import fs from 'node:fs/promises';
 
 const BOARD=process.argv[2]||'docs/data/trigger-board.json';
@@ -26,8 +27,8 @@ const OPTIONS_MAX_AGE_MS=15*60*1000;
 // unless this exact execution layer has verified both entry and risk-reducing exit submission.
 const capabilityVerifiedAtMs=Date.parse(executorCapability.verifiedAt||'');
 const capabilityFresh=Number.isFinite(capabilityVerifiedAtMs)&&capabilityVerifiedAtMs<=now.getTime()&&now.getTime()-capabilityVerifiedAtMs<=60*60*1000;
-const executorOptionEntryAllowed=capabilityFresh&&executorCapability.liveOrderSubmission===true&&executorCapability.liveOptionEntrySubmission===true&&executorCapability.liveOptionExitSubmission===true&&executorCapability.liveOptionExitVerifiedThisSession===true;
-const executorEquityEntryAllowed=capabilityFresh&&executorCapability.liveOrderSubmission===true&&executorCapability.liveEquityEntrySubmission===true&&executorCapability.liveEquityExitSubmission===true;
+const executorOptionEntryAllowed=SAFETY_POLICY.liveExecutionEnabled&&capabilityFresh&&executorCapability.liveOrderSubmission===true&&executorCapability.liveOptionEntrySubmission===true&&executorCapability.liveOptionExitSubmission===true&&executorCapability.liveOptionExitVerifiedThisSession===true;
+const executorEquityEntryAllowed=SAFETY_POLICY.liveExecutionEnabled&&capabilityFresh&&executorCapability.liveOrderSubmission===true&&executorCapability.liveEquityEntrySubmission===true&&executorCapability.liveEquityExitSubmission===true;
 const executorRiskCreationAllowed=executorOptionEntryAllowed||executorEquityEntryAllowed;
 
 const priority={TRIGGER_1_STOP:100,STOCK_DAY_TRADE_FORCED_EXIT:100,TRIGGER_3_TARGET2:80,TRIGGER_2_TARGET1:70,TRIGGER_EARLY_PROFIT_TRIM:60,BUY_TRIGGER:50};
@@ -117,8 +118,8 @@ const seedLaneCandidates=hasExitEvent?[]:seedEvents.filter(e=>e.isActionable).ma
 
 const optionsPolicy=probabilityPolicy.options?.seedLane||{};
 const optionBootstrapStates=Array.isArray(optionsPolicy.bootstrapAllowedAdmissionStates)&&optionsPolicy.bootstrapAllowedAdmissionStates.length?optionsPolicy.bootstrapAllowedAdmissionStates:['SHADOW_ONLY'];
-const optionBootstrapAllowed=optionsPolicy.userAuthorizedLiveCashBootstrap===true&&optionBootstrapStates.includes(optionsAdmission.state)&&optionsAdmission.state!=='LIVE_SUSPENDED';
-const optionAllowedAdmission=(LIVE_ADMISSION_STATES.has(optionsAdmission.state)&&(optionsPolicy.requiredAdmissionStates||['MICRO_PROBATION','PROBATION','LIVE_ADMITTED']).includes(optionsAdmission.state))||optionBootstrapAllowed;
+const optionBootstrapAllowed=false;
+const optionAllowedAdmission=SAFETY_POLICY.liveExecutionEnabled&&(LIVE_ADMISSION_STATES.has(optionsAdmission.state)&&(optionsPolicy.requiredAdmissionStates||['MICRO_PROBATION','PROBATION','LIVE_ADMITTED']).includes(optionsAdmission.state))||optionBootstrapAllowed;
 const optionScanFresh=ageMs(optionsScan.generatedAt)<=OPTIONS_MAX_AGE_MS;
 const localTrackedOpenOptionPositions=(executionWatchlist.positions||[]).filter(x=>x?.assetClass==='OPTION'&&String(x.status).toUpperCase()==='ACTIVE').length;
 const optionBrokerReconciliationRequired=true;
@@ -176,8 +177,8 @@ const indexOptionResearchCandidates=(indexOptionsResearch.candidates||[]).filter
   liveExecutionEligible:false,
 }));
 const indexSession=board?.marketSession||{};
-const indexLiveAllowed=['LIVE_MICRO_BOOTSTRAP','MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(indexOptionsAdmission.state)&&indexOptionsAdmission.executionAuthorized===true;
-const indexBootstrapAllowed=indexOptionsAdmission.state==='LIVE_MICRO_BOOTSTRAP'&&indexOptionsLivePolicy.enabled===true&&indexOptionsAdmission.executionAuthorized===true;
+const indexLiveAllowed=SAFETY_POLICY.liveExecutionEnabled&&indexOptionsLivePolicy.enabled===true&&Number.isFinite(Number(indexOptionsLivePolicy.maxOrderUsd))&&Number(indexOptionsLivePolicy.maxOrderUsd)>0&&earnedAdmission(indexOptionsAdmission.state)&&indexOptionsAdmission.executionAuthorized===true;
+const indexBootstrapAllowed=false;
 const indexResolutionPool=indexOptionResearchCandidates
   .filter(x=>x.researchStatus==='BROKER_SHADOW_SAMPLE_READY'&&['BULLISH','BEARISH'].includes(x.proxyBias))
   .sort((a,b)=>Number(b.proxyScore||0)-Number(a.proxyScore||0));
@@ -186,7 +187,7 @@ const indexResolutionRequest=(executorOptionEntryAllowed&&!hasExitEvent&&boardHe
   isNew:true,isActionable:true,priority:44,assetClass:'INDEX_OPTION',ticker:indexResolutionPool[0].indexSymbol,trigger:'INDEX_OPTION_RESOLUTION_REQUEST',
   proxySymbol:indexResolutionPool[0].proxySymbol,proxyBias:indexResolutionPool[0].proxyBias,proxyPrice:indexResolutionPool[0].proxyPrice,proxyScore:indexResolutionPool[0].proxyScore,
   allowedKinds:indexResolutionPool[0].brokerResolution?.allowedKinds||[],minDte:Number(indexOptionsLivePolicy.minDte||3),maxDte:Number(indexOptionsLivePolicy.maxDte||45),
-  maxOrderUsd:Number(indexOptionsLivePolicy.maxOrderUsd)>0?Number(indexOptionsLivePolicy.maxOrderUsd):null,affordabilityMode:Number(indexOptionsLivePolicy.maxOrderUsd)>0?'FIXED_PREMIUM_CAP':'LIVE_UNLEVERAGED_CASH',maxNewPositionsPerNyDay:Number(indexOptionsLivePolicy.maxNewPositionsPerNyDay||1),maxConcurrentPositions:Number(indexOptionsLivePolicy.maxConcurrentPositions||1),
+  maxOrderUsd:Number(indexOptionsLivePolicy.maxOrderUsd)>0?Number(indexOptionsLivePolicy.maxOrderUsd):0,affordabilityMode:Number(indexOptionsLivePolicy.maxOrderUsd)>0?'FIXED_PREMIUM_CAP':'LIVE_UNLEVERAGED_CASH',maxNewPositionsPerNyDay:Number(indexOptionsLivePolicy.maxNewPositionsPerNyDay||1),maxConcurrentPositions:Number(indexOptionsLivePolicy.maxConcurrentPositions||1),
   mustBeFlatBeforeMarketClose:indexOptionsLivePolicy.mustBeFlatBeforeMarketClose===true,forcedExitMinutesBeforeClose:Number(indexOptionsLivePolicy.forcedExitMinutesBeforeClose||10),
   admissionState:indexOptionsAdmission.state,requestedAction:'RESOLVE_EXACT_ROBINHOOD_INDEX_OPTION_AND_EXECUTE_MICRO_IF_ALL_LIVE_GATES_PASS',
   brokerContractResolutionRequired:true,reason:'User-authorized XND/DJX live micro bootstrap. Research proxy supplies direction only; Robinhood must resolve the exact index contract and executable quote before any order.'
@@ -202,7 +203,7 @@ const indexOptionsLane={
   resolutionRequestPublished:Boolean(indexResolutionRequest),
   liveBootstrap:indexBootstrapAllowed?indexOptionsLivePolicy:null,
   researchCandidates:indexOptionResearchCandidates,
-  rule:'XND/DJX use QQQ/DIA for direction only. LIVE_MICRO_BOOTSTRAP and later evidence-earned live states may publish one broker-resolution request with no fixed repository premium cap; Robinhood fresh cash/unleveraged buying power is the hard affordability ceiling, and exact contract, bid/ask, liquidity, affordability, duplicate-state and session checks remain mandatory.'
+  rule:'XND/DJX use QQQ/DIA for direction only. Bootstrap requests are disabled; earned evidence never overrides the canonical live lock; Robinhood fresh cash/unleveraged buying power is the hard affordability ceiling, and exact contract, bid/ask, liquidity, affordability, duplicate-state and session checks remain mandatory.'
 };
 
 const out={
@@ -213,7 +214,7 @@ const out={
   monitorHealth:board?.monitorHealth||'UNAVAILABLE',dispatchHealth:boardHealthy?'OK':'FAIL_CLOSED_STALE_OR_UNHEALTHY_BOARD',
   chatgptShouldRun:Boolean(pendingAction)||seedLaneCandidates.length>0||Boolean(optionCandidateCompact)||Boolean(indexResolutionRequest),chatgptShouldPollMarket:false,executionNeeded:actionableCandidates.length>0||seedLaneCandidates.length>0||Boolean(optionCandidateCompact)||Boolean(indexResolutionRequest),
   dispatchFingerprints:[...actionableCandidates.map(x=>x.fingerprint),...seedLaneCandidates.map(x=>x.fingerprint),...(optionCandidateCompact?[optionCandidateCompact.fingerprint]:[]),...(indexResolutionRequest?[indexResolutionRequest.fingerprint]:[])],priorityOrder:['TRIGGER_1_STOP','STOCK_DAY_TRADE_FORCED_EXIT','TRIGGER_3_TARGET2','TRIGGER_2_TARGET1','TRIGGER_EARLY_PROFIT_TRIM','BUY_TRIGGER','OPTION_SEED_LANE_BUY_TRIGGER','INDEX_OPTION_RESOLUTION_REQUEST','SEED_LANE_BUY_TRIGGER','STOCK_DAY_TRADE_SEED_LANE_BUY_TRIGGER'],
-  pendingAction,automaticStockCandidates,approvalCandidates:[],approvalBatchId:null,fallbackActions,seedLaneCandidates,optionCandidates:optionCandidateCompact?[optionCandidateCompact]:[],indexOptionResolutionRequests:indexResolutionRequest?[indexResolutionRequest]:[],optionsLane:{status:optionLaneResult.status,admissionState:optionsAdmission.state,userAuthorizedLiveCashBootstrap:optionBootstrapAllowed,scanFresh:optionScanFresh,scanGeneratedAt:optionsScan.generatedAt||null,localTrackedOpenOptionPositions,brokerPositionReconciliationRequired:optionBrokerReconciliationRequired,brokerOnlyPositionsAreAdopted,newEntriesThisWeek:optionNewThisWeek,lastLiveTradeOutcome:lastOptionOutcome,rule:'Options are cash-funded long calls/puts only. Earned admission remains preferred, but the explicit user-authorized live-cash bootstrap may publish SHADOW_ONLY candidates while LIVE_SUSPENDED stays blocked. Robinhood option-position/order state, <=10% spread, real volume/open interest, tradability, whole-contract cash/unleveraged buying power, duplicate state and same-day exit remain mandatory; no exercise/overnight.'},
+  pendingAction,automaticStockCandidates,approvalCandidates:[],approvalBatchId:null,fallbackActions,seedLaneCandidates,optionCandidates:optionCandidateCompact?[optionCandidateCompact]:[],indexOptionResolutionRequests:indexResolutionRequest?[indexResolutionRequest]:[],optionsLane:{status:optionLaneResult.status,admissionState:optionsAdmission.state,userAuthorizedLiveCashBootstrap:optionBootstrapAllowed,scanFresh:optionScanFresh,scanGeneratedAt:optionsScan.generatedAt||null,localTrackedOpenOptionPositions,brokerPositionReconciliationRequired:optionBrokerReconciliationRequired,brokerOnlyPositionsAreAdopted,newEntriesThisWeek:optionNewThisWeek,lastLiveTradeOutcome:lastOptionOutcome,rule:'Options are cash-funded long calls/puts only. Earned evidence is mandatory; bootstrap is disabled and the canonical live lock remains active. Robinhood option-position/order state, <=10% spread, real volume/open interest, tradability, whole-contract cash/unleveraged buying power, duplicate state and same-day exit remain mandatory; no exercise/overnight.'},
   indexOptionsLane,
   crossAssetPreference:{optionsMayOutrankStocks:true,rule:'After exits, compare independently qualified option and stock opportunities by executable after-cost evidence. Stock/ETF options and XND/DJX index options use separate admission ledgers; neither may borrow the other\'s evidence. A qualified option may be presented ahead of stock entries only after its own admission, live chain/liquidity, whole-contract cash/risk, concurrency, duplicate and session gates pass. Never force an option to satisfy a frequency target.'},
   multiStockPolicy:{enabled:true,maximumAutomaticCandidatesPerDispatch:null,capacityMode:'DYNAMIC_RISK_CASH_AND_BROKER_LIMITED',automaticQualifiedEntries:executorEquityEntryAllowed,userApprovalRequired:!executorRiskCreationAllowed,oneWinnerDoesNotBlockOtherQualifiedStocks:true,rule:'Expose every already-qualified current-generation stock candidate in rank order. ChatGPT may execute as many as remain independently qualified after immediate broker rechecks and dynamic cash, portfolio-heat, correlation, account-floor and aggregate-stop-risk limits. Never force a trade.'},

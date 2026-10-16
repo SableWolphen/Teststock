@@ -17,13 +17,10 @@ test('a real MICRO_PROBATION admission with a qualifying candidate fires the tri
 });
 
 
-test('explicit user cash bootstrap allows SHADOW_ONLY with no fixed repository premium cap',()=>{
-  const bootstrapPolicy={...seedPolicy,userAuthorizedLiveCashBootstrap:true,bootstrapAllowedAdmissionStates:['SHADOW_ONLY'],maxOrderUsd:null,maxConcurrentPositions:2,maxNewPositionsPerUtcWeek:15};
-  const state=evaluateOptionsSeedLaneCandidate({candidate:{...goodCandidate,oneContractPremiumDollars:80},admission:{state:'SHADOW_ONLY'},seedPolicy:bootstrapPolicy});
-  assert.equal(state.status,'OPTION_SEED_LANE_BUY_TRIGGER');
-  assert.equal(state.seedLane.maxOrderUsd,null);
-  assert.equal(state.seedLane.affordabilityMode,'LIVE_UNLEVERAGED_CASH');
-  assert.equal(state.seedLane.userAuthorizedLiveCashBootstrap,true);
+test('legacy cash bootstrap cannot bypass SHADOW_ONLY admission',()=>{
+  const bootstrapPolicy={...seedPolicy,userAuthorizedLiveCashBootstrap:true,bootstrapAllowedAdmissionStates:['SHADOW_ONLY'],maxOrderUsd:null};
+  const state=evaluateOptionsSeedLaneCandidate({candidate:goodCandidate,admission:{state:'SHADOW_ONLY'},seedPolicy:bootstrapPolicy});
+  assert.equal(state.status,'BLOCKED_ADMISSION');
 });
 
 test('LIVE_SUSPENDED never qualifies regardless of everything else',()=>{
@@ -85,4 +82,11 @@ test('qualified long puts are eligible when every other gate passes',()=>{
 test('unsupported option kinds fail closed',()=>{
   const state=evaluateOptionsSeedLaneCandidate({candidate:{...goodCandidate,kind:'SHORT_CALL'},admission:{state:'LIVE_ADMITTED'},seedPolicy});
   assert.equal(state.status,'BLOCKED_OPTION_KIND');
+});
+
+test('zero, missing, null and invalid premium caps never mean unlimited risk',()=>{
+ for(const maxOrderUsd of [0,null,undefined,-1,'not-a-number',Infinity]) {
+  const state=evaluateOptionsSeedLaneCandidate({candidate:goodCandidate,admission:{state:'MICRO_PROBATION'},seedPolicy:{...seedPolicy,maxOrderUsd}});
+  assert.equal(state.status,'BLOCKED_PREMIUM_CAP');
+ }
 });

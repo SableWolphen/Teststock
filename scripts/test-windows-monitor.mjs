@@ -42,7 +42,7 @@ test('missing authentication creates durable blocked status',async t=>{
  assert.equal(fs.readFileSync(path.join(root,'monitor-2026-10-16.jsonl'),'utf8').trim().split('\n').length,1);
 });
 test('healthy mocked reads and stale quotes are distinguished',async t=>{
- const root=temp(t);const client={version:'mock',call:async(name)=>name==='get_accounts'?{}:{structuredContent:{data:{results:[{quote}]}}}};
+ const root=temp(t);const client={version:'mock',call:async(name)=>({structuredContent:{data:name==='get_accounts'?{accounts:[{account_number:'test-account',agentic_allowed:true,state:'active'}]}:name==='get_equity_quotes'?{results:[{quote}]}:name.includes('positions')?{positions:[]}:{orders:[]}}})};
  assert.equal((await cycle({root,client,symbols:['SPY'],now})).health,'READ_ONLY_HEALTHY');
  assert.equal((await cycle({root,client,symbols:['SPY'],now:now+60000})).health,'BLOCKED');
 });

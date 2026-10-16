@@ -1,10 +1,11 @@
+import {SAFETY_POLICY} from './safety-policy.mjs';
 // Validate the asset-specific contract, never the retired cross-asset buy flag.
 // Options admission is separate: stock authorization cannot grant option eligibility.
 export function stockExecutionPolicyFailures(signal) {
   const a=signal.autopilot||{}, p=signal.chatgptExecutionPolicy||{}, fail=[];
-  if(a.enabled!==true||a.requiresPerOrderApproval!==false||a.stockBuysRequireUserApproval!==false||a.stockBuysRequireCurrentBatchApproval!==false||a.automaticQualifiedStockBuys!==true)fail.push('automatic stock policy');
-  if(a.executionAgent!=='CHATGPT'||a.directGitHubBrokerExecution!==false||p.enabled!==true||p.role!=='SOLE_EXECUTION_AGENT')fail.push('ChatGPT-only stock execution');
-  if(p.stockBuys?.executionOwner!=='CHATGPT'||p.stockBuys?.explicitApprovalRequired!==false||p.stockBuys?.automaticWhenFullyQualifiedAndBrokerPermits!==true||p.stockBuys?.requireRobinhoodTradingMcp!==true||p.stockBuys?.requireLiveBrokerRecheck!==true)fail.push('stock live MCP recheck');
+  if(a.enabled!==SAFETY_POLICY.liveExecutionEnabled||a.requiresPerOrderApproval!==false||a.stockBuysRequireUserApproval!==false||a.stockBuysRequireCurrentBatchApproval!==false||a.automaticQualifiedStockBuys!==SAFETY_POLICY.liveExecutionEnabled)fail.push('automatic stock policy');
+  if(a.executionAgent!=='CHATGPT'||a.directGitHubBrokerExecution!==false||p.enabled!==SAFETY_POLICY.liveExecutionEnabled||p.role!=='SOLE_EXECUTION_AGENT')fail.push('ChatGPT-only stock execution');
+  if(p.stockBuys?.executionOwner!=='CHATGPT'||p.stockBuys?.explicitApprovalRequired!==false||p.stockBuys?.automaticWhenFullyQualifiedAndBrokerPermits!==SAFETY_POLICY.liveExecutionEnabled||p.stockBuys?.requireRobinhoodTradingMcp!==true||p.stockBuys?.requireLiveBrokerRecheck!==true)fail.push('stock live MCP recheck');
   if(p.sourceOfTruth!=='LATEST_RAW_MAIN'||p.generationMatchRequired!==true)fail.push('stock generation guard');
   const b=p.brokerExecutionContract||{};
   if(b.executor!=='CHATGPT_ONLY'||b.transport!=='ROBINHOOD_TRADING_MCP'||b.duplicateProtectionRequired!==true||b.reconcileByClientOrderId!==true||b.neverAssumeFill!==true||b.partialFillsUseConfirmedQuantityOnly!==true||b.protectionRequiredAfterEntry!==true)fail.push('fail-closed stock broker contract');
