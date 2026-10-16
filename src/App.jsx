@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import optionScan from '../docs/data/small-account-options.json';
 import optionAdmission from '../docs/data/options-profitability-admission.json';
+import executorCapabilities from '../docs/data/executor-capabilities.json';
 import signalSnapshot from '../docs/signal.json';
 
 const demo={
@@ -34,6 +35,8 @@ export default function App(){
   const [account,setAccount]=useState(()=>loadLocal('ts-account',{value:500,monthly:250,goal:1000000}));
   const [optionBudget,setOptionBudget]=useState(()=>loadLocal('ts-option-budget',25));
   const [optionNotice,setOptionNotice]=useState('');
+  const liveOptionsReady = executorCapabilities?.liveOptionEntrySubmission === true && executorCapabilities?.liveOptionExitSubmission === true && executorCapabilities?.liveOptionExitVerifiedThisSession === true;
+  const executionStatus = liveOptionsReady ? 'Live option capability reported — independently verify with broker before any order' : 'MANUAL ONLY — real-money options execution is not verified';
   useEffect(()=>localStorage.setItem('ts-budget',JSON.stringify(budget)),[budget]);
   useEffect(()=>localStorage.setItem('ts-mode',JSON.stringify(mode)),[mode]);
   useEffect(()=>localStorage.setItem('ts-paper',JSON.stringify(paper)),[paper]);
@@ -73,6 +76,7 @@ export default function App(){
   const bestOption=optionRows.find(row=>row.policyFit)||optionRows[0]||null;
   const copyOptionRequest=async row=>{
     if(!row)return;
+    if(!liveOptionsReady){setOptionNotice('MANUAL_ONLY_BLOCKED: This site cannot verify both live entry and same-session exit. Research only; no buy request generated.');return;}
     const cp=row.kind==='LONG_PUT'?'put':'call';
     const request='Review and buy 1 '+row.underlying+' '+row.expiry+' strike '+row.strike+' '+cp+' in my Robinhood Agentic account only if the live quote, spread, liquidity, buying power, account floor, options admission, duplicate-order check, and every current Teststock gate still pass. Use a marketable limit at or below the live allowed premium. Do not use margin, transfers, naked options, exercise, or carry it overnight. If any gate fails, do not place the order. Contract: '+row.contract+'.';
     try{
@@ -89,6 +93,7 @@ export default function App(){
       <button className="refresh" onClick={scan} disabled={loading}><RefreshCw size={18} className={loading?'spin':''}/>{loading?'Scanning…':'Scan now'}</button>
     </header>
 
+    <section role="status" aria-live="polite" style={{padding:"16px",border:"1px solid #e0a75d",borderRadius:16,marginBottom:16,background:"rgba(224,167,93,.10)"}}><strong><ShieldCheck size={17} style={{verticalAlign:"middle",marginRight:8}}/>{executionStatus}</strong><p style={{margin:"8px 0 0"}}>Options are supported for research and paper tracking. Live option entries stay disabled until verified entry AND same-session sell-to-close capability are available. A preview is not a fill. Quotes must use executable bid for exits, ask for entries; wide spreads, zero bids, and near-expiration contracts can cause major losses.</p><small>Capability verification: {executorCapabilities?.verifiedAt||"unknown"} · Status: {executorCapabilities?.mode||"unknown"}</small></section>
     <nav className="tabs">
       <button className={tab==='today'?'active':''} onClick={()=>setTab('today')}><Zap size={16}/>Today</button>
       <button className={tab==='options'?'active':''} onClick={()=>setTab('options')}><Rocket size={16}/>Options</button>
