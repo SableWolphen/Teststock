@@ -1,6 +1,8 @@
 // Pure decision layer. This module never sends a broker order.
+import {SAFETY_POLICY} from './safety-policy.mjs';
 export function assessExecution({capabilities,account,quotes=[],orders=[],positions=[],now=new Date().toISOString()}){
  const blockers=[];const actions=[];
+ if(!SAFETY_POLICY.liveExecutionEnabled)blockers.push('LIVE_DEPLOYMENT_LOCKED');
  if(capabilities?.mode!=='LIVE_VERIFIED'||!capabilities?.liveOrderSubmission)blockers.push('LIVE_EXECUTION_NOT_VERIFIED');
  if(!capabilities?.liveEquityExitSubmission)blockers.push('EQUITY_EXIT_UNVERIFIED');
  if(!capabilities?.liveOptionExitSubmission||!capabilities?.liveOptionExitVerifiedThisSession)blockers.push('OPTION_EXIT_UNVERIFIED');

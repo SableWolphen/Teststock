@@ -79,3 +79,33 @@ Private `broker-reconciliation.json` contains the last successfully collected po
 `READ_ONLY_HEALTHY` confirms the supported read cycle succeeded. It does not clear the nested reconciliation blockers: advanced-order coverage is unverified and crypto coverage is not implemented. The current remote tool list did not advertise an advanced-order reader. Thus allAssetReconciliationComplete and entryAllowed remain false. Per-execution totals, uncertain identities, unknown order states, duplicate working orders and short positions require review; they never trigger a corrective order. The monitor cannot cancel an order or close a holding.
 
 The shadow tests exercise admission boundaries, stale/invalid quotes, partial fills, pagination failures, duplicate executions, account changes, credential/network errors, retained snapshots and a killed child monitor's crash lock. These are synthetic drills and unit/integration checks, not a reboot/sleep/network/disk-failure soak or broker entry/protection/exit verification. Those go-live gates remain open.
+
+## Alpaca paper-data connection and protection shadow drills
+
+The optional local Alpaca reader supports only fixed GET routes for the paper market clock/calendar and IEX stock bars. It has no orders, cancellation, account-funding or live-trading endpoint. A working chat connector does not supply local API credentials. Paper-account credentials are distinct from live credentials; use the paper account's API Keys panel.
+
+Start local setup after installing the Windows monitor:
+
+```powershell
+node scripts/alpaca-data-client.mjs --state-dir "$env:LOCALAPPDATA\Teststock\runtime"
+```
+
+Open the printed localhost setup URL and enter paper API key and secret only in that local form. Never put them in chat, source control, task arguments or public files. Setup verifies paper clock, today's calendar and IEX bars before writing `alpaca-data.dpapi` with Windows DPAPI CurrentUser. The form uses a random route, exact Host/Origin checks, no third-party resources and a fifteen-minute timeout. Invalid credentials/read failures do not save new values. The Robinhood vault is separate and unchanged. The broker keys may permit paper trading at Alpaca, but this application's reader exposes no order method.
+
+After the running monitor loads this version, each cycle reports separate `entryData` status. A healthy Robinhood read cycle does not imply `entryData.connected` or trading readiness. When credentials are configured, data probes are read-only. Missing/expired/revoked keys or feed access failures remain blocked and do not turn on trading. Only clock/calendar and a small historical IEX sample are verified by this connection probe; full strategy data validation is a separate step.
+
+Run approved legacy data checks using the encrypted vault:
+
+```powershell
+node scripts/run-alpaca-data-task.mjs check-alpaca-market-session.mjs --state-dir "$env:LOCALAPPDATA\Teststock\runtime"
+node scripts/run-alpaca-data-task.mjs validate-entry-gates.mjs --state-dir "$env:LOCALAPPDATA\Teststock\runtime"
+node scripts/run-shadow-readiness.mjs --state-dir "$env:LOCALAPPDATA\Teststock\runtime"
+```
+
+Only those two named data tasks may receive credentials through a child process's temporary environment. Keys are never persisted as global environment variables. The historical validator can write research artifacts and return a `RED_FLAG` result even if its process exits successfully; successful computation is not a strategy pass. Windows must be awake, online and logged in. The local readiness report stays private as `shadow-readiness.json`.
+
+Protection drills have no broker transport. They test confirmation/freshness, whole-share restrictions, remaining stop quantity, session scope, partial fills, ambiguous submissions, pending cancellations, duplicate exits, expired GFD protection and orphan sell orders. A reported matching stop is not a fill or price guarantee. Only equity holdings are assessed by the live read-only report; options coverage remains unverified. These drills do not submit Alpaca paper orders, do not verify Robinhood entry/protection/exit submission, and cannot substitute for broker-supported test flows or separate authorization.
+
+Robinhood's review tools require the user to supply the exact symbol, quantity or dollar amount, order type and applicable prices. Non-submitting previews can be requested once those inputs are supplied. A successful preview does not place an order or verify actual fills, protection creation, cancellation/replacement, or outage recovery. No preview, credential, passing test or market-open deadline overrides `safety-policy.mjs`.
+
+Official references checked October 16, 2026: [Alpaca authentication](https://docs.alpaca.markets/us/docs/authentication), [Alpaca paper trading and simulation limits](https://docs.alpaca.markets/us/docs/paper-trading), [Robinhood agent trading tools](https://robinhood.com/us/en/support/articles/trading-with-your-agent/).
