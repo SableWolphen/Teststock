@@ -1,3 +1,5 @@
+import '../docs/freedom-dashboard.mjs';
+import {SAFETY_POLICY} from '../scripts/safety-policy.mjs';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Activity, AlertTriangle, BarChart3, CheckCircle2, ChevronRight, Clock3, Copy, Flame,
@@ -35,18 +37,16 @@ export default function App(){
   const [autoRefresh,setAutoRefresh]=useState(true);
   const [refreshTick,setRefreshTick]=useState(0);
   const [paper,setPaper]=useState(()=>loadLocal('ts-paper',[]));
-  const [account,setAccount]=useState(()=>loadLocal('ts-account',{value:76.21,monthly:0,goal:100000000}));
   const [optionBudget,setOptionBudget]=useState(()=>loadLocal('ts-option-budget',25));
   const [optionNotice,setOptionNotice]=useState('');
   const [optionQuery,setOptionQuery]=useState('');
   const [optionSide,setOptionSide]=useState('ALL');
   const [optionSort,setOptionSort]=useState('score');
-  const liveOptionsReady = Number.isFinite(Date.parse(executorCapabilities?.verifiedAt||'')) && Date.now()-Date.parse(executorCapabilities.verifiedAt)>=0 && Date.now()-Date.parse(executorCapabilities.verifiedAt)<3600000 && executorCapabilities?.liveOptionEntrySubmission === true && executorCapabilities?.liveOptionExitSubmission === true && executorCapabilities?.liveOptionExitVerifiedThisSession === true;
+  const liveOptionsReady = SAFETY_POLICY.liveExecutionEnabled && Number.isFinite(Date.parse(executorCapabilities?.verifiedAt||'')) && Date.now()-Date.parse(executorCapabilities.verifiedAt)>=0 && Date.now()-Date.parse(executorCapabilities.verifiedAt)<3600000 && executorCapabilities?.liveOptionEntrySubmission === true && executorCapabilities?.liveOptionExitSubmission === true && executorCapabilities?.liveOptionExitVerifiedThisSession === true;
   const executionStatus = liveOptionsReady ? 'Live option capability reported — independently verify with broker before any order' : 'MANUAL ONLY — real-money options execution is not verified';
   useEffect(()=>localStorage.setItem('ts-budget',JSON.stringify(budget)),[budget]);
   useEffect(()=>localStorage.setItem('ts-mode',JSON.stringify(mode)),[mode]);
   useEffect(()=>localStorage.setItem('ts-paper',JSON.stringify(paper)),[paper]);
-  useEffect(()=>localStorage.setItem('ts-account',JSON.stringify(account)),[account]);
   useEffect(()=>localStorage.setItem('ts-option-budget',JSON.stringify(optionBudget)),[optionBudget]);
 
   const scan=async()=>{
@@ -67,8 +67,6 @@ export default function App(){
   };
   const closePaper=(id,resultPct)=>setPaper(paper.map(x=>x.id===id?{...x,status:'CLOSED',resultPct:Number(resultPct)}:x));
   const closed=paper.filter(x=>x.status==='CLOSED'),wins=closed.filter(x=>x.resultPct>0),avgResult=closed.length?closed.reduce((s,x)=>s+Number(x.resultPct||0),0)/closed.length:0;
-  const doubles=account.value>0?Math.ceil(Math.log2(account.goal/account.value)):0;
-  const timelines=useMemo(()=>[.08,.15,.25].map(rate=>{let v=account.value,m=0;while(v<account.goal&&m<1200){v=v*(1+rate/12)+account.monthly;m++}return{rate:Math.round(rate*100),years:m/12}}),[account]);
   const optionPolicy=signalSnapshot?.optionsTradingPolicy||{};
   const optionRows=useMemo(()=>((optionScan?.candidates)||[])
     .map(row=>({...row,
@@ -111,7 +109,7 @@ export default function App(){
       <button className={tab==='today'?'active':''} onClick={()=>setTab('today')}><Zap size={16}/>Today</button>
       <button className={tab==='options'?'active':''} onClick={()=>setTab('options')}><Rocket size={16}/>Options</button>
       <button className={tab==='paper'?'active':''} onClick={()=>setTab('paper')}><History size={16}/>Paper</button>
-      <button className={tab==='plan'?'active':''} onClick={()=>setTab('plan')}><LineChart size={16}/>Road to $100M</button>
+      <button className={tab==='plan'?'active':''} onClick={()=>setTab('plan')}><LineChart size={16}/>Financial Freedom</button>
     </nav>
 
     {tab==='today'&&<>
@@ -157,7 +155,7 @@ export default function App(){
     {tab==='options'&&<section className="page-card options-page">
       <div className="section-title">
         <div><Rocket size={20}/><div><span>OPTIONS QUICK BUY</span><h2>Find affordable calls and puts quickly</h2></div></div>
-        <Pill t={optionAdmission.executionAuthorized?'good':'warn'}>{optionAdmission.executionAuthorized?'LIVE ADMISSION':'RESEARCH ONLY'}</Pill>
+        <Pill t={SAFETY_POLICY.liveExecutionEnabled&&optionAdmission.executionAuthorized?'good':'warn'}>{SAFETY_POLICY.liveExecutionEnabled&&optionAdmission.executionAuthorized?'LIVE ADMISSION':'RESEARCH ONLY'}</Pill>
       </div>
       <p className="muted">Saved scan: {optionScan?.sourceSnapshotAsOf||'unknown'} · {optionSnapshotFresh?'Recent snapshot; broker recheck still required':'Stale snapshot — live requests blocked'}. Showing up to 20 matching contracts.</p>
       <div className="option-toolbar">
@@ -213,13 +211,7 @@ export default function App(){
       {!paper.length?<div className="empty"><History size={24}/><b>No paper setups yet.</b><span>A qualified Today setup can be added with one tap.</span></div>:<div className="paper-list">{paper.map(x=><article key={x.id}><div><b>{x.symbol} · {x.direction||x.option?.side}</b><span>{x.option.kind} · {x.option.longStrike}{x.option.side==='PUT'?'P':'C'}{x.option.shortStrike?` / ${x.option.shortStrike}${x.option.side==='PUT'?'P':'C'}`:''} · {x.option.expiry}</span></div><Pill t={x.status==='OPEN'?'warn':x.resultPct>0?'good':'bad'}>{x.status==='OPEN'?'OPEN':`${x.resultPct}%`}</Pill>{x.status==='OPEN'&&<div className="result-buttons"><button onClick={()=>closePaper(x.id,50)}>+50%</button><button onClick={()=>closePaper(x.id,100)}>+100%</button><button onClick={()=>closePaper(x.id,-50)}>-50%</button><button onClick={()=>closePaper(x.id,-100)}>-100%</button></div>}</article>)}</div>}
     </section>}
 
-    {tab==='plan'&&<section className="page-card">
-      <div className="section-title"><div><LineChart size={20}/><div><span>ROAD TO $100M</span><h2>Speed matters. Survival matters more.</h2></div></div></div>
-      <div className="plan-inputs"><label>Current investable amount<input type="number" value={account.value} onChange={e=>setAccount({...account,value:Math.max(0,Number(e.target.value))})}/></label><label>Monthly contribution<input type="number" value={account.monthly} onChange={e=>setAccount({...account,monthly:Math.max(0,Number(e.target.value))})}/></label></div>
-      <div className="goal-hero"><span>Perfect doublings from here</span><strong>{doubles}</strong><small>Useful math, not a realistic forecast of consecutive wins.</small></div>
-      <div className="scenario-grid">{timelines.map(x=><div key={x.rate}><span>{x.rate}% annualized scenario</span><strong>{x.years>=100?'100+ yrs':`${x.years.toFixed(1)} yrs`}</strong><small>with {money(account.monthly)}/mo contributions</small></div>)}</div>
-      <div className="wealth-rule"><ShieldCheck size={22}/><div><b>Teststock’s actual job</b><p>Find asymmetric opportunities while preventing one bad trade from destroying the compounding engine. There is no reliable cheap shortcut to $100M.</p></div></div>
-    </section>}
+    {tab==='plan'&&<section className="page-card"><financial-freedom /></section>}
 
     <footer className="disclaimer">Screening and paper-tracking tool only. Options can lose the full amount at risk. Probability estimates are models, not guarantees. Live quotes may be indicative or delayed depending on your Alpaca plan.</footer>
   </main>

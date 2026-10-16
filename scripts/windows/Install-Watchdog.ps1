@@ -8,6 +8,7 @@ $toolsDir = Join-Path $state 'tools'
 New-Item -ItemType Directory -Force -Path $toolsDir | Out-Null
 $runner = Join-Path $toolsDir 'monitor-watchdog.mjs'
 Copy-Item -LiteralPath (Join-Path $repo 'scripts/monitor-watchdog.mjs') -Destination $runner -Force
+Copy-Item -LiteralPath (Join-Path $repo 'scripts/monitor-lock.mjs') -Destination (Join-Path $toolsDir 'monitor-lock.mjs') -Force
 $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 $action = New-ScheduledTaskAction -Execute $node -Argument "`"$runner`" --state-dir `"$state`"" -WorkingDirectory $state
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)

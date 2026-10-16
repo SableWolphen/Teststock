@@ -138,3 +138,10 @@ Monitor startup serializes lock recovery. It archives an abandoned lock only whe
 Install the independent local watchdog with `./scripts/windows/Install-Watchdog.ps1`. It copies its standalone script into the private runtime so repository branch changes cannot remove the scheduled action. The separate `Teststock Read-only Watchdog` task runs every minute while the user is logged in. It detects missing/stale/future heartbeats, broker/data failures, incomplete reconciliation, STOP and unexpected live flags. Private `alerts.jsonl` records incident/recovery transitions and `watchdog-status.json` records active codes. Repeated incidents are deduplicated across process restarts. A stale watchdog lock requires operator inspection; no lock is blindly removed.
 
 These are **local-file alerts only**. Notification delivery to the user and user receipt are unverified; there is no email/SMS/push integration. A healthy watchdog, a passing fixture crash test or a recovered monitor never authorizes a broker order or clears strategy/protection gates.
+
+
+### Watchdog recovery and source freshness
+
+Reinstall the watchdog after this update: `./scripts/windows/Install-Watchdog.ps1`. The installer copies both `monitor-watchdog.mjs` and its `monitor-lock.mjs` dependency to private runtime tools. The watchdog now archives a dead process lock only after checking that its PID is absent. A live/reused PID, malformed owner or recovery guard still blocks startup for operator inspection. Local tests prove recovery for a terminated fixture process; they do not certify production restart behavior.
+
+A fresh `status.json.at` no longer masks old underlying reads. Successful broker reconciliation must carry `reconciliation.at`, and successful Alpaca data probes must carry `entryData.verifiedAt`, both within 120 seconds and no more than two seconds ahead. Success flags must be booleans. Persisted incident codes must be from the fixed local allowlist; unknown codes generate `WATCHDOG_STATE_INVALID` without copying their content to alerts. Alerts remain local files with unverified delivery. The canonical live deployment lock and monitoring-only transport are unchanged.
