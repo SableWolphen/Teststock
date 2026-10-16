@@ -2,13 +2,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
+import {vault, accessToken} from './robinhood-oauth.mjs';
 
 export const READ_TOOLS = Object.freeze(['get_accounts', 'get_equity_quotes']);
 export class ReadOnlyMcp {
-  constructor({token, transport=fetch}) { this.token=token; this.transport=transport; this.id=0; }
+  constructor({token, tokenProvider, transport=fetch}) { this.token=token; this.tokenProvider=tokenProvider; this.transport=transport; this.id=0; }
   async rpc(method, params) {
     const headers={'Content-Type':'application/json',Accept:'application/json, text/event-stream'};
-    if(this.token) headers.Authorization=`Bearer ${this.token}`;
+    const token=this.tokenProvider?await this.tokenProvider():this.token;
+    if(token) headers.Authorization=`Bearer ${token}`;
     if(this.session) headers['Mcp-Session-Id']=this.session;
     if(this.version) headers['MCP-Protocol-Version']=this.version;
     const response=await this.transport('https://agent.robinhood.com/mcp/trading',{
@@ -121,10 +123,14 @@ async function main() {
   let fd; try { fd=fs.openSync(lock,'wx',0o600); } catch { throw new Error('MONITOR_LOCKED: check for an existing process before manually removing a crash lock'); }
   fs.writeFileSync(fd,JSON.stringify({pid:process.pid,at:new Date().toISOString()})); fs.closeSync(fd);
   let stopped=false; process.on('SIGINT',()=>{stopped=true;}); process.on('SIGTERM',()=>{stopped=true;});
-  const symbols=[...new Set((process.env.TESTSTOCK_MONITOR_SYMBOLS||'').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean))];
+  let settings={};
+  try { settings=JSON.parse(fs.readFileSync(path.join(root,'monitor.json'),'utf8')); }
+  catch(error) { if(error.code!=='ENOENT') { fs.unlinkSync(lock); throw error; } }
+  const symbols=[...new Set((process.env.TESTSTOCK_MONITOR_SYMBOLS||settings.symbols?.join(',')||'').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean))];
   if(symbols.length>20||symbols.some(s=>! /^[A-Z][A-Z0-9.-]{0,14}$/.test(s))) { fs.unlinkSync(lock); throw new Error('INVALID_SYMBOLS'); }
   const token=process.env.ROBINHOOD_MCP_OAUTH_TOKEN;
-  const client=token?new ReadOnlyMcp({token}):null;
+  const store=vault(root);
+  const client=store.exists()?new ReadOnlyMcp({tokenProvider:()=>accessToken(store)}):token?new ReadOnlyMcp({token}):null;
   try { do {
     if(fs.existsSync(path.join(root,'STOP'))) break;
     const status=await cycle({root,client,symbols});

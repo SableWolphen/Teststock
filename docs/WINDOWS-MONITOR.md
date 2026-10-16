@@ -15,15 +15,31 @@ Get-Content "$env:LOCALAPPDATA\Teststock\runtime\status.json"
 
 The first command performs an offline one-shot smoke check; missing authentication reports BLOCKED as expected. Installation does not install dependencies or change your PowerShell execution policy. The monitor uses only Node built-ins. For the web app, install Node with npm, then run `npm ci`, `npm test`, `npm run build` separately. No administrator elevation or stored Windows password is required. Task registration is opt-in and replaces the task with the same name.
 
-The scheduled action launches Node directly, so it does not require changing Windows PowerShell execution policy. The optional Start-Monitor.ps1 helper is for interactive use in a host that permits scripts. The task runs at user logon, with limited privileges, ignores overlapping starts, has no execution time limit, and retries a failed process three times. Windows must be awake, online and logged in; this is not an always-on service or an exit guarantee. Restart the task after changing its environment. Configure a short comma-separated `TESTSTOCK_MONITOR_SYMBOLS` list in the launching user's environment (at most 20). Empty symbols deliberately blocks readiness.
+The scheduled action launches Node directly, so it does not require changing Windows PowerShell execution policy. The optional Start-Monitor.ps1 helper is for interactive use in a host that permits scripts. The task runs at user logon, with limited privileges, ignores overlapping starts, has no execution time limit, and retries a failed process three times. Windows must be awake, online and logged in; this is not an always-on service or an exit guarantee. Restart the task after changing its environment. Configure a short symbol list in private `monitor.json`, or comma-separated `TESTSTOCK_MONITOR_SYMBOLS` in the launching user's environment (at most 20). Empty symbols deliberately blocks readiness.
 
 ## Authentication: supported connection versus unverified standalone access
 
 Robinhood documents its official endpoint as `https://agent.robinhood.com/mcp/trading`. Connect through the supported host UI and complete Robinhood's own authentication and account onboarding. Never supply a Robinhood password, MFA code, browser cookie, or unofficial `robin_stocks` session to this repository.
 
-A connected ChatGPT/Codex tool session is **not** proof that Windows Task Scheduler has broker credentials. Its session tokens are not exported by this installer. This implementation does not scrape the host's credential store, implement OAuth onboarding/refresh, or claim unattended token renewal works. Those remain deployment blockers.
+A connected ChatGPT/Codex tool session is **not** proof that Windows Task Scheduler has broker credentials. The installer never exports host credentials. The standalone monitor now has its own OAuth authorization-code flow with PKCE S256 and state validation, using Robinhood's advertised discovery, registration and token endpoints.
 
-The optional standalone adapter accepts `ROBINHOOD_MCP_OAUTH_TOKEN` only if the operator already has a legitimately issued token supported for this client/resource. No such token was obtained or tested here. Inject it into the process through an approved secret provider; do not commit it or write it in task arguments or public files. A host credential vault/refresh bridge must be separately implemented and verified before unattended broker monitoring can be called deployed. Expired/revoked credentials yield BLOCKED; there is no automatic fallback. A blank token keeps the daemon offline and records that limitation.
+After installation, stop the monitor and verify it has exited, then run:
+
+```powershell
+node scripts/robinhood-oauth.mjs --state-dir "$env:LOCALAPPDATA\Teststock\runtime"
+```
+
+Open the printed Robinhood authorization URL in a browser on this Windows computer. Complete login, MFA and consent yourself. The loopback callback is bound only to 127.0.0.1 with a random port and a ten-minute timeout. Callback origin, path, state, duplicate parameters and optional issuer are validated. Discovery endpoints are pinned to the observed official hosts; changed metadata blocks authentication pending review.
+
+**Robinhood advertises only the broad `internal` scope. No server-enforced read-only scope has been verified.** The local client continues to deny every tool except `get_accounts` and `get_equity_quotes`; the legacy live executor remains hard-disabled. Read the broker consent screen before deciding whether to connect.
+
+Tokens are encrypted with Windows DPAPI CurrentUser in `robinhood-oauth.dpapi` within the ACL-protected runtime folder. Only the same Windows account on that machine can normally decrypt them. Secrets pass through private process pipes and are never written in task arguments, logs, source or environment variables. The monitor loads this vault on startup and refreshes shortly before access-token expiry, retaining rotated refresh tokens with an atomic encrypted write. Refresh is serialized by the single monitor lock. Revocation, refresh failure and changed metadata fail closed; sign in again when needed. An explicit environment token remains a legacy fallback only when no vault exists.
+
+Create private `monitor.json` beside the vault, for example `{"symbols":["SPY","QQQ"]}` for broad-market quote diagnostics. This is observation only. Environment `TESTSTOCK_MONITOR_SYMBOLS` overrides the file. Remove STOP only after confirming the old process exited, then start the scheduled task. Confirm a fresh status shows `brokerConnected: true`; `READ_ONLY_HEALTHY` also requires fresh executable quotes, which may be unavailable outside market hours. A successful browser callback alone does not prove broker reads or scheduled operation.
+
+To disconnect, stop the task, verify it has exited, delete only `robinhood-oauth.dpapi` from the private runtime folder, and revoke this client through Robinhood's supported account controls. Restarting without credentials reports BLOCKED. Deleting the local file does not revoke the broker grant.
+
+Verification boundaries: mock tests cover refresh rotation/revocation and callback validation; Windows tests exercise actual DPAPI round trips. A real sign-in, broker read, automatic refresh and scheduled restart must each be verified independently; the code and passing tests alone do not establish them.
 
 Sources checked October 16, 2026:
 - [Robinhood external-agent onboarding](https://robinhood.com/us/en/support/articles/agentic-trading-overview/)
