@@ -1,4 +1,6 @@
 import fs from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {evaluateResearchTrade,rankStrategyResults,STRATEGIES} from './strategy-library.mjs';
 export function backtest(bars,{strategyId,initialCash=1000,allocation=0.1,feePerTrade=0,slippageBps=10,stopPct=.02,targetPct=.04}={}){
  if(!STRATEGIES.some(s=>s.id===strategyId))throw new Error('UNKNOWN_STRATEGY');
@@ -30,7 +32,7 @@ export function backtest(bars,{strategyId,initialCash=1000,allocation=0.1,feePer
  return {strategyId,trades:trades.length,wins,grossProfit,grossLoss,fees,slippage,netProfit:cash-initialCash,maxDrawdownPct,initialCash,endingCash:cash,openPosition:position!==null,tradeLog:trades,outOfSample:false};
 }
 export function walkForward(bars,options){const split=Math.floor(bars.length*.7);if(split<40||bars.length-split<40)throw new Error('AT_LEAST_134_BARS_FOR_WALK_FORWARD');const train=backtest(bars.slice(0,split),options),test=backtest(bars.slice(split),options);return {train,test:{...test,outOfSample:true},ranking:rankStrategyResults([{...test,outOfSample:true}])[0]};}
-if(process.argv[1]?.endsWith('strategy-backtester.mjs')){
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const file=process.argv[2];if(!file)throw new Error('Usage: node scripts/strategy-backtester.mjs historical-bars.json');
  const bars=JSON.parse(await fs.readFile(file,'utf8'));const output=STRATEGIES.filter(s=>s.id!=='liquid-long-options').map(s=>{try{return walkForward(bars,{strategyId:s.id})}catch(e){return {strategyId:s.id,error:e.message}}});console.log(JSON.stringify({source:file,results:output},null,2));
 }
