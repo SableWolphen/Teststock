@@ -6,6 +6,7 @@ import {vault, accessToken} from './robinhood-oauth.mjs';
 import {collectReadOnlySnapshot} from './monitor-reconciliation.mjs';
 import {probeStoredAlpaca} from './alpaca-data-client.mjs';
 import {acquireMonitorLock} from './monitor-lock.mjs';
+import {selectStockQuotes,readAlpacaQuotes} from './stock-quote-fallback.mjs';
 
 export const READ_TOOLS = Object.freeze(['get_accounts', 'get_equity_quotes', 'get_equity_positions', 'get_option_positions', 'get_equity_orders', 'get_option_orders', 'get_crypto_positions', 'get_crypto_orders']);
 export class ReadOnlyMcp {
@@ -87,9 +88,10 @@ function unpack(result) {
   for(const part of result?.content||[]) if(part.type==='text') { try { return JSON.parse(part.text); } catch {} }
   throw new Error('UNSUPPORTED_MCP_SCHEMA');
 }
-export async function cycle({root,client,symbols=[],now}) {
+export async function cycle({root,client,symbols=[],now,fallbackReader=readAlpacaQuotes}) {
   const at=new Date(now??Date.now()).toISOString();
   const status={at,mode:'read-only',liveEnabled:false,brokerConnected:false,quoteCount:0,blockers:[]};
+  let primaryQuotes=[];
   if(!client) status.blockers.push('AUTHENTICATION_NOT_CONFIGURED');
   else {
     try {
@@ -108,6 +110,7 @@ export async function cycle({root,client,symbols=[],now}) {
         const payload=unpack(await client.call('get_equity_quotes',{symbols}));
         const quotes=(payload.data?.results||payload.results)?.map(row=>row?.quote).filter(Boolean);
         if(!Array.isArray(quotes)) throw new Error('UNSUPPORTED_MCP_SCHEMA');
+        primaryQuotes=quotes.filter(q=>!quoteGuard(q,now??Date.now())).map(q=>({symbol:q.symbol,bid:q.bid_price,ask:q.ask_price,bidAt:q.venue_bid_time,askAt:q.venue_ask_time}));
         for(const symbol of symbols) {
           const quote=quotes.find(q=>q.symbol===symbol);
           const reason=quoteGuard(quote,now??Date.now());
@@ -121,6 +124,9 @@ export async function cycle({root,client,symbols=[],now}) {
       status.blockers.push(/^MCP_HTTP_\d+$/.test(error.message)?error.message:'BROKER_READ_FAILED');
     }
   }
+  const marketData=await selectStockQuotes({symbols,primary:async()=>primaryQuotes,secondary:needed=>fallbackReader(root,needed),now});
+  status.marketData={complete:marketData.complete,quoteCount:marketData.quotes.length,sources:[...new Set(marketData.quotes.map(q=>q.source))],missing:marketData.missing,attempts:marketData.attempts,executionAuthorized:false,scope:'MONITORING_QUOTES_ONLY'};
+  // Backup pricing never clears broker authentication/reconciliation/primary-quote blockers.
   status.health=status.blockers.length?'BLOCKED':'READ_ONLY_HEALTHY';
   status.entryData=await probeStoredAlpaca(root);
   status.tradingReady=false;
