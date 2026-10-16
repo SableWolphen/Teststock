@@ -80,8 +80,8 @@ function unpack(result) {
   for(const part of result?.content||[]) if(part.type==='text') { try { return JSON.parse(part.text); } catch {} }
   throw new Error('UNSUPPORTED_MCP_SCHEMA');
 }
-export async function cycle({root,client,symbols=[],now=Date.now()}) {
-  const at=new Date(now).toISOString();
+export async function cycle({root,client,symbols=[],now}) {
+  const at=new Date(now??Date.now()).toISOString();
   const status={at,mode:'read-only',liveEnabled:false,brokerConnected:false,quoteCount:0,blockers:[]};
   if(!client) status.blockers.push('AUTHENTICATION_NOT_CONFIGURED');
   else {
@@ -96,7 +96,7 @@ export async function cycle({root,client,symbols=[],now=Date.now()}) {
         if(!Array.isArray(quotes)) throw new Error('UNSUPPORTED_MCP_SCHEMA');
         for(const symbol of symbols) {
           const quote=quotes.find(q=>q.symbol===symbol);
-          const reason=quoteGuard(quote,now);
+          const reason=quoteGuard(quote,now??Date.now());
           if(reason) status.blockers.push(`${symbol}:${reason}`); else status.quoteCount++;
         }
       }

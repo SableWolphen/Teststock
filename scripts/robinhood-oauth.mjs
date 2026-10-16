@@ -46,10 +46,10 @@ export function mergeTokens(response,previous,now=Date.now()) {
   if(typeof response.access_token!=='string'||!response.access_token||String(response.token_type).toLowerCase()!=='bearer'||!Number.isFinite(Number(response.expires_in))||Number(response.expires_in)<=0) throw new Error('OAUTH_INVALID_TOKEN_RESPONSE');
   return {...previous,access_token:response.access_token,refresh_token:response.refresh_token||previous.refresh_token,expires_at:now+Number(response.expires_in)*1000};
 }
-export async function accessToken(store,{transport=fetch,now=Date.now()}={}) {
+export async function accessToken(store,{transport=fetch,now=Date.now(),forceRefresh=false}={}) {
   const current=store.load();
   if(typeof current.access_token!=='string'||!Number.isFinite(current.expires_at)||typeof current.client_id!=='string') throw new Error('OAUTH_INVALID_VAULT');
-  if(current.expires_at>now+60000) return current.access_token;
+  if(!forceRefresh&&current.expires_at>now+60000) return current.access_token;
   if(!current.refresh_token) throw new Error('OAUTH_SIGN_IN_REQUIRED');
   await discover(transport);
   const response=await jsonRequest(ENDPOINTS.token_endpoint,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'refresh_token',refresh_token:current.refresh_token,client_id:current.client_id,resource:RESOURCE})},transport);

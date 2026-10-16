@@ -20,8 +20,8 @@ test('callback binds state, loopback origin, exact path, issuer and one code',()
 });
 test('rotating refresh token is saved before returning access token',async()=>{
  const now=100000;let saved;let calls=0;
- const store={load:()=>({client_id:'client',refresh_token:'old-refresh',access_token:'expired',expires_at:0}),save:v=>{saved=v;}};
- const token=await accessToken(store,{now,transport:async(url,options)=>{
+ const store={load:()=>({client_id:'client',refresh_token:'old-refresh',access_token:'expired',expires_at:999999}),save:v=>{saved=v;}};
+ const token=await accessToken(store,{now,forceRefresh:true,transport:async(url,options)=>{
   calls++;
   if(url.includes('.well-known')) return Response.json(metadata);
   assert.equal(options.redirect,'error');assert.equal(options.body.get('refresh_token'),'old-refresh');assert.equal(options.body.get('resource'),RESOURCE);
