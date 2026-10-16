@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import {SAFETY_POLICY} from './safety-policy.mjs';
 
 const requiredFiles=[
   '.openai-mcp.json','scripts/run-live-intraday-cycle.sh','scripts/run-background-learning.sh',
@@ -24,6 +25,7 @@ const failures=[];
 const mode=String(process.env.TESTSTOCK_EXECUTION_MODE||'paper').toLowerCase();
 if(!['paper','live'].includes(mode))failures.push('TESTSTOCK_EXECUTION_MODE must be paper or live');
 if(mode==='live'){
+  if(!SAFETY_POLICY.liveExecutionEnabled)failures.push('canonical live deployment lock is active; credentials and environment flags cannot unlock it');
   if(process.env.TESTSTOCK_LIVE_TRADING!=='I_UNDERSTAND_REAL_ORDERS')failures.push('live mode requires explicit TESTSTOCK_LIVE_TRADING sentinel');
   if(!process.env.OPENAI_API_KEY)failures.push('live mode requires OPENAI_API_KEY');
   if(!process.env.ROBINHOOD_MCP_OAUTH_TOKEN)failures.push('live mode requires ROBINHOOD_MCP_OAUTH_TOKEN');

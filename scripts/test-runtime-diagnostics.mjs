@@ -44,3 +44,8 @@ test('executor failure evidence survives and public logs exclude raw account det
    assert.equal(meta.brokerOutcome,'UNVERIFIED');
  }
 });
+
+test('runtime prerequisite live flags and dummy credentials cannot unlock real orders',()=>{
+ const result=spawnSync(process.execPath,['scripts/verify-runtime-prerequisites.mjs'],{encoding:'utf8',env:{...process.env,TESTSTOCK_EXECUTION_MODE:'live',TESTSTOCK_LIVE_TRADING:'I_UNDERSTAND_REAL_ORDERS',OPENAI_API_KEY:'synthetic-fixture-only',ROBINHOOD_MCP_OAUTH_TOKEN:'synthetic-fixture-only'}});
+ assert.equal(result.status,1);assert.match(result.stderr,/canonical live deployment lock/);
+});

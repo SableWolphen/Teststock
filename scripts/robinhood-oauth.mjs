@@ -28,8 +28,9 @@ function dpapi(value,decrypt=false) {
   try { return execFileSync(exe,['-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(code,'utf16le').toString('base64')],{input:value,encoding:'utf8',windowsHide:true,stdio:['pipe','pipe','pipe'],timeout:15000}).trim(); }
   catch { throw new Error('WINDOWS_VAULT_FAILED'); }
 }
-export function vault(root,{protect=v=>dpapi(v),unprotect=v=>dpapi(v,true)}={}) {
-  const file=path.join(root,'robinhood-oauth.dpapi');
+export function vault(root,{protect=v=>dpapi(v),unprotect=v=>dpapi(v,true),filename='robinhood-oauth.dpapi'}={}) {
+  if(!['robinhood-oauth.dpapi','alpaca-data.dpapi'].includes(filename)) throw new Error('INVALID_VAULT_NAME');
+  const file=path.join(root,filename);
   return {
     exists:()=>fs.existsSync(file),
     load:()=>JSON.parse(unprotect(fs.readFileSync(file,'utf8'))),

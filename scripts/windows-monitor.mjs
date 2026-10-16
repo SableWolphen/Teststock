@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {vault, accessToken} from './robinhood-oauth.mjs';
 import {collectReadOnlySnapshot} from './monitor-reconciliation.mjs';
+import {probeStoredAlpaca} from './alpaca-data-client.mjs';
 
 export const READ_TOOLS = Object.freeze(['get_accounts', 'get_equity_quotes', 'get_equity_positions', 'get_option_positions', 'get_equity_orders', 'get_option_orders']);
 export class ReadOnlyMcp {
@@ -118,6 +119,8 @@ export async function cycle({root,client,symbols=[],now}) {
     }
   }
   status.health=status.blockers.length?'BLOCKED':'READ_ONLY_HEALTHY';
+  status.entryData=await probeStoredAlpaca(root);
+  status.tradingReady=false;
   fs.mkdirSync(root,{recursive:true});
   const log=path.join(root,`monitor-${at.slice(0,10)}.jsonl`);
   const fd=fs.openSync(log,'a',0o600);
