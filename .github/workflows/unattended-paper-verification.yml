@@ -1,0 +1,31 @@
+name: Teststock unattended paper verification
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/15 13-21 * * 1-5'
+permissions:
+  contents: read
+concurrency:
+  group: teststock-paper-verification
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run safety regression suite
+        run: npm test
+      - name: Validate production build
+        run: |
+          npm ci
+          npm run build
+      - name: Evaluate paper-only dispatch
+        env:
+          TESTSTOCK_EXECUTION_MODE: paper
+        run: node scripts/chatgpt-executor.mjs
+# No broker credentials, write tools, or live mode are used by this workflow.
+# GitHub schedules only execute from the repository's default branch after merge.
