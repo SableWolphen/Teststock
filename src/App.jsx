@@ -31,6 +31,9 @@ export default function App(){
   const [data,setData]=useState(demo),[budget,setBudget]=useState(()=>loadLocal('ts-budget',200));
   const [mode,setMode]=useState(()=>loadLocal('ts-mode','aggressive')),[tab,setTab]=useState('today');
   const [loading,setLoading]=useState(false),[error,setError]=useState('');
+  const [lastRefresh,setLastRefresh]=useState(null);
+  const [autoRefresh,setAutoRefresh]=useState(true);
+  const [refreshTick,setRefreshTick]=useState(0);
   const [paper,setPaper]=useState(()=>loadLocal('ts-paper',[]));
   const [account,setAccount]=useState(()=>loadLocal('ts-account',{value:76.21,monthly:0,goal:100000000}));
   const [optionBudget,setOptionBudget]=useState(()=>loadLocal('ts-option-budget',25));
@@ -48,10 +51,12 @@ export default function App(){
 
   const scan=async()=>{
     setLoading(true);setError('');
-    try{const r=await fetch(`/api/picks?budget=${budget}&mode=${mode}`);const j=await r.json();if(!r.ok)throw new Error(j.error||`API ${r.status}`);setData(j)}
+    try{const r=await fetch(`/api/picks?budget=${budget}&mode=${mode}&_=${Date.now()}`,{cache:'no-store'});const j=await r.json();if(!r.ok)throw new Error(j.error||`API ${r.status}`);setData(j);setLastRefresh(new Date().toISOString())}
     catch(e){setData({...demo,budget,mode});setError(`${e.message}. Showing demo data until the live backend is configured.`)}finally{setLoading(false)}
   };
   useEffect(()=>{scan()},[]);
+  useEffect(()=>{if(!autoRefresh)return;const refresh=()=>{setRefreshTick(v=>v+1);if(document.visibilityState==='visible')scan()};const id=setInterval(refresh,60000);document.addEventListener('visibilitychange',refresh);return()=>{clearInterval(id);document.removeEventListener('visibilitychange',refresh)}},[autoRefresh,budget,mode]);
+  const dashboardFreshness=lastRefresh?Math.round((Date.now()-Date.parse(lastRefresh))/60000):null;
   const p=data.featured||demo.featured,o=p.option,action=data.action||'WATCH',fits=!o||o.maxRisk<=budget;
   const optionLetter=o?.side==='PUT'?'P':'C';
   const optionId=o?`${p.symbol}-${o.expiry}-${o.longStrike}-${o.shortStrike||'LONG'}-${o.side}`:'';
