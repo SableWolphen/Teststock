@@ -14,13 +14,14 @@ export class ReadOnlyMcp {
   async rpc(method, params) {
     if(!['initialize','notifications/initialized','tools/list','tools/call'].includes(method)||
        (method==='tools/call'&&!READ_TOOLS.includes(params?.name))) throw new Error('READ_ONLY_TOOL_DENIED');
+    const requestId=method.startsWith('notifications/')?undefined:++this.id;
     const headers={'Content-Type':'application/json',Accept:'application/json, text/event-stream'};
     const token=this.tokenProvider?await this.tokenProvider():this.token;
     if(token) headers.Authorization=`Bearer ${token}`;
     if(this.session) headers['Mcp-Session-Id']=this.session;
     if(this.version) headers['MCP-Protocol-Version']=this.version;
     const response=await this.transport('https://agent.robinhood.com/mcp/trading',{
-      method:'POST',headers,body:JSON.stringify({jsonrpc:'2.0',...(method.startsWith('notifications/')?{}:{id:++this.id}),method,params}),signal:AbortSignal.timeout(20000),redirect:'error'
+      method:'POST',headers,body:JSON.stringify({jsonrpc:'2.0',...(method.startsWith('notifications/')?{}:{id:requestId}),method,params}),signal:AbortSignal.timeout(20000),redirect:'error'
     });
     if(!response.ok) throw new Error(`MCP_HTTP_${response.status}`);
     this.session=response.headers.get('mcp-session-id')||this.session;
@@ -31,16 +32,17 @@ export class ReadOnlyMcp {
       const reader=response.body.getReader(); const decoder=new TextDecoder(); let buffer='';
       try { while(!message) {
         const {value,done}=await reader.read(); if(done) break;
-        buffer+=decoder.decode(value,{stream:true}); buffer=buffer.replace(/\r\n/g,'\n');
+        buffer+=decoder.decode(value,{stream:true});
+        if(buffer.length>1024*1024)throw new Error('MCP_RESPONSE_TOO_LARGE'); buffer=buffer.replace(/\r\n/g,'\n');
         let end;
         while((end=buffer.indexOf('\n\n'))>=0) {
           const frame=buffer.slice(0,end); buffer=buffer.slice(end+2);
           const data=frame.split('\n').filter(l=>l.startsWith('data:')).map(l=>l.slice(5).trimStart()).join('\n');
-          if(data) { const candidate=JSON.parse(data); if(candidate.id===this.id) message=candidate; }
+          if(data) { const candidate=JSON.parse(data); if(candidate.id===requestId) message=candidate; }
         }
       }} finally { await reader.cancel(); }
     } else message=await response.json();
-    if(!message||message.id!==this.id||message.error) throw new Error('MCP_PROTOCOL_ERROR');
+    if(!message||message.jsonrpc!=='2.0'||message.id!==requestId||message.error||!Object.hasOwn(message,'result')) throw new Error('MCP_PROTOCOL_ERROR');
     return message.result;
   }
   async connect() {

@@ -139,6 +139,12 @@ Install the independent local watchdog with `./scripts/windows/Install-Watchdog.
 
 These are **local-file alerts only**. Notification delivery to the user and user receipt are unverified; there is no email/SMS/push integration. A healthy watchdog, a passing fixture crash test or a recovered monitor never authorizes a broker order or clears strategy/protection gates.
 
+
+### Watchdog recovery and source freshness
+
+Reinstall the watchdog after this update: `./scripts/windows/Install-Watchdog.ps1`. The installer copies both `monitor-watchdog.mjs` and its `monitor-lock.mjs` dependency to private runtime tools. The watchdog now archives a dead process lock only after checking that its PID is absent. A live/reused PID, malformed owner or recovery guard still blocks startup for operator inspection. Local tests prove recovery for a terminated fixture process; they do not certify production restart behavior.
+
+A fresh `status.json.at` no longer masks old underlying reads. Successful broker reconciliation must carry `reconciliation.at`, and successful Alpaca data probes must carry `entryData.verifiedAt`, both within 120 seconds and no more than two seconds ahead. Success flags must be booleans. Persisted incident codes must be from the fixed local allowlist; unknown codes generate `WATCHDOG_STATE_INVALID` without copying their content to alerts. Alerts remain local files with unverified delivery. The canonical live deployment lock and monitoring-only transport are unchanged.
 ### Automatic monitoring quote fallback
 
 For each configured stock, use a fresh valid Robinhood quote first. Missing or invalid primary quotes trigger a fixed read-only Alpaca latest-quotes request with the separate encrypted paper credentials and explicit IEX feed. Only missing symbols are requested. Keep source identity per quote; reject crossed, missing, duplicate, future or older-than-30-second quotes from either source. Unavailable backups remain unavailable; there is no stale-cache substitution. Status reports this separately as `marketData`, with `scope: MONITORING_QUOTES_ONLY` and `executionAuthorized: false`.

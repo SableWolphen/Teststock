@@ -30,6 +30,23 @@ test('SSE responses work without waiting for server close',async()=>{
  const client=new ReadOnlyMcp({transport:async()=>new Response('data: {"jsonrpc":"2.0","id":1,"result":{"ok":true}}\n\n',{headers:{'content-type':'text/event-stream'}})});
  assert.deepEqual(await client.call('get_accounts'),{ok:true});
 });
+
+test('overlapping MCP reads match each response to its own request id',async()=>{
+ const client=new ReadOnlyMcp({transport:async(url,options)=>{
+  const request=JSON.parse(options.body);
+  await new Promise(resolve=>setTimeout(resolve,request.id===1?15:1));
+  return Response.json({jsonrpc:'2.0',id:request.id,result:{name:request.params.name}});
+ }});
+ const results=await Promise.all([client.call('get_accounts'),client.call('get_equity_positions')]);
+ assert.deepEqual(results,[{name:'get_accounts'},{name:'get_equity_positions'}]);
+});
+
+test('malformed JSON-RPC and oversized unfinished SSE frames fail closed',async()=>{
+ const invalid=new ReadOnlyMcp({transport:async()=>Response.json({id:1,result:{}})});
+ await assert.rejects(invalid.call('get_accounts'),/MCP_PROTOCOL_ERROR/);
+ const oversized=new ReadOnlyMcp({transport:async()=>new Response('data: '+'x'.repeat(1024*1024),{headers:{'content-type':'text/event-stream'}})});
+ await assert.rejects(oversized.call('get_accounts'),/MCP_RESPONSE_TOO_LARGE/);
+});
 test('intent deduplication survives restart and concurrent processes',t=>{
  const root=temp(t);const id=claimIntent(root,'same');assert.ok(id);assert.equal(claimIntent(root,'same'),null);
  const child=spawnSync(process.execPath,['--input-type=module','-e',`import {claimIntent} from './scripts/windows-monitor.mjs'; console.log(claimIntent(process.argv[1],'same'));`,root],{encoding:'utf8'});
