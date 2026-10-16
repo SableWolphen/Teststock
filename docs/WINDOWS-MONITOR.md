@@ -15,7 +15,7 @@ Get-Content "$env:LOCALAPPDATA\Teststock\runtime\status.json"
 
 The first command performs an offline one-shot smoke check; missing authentication reports BLOCKED as expected. Installation does not install dependencies or change your PowerShell execution policy. The monitor uses only Node built-ins. For the web app, install Node with npm, then run `npm ci`, `npm test`, `npm run build` separately. No administrator elevation or stored Windows password is required. Task registration is opt-in and replaces the task with the same name.
 
-The task runs at user logon, with limited privileges, ignores overlapping starts, has no execution time limit, and retries a failed process three times. Windows must be awake, online and logged in; this is not an always-on service or an exit guarantee. Restart the task after changing its environment. Configure a short comma-separated `TESTSTOCK_MONITOR_SYMBOLS` list in the launching user's environment (at most 20). Empty symbols deliberately blocks readiness.
+The scheduled action launches Node directly, so it does not require changing Windows PowerShell execution policy. The optional Start-Monitor.ps1 helper is for interactive use in a host that permits scripts. The task runs at user logon, with limited privileges, ignores overlapping starts, has no execution time limit, and retries a failed process three times. Windows must be awake, online and logged in; this is not an always-on service or an exit guarantee. Restart the task after changing its environment. Configure a short comma-separated `TESTSTOCK_MONITOR_SYMBOLS` list in the launching user's environment (at most 20). Empty symbols deliberately blocks readiness.
 
 ## Authentication: supported connection versus unverified standalone access
 
@@ -53,3 +53,4 @@ Live implementation requires a separate reviewed code change. Before that change
 6. Explicit user authorization for the exact account, asset classes, risk limits and entry/exit behavior, satisfying current broker tool requirements. Do not infer that old repository statements verify this user's current permission.
 
 No real-money order was placed to validate any of these gates. Historical README live flags and execution prompts do not override this hard lock.
+

@@ -113,7 +113,8 @@ export async function cycle({root,client,symbols=[],now=Date.now()}) {
   return status;
 }
 async function main() {
-  const root=process.env.TESTSTOCK_RUNTIME_STATE_DIR;
+  const stateIndex=process.argv.indexOf('--state-dir');
+  const root=stateIndex>=0?process.argv[stateIndex+1]:process.env.TESTSTOCK_RUNTIME_STATE_DIR;
   if(!root||!path.isAbsolute(root)) throw new Error('Set an absolute private TESTSTOCK_RUNTIME_STATE_DIR');
   fs.mkdirSync(root,{recursive:true});
   const lock=path.join(root,'monitor.lock');
@@ -134,4 +135,5 @@ async function main() {
   } while(!stopped); } finally { fs.unlinkSync(lock); }
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) main().catch(()=>{process.stderr.write('MONITOR_FAILED: inspect private state and configuration\n');process.exitCode=1;});
+
 
