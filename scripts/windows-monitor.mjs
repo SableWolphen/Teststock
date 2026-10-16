@@ -3,12 +3,13 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {vault, accessToken} from './robinhood-oauth.mjs';
+import {collectReadOnlySnapshot} from './monitor-reconciliation.mjs';
 
-export const READ_TOOLS = Object.freeze(['get_accounts', 'get_equity_quotes']);
+export const READ_TOOLS = Object.freeze(['get_accounts', 'get_equity_quotes', 'get_equity_positions', 'get_option_positions', 'get_equity_orders', 'get_option_orders']);
 export class ReadOnlyMcp {
   constructor({token, tokenProvider, transport=fetch}) { this.token=token; this.tokenProvider=tokenProvider; this.transport=transport; this.id=0; }
   async rpc(method, params) {
-    if(!['initialize','notifications/initialized','tools/call'].includes(method)||
+    if(!['initialize','notifications/initialized','tools/list','tools/call'].includes(method)||
        (method==='tools/call'&&!READ_TOOLS.includes(params?.name))) throw new Error('READ_ONLY_TOOL_DENIED');
     const headers={'Content-Type':'application/json',Accept:'application/json, text/event-stream'};
     const token=this.tokenProvider?await this.tokenProvider():this.token;
@@ -91,6 +92,13 @@ export async function cycle({root,client,symbols=[],now}) {
       if(!client.version) await client.connect();
       await client.call('get_accounts');
       status.brokerConnected=true;
+      let previous;
+      try { previous=JSON.parse(fs.readFileSync(path.join(root,'broker-reconciliation.json'),'utf8')); }
+      catch(error) { if(error.code!=='ENOENT') throw error; }
+      const snapshot=await collectReadOnlySnapshot(client,{accountFingerprint:previous?.accountFingerprint});
+      fs.mkdirSync(root,{recursive:true});
+      atomicJson(path.join(root,'broker-reconciliation.json'),snapshot);
+      status.reconciliation={at:snapshot.generatedAt,positionsReadComplete:true,orderHistoryReadComplete:true,allAssetReconciliationComplete:false,positionCount:snapshot.managedPositions.length,orderCount:snapshot.orders.length,fillCount:snapshot.fills.length,workingOrderCount:snapshot.orders.filter(o=>o.working).length,blockers:snapshot.blockers};
       if(!symbols.length) status.blockers.push('NO_SYMBOLS_CONFIGURED');
       else {
         const payload=unpack(await client.call('get_equity_quotes',{symbols}));
@@ -104,6 +112,7 @@ export async function cycle({root,client,symbols=[],now}) {
       }
     } catch(error) {
       status.brokerConnected=false;
+      status.reconciliation={positionsReadComplete:false,orderHistoryReadComplete:false,allAssetReconciliationComplete:false};
       // Never persist upstream bodies, credentials, account numbers or exception text.
       status.blockers.push(/^MCP_HTTP_\d+$/.test(error.message)?error.message:'BROKER_READ_FAILED');
     }

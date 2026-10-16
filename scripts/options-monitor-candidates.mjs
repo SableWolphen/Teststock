@@ -1,3 +1,4 @@
+import {SAFETY_POLICY, earnedAdmission} from './safety-policy.mjs';
 // Pure, testable enforcement of probability-first-policy.json's options.seedLane -- the named
 // options execution lane added 2026-09-25. This module decides whether a specific candidate
 // contract WOULD be executable; it does not itself call Robinhood or the dispatch builder.
@@ -5,7 +6,7 @@
 // crypto-monitor-candidates.mjs / test-crypto-monitoring.mjs.
 //
 // build-execution-dispatch.mjs evaluates independently qualified option candidates from the fresh options scan.
-// Live option risk normally requires earned admission. An explicit user-authorized cash-only bootstrap may allow SHADOW_ONLY candidates, but LIVE_SUSPENDED always remains blocked and every live Robinhood guard still applies.
+// Live option risk normally requires earned admission. Bootstrap overrides are disabled; SHADOW_ONLY and LIVE_SUSPENDED always remain blocked.
 
 export function evaluateOptionsSeedLaneCandidate({
   candidate,
@@ -32,12 +33,12 @@ export function evaluateOptionsSeedLaneCandidate({
   const bootstrapStates=Array.isArray(seedPolicy.bootstrapAllowedAdmissionStates)&&seedPolicy.bootstrapAllowedAdmissionStates.length
     ? seedPolicy.bootstrapAllowedAdmissionStates
     : ['SHADOW_ONLY'];
-  const bootstrapAllowed=seedPolicy.userAuthorizedLiveCashBootstrap===true&&bootstrapStates.includes(admissionState);
+  const bootstrapAllowed=false;
   if(admissionState==='LIVE_SUSPENDED'){
     return {status:'BLOCKED_ADMISSION',reason:'Options profitability admission state is LIVE_SUSPENDED; live risk is blocked even under the user-authorized cash bootstrap.',admissionState};
   }
-  if(!requiredStates.includes(admissionState)&&!bootstrapAllowed){
-    return {status:'BLOCKED_ADMISSION',reason:`Options profitability admission state is ${admissionState}; requires one of ${requiredStates.join('/')} or an explicitly authorized cash-only bootstrap state.`,admissionState};
+  if(!earnedAdmission(admissionState)||!requiredStates.includes(admissionState)){
+    return {status:'BLOCKED_ADMISSION',reason:`Options profitability admission state is ${admissionState}; requires one of ${requiredStates.join('/')} with no bootstrap bypass.`,admissionState};
   }
   if(lastLiveTradeOutcome==='LOSS'&&seedPolicy.resetGateAfterLiveLoss){
     return {status:'BLOCKED_LOSS_RESET',reason:'The last live options trade was a loss; the gate requires a fresh independent positive shadow sample before the next live entry, not just staying above the admission threshold.'};

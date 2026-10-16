@@ -33,27 +33,17 @@ async function fixture({stale=false}={}){
   return JSON.parse(await fs.readFile(outPath,'utf8'));
 }
 
-test('LIVE_MICRO_BOOTSTRAP publishes one cash-affordable XND broker-resolution request',async()=>{
+test('legacy LIVE_MICRO_BOOTSTRAP flags cannot publish an execution request',async()=>{
   const out=await fixture();
-  assert.equal(out.chatgptShouldRun,true);
-  assert.equal(out.executionNeeded,true);
-  assert.equal(out.indexOptionsLane.status,'LIVE_MICRO_BOOTSTRAP');
-  assert.equal(out.indexOptionsLane.resolutionRequestPublished,true);
-  assert.equal(out.indexOptionResolutionRequests.length,1);
-  const x=out.indexOptionResolutionRequests[0];
-  assert.equal(x.ticker,'XND');
-  assert.equal(x.trigger,'INDEX_OPTION_RESOLUTION_REQUEST');
-  assert.equal(x.maxOrderUsd,null);
-  assert.equal(x.affordabilityMode,'LIVE_UNLEVERAGED_CASH');
-  assert.equal(x.maxNewPositionsPerNyDay,1);
-  assert.equal(x.maxConcurrentPositions,1);
-  assert.deepEqual(x.allowedKinds,['LONG_CALL']);
-  assert.equal(x.brokerContractResolutionRequired,true);
+  assert.equal(out.chatgptShouldRun,false);
+  assert.equal(out.executionNeeded,false);
+  assert.equal(out.indexOptionsLane.resolutionRequestPublished,false);
+  assert.deepEqual(out.indexOptionResolutionRequests,[]);
 });
 
 test('stale index research cannot wake live bootstrap execution',async()=>{
   const out=await fixture({stale:true});
-  assert.equal(out.indexOptionsLane.status,'STALE_RESEARCH');
+  assert.equal(out.indexOptionsLane.researchFresh,false);
   assert.equal(out.indexOptionResolutionRequests.length,0);
   assert.equal(out.chatgptShouldRun,false);
 });

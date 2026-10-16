@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-16T01:19:01.006Z",
+  "generatedAt": "2026-10-16T12:24:33.300Z",
   "state": "SHADOW_ONLY",
   "sizeMultiplier": 0,
   "reason": "Options pattern has not yet proven positive shadow expectancy; zero or unknown forward evidence is never a pass. No live option order is authorized in this state.",
   "executionAuthorized": false,
-  "executionAuthorizedNote": "Execution authorization is earned only after the shadow evidence state reaches MICRO_PROBATION, PROBATION, or LIVE_ADMITTED. SHADOW_ONLY and LIVE_SUSPENDED remain blocked. The separate options policy and live broker rechecks still remain mandatory.",
+  "executionAuthorizedNote": "Evidence eligibility is earned only after the shadow evidence state reaches MICRO_PROBATION, PROBATION, or LIVE_ADMITTED. SHADOW_ONLY and LIVE_SUSPENDED remain blocked. The canonical live lock, separate options policy and live broker rechecks remain mandatory.",
   "shadow": {
     "samples": 6,
     "distinctTradingDays": 4,
@@ -23,13 +23,13 @@
     "source": "options-real-trade-journal.json"
   },
   "thresholds": {
-    "minimumIndependentShadowSamplesForMicro": 15,
-    "minimumIndependentShadowSamples": 60,
-    "minimumDistinctTradingDaysForMicro": 5,
-    "minimumDistinctTradingDays": 15,
+    "minimumIndependentShadowSamplesForMicro": 50,
+    "minimumIndependentShadowSamples": 100,
+    "minimumDistinctTradingDaysForMicro": 20,
+    "minimumDistinctTradingDays": 30,
     "minimumShadowWinRatePct": 48,
     "minimumShadowAverageR": 0.03,
-    "minimumShadowProfitFactor": 1.1,
+    "minimumShadowProfitFactor": 1.3,
     "microSizeMultiplier": 0.25,
     "probationSizeMultiplier": 0.5,
     "minimumRealResolvedForFullAdmission": 10,
@@ -38,9 +38,9 @@
     "minimumRealSamplesForSuspensionCheck": 3
   },
   "rules": [
-    "At least 15 independent outcomes across 5 trading days, with positive after-spread expectancy and profit factor of at least 1.10, are required before micro probation.",
+    "At least 50 independent outcomes across 20 trading days, with positive after-spread expectancy and profit factor of at least 1.30, are required before micro probation.",
     "Full admission still requires the real-fill thresholds already declared in probability-first-policy.json's options section, unchanged by this file.",
     "This overlay can only reduce or block size; it can never raise it above whatever a future execution-lane policy declares.",
-    "executionAuthorized becomes true only for an earned admission state; the separate options execution policy and live broker rechecks remain mandatory."
+    "executionAuthorized remains false while the canonical live-execution lock is active; the separate options execution policy and live broker rechecks remain mandatory."
   ]
 }

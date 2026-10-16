@@ -4,6 +4,10 @@ Teststock is an intelligence and monitoring system only. GitHub gathers and anal
 
 OpenAI executor is the sole broker execution layer. OpenAI executor reads Teststock as decision support, independently reconciles live Robinhood account/position/order state, obeys every Robinhood tool review/confirmation requirement, submits permitted stock/option buys and sells, verifies fills, and reconciles resulting state. A Teststock packet is never itself a broker order or proof of execution.
 
+## Current execution authority
+
+`scripts/safety-policy.mjs` is the canonical admission floor and deployment lock. Live execution and all bootstrap overrides are disabled. Historical authorization, generated flags and evidence tiers cannot override this lock. Stock micro admission requires 100 independent outcomes over 20 days and profit factor >=1.25; options and index-option micro admission require 50 exact-lane outcomes over 20 days and profit factor >=1.30.
+
 ## Operating mode
 
 ## Automated execution mode
@@ -59,11 +63,11 @@ Robinhood is authoritative for live buying power, positions, orders, fills, and 
 
 ## Options
 
-Options remain separate from stock automation. Earned stock/ETF option admission remains preferred, but the user has explicitly authorized a cash-only live bootstrap from `SHADOW_ONLY` when the generated option policy enables it. `LIVE_SUSPENDED` remains blocked. XND/DJX separately support `LIVE_MICRO_BOOTSTRAP`. All live option entries still require exact Robinhood contract/quote, <=10% spread, real volume/open interest, tradability, whole-contract cash affordability, and same-session exit.
+- Live bootstrap overrides are disabled. Earned admission is evidence only; the canonical live-execution lock and every broker safety gate remain mandatory.
 
 - `docs/data/small-account-options.json` is the research scan; `docs/data/options-shadow-trades.json` and `docs/data/options-profitability-admission.json` provide evidence before live capital is allowed.
-- The live lane is wired into `build-execution-dispatch.mjs` as `OPTION_SEED_LANE_BUY_TRIGGER`. `LIVE_SUSPENDED` remains blocked. `SHADOW_ONLY` may publish a candidate only when the current generated policy explicitly enables `userAuthorizedLiveCashBootstrap`; otherwise earned admission is still required.
-- When the user-authorized cash bootstrap is active, or admission reaches `MICRO_PROBATION`, `PROBATION`, or `LIVE_ADMITTED`, the lane may automatically submit one whole long call/put contract that passes every live OpenAI executor/Robinhood check. There is no fixed repository dollar premium cap under the bootstrap: fresh available cash/unleveraged buying power in the dedicated account is the hard affordability ceiling. Existing broker options are adopted into the managed profile and counted against cash/concurrency/duplicate limits.
+- Live bootstrap overrides are disabled. Earned admission is evidence only; the canonical live-execution lock and every broker safety gate remain mandatory.
+- Live bootstrap overrides are disabled. Earned admission is evidence only; the canonical live-execution lock and every broker safety gate remain mandatory.
 - Options use existing dedicated Robinhood Agentic account funds only: no deposits, bank transfers, margin, naked selling, exercise, or overnight holding. A live loss resets the options lane until fresh positive independent shadow evidence is earned.
 - The live option lane never promises profit. If the contract does not have sufficient positive evidence, liquidity, price/Greeks, or account capacity, OpenAI executor must return `NO_ACTION`. Reaching a probation tier in the admission file is evidence, not by itself a green light to submit an order — the dispatch wiring is the remaining gate.
 - Long options do not need to be held to expiration. Profitable contracts may be sold-to-close early whenever the current option exit policy produces a validated profit-taking, trailing-profit, risk-reduction, or session-cutoff exit. Expiration is a maximum lifetime, not a profit target.
@@ -75,12 +79,12 @@ Options remain separate from stock automation. Earned stock/ETF option admission
 
 - XND and DJX are a distinct index-options lane with their own files: `docs/data/index-options-research.json`, `docs/data/index-options-shadow-trades.json`, `docs/data/index-options-profitability-admission.json`, and `docs/data/index-options-real-trade-journal.json`.
 - QQQ and DIA may provide research direction/regime context for XND and DJX respectively, but ETF option results never count as index-option evidence.
-- Live XND/DJX risk is allowed in `LIVE_MICRO_BOOTSTRAP` with one new position per New York trading day and one concurrent position. There is no fixed repository premium cap; fresh Robinhood available cash/unleveraged buying power is the hard affordability ceiling. It remains forbidden in index-option `SHADOW_ONLY` or `LIVE_SUSPENDED`. Stock-option admission never substitutes for index-option admission.
+- Live bootstrap overrides are disabled. Earned admission is evidence only; the canonical live-execution lock and every broker safety gate remain mandatory.
 - Resolve the exact XND/DJX chain and contract through Robinhood immediately before any index-option action. Broker tradability, bid/ask, liquidity, DTE, premium and whole-contract affordability are mandatory.
 - XND and DJX are encoded as cash-settled European-style products with no early assignment risk. XND is treated as PM-settled (`settleOnOpen=false`); DJX is treated as AM-settled (`settleOnOpen=true`). Teststock still closes every option the same session and never intentionally holds into settlement or expiration.
 - Long call / long put only, buy to open / sell to close only. No spreads, naked selling, exercise, margin, deposits, transfers, or overnight holding.
 - Potential Section 1256 60/40 treatment is informational only. Tax treatment may never create eligibility, increase size, or justify holding longer.
-- Evidence-earned index-option micro probation still requires at least 50 independent exact-contract outcomes across 20 trading days with positive expectancy and profit factor >= 1.30. `LIVE_MICRO_BOOTSTRAP` does not satisfy or fake that evidence threshold.
+- Live bootstrap overrides are disabled. Earned admission is evidence only; the canonical live-execution lock and every broker safety gate remain mandatory.
 
 ## Broad historical market learning
 

@@ -1,3 +1,4 @@
+import {SAFETY_POLICY, earnedAdmission} from './safety-policy.mjs';
 import fs from 'node:fs/promises';
 
 // Phase 1 of the options shadow-evidence pipeline (2026-09-25, user-requested). Mirrors
@@ -45,9 +46,9 @@ const real={
 // Many candidates can be observed each day, but correlated same-day outcomes do not replace
 // experience across market regimes. Both sample count and distinct trading-day coverage are
 // mandatory before a live option can be considered.
-const MIN_SHADOW_MICRO=15, MIN_SHADOW=60;
-const MIN_SHADOW_DAYS_MICRO=5, MIN_SHADOW_DAYS=15;
-const SHADOW_MIN_WIN=48, SHADOW_MIN_AVG_R=.03, SHADOW_MIN_PROFIT_FACTOR=1.10;
+const MIN_SHADOW_MICRO=SAFETY_POLICY.options.microSamples, MIN_SHADOW=SAFETY_POLICY.options.probationSamples;
+const MIN_SHADOW_DAYS_MICRO=SAFETY_POLICY.options.microDays, MIN_SHADOW_DAYS=SAFETY_POLICY.options.probationDays;
+const SHADOW_MIN_WIN=48, SHADOW_MIN_AVG_R=.03, SHADOW_MIN_PROFIT_FACTOR=SAFETY_POLICY.options.minProfitFactor;
 const REAL_MIN_RESOLVED=Number(optionsPolicy.liveEvidenceMinimumResolvedTrades??10);
 const REAL_MIN_AVG_R=Number(optionsPolicy.liveEvidenceMinimumAverageR??0.25);
 const REAL_MIN_WIN=Number(optionsPolicy.liveEvidenceMinimumWinRatePct??50);
@@ -72,8 +73,8 @@ const admission={
   state,
   sizeMultiplier,
   reason,
-  executionAuthorized:['MICRO_PROBATION','PROBATION','LIVE_ADMITTED'].includes(state),
-  executionAuthorizedNote:'Execution authorization is earned only after the shadow evidence state reaches MICRO_PROBATION, PROBATION, or LIVE_ADMITTED. SHADOW_ONLY and LIVE_SUSPENDED remain blocked. The separate options policy and live broker rechecks still remain mandatory.',
+  executionAuthorized:SAFETY_POLICY.liveExecutionEnabled&&earnedAdmission(state),
+  executionAuthorizedNote:'Evidence eligibility is earned only after the shadow evidence state reaches MICRO_PROBATION, PROBATION, or LIVE_ADMITTED. SHADOW_ONLY and LIVE_SUSPENDED remain blocked. The canonical live lock, separate options policy and live broker rechecks remain mandatory.',
   shadow:{...shadowStats,independenceKey:'createdDate+underlying',duplicateResolutionRule:'Keep the most adverse realized R for duplicate keys.',scopeNote:'Only clean v3+ paper-shadow outcomes count toward admission: at most one live-lane-aligned sample per New York trading day, with same-session executable exit evidence.'},
   real:{...real,source:'options-real-trade-journal.json'},
   thresholds:{
@@ -92,10 +93,10 @@ const admission={
     minimumRealSamplesForSuspensionCheck:REAL_MIN_SUSPEND_CHECK,
   },
   rules:[
-    'At least 15 independent outcomes across 5 trading days, with positive after-spread expectancy and profit factor of at least 1.10, are required before micro probation.',
+    'At least 50 independent outcomes across 20 trading days, with positive after-spread expectancy and profit factor of at least 1.30, are required before micro probation.',
     'Full admission still requires the real-fill thresholds already declared in probability-first-policy.json\'s options section, unchanged by this file.',
     'This overlay can only reduce or block size; it can never raise it above whatever a future execution-lane policy declares.',
-    'executionAuthorized becomes true only for an earned admission state; the separate options execution policy and live broker rechecks remain mandatory.',
+    'executionAuthorized remains false while the canonical live-execution lock is active; the separate options execution policy and live broker rechecks remain mandatory.',
   ],
 };
 
