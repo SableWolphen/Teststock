@@ -1,6 +1,6 @@
 import {SAFETY_POLICY} from './safety-policy.mjs';
 const pending=new Set(['new','queued','confirmed','unconfirmed','partially_filled','pending_cancelled']);
-const numeric=value=>value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value))?Number(value):null;
+const numeric=value=>(typeof value==='number'||typeof value==='string'&&value.trim()!=='')&&Number.isFinite(Number(value))?Number(value):null;
 // Shadow decisions only. This module has no broker transport or order submission function.
 export function protectionDrill({position,entry,protectiveOrder,exitOrder,session={},now=Date.now()}={}) {
  const out={shadowOnly:true,brokerWrites:false,liveEnabled:SAFETY_POLICY.liveExecutionEnabled,allowNewEntries:false,protectionOrderVerified:false,notes:[]};
@@ -21,6 +21,7 @@ export function protectionDrill({position,entry,protectiveOrder,exitOrder,sessio
  if(protectiveOrder.symbol!==position.symbol||protectiveOrder.side!=='sell'||!['stop_market','stop_limit'].includes(protectiveOrder.type)||!protectiveOrder.id) return finish('RECONCILE_PROTECTION','Protection identity, side or order type does not match.');
  if(protectiveOrder.submission==='AMBIGUOUS'||protectiveOrder.state==='pending_cancelled') return finish('RECONCILE_ORIGINAL_PROTECTION','Preserve the original protection client ID; do not blindly cancel or submit another order.');
  const stop=numeric(protectiveOrder.stopPrice),quantity=numeric(protectiveOrder.quantity),filled=numeric(protectiveOrder.filledQuantity);
+ if(protectiveOrder.type==='stop_limit'&&(numeric(protectiveOrder.limitPrice)===null||numeric(protectiveOrder.limitPrice)<=0||numeric(protectiveOrder.limitPrice)>stop)) return finish('RECONCILE_PROTECTION','A sell stop-limit requires an explicit positive limit at or below its stop. A limit order does not guarantee an exit fill.');
  if(stop===null||stop<=0||quantity===null||filled===null||filled<0||quantity-filled!==held) return finish('REPAIR_PROTECTION_REVIEW','Stop or remaining quantity does not match the confirmed holding. Preserve existing protection while reviewing repair.',{confirmedQuantityToProtect:held});
  if(protectiveOrder.marketHours!=='regular_hours') return finish('RECONCILE_PROTECTION','A supported regular-session stop is required.');
  if(protectiveOrder.state!=='confirmed') return finish('ESCALATE_UNCONFIRMED_PROTECTION','Queued, rejected, partially filled or terminal protection is not evidence of full active coverage.');
