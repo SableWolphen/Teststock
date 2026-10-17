@@ -1,0 +1,72 @@
+name: Safe trading research bot
+on:
+  schedule:
+    - cron: '*/5 13-21 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Start/stop scheduled research, or scan once. Never places orders.'
+        type: choice
+        options: [scan, start, stop]
+        default: scan
+permissions:
+  contents: read
+concurrency:
+  group: safe-trading-research
+  cancel-in-progress: false
+jobs:
+  control:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: write
+    outputs:
+      scan: ${{ steps.control.outputs.scan }}
+    steps:
+      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        id: control
+        env:
+          BOT_ACTION: ${{ inputs.action }}
+        with:
+          script: |
+            const path = '.github/trading-bot-control.json';
+            const branch = context.payload.repository.default_branch;
+            const {data} = await github.rest.repos.getContent({...context.repo, path, ref: branch});
+            const state = JSON.parse(Buffer.from(data.content, 'base64').toString('utf8'));
+            if (typeof state.enabled !== 'boolean') throw new Error('Invalid bot control');
+            const action = process.env.BOT_ACTION;
+            if (context.eventName === 'workflow_dispatch' && ['start','stop'].includes(action)) {
+              state.enabled = action === 'start';
+              await github.rest.repos.createOrUpdateFileContents({...context.repo, path, branch, sha: data.sha,
+                message: `Set research scanner enabled=${state.enabled}`,
+                content: Buffer.from(JSON.stringify(state)+'\n').toString('base64')});
+            }
+            core.setOutput('scan', action !== 'stop' && (state.enabled || action === 'scan'));
+  scan:
+    needs: control
+    if: needs.control.outputs.scan == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Verify scanner safety
+        run: node --test scripts/test-safe-trading-bot.mjs
+      - name: Scan market data only
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+        run: node scripts/safe-trading-bot.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: research-${{ github.run_id }}
+          path: work/trading-bot-report.json
+          retention-days: 3
+          if-no-files-found: ignore
