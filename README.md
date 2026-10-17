@@ -1,6 +1,6 @@
 # Teststock
 
-For the additive, paused-by-default stock/options/crypto research runner, see [Safe trading bot](docs/SAFE-TRADING-BOT.md). It includes the five-minute workflow and offline settled-cash sizing; real orders remain disabled.
+For the additive, paused-by-default stock/options/crypto research runner, see [Safe trading bot](docs/SAFE-TRADING-BOT.md). It includes the five-minute workflow, repository/bulk ingestion, intraday breakout and volume checks, a 1.5% spread ceiling, offline settled-cash sizing and an $80 daily-loss gate; real orders remain disabled.
 
 A mobile-first stock + options decision engine for finding small, defined-risk opportunities without forcing a trade every day.
 
