@@ -10,7 +10,7 @@ import sqlite3
 import urllib.request
 
 from session_manager import SessionManager, BrokerUnavailable, read_private_json, fresh
-from risk_validator import validate_trade, RiskRejected
+from risk_validator import validate_trade, RiskRejected, amount
 
 REPOSITORY = "SableWolphen/Teststock"
 
@@ -63,19 +63,38 @@ def claim_handoff(db, fingerprint, payload):
         db.rollback()
         raise
 
+def protection_reviews(observation):
+    snapshot = observation["snapshot"]
+    quotes = {q.get("optionId"): q for q in snapshot.get("optionMarketData", {}).get("quotes", [])}
+    reviews = []
+    for position in snapshot.get("options", []):
+        if amount(position.get("quantity"), "QUANTITY") <= 0:
+            continue
+        contract = position.get("option_id")
+        working = [o for o in snapshot.get("orders", []) if o.get("working") is not False and any(l.get("option_id") == contract and l.get("position_effect") == "close" for l in o.get("legs", []))]
+        quote = quotes.get(contract, {})
+        reviews.append({"requested_action": "RECONCILE_WORKING_EXIT" if working else "BROKER_SUPPORTED_PROTECTION_REVIEW", "symbol": position.get("chain_symbol"), "option_id": contract, "quantity": position.get("quantity"), "quote_at": quote.get("quoteAt"), "observed_bid": quote.get("bid") if quote.get("validForMonitoring") is True else None, "working_exit_count": len(working), "confirmation_required": True, "broker_order_submitted": False})
+    return reviews
+
 def run_once(db, session, dispatch=None, proposal=None, observation=None, now=None):
-    now = now or datetime.now(timezone.utc)
-    dispatch = dispatch if dispatch is not None else pull_payload()
+    if dispatch is None:
+        try:
+            dispatch = pull_payload()
+        except Exception:
+            dispatch = {}
     observation, status = observation if observation is not None else independent_snapshot(session)
+    now = now or datetime.now(timezone.utc)
     execution = session.execution_status(observation, status)
     result = {"schemaVersion": 1, "generatedAt": now.isoformat(), "mode": "PRIVATE_REVIEW_ONLY", "broker_writes": False, "live_eligible": False, "execution_owner": execution["execution_owner"], "blockers": execution["blockers"]}
     if os.environ.get("TESTSTOCK_MODE", "paper") != "paper":
         raise BrokerUnavailable("DIRECT_LIVE_EXECUTION_DISABLED")
-    if not fresh(dispatch.get("generatedAt"), now, 900):
-        result.update(status="BLOCKED", reason="DISPATCH_STALE")
-        return result
+    result["entry_dispatch_fresh"] = fresh(dispatch.get("generatedAt"), now, 900)
     if proposal is None:
-        result.update(status="PROTECTION_REVIEW_REQUIRED" if "HOLDING_PROTECTION_UNVERIFIED" in result["blockers"] else "NO_ACTION", reason="NO_QUALIFIED_ENTRY_PROPOSAL")
+        needs_review = "HOLDING_PROTECTION_UNVERIFIED" in result["blockers"]
+        result.update(status="PROTECTION_REVIEW_REQUIRED" if needs_review else "NO_ACTION", reason="NO_QUALIFIED_ENTRY_PROPOSAL", protection_reviews=protection_reviews(observation) if needs_review else [])
+        return result
+    if not result["entry_dispatch_fresh"]:
+        result.update(status="BLOCKED", reason="DISPATCH_STALE")
         return result
     if observation.get("policy", {}).get("liveExecutionEnabled") is not True or observation.get("policy", {}).get("maxOrderUsd", 0) <= 0 or dispatch.get("riskCreationBlockedByExecutor") is not False:
         result.update(status="BLOCKED", reason="LIVE_DEPLOYMENT_LOCKED")

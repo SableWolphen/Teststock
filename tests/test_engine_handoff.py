@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from risk_validator import validate_trade, RiskRejected
 from session_manager import SessionManager, BrokerUnavailable
-from github_dispatcher import state_db, claim_handoff, run_once
+from github_dispatcher import state_db, claim_handoff, run_once, protection_reviews
 
 NOW = datetime(2026, 10, 19, 15, 0, tzinfo=timezone.utc)
 AT = NOW.isoformat()
@@ -104,6 +104,17 @@ class PrivateSessionTests(unittest.TestCase):
         with state_db(self.root/'test.sqlite3') as db:
             result=run_once(db,SessionManager(self.root),dispatch={"generatedAt":AT,"dispatchFingerprints":[]},observation=(self.observation,self.status),now=NOW)
         self.assertEqual(result["status"],"PROTECTION_REVIEW_REQUIRED");self.assertFalse(result["broker_writes"])
+    def test_stale_entry_dispatch_does_not_suppress_independent_protection_review(self):
+        self.observation["snapshot"].update(options=[{"option_id":"held","chain_symbol":"ABC","quantity":"1"}],orders=[],optionMarketData={"quotes":[{"optionId":"held","bid":0.56,"quoteAt":AT,"validForMonitoring":True}]})
+        with state_db(self.root/'stale.sqlite3') as db:
+            result=run_once(db,SessionManager(self.root),dispatch={"generatedAt":"2000-01-01T00:00:00Z"},observation=(self.observation,self.status),now=NOW)
+        self.assertEqual(result["status"],"PROTECTION_REVIEW_REQUIRED")
+        self.assertFalse(result["entry_dispatch_fresh"])
+        self.assertEqual(result["protection_reviews"][0]["requested_action"],"BROKER_SUPPORTED_PROTECTION_REVIEW")
+        self.assertFalse(result["protection_reviews"][0]["broker_order_submitted"])
+        self.observation["snapshot"]["orders"]=[{"working":True,"legs":[{"option_id":"held","position_effect":"close"}]}]
+        self.assertEqual(protection_reviews(self.observation)[0]["requested_action"],"RECONCILE_WORKING_EXIT")
+
     def test_unbound_proposal_never_claims_or_hands_off(self):
         with state_db(self.root/'test.sqlite3') as db:
             result=run_once(db,SessionManager(self.root),dispatch={"generatedAt":AT,"dispatchFingerprints":[]},proposal={"fingerprint":"invented"},observation=(self.observation,self.status),now=NOW)
