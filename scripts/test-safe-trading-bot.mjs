@@ -57,7 +57,8 @@ test('workflow pins actions, isolates credentials and defaults paused',()=>{
 test('successful paginated chain retains all pages',async()=>{
  const s=snap();s.greeks={delta:0.5};s.impliedVolatility=0.3;
  const r=await scan({get:async(lane,args)=>lane==='clock'?{is_open:true,timestamp:t}:lane==='stocks'?Object.fromEntries(UNIVERSE.stocks.map(x=>[x,snap()])):lane==='crypto'?{snapshots:Object.fromEntries(UNIVERSE.crypto.map(x=>[x,snap()]))}:lane.endsWith('Bars')?{bars:{}}:{snapshots:{[`${args.symbol}261120${args.page_token?'P':'C'}00100000`]:s},next_page_token:args.page_token?null:'second'}},{now});
- assert.equal(r.lanes.option,'COMPLETE');assert.equal(r.candidates.filter(c=>c.asset==='option').length,10);
+ assert.equal(r.lanes.option,'DATA_UNAVAILABLE_OR_INCOMPLETE');assert.equal(r.candidates.filter(c=>c.asset==='option').length,10);
+ assert.ok(r.coverage.option.historyMissing>0); // Chain pagination is complete; empty history is not usable coverage.
 });
 test('network retries bounded to three and redact thrown messages',async()=>{
  let count=0;const r=new ResearchReader({key:'test-key',secret:'test-secret',transport:async()=>{count++;throw Error('test-secret');}});

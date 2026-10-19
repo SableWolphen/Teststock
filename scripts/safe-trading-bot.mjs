@@ -44,7 +44,9 @@ export class ResearchReader {
       try {response=await this.transport(url.href,{method:'GET',headers:this.headers,redirect:'error',signal:AbortSignal.timeout(Math.max(1,Math.min(10000,this.config.maxRuntimeMs-(Date.now()-this.startedAt))))});}
       catch {if(attempt===2)throw Error('DATA_NETWORK_FAILED');continue;}
       if(response.ok) {try{return await response.json();}catch{throw Error('DATA_INVALID_JSON');}}
-      if(![429,500,502,503,504].includes(response.status)||attempt===2) throw Error('DATA_HTTP_FAILED');
+      if(![429,500,502,503,504].includes(response.status)||attempt===2) {
+        const error=Error('DATA_HTTP_FAILED');error.code=`DATA_HTTP_${response.status}`;throw error;
+      }
       await new Promise(resolve=>setTimeout(resolve,250*2**attempt));
     }
   }
@@ -107,7 +109,7 @@ export function planSettledCash(candidates, account, now=Date.now(),config=DEFAU
 const chunks=(items,size)=>Array.from({length:Math.ceil(items.length/size)},(_,i)=>items.slice(i*size,(i+1)*size));
 async function pool(items,limit,fn) {
   let cursor=0;const results=[];
-  await Promise.all(Array.from({length:Math.min(limit,items.length)},async()=>{while(cursor<items.length){const index=cursor++;try{results[index]={ok:true,value:await fn(items[index])};}catch{results[index]={ok:false};}}}));
+  await Promise.all(Array.from({length:Math.min(limit,items.length)},async()=>{while(cursor<items.length){const index=cursor++;try{results[index]={ok:true,value:await fn(items[index])};}catch(error){results[index]={ok:false,code:/^DATA_HTTP_\d{3}$/.test(error?.code)?error.code:'DATA_READ_FAILED'};}}}));
   return results;
 }
 export async function scan(reader,{now=Date.now(),inputs={universe:UNIVERSE,config:DEFAULT_STRATEGY,sources:[],triggers:new Map(),events:null}}={}) {
@@ -135,8 +137,17 @@ export async function scan(reader,{now=Date.now(),inputs={universe:UNIVERSE,conf
       if(!snapshots||typeof snapshots!=='object'||Array.isArray(snapshots))throw Error();
       let missing=0;for(const symbol of batch){if(snapshots[symbol])rows.set(symbol,snapshots[symbol]);else missing++;}return missing;
     });
-    report.coverage[asset]={discovery,discovered:all.size,requested:symbols.length,received:rows.size,truncated:all.size>symbols.length,batchFailures:batches.filter(r=>!r.ok).length};
-    report.lanes[asset]=discovery!=='UNAVAILABLE'&&batches.every(r=>r.ok&&r.value===0)?'COMPLETE':'DATA_UNAVAILABLE_OR_INCOMPLETE';
+    // Retry only missing snapshots once within the same reader's request/time budget.
+    // A persistent omission is not an empty successful observation or an excluded asset.
+    const missing=symbols.filter(s=>!rows.has(s));
+    const retries=await pool(chunks(missing,config.batchSize),config.concurrency,async batch=>{
+      const data=await reader.get(key,{symbols:batch});const snapshots=asset==='stock'?data:data.snapshots;
+      if(!snapshots||typeof snapshots!=='object'||Array.isArray(snapshots))throw Error();
+      for(const symbol of batch)if(snapshots[symbol])rows.set(symbol,snapshots[symbol]);
+    });
+    const missingSymbols=symbols.filter(s=>!rows.has(s));
+    report.coverage[asset]={discovery,discovered:all.size,requested:symbols.length,received:rows.size,truncated:all.size>symbols.length,batchFailures:batches.filter(r=>!r.ok).length,retryFailures:retries.filter(r=>!r.ok).length,retried:missing.length,recovered:missing.length-missingSymbols.length,missingSnapshots:missingSymbols.length,missingSymbols,errorCodes:[...new Set([...batches,...retries].filter(r=>!r.ok).map(r=>r.code))]};
+    report.lanes[asset]=discovery!=='UNAVAILABLE'&&!missingSymbols.length?'COMPLETE':'DATA_UNAVAILABLE_OR_INCOMPLETE';
   }
   const spy=rowsByAsset.stock.get('SPY');
   const spyQuote=spy?.latestQuote;
@@ -170,7 +181,8 @@ export async function scan(reader,{now=Date.now(),inputs={universe:UNIVERSE,conf
         if(typeof token!=='string'||tokens.has(token))throw Error();tokens.add(token);
       }throw Error();
     });
-    if(reads.some(r=>!r.ok))report.lanes[asset]='DATA_UNAVAILABLE_OR_INCOMPLETE';
+    const historyReceived=[...histories.values()].filter(b=>b.length>0).length;
+    if(reads.some(r=>!r.ok)||historyReceived<shortlist.length)report.lanes[asset]='DATA_UNAVAILABLE_OR_INCOMPLETE';
     for(const [s,v]of rowsByAsset[asset]) {
       const c=inspectCandidate(s,v,asset,evaluationNow(),config);
       c.signal=intradaySignal(histories.get(s),v.latestTrade?.p,evaluationNow(),config);
@@ -180,7 +192,7 @@ export async function scan(reader,{now=Date.now(),inputs={universe:UNIVERSE,conf
       if(c.reasons.some(r=>r!=='INDICATIVE_RESEARCH_ONLY'))c.status='REJECTED';
       report.candidates.push(c);
     }
-    if(report.coverage[asset]){report.coverage[asset].historyRequested=shortlist.length;report.coverage[asset].historyReceived=histories.size;}
+    if(report.coverage[asset])Object.assign(report.coverage[asset],{historyRequested:shortlist.length,historyReceived,historyMissing:shortlist.length-historyReceived,historyFailures:reads.filter(r=>!r.ok).length,errorCodes:[...new Set([...(report.coverage[asset].errorCodes??[]),...reads.filter(r=>!r.ok).map(r=>r.code)])]});
   }
   report.candidates.sort((a,b)=>(b.momentum??-1)-(a.momentum??-1)||a.symbol.localeCompare(b.symbol));
   // Recheck after all reads so early batches cannot become stale while later lanes run.

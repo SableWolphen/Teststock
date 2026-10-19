@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 
 // Fixed read-only source files only. Never copy credentials, journals or the order executor.
-export const MONITOR_BUNDLE_FILES=Object.freeze(['windows-monitor.mjs','monitor-reconciliation.mjs','monitor-lock.mjs','robinhood-oauth.mjs','alpaca-data-client.mjs','stock-quote-fallback.mjs','protection-coverage.mjs','protection-shadow-drill.mjs','safety-policy.mjs','verify-protection-readiness.mjs','option-monitor-quotes.mjs']);
+export const MONITOR_BUNDLE_FILES=Object.freeze(['windows-monitor.mjs','monitor-reconciliation.mjs','monitor-lock.mjs','robinhood-oauth.mjs','alpaca-data-client.mjs','stock-quote-fallback.mjs','protection-coverage.mjs','protection-shadow-drill.mjs','safety-policy.mjs','verify-protection-readiness.mjs','option-monitor-quotes.mjs','session-exit-review.mjs','alert-receipt.mjs']);
 export function installReadOnlyBundle(repo,state) {
   if(!path.isAbsolute(repo)||!path.isAbsolute(state))throw Error('ABSOLUTE_BUNDLE_PATHS_REQUIRED');
   const files=MONITOR_BUNDLE_FILES.map(name=>({name,bytes:fs.readFileSync(path.join(repo,'scripts',name))}));

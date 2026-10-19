@@ -9,6 +9,7 @@ import {assessProtectionSnapshot} from './protection-coverage.mjs';
 import {acquireMonitorLock} from './monitor-lock.mjs';
 import {selectStockQuotes,readAlpacaQuotes} from './stock-quote-fallback.mjs';
 import {readOptionMarkets} from './option-monitor-quotes.mjs';
+import {alertReceipt} from './alert-receipt.mjs';
 
 export const READ_TOOLS = Object.freeze(['get_accounts', 'get_equity_quotes', 'get_equity_positions', 'get_option_positions', 'get_equity_orders', 'get_option_orders', 'get_crypto_positions', 'get_crypto_orders', 'get_portfolio', 'get_option_quotes', 'get_option_instruments']);
 export class ReadOnlyMcp {
@@ -134,8 +135,19 @@ export async function cycle({root,client,symbols=[],now,fallbackReader=readAlpac
   status.health=status.blockers.length?'BLOCKED':'READ_ONLY_HEALTHY';
   status.entryData=await probeStoredAlpaca(root);
   status.at=new Date(now??Date.now()).toISOString();
+  status.alertDelivery=alertReceipt(root,{now:now??Date.now()});
   const coverage=assessProtectionSnapshot({snapshot,status,now:now??Date.now()});
+  // Private review queue only. Stable review keys survive restarts; they are
+  // not order claims and must never be treated as permission to submit/cancel.
+  const exitRows=coverage.currentReadVerified&&coverage.exitReview.exitReviewRequired?(snapshot?.options??[]).filter(p=>Number(p.quantity)>0).map(p=>({
+    reviewKey:`${coverage.exitReview.sessionDate}|${p.option_id}|SESSION_CUTOFF`,optionId:p.option_id,quantity:p.quantity,
+    workingExitOrderIds:(snapshot.orders??[]).filter(o=>o.working&&o.legs?.some(l=>l.option_id===p.option_id&&l.side==='sell'&&l.position_effect==='close')).map(o=>o.id),
+    action:'RECONCILE_WORKING_EXIT_AND_REVIEW_SESSION_CLOSE',brokerConfirmationRequired:true,brokerWrites:false,
+  })):[];
+  fs.mkdirSync(root,{recursive:true});
+  atomicJson(path.join(root,'session-exit-review.json'),{generatedAt:status.at,...coverage.exitReview,rows:exitRows});
   status.protection={currentReadVerified:coverage.currentReadVerified,holdingCount:coverage.holdingCount,matchedStopCount:coverage.matchedStopCount,blockers:coverage.blockers,liveCycleVerified:false};
+  status.exitReview=coverage.exitReview;
   status.tradingReady=false;
   fs.mkdirSync(root,{recursive:true});
   const log=path.join(root,`monitor-${at.slice(0,10)}.jsonl`);

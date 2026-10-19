@@ -37,7 +37,8 @@ export class AlpacaDataReader {
   const data=await this.read('bars',{symbols:'SPY',timeframe:'1Day',feed:'iex',limit:10,sort:'desc',start:new Date(now-14*86400000).toISOString(),end:new Date(now).toISOString()});
   const bars=data.bars?.SPY;
   if(!Array.isArray(bars)||!bars.length||bars.some(b=>!Number.isFinite(Date.parse(b.t))||Number(b.c)<=0||!Number.isFinite(Number(b.c)))) throw Error('ALPACA_INVALID_BARS');
-  return {verifiedAt:new Date().toISOString(),environment:'paper-data-only',feed:'iex',connected:true,clockVerified:true,calendarVerified:true,historicalBarsVerified:true,marketOpen:clock.is_open,nextOpen:clock.next_open,tradingReady:false,liveEnabled:false};
+  const calendarSession=calendar.length===1?{date:calendar[0].date,open:calendar[0].open,close:calendar[0].close}:null;
+  return {verifiedAt:new Date().toISOString(),environment:'paper-data-only',feed:'iex',connected:true,clockVerified:true,calendarVerified:true,calendarSession,historicalBarsVerified:true,marketOpen:clock.is_open,nextOpen:clock.next_open,tradingReady:false,liveEnabled:false};
  }
 }
 export async function probeStoredAlpaca(root) {

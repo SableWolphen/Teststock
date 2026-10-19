@@ -52,3 +52,10 @@ test('read-only health does not suppress missing protection or expiring option i
  assert.ok(report.activeCodes.includes('OPTION_EXPIRATION_REVIEW_REQUIRED'));
  assert.doesNotMatch(fs.readFileSync(path.join(r,'alerts.jsonl'),'utf8'),/PRIVATE_HOLDING/);
 });
+
+test('session cutoff escalation remains deduplicated and cannot hide behind a matching protective stop',t=>{
+ const r=root(t);save(r,{...healthy,protection:{matchedStopCount:1,blockers:['SESSION_EXIT_REVIEW_REQUIRED']}});
+ assert.ok(watchdog(r,{now}).activeCodes.includes('SESSION_EXIT_REVIEW_REQUIRED'));
+ assert.equal(watchdog(r,{now}).localEventsWritten,0);
+ save(r,healthy);assert.equal(watchdog(r,{now}).localEventsWritten,1);
+});

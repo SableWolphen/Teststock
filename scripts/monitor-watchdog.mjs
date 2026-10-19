@@ -3,6 +3,8 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {acquireMonitorLock} from './monitor-lock.mjs';
 import {fileURLToPath} from 'node:url';
+import {alertReceipt} from './alert-receipt.mjs';
+const EXIT_CODES=['SESSION_EXIT_TIME_UNVERIFIED','SESSION_EXIT_REVIEW_REQUIRED','SESSION_EXIT_REVIEW_UPCOMING','SESSION_CLOSED_WITH_HOLDINGS'];
 const KNOWN_CODES=['MONITOR_HEARTBEAT_STALE_OR_MISSING','BROKER_MONITOR_BLOCKED','MARKET_DATA_BLOCKED','RECONCILIATION_INCOMPLETE','UNEXPECTED_LIVE_STATE','MONITOR_STOP_REQUESTED','WATCHDOG_STATE_INVALID','BROKER_SNAPSHOT_STALE_OR_MISSING','MARKET_DATA_STALE_OR_MISSING','HOLDING_PROTECTION_UNVERIFIED','OPTION_EXPIRATION_REVIEW_REQUIRED','CRYPTO_PROTECTION_UNVERIFIED','OPTION_PRICE_MONITORING_UNVERIFIED'];
 export function watchdog(root,{now=Date.now()}={}) {
  fs.mkdirSync(root,{recursive:true});
@@ -21,9 +23,10 @@ export function watchdog(root,{now=Date.now()}={}) {
   if(status?.brokerConnected===true&&stale(status?.reconciliation?.at))codes.push('BROKER_SNAPSHOT_STALE_OR_MISSING');
   if(status?.entryData?.connected===true&&stale(status?.entryData?.verifiedAt))codes.push('MARKET_DATA_STALE_OR_MISSING');
   for(const code of ['HOLDING_PROTECTION_UNVERIFIED','OPTION_EXPIRATION_REVIEW_REQUIRED','CRYPTO_PROTECTION_UNVERIFIED','OPTION_PRICE_MONITORING_UNVERIFIED'])if(status?.protection?.blockers?.includes(code))codes.push(code);
+  for(const code of EXIT_CODES)if(status?.protection?.blockers?.includes(code))codes.push(code);
   const stateFile=path.join(root,'watchdog-status.json');let previous=[];
   if(fs.existsSync(stateFile)) {
-   try {previous=JSON.parse(fs.readFileSync(stateFile,'utf8')).activeCodes;if(!Array.isArray(previous)||previous.some(code=>!KNOWN_CODES.includes(code)))throw Error();}
+   try {previous=JSON.parse(fs.readFileSync(stateFile,'utf8')).activeCodes;if(!Array.isArray(previous)||previous.some(code=>![...KNOWN_CODES,...EXIT_CODES].includes(code)))throw Error();}
    catch {codes.push('WATCHDOG_STATE_INVALID');previous=[];}
   }
   // Only fixed local codes are emitted; no broker bodies, accounts or secrets.
@@ -33,7 +36,8 @@ export function watchdog(root,{now=Date.now()}={}) {
    const fd=fs.openSync(path.join(root,'alerts.jsonl'),'a',0o600);
    try {for(const event of events)fs.writeSync(fd,JSON.stringify({at,...event,delivery:'LOCAL_FILE_ONLY'})+'\n');fs.fsyncSync(fd);}finally{fs.closeSync(fd);}
   }
-  const report={at,activeCodes:codes,localEventsWritten:events.length,delivery:'LOCAL_FILE_ONLY',userReceiptVerified:false,liveEnabled:false};
+  const alertDelivery=alertReceipt(root,{now});
+  const report={at,activeCodes:codes,localEventsWritten:events.length,delivery:alertDelivery.userReceiptVerified?'LOCAL_DESKTOP_ACKNOWLEDGED':'LOCAL_FILE_ONLY',alertDelivery,userReceiptVerified:alertDelivery.userReceiptVerified,liveEnabled:false};
   const temp=stateFile+'.'+crypto.randomUUID()+'.tmp';fs.writeFileSync(temp,JSON.stringify(report,null,2),{mode:0o600});fs.renameSync(temp,stateFile);
   return report;
  } finally {fs.unlinkSync(lock);}

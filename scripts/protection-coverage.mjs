@@ -1,4 +1,5 @@
 import {protectionDrill} from './protection-shadow-drill.mjs';
+import {sessionExitReview} from './session-exit-review.mjs';
 
 const terminal=new Set(['filled','cancelled','canceled','rejected','failed','voided','partially_filled_rest_cancelled','locate_failed']);
 const working=new Set(['new','queued','confirmed','unconfirmed','partially_filled','pending_cancelled','locating']);
@@ -22,7 +23,8 @@ export function assessProtectionSnapshot({snapshot,status,now=Date.now()}={}) {
     &&fresh(status.entryData.verifiedAt,now)&&status.entryData.marketOpen===true};
   if(!session.regularHours)blockers.push('REGULAR_SESSION_UNVERIFIED_OR_CLOSED');
   // This reader cannot inspect advanced-order relationships. No empty standard list clears this gate.
-  blockers.push('ADVANCED_ORDER_COVERAGE_UNVERIFIED','LIVE_ENTRY_PROTECTION_EXIT_CYCLE_UNVERIFIED','ALERT_RECEIPT_UNVERIFIED');
+  blockers.push('ADVANCED_ORDER_COVERAGE_UNVERIFIED','LIVE_ENTRY_PROTECTION_EXIT_CYCLE_UNVERIFIED');
+  if(status?.alertDelivery?.userReceiptVerified!==true||status?.alertDelivery?.deliveryHeartbeatFresh!==true)blockers.push('ALERT_RECEIPT_UNVERIFIED');
   if(snapshot?.options?.some(p=>Number(p.quantity)>0)&&snapshot?.optionMarketData?.complete!==true)blockers.push('OPTION_PRICE_MONITORING_UNVERIFIED');
   const assessments=[];
   if(currentReadVerified&&schemaVerified) {
@@ -64,7 +66,9 @@ export function assessProtectionSnapshot({snapshot,status,now=Date.now()}={}) {
   if(assessments.some(a=>a.issues.includes('OPTION_EXPIRATION_REVIEW_REQUIRED')))blockers.push('OPTION_EXPIRATION_REVIEW_REQUIRED');
   if(snapshot?.cryptoPositions?.some(p=>p.currency?.type!=='fiat'&&number(p.quantity)!==0))blockers.push('CRYPTO_PROTECTION_UNVERIFIED');
   for(const code of snapshot?.blockers||[]) if(['EXECUTION_TOTAL_MISMATCH','FILLED_QUANTITY_WITHOUT_EXECUTIONS','MULTIPLE_WORKING_ORDERS_REQUIRE_REVIEW','UNKNOWN_ORDER_STATE','CRYPTO_RECONCILIATION_UNVERIFIED','CRYPTO_WORKING_ORDERS_REQUIRE_REVIEW'].includes(code))blockers.push(code);
-  return {schemaVersion:1,generatedAt:new Date(now).toISOString(),evidenceType:'READ_ONLY_BROKER_OBSERVATIONS',brokerWrites:false,liveCycleVerified:false,allowRealMoneyOrders:false,
+  const exitReview=sessionExitReview({entryData:status?.entryData,holdingCount:currentReadVerified&&schemaVerified?assessments.filter(a=>a.asset==='OPTION').length:null,now});
+  if(exitReview.exitReviewRequired||exitReview.exitReviewUpcoming)blockers.push(exitReview.state);
+  return {schemaVersion:1,generatedAt:new Date(now).toISOString(),evidenceType:'READ_ONLY_BROKER_OBSERVATIONS',brokerWrites:false,liveCycleVerified:false,allowRealMoneyOrders:false,exitReview,
     snapshotFresh,currentReadVerified,regularSessionVerified:session.regularHours,holdingCount:schemaVerified?[...snapshot.equities,...snapshot.options].filter(p=>number(p?.quantity)!==0).length:null,assessedHoldingCount:assessments.length,matchedStopCount:currentReadVerified&&schemaVerified?assessments.filter(a=>a.matchedStopObserved).length:null,
     assessments,blockers:[...new Set(blockers)],note:'A reported stop is not a fill or price guarantee. Historical fills do not verify unattended execution. Advanced-order coverage, a controlled broker execution cycle and operational alert receipt remain separate acceptance gates.'};
 }
