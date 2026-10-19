@@ -141,6 +141,13 @@ Install the independent local watchdog with `./scripts/windows/Install-Watchdog.
 
 These are **local-file alerts only**. Notification delivery to the user and user receipt are unverified; there is no email/SMS/push integration. A healthy watchdog, a passing fixture crash test or a recovered monitor never authorizes a broker order or clears strategy/protection gates.
 
+### Options research evidence correction
+
+Version 4 option shadow evidence requires saved exact-contract entry and exit quote provenance, OPRA feed identity, non-crossed finite bid/ask, and quote timestamps within 30 seconds of each observation (at most two seconds into the future). The updater re-queries candidates rather than opening from the cached scan's ask, and rechecks the whole-contract premium cap at that refreshed ask. Indicative observations may remain exploratory but cannot count toward admission. Prior records remain in the ledger; versions without this provenance are excluded rather than backfilled or relabeled. Both the summary and admission generator share the same eligibility predicate.
+
+Observed bid returns are no longer clipped to a planned stop or target: a gap below the stop can lose more than 1R. These are gross quote-based simulations, not broker fills or guaranteed execution prices. Fees, realistic fills, calendar-aware early closes, intraday-only validation and supported broker protection still need independent validation before deployment. The daily-bar historical validator's 20-day outcome horizon is not proof of a day-trading strategy.
+
+On October 16, 2026, the stored paper credentials received HTTP 403 from a read-only OPRA chain probe. IEX stock access does not establish OPRA options access. No subscription was purchased or changed. Alpaca documents the feed distinction at https://docs.alpaca.markets/us/docs/historical-option-data.
 
 ### Watchdog recovery and source freshness
 
