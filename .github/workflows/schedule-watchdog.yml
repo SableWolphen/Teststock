@@ -43,6 +43,7 @@ jobs:
             if (control?.enabled !== true) { core.info('Core research remains paused or unverified.'); return; }
             const packet = await read('docs/data/safe-trading-core-research.json');
             const {data} = await github.rest.actions.listWorkflowRuns({...context.repo, workflow_id:'trading_bot.yml', per_page:100});
+            if (!Array.isArray(data.workflow_runs)) throw new Error('Research run state unavailable; refusing duplicate dispatch.');
             const decision = coreResearchRecovery({control,packet,runs:data.workflow_runs});
             core.info(decision.reason);
             if (decision.dispatch) {

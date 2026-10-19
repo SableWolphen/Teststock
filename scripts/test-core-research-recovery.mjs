@@ -12,6 +12,7 @@ test('disabled or malformed controls and in-flight research never create another
  for(const control of [null,{}, {enabled:false},{enabled:'true'}])assert.equal(run({control}).dispatch,false);
  for(const status of ['queued','in_progress','waiting','requested','pending'])assert.equal(run({packet:null,runs:[{status}]}).dispatch,false);
  assert.equal(run({packet:null,runs:null}).dispatch,false);
+ assert.equal(run({packet:null,now:NaN}).dispatch,false);
 });
 test('recovery respects the existing research window and cannot trust arbitrarily long packet expiry',()=>{
  assert.equal(run({now:Date.parse('2026-10-19T03:00:00Z'),packet:null}).dispatch,false);

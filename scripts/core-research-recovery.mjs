@@ -1,5 +1,6 @@
 // Research scheduling only. This never authorizes an order or changes controls.
 export function coreResearchRecovery({control,packet,runs=[],now=Date.now()}={}) {
+ if(!Number.isFinite(now))return {dispatch:false,reason:'RESEARCH_CLOCK_UNVERIFIED'};
  if(control?.enabled!==true)return {dispatch:false,reason:'RESEARCH_PAUSED_OR_CONTROL_UNVERIFIED'};
  const clock=new Date(now),weekday=clock.getUTCDay(),hour=clock.getUTCHours();
  // Match trading_bot.yml's existing schedule window. This is a resource window,
