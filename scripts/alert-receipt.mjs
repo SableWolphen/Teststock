@@ -3,6 +3,7 @@ import path from 'node:path';
 // A log append, process success or dialog display is never a user receipt.
 export function alertReceipt(root,{now=Date.now()}={}) {
  const read=name=>{try{return JSON.parse(fs.readFileSync(path.join(root,name),'utf8').replace(/^\uFEFF/,''));}catch{return null;}};
+ if(read('notification-preferences.json')?.interactiveAlertsEnabled===false)return {channel:'SILENT_LOCAL_LOG',deliveryHeartbeatFresh:false,userReceiptVerified:false,scope:'NO_INTERACTIVE_ALERTS',unattendedExecutionVerified:false};
  const challenge=read('desktop-alert-challenge.json'),receipt=read('desktop-alert-receipt.json'),delivery=read('desktop-alert-status.json');
  const age=now-Date.parse(delivery?.at??'');
  const session=t=>Number.isFinite(Date.parse(t))?new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(t)):null;

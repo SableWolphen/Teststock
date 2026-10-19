@@ -6,6 +6,7 @@ import {vault,accessToken} from './robinhood-oauth.mjs';
 import {collectReadOnlySnapshot,unwrapRead} from './monitor-reconciliation.mjs';
 import {SAFETY_POLICY} from './safety-policy.mjs';
 import {readOptionMarkets} from './option-monitor-quotes.mjs';
+import {observeBrokerRisk} from './broker-risk-facts.mjs';
 
 // Explicit read-only bridge. Never accepts a transport URL or any order command.
 export async function observeEngine({client,proposal={},now=()=>Date.now()}={}) {
@@ -22,6 +23,7 @@ export async function observeEngine({client,proposal={},now=()=>Date.now()}={}) 
  const {createHash}=await import('node:crypto');
  if(snapshot.accountFingerprint!==createHash('sha256').update(account.account_number).digest('hex'))throw Error('BROKER_ACCOUNT_CHANGED');
  snapshot.optionMarketData=await readOptionMarkets(client,snapshot.options,{now});
+ const riskFacts=await observeBrokerRisk(client,account.rhs_account_number,snapshot,portfolio,{now:now()});
  let market=null;
  if(proposal.asset_type==='option') {
    if(typeof proposal.option_id!=='string'||! /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(proposal.option_id))throw Error('INVALID_OPTION_ID');
@@ -37,7 +39,7 @@ export async function observeEngine({client,proposal={},now=()=>Date.now()}={}) 
    market={quote,asset_type:'stock',observedAt:new Date(now()).toISOString(),quoteError:quoteGuard(quote,now())};
  }
  if(now()-started>30000)throw Error('ENGINE_OBSERVATION_TOO_SLOW');
- return {schemaVersion:1,source:'SUPPORTED_ROBINHOOD_READS',generatedAt:new Date(now()).toISOString(),readStartedAt:new Date(started).toISOString(),accountFingerprint:snapshot.accountFingerprint,accountType:account.type,optionLevel:account.user_option_level??account.option_level,brokerAccessible:true,portfolio,snapshot,market,policy:SAFETY_POLICY,brokerWrites:false};
+ return {schemaVersion:1,source:'SUPPORTED_ROBINHOOD_READS',generatedAt:new Date(now()).toISOString(),readStartedAt:new Date(started).toISOString(),accountFingerprint:snapshot.accountFingerprint,accountType:account.type,optionLevel:account.user_option_level??account.option_level,brokerAccessible:true,portfolio,snapshot,market,riskFacts,policy:SAFETY_POLICY,brokerWrites:false};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
  try {

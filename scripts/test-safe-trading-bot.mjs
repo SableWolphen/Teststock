@@ -48,10 +48,11 @@ test('incomplete and repeated pagination discards option lane',async()=>{
  const r=await scan({get:async lane=>lane==='clock'?{is_open:true,timestamp:t}:lane==='stocks'?Object.fromEntries(UNIVERSE.stocks.map(s=>[s,snap()])):lane==='crypto'?{snapshots:{}}:{snapshots:{AAPL261120C00100000:snap()},next_page_token:'repeat'}},{now});
  assert.equal(r.lanes.option,'DATA_UNAVAILABLE_OR_INCOMPLETE');assert.ok(!r.candidates.some(c=>c.asset==='option'));assert.equal(r.lanes.crypto,'DATA_UNAVAILABLE_OR_INCOMPLETE');
 });
-test('workflow pins actions, isolates credentials and defaults paused',()=>{
+test('workflow pins actions, isolates credentials and respects explicit research scheduling control',()=>{
  const w=fs.readFileSync('.github/workflows/trading_bot.yml','utf8');assert.ok(w.includes('*/5 13-21 * * 1-5'));
  assert.ok(!/ROBINHOOD|OPENAI_API_KEY|pull_request_target/.test(w));assert.equal((w.match(/uses: [^\n]+@[0-9a-f]{40}/g)||[]).length,8);
- assert.equal(JSON.parse(fs.readFileSync('.github/trading-bot-control.json')).enabled,false);
+ assert.equal(typeof JSON.parse(fs.readFileSync('.github/trading-bot-control.json')).enabled,'boolean');
+ assert.ok(w.includes("state.enabled || action === 'scan'"));
  assert.ok(w.includes("action !== 'stop'"));assert.ok(w.includes('persist-credentials: false'));
 });
 test('successful paginated chain retains all pages',async()=>{

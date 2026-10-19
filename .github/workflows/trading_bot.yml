@@ -9,6 +9,11 @@ on:
         type: choice
         options: [scan, start, stop]
         default: scan
+      scope:
+        description: 'Declared research coverage. Core uses current access; broad retains full missing-data diagnostics.'
+        type: choice
+        options: [CURRENT_ACCESS_CORE, BROAD]
+        default: CURRENT_ACCESS_CORE
 permissions:
   contents: read
 concurrency:
@@ -60,6 +65,7 @@ jobs:
         run: node --test scripts/test-safe-trading-bot.mjs scripts/test-trading-research-policy.mjs
       - name: Scan market data only
         env:
+          TESTSTOCK_RESEARCH_SCOPE: ${{ inputs.scope || 'CURRENT_ACCESS_CORE' }}
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
         run: node scripts/safe-trading-bot.mjs
@@ -103,7 +109,7 @@ jobs:
             const {researchPacket} = await import(`${process.env.GITHUB_WORKSPACE}/scripts/trading-research-policy.mjs`);
             const report = JSON.parse(await fs.readFile('work/publication/trading-bot-report.json', 'utf8'));
             const packet = researchPacket(report);
-            const path = 'docs/data/safe-trading-research.json';
+            const path = packet.diagnostics.scope.name === 'CURRENT_ACCESS_CORE' ? 'docs/data/safe-trading-core-research.json' : 'docs/data/safe-trading-research.json';
             const branch = context.payload.repository.default_branch;
             let sha;
             try {

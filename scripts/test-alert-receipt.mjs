@@ -19,3 +19,7 @@ test('receipt must match this challenge, be clicked within its lifetime, and hav
 test('a prior session acknowledgement does not carry into another trading day',t=>{
  const {root,save}=setup(t);save('desktop-alert-receipt.json',{challengeId:id,acknowledgedAt:new Date(now).toISOString(),source:'DESKTOP_ACKNOWLEDGE_BUTTON'});save('desktop-alert-status.json',{at:new Date(now+86400000).toISOString(),state:'READY'});assert.equal(alertReceipt(root,{now:now+86400000}).userReceiptVerified,false);
 });
+test('explicit no-popup preference overrides a fresh historical desktop receipt',t=>{
+ const {root,save}=setup(t);save('desktop-alert-receipt.json',{challengeId:id,acknowledgedAt:new Date(now).toISOString(),source:'DESKTOP_ACKNOWLEDGE_BUTTON'});save('notification-preferences.json',{interactiveAlertsEnabled:false});
+ const r=alertReceipt(root,{now});assert.equal(r.channel,'SILENT_LOCAL_LOG');assert.equal(r.userReceiptVerified,false);
+});
