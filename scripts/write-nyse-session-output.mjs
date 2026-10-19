@@ -1,21 +1,14 @@
 import fs from 'node:fs/promises';
-import { evaluateNyseSession, newYorkClock } from './nyse-session.mjs';
+import {readCalendarSession,sessionOutputs} from './alpaca-session-gate.mjs';
 
 const out=process.argv[2];
-if(!out) throw new Error('GITHUB_OUTPUT path required');
-const key=process.env.ALPACA_API_KEY;
-const secret=process.env.ALPACA_API_SECRET;
-if(!key||!secret) throw new Error('Alpaca credentials required for authoritative NYSE calendar gate');
-
-const now=new Date();
-const {dateKey}=newYorkClock(now);
-const url=new URL('https://paper-api.alpaca.markets/v2/calendar');
-url.searchParams.set('start',dateKey);
-url.searchParams.set('end',dateKey);
-const response=await fetch(url,{headers:{'APCA-API-KEY-ID':key,'APCA-API-SECRET-KEY':secret}});
-if(!response.ok) throw new Error(`Alpaca calendar HTTP ${response.status}`);
-const rows=await response.json();
-const row=Array.isArray(rows)?rows.find(x=>x.date===dateKey):null;
-const session=evaluateNyseSession({now,calendarSession:row?{date:row.date,open:row.open,close:row.close}:null,entryCutoffMinutesBeforeClose:20,forcedExitStartMinutesBeforeClose:10});
-await fs.appendFile(out,`stocks=${session.regularSession?'true':'false'}\ncalendar_available=${session.calendarAvailable?'true':'false'}\nentry_allowed=${session.entryAllowed?'true':'false'}\n`);
+if(!out)throw new Error('GITHUB_OUTPUT path required');
+const session=await readCalendarSession();
+await fs.appendFile(out,sessionOutputs(session));
+// No credentials, provider bodies, or broker state enter this diagnostic.
+if(process.env.TESTSTOCK_SESSION_STATUS_FILE)await fs.writeFile(process.env.TESTSTOCK_SESSION_STATUS_FILE,JSON.stringify(session,null,2));
 console.log(JSON.stringify(session));
+if(!session.calendarAvailable){
+  console.error('NYSE session unverified: '+session.code+'. Verify a matching paper-account key pair in Actions secrets ALPACA_API_KEY / ALPACA_API_SECRET. Entries remain blocked.');
+  process.exitCode=1;
+}

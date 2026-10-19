@@ -18,4 +18,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Test published dispatch safety
+        run: python -m unittest discover -s tests -p 'test_dispatch_safety.py'
       - run: npm run build

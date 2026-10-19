@@ -1,5 +1,7 @@
 # Windows read-only automatic monitor
 
+For the current stock/options coverage audit, private reports, stable runtime bundles and remaining live acceptance gates, see [Protection verification](PROTECTION-VERIFICATION.md).
+
 This setup never submits, cancels, replaces, exercises or funds an order. The legacy executor's live entry point is hard-disabled, including exits. Environment flags and checked-in capability files cannot unlock it. Existing connected ChatGPT tasks are outside this process; this change does not cancel them or change broker-resident orders.
 
 ## Install
