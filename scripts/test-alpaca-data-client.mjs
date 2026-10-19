@@ -32,11 +32,16 @@ test('separate Windows vaults never overwrite each other and reject arbitrary fi
 test('local setup rejects cross-origin submissions and saves only after all read checks pass',async t=>{
  const root=temp(t);let resolveUrl;const ready=new Promise(resolve=>{resolveUrl=resolve;});let saved;let reads=0;
  const currentTransport=async url=>{reads++;const u=new URL(url);if(u.pathname.endsWith('/clock')) return Response.json({timestamp:new Date().toISOString(),is_open:false,next_open:'2026-10-16T13:30:00Z'});if(u.pathname.endsWith('/calendar'))return Response.json([{date:new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()),open:'09:30',close:'16:00'}]);return Response.json({bars:{SPY:[{t:new Date().toISOString(),c:100}]}});};
- const pending=startAlpacaSetup(root,{timeoutMs:5000,onReady:resolveUrl,transport:currentTransport,store:{save:value=>{saved=value;}}});
+ let rejectAuthentication=true;
+ const pending=startAlpacaSetup(root,{timeoutMs:5000,onReady:resolveUrl,transport:async url=>rejectAuthentication?new Response('private upstream error must never appear',{status:401}):currentTransport(url),store:{save:value=>{saved=value;}}});
  const setupUrl=await ready;const setup=await fetch(setupUrl);assert.equal(setup.status,200);assert.match(setup.headers.get('content-security-policy'),/form-action 'self'/);assert.match(await setup.text(),/type="password"/);
+ assert.equal(setup.headers.get('referrer-policy'),'same-origin');
  const postUrl=setupUrl.replace('/setup/','/configure/');const origin=new URL(setupUrl).origin;
  const body=new URLSearchParams({key:credentials.key,secret:credentials.secret});
  const rejected=await fetch(postUrl,{method:'POST',headers:{Origin:'https://evil.example'},body});assert.equal(rejected.status,403);assert.equal(reads,0);assert.equal(saved,undefined);
+ const opaque=await fetch(postUrl,{method:'POST',headers:{Origin:'null'},body});assert.equal(opaque.status,403);assert.equal(saved,undefined);
+ const failed=await fetch(postUrl,{method:'POST',headers:{Origin:origin},body});assert.equal(failed.status,200);const feedback=await failed.text();assert.match(feedback,/Connection not saved/);assert.match(feedback,/ALPACA_HTTP_401/);assert.doesNotMatch(feedback,/private upstream|paper-secret/);assert.equal(saved,undefined);
+ rejectAuthentication=false;
  const result=await fetch(postUrl,{method:'POST',headers:{Origin:origin},body});assert.equal(result.status,200);assert.equal((await pending).connected,true);assert.deepEqual(saved,credentials);assert.equal(reads,3);
 });
 import {runAlpacaDataTask} from './run-alpaca-data-task.mjs';

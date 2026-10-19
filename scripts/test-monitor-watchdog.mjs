@@ -45,3 +45,10 @@ test('untrusted persisted codes never leak into local alerts',t=>{
  assert.ok(watchdog(r,{now}).activeCodes.includes('WATCHDOG_STATE_INVALID'));
  assert.doesNotMatch(fs.readFileSync(path.join(r,'alerts.jsonl'),'utf8'),/SECRET/);
 });
+
+test('read-only health does not suppress missing protection or expiring option incidents',t=>{
+ const r=root(t);save(r,{...healthy,protection:{blockers:['HOLDING_PROTECTION_UNVERIFIED','OPTION_EXPIRATION_REVIEW_REQUIRED','CRYPTO_PROTECTION_UNVERIFIED','PRIVATE_HOLDING']}});
+ const report=watchdog(r,{now});assert.equal(report.activeCodes.length,3);
+ assert.ok(report.activeCodes.includes('OPTION_EXPIRATION_REVIEW_REQUIRED'));
+ assert.doesNotMatch(fs.readFileSync(path.join(r,'alerts.jsonl'),'utf8'),/PRIVATE_HOLDING/);
+});

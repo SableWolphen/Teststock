@@ -1,4 +1,5 @@
 import {SAFETY_POLICY, earnedAdmission} from './safety-policy.mjs';
+import {eligibleOptionEvidence} from './options-shadow-engine.mjs';
 import fs from 'node:fs/promises';
 
 // Phase 1 of the options shadow-evidence pipeline (2026-09-25, user-requested). Mirrors
@@ -17,7 +18,7 @@ const evidence=await read('docs/data/options-real-trade-journal.json',{summary:{
 const policy=await read('docs/data/probability-first-policy.json',{});
 const optionsPolicy=policy.options||{};
 
-const resolved=(shadow.trades||[]).filter(x=>x.status==='RESOLVED'&&Number.isFinite(Number(x.realizedR))&&x.evidenceEligible===true&&Number(x.shadowEvidenceVersion)>=3);
+const resolved=(shadow.trades||[]).filter(eligibleOptionEvidence);
 const independentMap=new Map();
 for(const x of resolved){
   const k=`${x.createdDate}|${x.underlying}`;

@@ -58,7 +58,7 @@ import {once} from 'node:events';
 test('49 outcomes or 19 days cannot earn options micro admission; evidence never grants execution',t=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'admission-boundary-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));const data=path.join(dir,'docs/data');fs.mkdirSync(data,{recursive:true});
  for(const [count,days,expected] of [[49,20,'SHADOW_ONLY'],[50,19,'SHADOW_ONLY'],[50,20,'MICRO_PROBATION']]) {
-  const trades=Array.from({length:count},(_,i)=>({status:'RESOLVED',realizedR:1,evidenceEligible:true,shadowEvidenceVersion:3,createdDate:`2026-09-${String(i%days+1).padStart(2,'0')}`,underlying:'SYM'+i}));
+  const trades=Array.from({length:count},(_,i)=>{const date=`2026-09-${String(i%days+1).padStart(2,'0')}`,contract='SYM'+i;return {status:'RESOLVED',realizedR:1,evidenceEligible:true,shadowEvidenceVersion:4,contract,createdDate:date,underlying:contract,createdAt:date+'T14:00:00Z',resolvedAt:date+'T15:00:00Z',entryQuote:{contract,feed:'opra',quoteAt:date+'T14:00:00Z',bid:1,ask:1.1},exitQuote:{contract,feed:'opra',quoteAt:date+'T15:00:00Z',bid:1,ask:1.1}};});
   fs.writeFileSync(path.join(data,'options-shadow-trades.json'),JSON.stringify({trades}));
   const child=spawnSync(process.execPath,[path.resolve('scripts/apply-options-profitability-admission.mjs')],{cwd:dir,encoding:'utf8'});assert.equal(child.status,0,child.stderr);
   const out=JSON.parse(fs.readFileSync(path.join(data,'options-profitability-admission.json')));assert.equal(out.state,expected);assert.equal(out.executionAuthorized,false);

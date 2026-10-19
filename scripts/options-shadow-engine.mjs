@@ -2,7 +2,13 @@
 // options-shadow-ledger.mjs's network/file I/O so it can be unit tested without live
 // Alpaca calls -- same split as crypto-monitor-candidates.mjs / test-crypto-monitoring.mjs.
 const round=(n,d=4)=>Number(Number(n||0).toFixed(d));
-const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+export function validOptionQuote(quote,nowIso,{requireOpra=false}={}) {
+  const bid=Number(quote?.bid),ask=Number(quote?.ask),age=Date.parse(nowIso)-Date.parse(quote?.quoteAt);
+  return Number.isFinite(bid)&&bid>0&&Number.isFinite(ask)&&ask>=bid&&Number.isFinite(age)&&age>=-2000&&age<=30000&&(!requireOpra||quote.feed==='opra');
+}
+export function eligibleOptionEvidence(trade) {
+  return !!trade&&typeof trade.contract==='string'&&trade.contract.length>0&&trade.status==='RESOLVED'&&trade.evidenceEligible===true&&Number(trade.shadowEvidenceVersion)>=4&&typeof trade.realizedR==='number'&&Number.isFinite(trade.realizedR)&&trade.entryQuote?.contract===trade.contract&&trade.exitQuote?.contract===trade.contract&&validOptionQuote(trade.entryQuote,trade.createdAt,{requireOpra:true})&&validOptionQuote(trade.exitQuote,trade.resolvedAt,{requireOpra:true});
+}
 
 // Version 2 models an intraday long-option exit using executable prices. It arms a
 // progressively higher floor as the bid rises, and never lowers that floor. The final
@@ -96,8 +102,9 @@ export function openNewShadowTrades({candidates=[],existingTrades=[],todayIso,no
     score:best.score??null,
     notes:null,
     modelOnly:true,
-    shadowEvidenceVersion:3,
-    evidenceEligible:true,
+    shadowEvidenceVersion:4,
+    entryQuote:{contract:best.contract,bid:best.bid,ask:best.ask,quoteAt:best.quoteAt??null,feed:best.quoteFeed??null},
+    evidenceEligible:validOptionQuote({...best,feed:best.quoteFeed},nowIso,{requireOpra:true}),
   }; });
 }
 
@@ -117,14 +124,16 @@ export function resolveOptionShadowTrade(trade,liveSnapshot,nowIso,marketSession
       notes:'No executable same-session exit mark was captured. A later-day snapshot is not used as a substitute.',
       exitReason:'MISSED_SESSION_EXIT_NO_INTRADAY_MARK'};
   }
-  if(liveSnapshot&&Number(liveSnapshot.bid)>0&&Number(liveSnapshot.ask)>0){
+  if(liveSnapshot&&Number.isFinite(Number(liveSnapshot.bid))&&Number(liveSnapshot.bid)>0&&Number.isFinite(Number(liveSnapshot.ask))&&Number(liveSnapshot.ask)>=Number(liveSnapshot.bid)){
     const bid=round(Number(liveSnapshot.bid),4),ask=round(Number(liveSnapshot.ask),4),mid=round((bid+ask)/2,4);
     const highWaterBid=round(Math.max(Number(trade.highWaterBid||0),bid),4);
     const lowWaterBid=round(Math.min(Number(trade.lowWaterBid??bid),bid),4);
     const floor=protectedFloor(Number(trade.entry),highWaterBid,Number(trade.stop));
     const exitAt=(price,outcome,reason)=>{
-      const r=clamp(round((price-trade.entry)/risk,4),-1,Number(trade.targetR));
-      return {...trade,status:'RESOLVED',outcome,exitReason:reason,exitBid:price,realizedR:r,resolvedAt:nowIso,lastCheckedAt:nowIso,lastCheckedMid:mid,lastCheckedBid:bid,highWaterBid,lowWaterBid,protectedFloor:floor};
+      // A stop is a trigger, not a guaranteed fill. Preserve adverse gaps below it.
+      const r=round((price-trade.entry)/risk,4);
+      const exitQuote={...liveSnapshot,contract:trade.contract};
+      return {...trade,status:'RESOLVED',outcome,exitReason:reason,exitBid:price,realizedR:r,resolvedAt:nowIso,lastCheckedAt:nowIso,lastCheckedMid:mid,lastCheckedBid:bid,highWaterBid,lowWaterBid,protectedFloor:floor,exitQuote,evidenceEligible:trade.evidenceEligible===true&&validOptionQuote(exitQuote,nowIso,{requireOpra:true})};
     };
     if(bid>=trade.target){
       return exitAt(bid,'WIN','TARGET');
@@ -146,7 +155,7 @@ export function resolveOptionShadowTrade(trade,liveSnapshot,nowIso,marketSession
 }
 
 export function summarizeShadowTrades(trades){
-  const resolved=(trades||[]).filter(x=>x.status==='RESOLVED'&&Number.isFinite(Number(x.realizedR))&&x.evidenceEligible===true&&Number(x.shadowEvidenceVersion)>=3);
+  const resolved=(trades||[]).filter(eligibleOptionEvidence);
   const independentMap=new Map();
   for(const x of resolved){
     const k=`${x.createdDate}|${x.underlying}`;
