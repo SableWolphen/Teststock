@@ -1,6 +1,11 @@
 import {unwrapRead} from './monitor-reconciliation.mjs';
 const num=v=>(typeof v==='number'||typeof v==='string'&&v.trim()!=='')&&Number.isFinite(Number(v))?Number(v):null;
 const cents=v=>v!==null&&v>=0&&Number.isSafeInteger(Math.ceil(v*100))?Math.ceil(v*100):null;
+const floorMoney=v=>{
+ const m=/^(\d+)(?:\.(\d+))?$/.exec(String(v));if(!m)return null;
+ const value=BigInt(m[1])*100n+BigInt((m[2]??'').padEnd(2,'0').slice(0,2));
+ return value<=BigInt(Number.MAX_SAFE_INTEGER)?Number(value):null;
+};
 const day=t=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(t));
 
 // Conservative full-cost capital-at-risk bounds, not a claim of actual loss or
@@ -26,7 +31,8 @@ export function capitalRiskFacts(snapshot={},portfolio={}) {
  }
  for(const k of ['futures_value','event_contracts_value','mutual_funds_value','fixed_income_value'])if(num(portfolio[k])!==0)valid=false;
  const equity=num(portfolio.total_value),cash=num(portfolio.cash),bp=num(portfolio.buying_power?.buying_power),unleveraged=num(portfolio.buying_power?.unleveraged_buying_power);
- const cashVerified=portfolio.currency==='USD'&&[cash,bp,unleveraged].every(x=>x!==null&&x>=0)&&num(portfolio.pending_deposits)===0;
+ const cashCents=[portfolio.cash,portfolio.buying_power?.buying_power,portfolio.buying_power?.unleveraged_buying_power].map(floorMoney);
+ const cashVerified=portfolio.currency==='USD'&&[cash,bp,unleveraged].every(x=>x!==null&&x>=0)&&cashCents.every(Number.isSafeInteger)&&num(portfolio.pending_deposits)===0;
  const pendingBuy=(snapshot.orders??[]).some(o=>o.working!==false&&(o.asset==='EQUITY'?o.side==='buy':o.legs?.some(l=>l.side==='buy')));
  if(!valid||cents(cost)===null)blockers.push('OPEN_CAPITAL_RISK_UNVERIFIED');
  if(!cashVerified)blockers.push('CASH_CAPACITY_UNVERIFIED');
@@ -34,7 +40,7 @@ export function capitalRiskFacts(snapshot={},portfolio={}) {
  const openRiskCents=valid?cents(cost):null,heatLimitCents=equity!==null&&equity>0?Math.floor(equity*5):null;
  if(heatLimitCents===null)blockers.push('ACCOUNT_EQUITY_UNVERIFIED');
  if(openRiskCents!==null&&heatLimitCents!==null&&openRiskCents>=heatLimitCents)blockers.push('PORTFOLIO_HEAT_EXHAUSTED');
- return {basis:'FULL_COST_CAPITAL_AT_RISK_UPPER_BOUND',openRiskVerified:valid,openRiskCents,heatLimitCents,cashCapacityVerified:cashVerified&&!pendingBuy,cashCapacityCents:cashVerified&&!pendingBuy?Math.floor(Math.min(cash,bp,unleveraged)*100):null,blockers};
+ return {basis:'FULL_COST_CAPITAL_AT_RISK_UPPER_BOUND',openRiskVerified:valid,openRiskCents,heatLimitCents,cashCapacityVerified:cashVerified&&!pendingBuy,cashCapacityCents:cashVerified&&!pendingBuy?Math.min(...cashCents):null,blockers};
 }
 
 export async function readRealizedLossFacts(client,account,{now=Date.now(),maxPages=20}={}) {

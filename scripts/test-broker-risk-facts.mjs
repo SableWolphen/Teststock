@@ -12,6 +12,10 @@ test('whole premium is counted once per contract; small cash cannot overcome exh
 test('missing basis, transfers and unsupported assets remain unknown rather than zero risk',()=>{
  for(const [s,p]of [[{...snapshot,options:[{...snapshot.options[0],average_price:null}]},portfolio],[snapshot,{...portfolio,futures_value:'1'}],[{...snapshot,cryptoPositions:[{quantity:'1',currency:{type:'cryptocurrency'},cost_bases:[{direct_quantity:'0.5',direct_cost_basis:'1'}]}]},portfolio]])assert.equal(capitalRiskFacts(s,p).openRiskVerified,false);
 });
+test('spendable cents use decimal floors without binary rounding or rounding up fractional cents',()=>{
+ const r=capitalRiskFacts(snapshot,{...portfolio,cash:'1.1600',buying_power:{buying_power:'1.1699',unleveraged_buying_power:'1.16'}});assert.equal(r.cashCapacityCents,116);
+ assert.equal(capitalRiskFacts(snapshot,{...portfolio,cash:'0.019'}).cashCapacityCents,1);
+});
 test('realized loss uses gross losing trades; gains do not offset the risk limit',async()=>{
  const r=await readRealizedLossFacts(client([trade(-25),trade(100)],[{realized_gain:'75',number_of_trades:2}],75),account,{now});assert.equal(r.grossRealizedLossCents,2500);assert.equal(r.verified,true);assert.equal(r.continuityVerified,false);
 });
