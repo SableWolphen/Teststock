@@ -21,3 +21,8 @@ test('options require independently verified same-session exit capability',()=>{
 test('options buy request is not generated while execution is blocked',()=>{
   assert.match(ui,/if\(!liveOptionsReady\|\|!optionSnapshotFresh\)\{setOptionNotice\('LIVE_ORDER_BLOCKED:/);
 });
+
+test('option capability cannot bypass the canonical live deployment lock',()=>{
+ assert.match(ui,/const liveOptionsReady = SAFETY_POLICY.liveExecutionEnabled &&/);
+ assert.match(ui,/SAFETY_POLICY.liveExecutionEnabled&&optionAdmission.executionAuthorized/);
+});

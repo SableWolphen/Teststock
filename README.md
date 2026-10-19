@@ -2,6 +2,10 @@
 
 A mobile-first stock + options decision engine for finding small, defined-risk opportunities without forcing a trade every day.
 
+## Financial Freedom planning
+
+Open **Financial Freedom** in the app or `docs/financial-freedom.html` on the published desk. The shared planner replaces the old $100M page with a $10,000/month goal over 12 or 24 months, optional contributions, capital milestones, withdrawal capacity, inflation and loss scenarios. The $76.21 example is a historical app default, not a live balance. Browser-local inputs never feed trading size or admission. Published journal evidence is separate; missing P&L remains unknown. See [planning assumptions](docs/FINANCIAL-FREEDOM.md).
+
 ## The experience
 
 The home screen answers one question first: **what should I do today?**

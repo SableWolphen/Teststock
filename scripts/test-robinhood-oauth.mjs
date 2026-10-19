@@ -36,7 +36,7 @@ test('fresh tokens require no refresh; absent refresh and revoked grants fail cl
  assert.throws(()=>mergeTokens({access_token:'x',token_type:'Bearer',expires_in:0},{}),/INVALID_TOKEN_RESPONSE/);
 });
 test('per-request token provider cannot expand tool permissions',async()=>{
- let reads=0;const client=new ReadOnlyMcp({tokenProvider:async()=>{reads++;return 'fresh';},transport:async(url,options)=>{assert.equal(options.headers.Authorization,'Bearer fresh');return Response.json({id:1,result:{content:[]}});}});
+ let reads=0;const client=new ReadOnlyMcp({tokenProvider:async()=>{reads++;return 'fresh';},transport:async(url,options)=>{assert.equal(options.headers.Authorization,'Bearer fresh');return Response.json({jsonrpc:'2.0',id:1,result:{content:[]}});}});
  await assert.rejects(client.call('place_equity_order'),/READ_ONLY_TOOL_DENIED/);assert.equal(reads,0);
  await assert.rejects(client.rpc('tools/call',{name:'place_equity_order',arguments:{}}),/READ_ONLY_TOOL_DENIED/);
  await assert.rejects(client.rpc('resources/subscribe',{}),/READ_ONLY_TOOL_DENIED/);assert.equal(reads,0);
