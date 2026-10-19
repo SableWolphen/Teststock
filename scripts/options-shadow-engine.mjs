@@ -7,7 +7,7 @@ export function validOptionQuote(quote,nowIso,{requireOpra=false}={}) {
   return Number.isFinite(bid)&&bid>0&&Number.isFinite(ask)&&ask>=bid&&Number.isFinite(age)&&age>=-2000&&age<=30000&&(!requireOpra||quote.feed==='opra');
 }
 export function eligibleOptionEvidence(trade) {
-  return trade.status==='RESOLVED'&&trade.evidenceEligible===true&&Number(trade.shadowEvidenceVersion)>=4&&typeof trade.realizedR==='number'&&Number.isFinite(trade.realizedR)&&trade.entryQuote?.contract===trade.contract&&trade.exitQuote?.contract===trade.contract&&validOptionQuote(trade.entryQuote,trade.createdAt,{requireOpra:true})&&validOptionQuote(trade.exitQuote,trade.resolvedAt,{requireOpra:true});
+  return !!trade&&typeof trade.contract==='string'&&trade.contract.length>0&&trade.status==='RESOLVED'&&trade.evidenceEligible===true&&Number(trade.shadowEvidenceVersion)>=4&&typeof trade.realizedR==='number'&&Number.isFinite(trade.realizedR)&&trade.entryQuote?.contract===trade.contract&&trade.exitQuote?.contract===trade.contract&&validOptionQuote(trade.entryQuote,trade.createdAt,{requireOpra:true})&&validOptionQuote(trade.exitQuote,trade.resolvedAt,{requireOpra:true});
 }
 
 // Version 2 models an intraday long-option exit using executable prices. It arms a

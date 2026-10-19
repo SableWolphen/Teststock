@@ -136,3 +136,9 @@ test('day-trade session blocks late entries and forces a bid exit',()=>{
 });
 
 function round(n,d=4){return Number(Number(n||0).toFixed(d));}
+
+
+test('admission requires a nonempty exact contract identity',()=>{
+ assert.equal(eligibleOptionEvidence(null),false);
+ assert.equal(eligibleOptionEvidence({status:'RESOLVED',evidenceEligible:true,shadowEvidenceVersion:4,realizedR:1}),false);
+});

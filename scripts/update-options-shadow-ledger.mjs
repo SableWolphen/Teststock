@@ -15,10 +15,9 @@ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const get=async u=>{
   let lastError;
   for(let attempt=0;attempt<5;attempt++){
-    const r=await fetch(u,{headers});
+    const r=await fetch(u,{headers,redirect:'error',signal:AbortSignal.timeout(8000)});
     if(r.ok)return r.json();
-    const body=await r.text();
-    lastError=new Error(`Alpaca ${r.status}: ${body}`);
+    lastError=new Error(`Alpaca HTTP ${r.status}`);
     if(r.status!==429&&r.status<500)throw lastError;
     const retryAfter=Number(r.headers.get('retry-after')||0);
     const waitMs=retryAfter>0?retryAfter*1000:Math.min(20000,1000*(2**attempt));
@@ -44,8 +43,8 @@ async function liveSnapshotFor(underlying,contract){
     const bid=Number(qx.bp??qx.bid_price??0),ask=Number(qx.ap??qx.ask_price??0);
     const snapshot={bid,ask,quoteAt:qx.t??qx.timestamp??null,feed};
     return validOptionQuote(snapshot,new Date().toISOString())?snapshot:null;
-  }catch(error){
-    console.warn(`Options shadow ledger snapshot lookup ${underlying} ${contract}: ${error.message}`);
+  }catch{
+    console.warn(`Options shadow ledger snapshot unavailable for ${underlying} ${contract}`);
     return null;
   }
 }
@@ -62,7 +61,8 @@ const marketSession=newYorkSession(nowIso);
 const openTrades=ledger.trades.filter(x=>x.status==='OPEN');
 for(const trade of openTrades){
   const snapshot=await liveSnapshotFor(trade.underlying,trade.contract);
-  const resolved=resolveOptionShadowTrade(trade,snapshot,nowIso,marketSession);
+  const observedAt=new Date().toISOString();
+  const resolved=resolveOptionShadowTrade(trade,snapshot,observedAt,newYorkSession(observedAt));
   const idx=ledger.trades.findIndex(x=>x.id===trade.id);
   if(idx>=0)ledger.trades[idx]=resolved;
 }
@@ -72,22 +72,24 @@ const allowNew=String(process.env.SHADOW_OPEN_NEW||'true').toLowerCase()!=='fals
 const freshCandidates=[];
 if(allowNew&&marketSession.entryAllowed)for(const candidate of (scan.candidates||[]).slice(0,50)) {
   const quote=await liveSnapshotFor(candidate.underlying,candidate.contract);
-  if(quote&&validOptionQuote(quote,nowIso))freshCandidates.push({...candidate,bid:quote.bid,ask:quote.ask,oneContractPremiumDollars:quote.ask*100,quoteAt:quote.quoteAt,quoteFeed:quote.feed});
+  if(quote&&validOptionQuote(quote,new Date().toISOString()))freshCandidates.push({...candidate,bid:quote.bid,ask:quote.ask,oneContractPremiumDollars:quote.ask*100,quoteAt:quote.quoteAt,quoteFeed:quote.feed});
 }
+const entryObservedAt=new Date().toISOString();
+const entrySession=newYorkSession(entryObservedAt);
 const newTrades=allowNew?openNewShadowTrades({
-  candidates:freshCandidates,
+  candidates:freshCandidates.filter(c=>validOptionQuote({...c,feed:c.quoteFeed},entryObservedAt)),
   existingTrades:ledger.trades,
-  todayIso:marketSession.date,
-  nowIso,
+  todayIso:entrySession.date,
+  nowIso:entryObservedAt,
   maxNewPerUtcDay:5,
-  marketSession,
+  marketSession:entrySession,
   maxPremiumDollars:Number(seedPolicy.maxOrderUsd||20),
   allowedDteBuckets:Array.isArray(seedPolicy.allowedDteBuckets)&&seedPolicy.allowedDteBuckets.length?seedPolicy.allowedDteBuckets:['STANDARD','WEEKLY'],
 }):[];
 ledger.trades.push(...newTrades);
 
 const terminalOptionTrades=ledger.trades.filter(t=>t.status!=='OPEN').slice(-20000);const openOptionTrades=ledger.trades.filter(t=>t.status==='OPEN').slice(-3000);ledger.trades=[...terminalOptionTrades,...openOptionTrades];
-ledger.generatedAt=nowIso;
+ledger.generatedAt=new Date().toISOString();
 ledger.summary=summarizeShadowTrades(ledger.trades);
 ledger.rules=[
   'Paper-only: no order is ever placed by this script. Tracks up to five highest-scoring live-lane-eligible WEEKLY/STANDARD contracts per New York trading day, with at most one contract per underlying and subject to the active whole-contract premium cap.',
