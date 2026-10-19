@@ -11,7 +11,7 @@ import {selectStockQuotes,readAlpacaQuotes} from './stock-quote-fallback.mjs';
 import {readOptionMarkets} from './option-monitor-quotes.mjs';
 import {alertReceipt} from './alert-receipt.mjs';
 
-export const READ_TOOLS = Object.freeze(['get_accounts', 'get_equity_quotes', 'get_equity_positions', 'get_option_positions', 'get_equity_orders', 'get_option_orders', 'get_crypto_positions', 'get_crypto_orders', 'get_portfolio', 'get_option_quotes', 'get_option_instruments']);
+export const READ_TOOLS = Object.freeze(['get_accounts', 'get_equity_quotes', 'get_equity_positions', 'get_option_positions', 'get_equity_orders', 'get_option_orders', 'get_crypto_positions', 'get_crypto_orders', 'get_portfolio', 'get_option_quotes', 'get_option_instruments', 'get_pnl_trade_history', 'get_realized_pnl']);
 export class ReadOnlyMcp {
   constructor({token, tokenProvider, transport=fetch}) { this.token=token; this.tokenProvider=tokenProvider; this.transport=transport; this.id=0; }
   async rpc(method, params) {

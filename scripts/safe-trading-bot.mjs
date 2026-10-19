@@ -112,16 +112,32 @@ async function pool(items,limit,fn) {
   await Promise.all(Array.from({length:Math.min(limit,items.length)},async()=>{while(cursor<items.length){const index=cursor++;try{results[index]={ok:true,value:await fn(items[index])};}catch(error){results[index]={ok:false,code:/^DATA_HTTP_\d{3}$/.test(error?.code)?error.code:'DATA_READ_FAILED'};}}}));
   return results;
 }
-export async function scan(reader,{now=Date.now(),inputs={universe:UNIVERSE,config:DEFAULT_STRATEGY,sources:[],triggers:new Map(),events:null}}={}) {
-  if(SAFETY_POLICY.liveExecutionEnabled!==false)throw Error('SAFETY_LOCK_REQUIRED');
+export async function scan(reader,{now=Date.now(),scope='BROAD',inputs={universe:UNIVERSE,config:DEFAULT_STRATEGY,sources:[],triggers:new Map(),events:null}}={}) {
+  // Research has no order transport and stays read-only even after a separately
+  // verified connected-executor deployment. Bootstrap overrides remain forbidden.
+  if(SAFETY_POLICY.bootstrapAllowed!==false)throw Error('UNSAFE_BOOTSTRAP_POLICY');
+  if(!['BROAD','CURRENT_ACCESS_CORE'].includes(scope))throw Error('RESEARCH_SCOPE_INVALID');
+  // A separate, declared research universe. This never reclassifies omissions
+  // from the broad scan as complete, or upgrades indicative/delayed options.
+  if(scope==='CURRENT_ACCESS_CORE')inputs={...inputs,universe:UNIVERSE,config:{...inputs.config,discoverAssets:false}};
   const started=Date.now(),config=strategyConfig(inputs.config),requested={stocks:[...new Set(['SPY',...inputs.universe.stocks])],crypto:[...new Set(inputs.universe.crypto)]};
   const evaluationNow=()=>now+(Date.now()-started);
   const report={generatedAt:new Date(now).toISOString(),mode:'RESEARCH_ONLY',liveOrdersEnabled:false,dailyLossLimitCents:config.dailyLossLimitCents,dailyLossGate:'PRIVATE_ACCOUNT_AND_PERSISTED_STATE_REQUIRED',candidates:[],lanes:{},sources:inputs.sources??[],coverage:{},metrics:{}};
+  report.scope=scope;
+  report.scopeDescription=scope==='CURRENT_ACCESS_CORE'?'Five named IEX stock symbols and three named Alpaca US crypto pairs; options excluded because current recent-history access is unverified.':'Bounded broad provider discovery; omissions remain incomplete.';
   let macro=null;
   let marketOpen=false;
   try {const clock=await reader.get('clock');if(!validResearchClock(clock,evaluationNow()))throw Error();marketOpen=clock.is_open;report.lanes.session=marketOpen?'OPEN':'CLOSED';}
   catch {report.lanes.session='UNVERIFIED';}
   const rowsByAsset={stock:new Map(),crypto:new Map(),option:new Map()};
+  const waitForObservationTime=async assets=>{
+    const at=evaluationNow(),remaining=config.maxRuntimeMs-(Date.now()-started);
+    const times=assets.flatMap(asset=>[...rowsByAsset[asset].values()].flatMap(s=>[s?.latestQuote?.t,s?.latestTrade?.t].map(t=>Date.parse(t)))).filter(t=>Number.isFinite(t)&&t>at&&t-at<=2000);
+    const wait=times.length?Math.max(...times)-at+1:0;
+    // Wait for a slightly ahead provider clock to reach local time. The normal
+    // strict quote/trade freshness check still rejects every future timestamp.
+    if(wait>0&&wait<remaining)await new Promise(resolve=>setTimeout(resolve,wait));
+  };
   for(const asset of ['stock','crypto']) {
     if(asset!=='crypto'&&!marketOpen) {report.lanes[asset]='SESSION_BLOCKED';continue;}
     const key=asset==='stock'?'stocks':'crypto',all=new Set(requested[key].filter(s=>validSymbol(s,asset)));
@@ -149,6 +165,7 @@ export async function scan(reader,{now=Date.now(),inputs={universe:UNIVERSE,conf
     report.coverage[asset]={discovery,discovered:all.size,requested:symbols.length,received:rows.size,truncated:all.size>symbols.length,batchFailures:batches.filter(r=>!r.ok).length,retryFailures:retries.filter(r=>!r.ok).length,retried:missing.length,recovered:missing.length-missingSymbols.length,missingSnapshots:missingSymbols.length,missingSymbols,errorCodes:[...new Set([...batches,...retries].filter(r=>!r.ok).map(r=>r.code))]};
     report.lanes[asset]=discovery!=='UNAVAILABLE'&&!missingSymbols.length?'COMPLETE':'DATA_UNAVAILABLE_OR_INCOMPLETE';
   }
+  await waitForObservationTime(['stock','crypto']);
   const spy=rowsByAsset.stock.get('SPY');
   const spyQuote=spy?.latestQuote;
   const validSpyQuote=spyQuote&&[spyQuote.ap,spyQuote.bp,spyQuote.as,spyQuote.bs].every(positive)&&spyQuote.ap>=spyQuote.bp&&(spyQuote.ap-spyQuote.bp)/((spyQuote.ap+spyQuote.bp)/2)<=config.maxSpreadBps/10000;
@@ -156,7 +173,8 @@ export async function scan(reader,{now=Date.now(),inputs={universe:UNIVERSE,conf
   report.macro=macro?{...macro,status:macro.change<=config.macroDropFraction?'BLOCKED':'CLEAR'}:{status:'UNVERIFIED'};
   const prelim=asset=>[...rowsByAsset[asset]].map(([s,v])=>inspectCandidate(s,v,asset,evaluationNow(),config)).filter(c=>c.status==='WATCH').sort((a,b)=>(b.momentum??-1)-(a.momentum??-1)||a.symbol.localeCompare(b.symbol));
   const underlyings=marketOpen?prelim('stock').slice(0,config.maxOptionUnderlyings).map(c=>c.symbol):[];
-  if(!marketOpen)report.lanes.option='SESSION_BLOCKED';
+  if(scope==='CURRENT_ACCESS_CORE')report.lanes.option='EXCLUDED_CURRENT_ACCESS';
+  else if(!marketOpen)report.lanes.option='SESSION_BLOCKED';
   else {
     const chains=await pool(underlyings,config.concurrency,async symbol=>{
       const rows=new Map();let token;const tokens=new Set();
@@ -170,6 +188,7 @@ export async function scan(reader,{now=Date.now(),inputs={universe:UNIVERSE,conf
     report.lanes.option=chains.every(r=>r.ok)?'COMPLETE':'DATA_UNAVAILABLE_OR_INCOMPLETE';
     report.coverage.option={underlyings:underlyings.length,received:rowsByAsset.option.size,chainFailures:chains.filter(r=>!r.ok).length};
   }
+  await waitForObservationTime(['option']);
   for(const asset of ['stock','crypto','option']) {
     const shortlist=prelim(asset).slice(0,config.maxHistorySymbols),histories=new Map();
     const reads=await pool(chunks(shortlist.map(c=>c.symbol),config.batchSize),config.concurrency,async symbols=>{
@@ -213,10 +232,10 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
     const output=path.resolve('work/trading-bot-report.json');await fs.mkdir(path.dirname(output),{recursive:true});
     await fs.rm(output,{force:true});await fs.rm(path.resolve('work/trading-bot-payload.json'),{force:true});
     const inputs=await loadResearchInputs();
-    const report=await scan(new ResearchReader({key:process.env.ALPACA_API_KEY,secret:process.env.ALPACA_API_SECRET,config:inputs.config}),{inputs});
+    const report=await scan(new ResearchReader({key:process.env.ALPACA_API_KEY,secret:process.env.ALPACA_API_SECRET,config:inputs.config}),{inputs,scope:process.env.TESTSTOCK_RESEARCH_SCOPE||'BROAD'});
     await fs.writeFile(output,JSON.stringify(report,null,2)+'\n',{mode:0o600});
     await fs.writeFile(path.resolve('work/trading-bot-payload.json'),JSON.stringify(researchPacket(report),null,2)+'\n',{mode:0o600});
     console.log(JSON.stringify({mode:report.mode,lanes:report.lanes,candidateCount:report.candidates.length}));
-    if(Object.values(report.lanes).some(s=>['UNVERIFIED','DATA_UNAVAILABLE_OR_INCOMPLETE'].includes(s)))process.exitCode=2;
+    if(report.macro?.status==='UNVERIFIED'||Object.values(report.lanes).some(s=>['UNVERIFIED','DATA_UNAVAILABLE_OR_INCOMPLETE'].includes(s)))process.exitCode=2;
   } catch {console.error('SAFE_SCANNER_FAILED');process.exitCode=1;}
 }

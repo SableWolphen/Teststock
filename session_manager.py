@@ -68,6 +68,7 @@ class SessionManager:
     def execution_status(self, observation, status):
         blockers = list(observation["snapshot"].get("blockers", []))
         blockers += status.get("protection", {}).get("blockers", [])
+        blockers += observation.get("riskFacts", {}).get("blockers", [])
         if observation.get("policy", {}).get("liveExecutionEnabled") is not True:
             blockers.append("LIVE_DEPLOYMENT_LOCKED")
         return {"broker_writes": False, "live_eligible": False,
