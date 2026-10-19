@@ -18,6 +18,12 @@ test('exact option stop coverage is a read-only observation, never a live capabi
  assert.ok(r.blockers.includes('ADVANCED_ORDER_COVERAGE_UNVERIFIED'));
  assert.ok(r.blockers.includes('LIVE_ENTRY_PROTECTION_EXIT_CYCLE_UNVERIFIED'));
 });
+
+test('actual desktop receipt clears only its alert gate; a matched stop never clears the session close review',()=>{
+ const late='2026-10-16T19:00:00Z',time=Date.parse(late);
+ const r=run({now:time,snapshot:{...snapshot,generatedAt:late,orders:[{...stop,created_at:late}]},status:{...status,at:late,reconciliation:{...status.reconciliation,at:late},alertDelivery:{userReceiptVerified:true,deliveryHeartbeatFresh:true},entryData:{connected:true,verifiedAt:late,marketOpen:true,calendarVerified:true,calendarSession:{date:'2026-10-16',open:'09:30',close:'16:00'}}}});
+ assert.equal(r.matchedStopCount,1);assert.ok(!r.blockers.includes('ALERT_RECEIPT_UNVERIFIED'));assert.ok(r.blockers.includes('SESSION_EXIT_REVIEW_REQUIRED'));assert.equal(r.allowRealMoneyOrders,false);assert.equal(r.liveCycleVerified,false);
+});
 test('equity and option positions are assessed together',()=>{
  const equity={symbol:'EQUITY',quantity:'1'};
  const equityStop={...stop,asset:'EQUITY',symbol:equity.symbol,side:'sell',quantity:'1'};
