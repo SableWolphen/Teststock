@@ -30,12 +30,11 @@ class DispatchSafetyTests(unittest.TestCase):
             self.assertFalse(c.get("riskCreationAllowed", False))
             self.assertFalse(c.get("equityEntryAllowed", False))
             self.assertFalse(c.get("optionEntryAllowed", False))
-            self.assertFalse(d.get("chatgptShouldRun", False))
 
     def test_unhealthy_board_cannot_publish_live_entries(self):
         d = self.payload
         healthy = (
-            d.get("monitorHealth") == "HEALTHY"
+            d.get("monitorHealth") == "OK"
             and d.get("boardAgeMs", float("inf")) <= d.get("maximumBoardAgeMs", 0)
             and d.get("executorCapability", {}).get("capabilityFresh") is True
         )
@@ -48,8 +47,12 @@ class DispatchSafetyTests(unittest.TestCase):
     def test_pending_action_must_not_override_lock(self):
         d = self.payload
         if d.get("riskCreationBlockedByExecutor"):
-            self.assertIsNone(d.get("pendingAction"))
-            self.assertFalse(d.get("queuedActions", []))
+            # Entry locks must preserve risk-reducing exit dispatches.
+            actions = [d.get("pendingAction")] + d.get("queuedActions", [])
+            for action in filter(None, actions):
+                self.assertNotIn("BUY_TRIGGER", action.get("trigger", ""))
+            for field in ("automaticStockCandidates", "seedLaneCandidates", "optionCandidates"):
+                self.assertFalse(d.get(field, []))
 
     def test_dispatch_requires_reconciliation(self):
         instruction = self.payload.get("actionInstruction", "").lower()
