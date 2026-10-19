@@ -33,3 +33,5 @@ Unavailable crypto pairs are still reported; no provider coverage, entitlement o
 ## Acceptance
 
 Run node --test scripts/test-*.mjs and python -m unittest discover -s tests -p 'test_*.py', plus the production build. CI includes the Python engine regressions. A passing suite or a matched stop observation is not a broker-confirmed entry/protection/exit cycle. No demonstration trade may be used to create that proof. No user confirmation requirement or earned-evidence threshold is waived by this change.
+
+A stale or unavailable public entry dispatch never suppresses a protection review based on fresh independently verified broker observations. Private protection review rows include exact contracts, quoted bids when fresh, and working-exit counts. An existing working close produces reconciliation instructions, never a second protective order. All rows still require broker review and confirmation; none claims placement.
