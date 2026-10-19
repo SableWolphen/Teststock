@@ -9,13 +9,17 @@ export function assessExecution({capabilities,account,quotes=[],orders=[],positi
  if(!Number.isFinite(Date.parse(now)))blockers.push('INVALID_CLOCK');
  const buyingPower=Number(account?.buyingPower);
  if(!Number.isFinite(buyingPower)||buyingPower<0)blockers.push('BUYING_POWER_UNKNOWN');
- const openOrders=orders.filter(o=>['queued','confirmed','partially_filled','pending_cancelled'].includes(o.state));
+ const terminal=new Set(['filled','cancelled','canceled','rejected','failed','voided','partially_filled_rest_cancelled']);
+ // Unknown/in-flight states must reserve the contract until the broker resolves them.
+ const openOrders=orders.filter(o=>!terminal.has(o.state));
  for(const p of positions){
   const q=quotes.find(q=>q.option_id===p.option_id||q.instrument_id===p.option_id);
   const pending=openOrders.some(o=>o.legs?.some(l=>l.option_id===p.option_id&&l.position_effect==='close'));
   if(pending){actions.push({kind:'RECONCILE_EXISTING_EXIT',symbol:p.chain_symbol,option_id:p.option_id});continue}
   if(p.expiration_date&&p.expiration_date<=now.slice(0,10))actions.push({kind:'URGENT_EXPIRATION_REVIEW',symbol:p.chain_symbol,option_id:p.option_id});
+  const quoteAge=Date.parse(now)-Date.parse(q?.updated_at||'');
   if(!q||!Number.isFinite(Number(q.bid_price))||Number(q.bid_price)<=0)actions.push({kind:'NO_EXECUTABLE_BID',symbol:p.chain_symbol,option_id:p.option_id});
+  else if(!Number.isFinite(quoteAge)||quoteAge<0||quoteAge>60000)actions.push({kind:'STALE_EXIT_QUOTE',symbol:p.chain_symbol,option_id:p.option_id});
  }
  return {timestamp:now,allowNewOrders:blockers.length===0,blockers,actions,openOrderCount:openOrders.length};
 }

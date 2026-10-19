@@ -36,6 +36,7 @@ jobs:
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          TESTSTOCK_SESSION_STATUS_FILE: ${{ runner.temp }}/teststock-session.json
         run: |
           node scripts/write-nyse-session-output.mjs "$GITHUB_OUTPUT"
 
@@ -166,3 +167,11 @@ jobs:
             echo "Unable to publish fast refresh after 8 attempts." >&2
             exit 1
           fi
+
+      - name: Upload authoritative session diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: session-diagnostic-${{ github.run_id }}
+          path: ${{ runner.temp }}/teststock-session.json
+          if-no-files-found: ignore
