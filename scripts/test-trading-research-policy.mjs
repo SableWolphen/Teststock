@@ -5,6 +5,8 @@ import path from 'node:path';
 import {strategyConfig,DEFAULT_STRATEGY,intradaySignal,antiTradeReasons,loadResearchInputs,researchPacket} from './trading-research-policy.mjs';
 import {ResearchReader,inspectCandidate,scan,planSettledCash} from './safe-trading-bot.mjs';
 import {evaluateDailyLoss,updateDailyLossGuard} from './daily-loss-guard.mjs';
+import {readFileSync} from 'node:fs';
+const workflowSource=readFileSync('.github/workflows/trading_bot.yml','utf8');
 const now=Date.parse('2026-10-16T16:00:30Z'),t=new Date(now).toISOString();
 const bars=()=>Array.from({length:21},(_,i)=>({t:new Date(Math.floor(now/60000)*60000-(21-i)*60000).toISOString(),h:i===20?101:99,l:97,c:i===20?100:98,v:i===20?300:100}));
 const snap=()=>({latestQuote:{bp:99.9,ap:100,bs:10,as:10,t},latestTrade:{p:100,t},prevDailyBar:{c:98,v:1000,t}});
@@ -74,7 +76,7 @@ test('bulk discovery records truncation and bounded history shortlist',async()=>
  assert.equal(r.candidates.filter(c=>c.asset==='stock'&&c.signal.confirmed).length,1);assert.equal(r.liveOrdersEnabled,false);
 });
 test('public payload expires, strips private data, and never declares fills or order authority',()=>{
- const r={mode:'RESEARCH_ONLY',liveOrdersEnabled:false,generatedAt:t,account:{secret:'private'},candidates:[{symbol:'AAPL',asset:'stock',status:'WATCH',ask:100,spread:.01,feed:'iex',quoteAsOf:t,liveEligible:false,signal:{confirmed:true,breakout:true,volumeRatio:3,barAsOf:t},secret:'private'}]};
+ const r={mode:'RESEARCH_ONLY',liveOrdersEnabled:false,generatedAt:t,lanes:{session:'OPEN',stock:'COMPLETE',option:'COMPLETE',crypto:'COMPLETE'},macro:{status:'CLEAR'},account:{secret:'private'},candidates:[{symbol:'AAPL',asset:'stock',status:'WATCH',ask:100,spread:.01,feed:'iex',quoteAsOf:t,liveEligible:false,signal:{confirmed:true,breakout:true,volumeRatio:3,barAsOf:t},secret:'private'}]};
  const p=researchPacket(r,now);assert.equal(p.candidates.length,1);assert.equal(p.action,'NO_ACTION');assert.ok(!JSON.stringify(p).includes('private'));assert.equal(Date.parse(p.expiresAt)-now,120000);
  assert.equal(researchPacket(r,now+120001).candidates.length,0);
  assert.throws(()=>researchPacket(r,now+300001),/PUBLICATION_INVALID/);assert.throws(()=>researchPacket({...r,liveOrdersEnabled:true},now));
@@ -116,4 +118,21 @@ test('research clock tolerates bounded transport skew without weakening quote fr
  assert.equal(validResearchClock({timestamp:t},now),false);
  assert.equal(validResearchClock({is_open:true,timestamp:'bad'},now),false);
  assert.equal(fresh(new Date(now+1).toISOString(),now,120000),false);
+});
+
+
+test('degraded scans publish explicit coverage and withhold picks from incomplete or unverified lanes',()=>{
+ const candidate={symbol:'AAPL',asset:'stock',status:'WATCH',ask:100,spread:.01,feed:'iex',quoteAsOf:t,liveEligible:false,signal:{confirmed:true,barAsOf:t}};
+ const report={mode:'RESEARCH_ONLY',liveOrdersEnabled:false,generatedAt:t,lanes:{session:'OPEN',stock:'COMPLETE',option:'SESSION_BLOCKED',crypto:'DATA_UNAVAILABLE_OR_INCOMPLETE'},macro:{status:'CLEAR'},coverage:{crypto:{discovered:60,received:36,secret:'private'}},candidates:[candidate,{...candidate,symbol:'BTC/USD',asset:'crypto',feed:'alpaca-us'}]};
+ const packet=researchPacket(report,now);assert.equal(packet.dataHealth,'DEGRADED');assert.equal(packet.action,'NO_ACTION');assert.deepEqual(packet.candidates.map(c=>c.symbol),['AAPL']);assert.equal(packet.coverage.crypto.received,36);assert.ok(!JSON.stringify(packet).includes('private'));
+ assert.equal(researchPacket({...report,lanes:null},now).candidates.length,0);
+ assert.equal(researchPacket({...report,lanes:{...report.lanes,session:'CLOSED'}},now).candidates.length,0);
+});
+
+
+test('failed scan publication cannot bypass fresh-report validation or macro gates',()=>{
+ const w=workflowSource;
+ assert.match(w,/if: always\(\) && \(needs.scan.result == 'success' \|\| needs.scan.result == 'failure'\)/);
+ const packet=researchPacket({mode:'RESEARCH_ONLY',liveOrdersEnabled:false,generatedAt:t,lanes:{session:'OPEN',stock:'COMPLETE',option:'COMPLETE',crypto:'COMPLETE'},candidates:[]},now);
+ assert.equal(packet.macroStatus,'UNVERIFIED');assert.equal(packet.dataHealth,'DEGRADED');assert.deepEqual(packet.candidates,[]);
 });

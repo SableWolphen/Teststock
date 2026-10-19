@@ -77,7 +77,9 @@ jobs:
         run: node -e "for (const f of ['work/trading-bot-report.json','work/trading-bot-payload.json']) require('node:fs').rmSync(f,{force:true})"
   publish:
     needs: scan
-    if: needs.scan.result == 'success'
+    # A failed scan can still publish a fresh fail-closed diagnostic packet.
+    # Missing/invalid artifacts fail publication; incomplete lanes yield no picks.
+    if: always() && (needs.scan.result == 'success' || needs.scan.result == 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions:

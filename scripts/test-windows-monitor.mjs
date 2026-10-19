@@ -14,7 +14,7 @@ test('fresh market validates; stale, future, crossed and missing quotes fail clo
 });
 test('read-only boundary rejects arbitrary and write tools before transport',async()=>{
  const client=new ReadOnlyMcp({transport:()=>{throw Error('transport must not run');}});
- for(const name of ['place_equity_order','cancel_option_order','tools/call','get_portfolio']) await assert.rejects(client.call(name),/READ_ONLY_TOOL_DENIED/);
+ for(const name of ['place_equity_order','cancel_option_order','tools/call','transfer_funds']) await assert.rejects(client.call(name),/READ_ONLY_TOOL_DENIED/);
 });
 test('MCP initialization, notification and allowlisted tool use expected protocol',async()=>{
  const requests=[];

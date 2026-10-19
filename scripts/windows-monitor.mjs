@@ -8,8 +8,9 @@ import {probeStoredAlpaca} from './alpaca-data-client.mjs';
 import {assessProtectionSnapshot} from './protection-coverage.mjs';
 import {acquireMonitorLock} from './monitor-lock.mjs';
 import {selectStockQuotes,readAlpacaQuotes} from './stock-quote-fallback.mjs';
+import {readOptionMarkets} from './option-monitor-quotes.mjs';
 
-export const READ_TOOLS = Object.freeze(['get_accounts', 'get_equity_quotes', 'get_equity_positions', 'get_option_positions', 'get_equity_orders', 'get_option_orders', 'get_crypto_positions', 'get_crypto_orders']);
+export const READ_TOOLS = Object.freeze(['get_accounts', 'get_equity_quotes', 'get_equity_positions', 'get_option_positions', 'get_equity_orders', 'get_option_orders', 'get_crypto_positions', 'get_crypto_orders', 'get_portfolio', 'get_option_quotes', 'get_option_instruments']);
 export class ReadOnlyMcp {
   constructor({token, tokenProvider, transport=fetch}) { this.token=token; this.tokenProvider=tokenProvider; this.transport=transport; this.id=0; }
   async rpc(method, params) {
@@ -104,7 +105,9 @@ export async function cycle({root,client,symbols=[],now,fallbackReader=readAlpac
       catch(error) { if(error.code!=='ENOENT') throw error; }
       snapshot=await collectReadOnlySnapshot(client,{accountFingerprint:previous?.accountFingerprint});
       fs.mkdirSync(root,{recursive:true});
+      snapshot.optionMarketData=await readOptionMarkets(client,snapshot.options);
       atomicJson(path.join(root,'broker-reconciliation.json'),snapshot);
+      status.optionMarketData={complete:snapshot.optionMarketData.complete,requested:snapshot.optionMarketData.requested,received:snapshot.optionMarketData.quotes.length,blockers:snapshot.optionMarketData.blockers,scope:'MONITORING_ONLY',executionAuthorized:false};
       status.reconciliation={at:snapshot.generatedAt,positionsReadComplete:true,orderHistoryReadComplete:true,allAssetReconciliationComplete:false,positionCount:snapshot.managedPositions.length,orderCount:snapshot.orders.length,fillCount:snapshot.fills.length,workingOrderCount:snapshot.orders.filter(o=>o.working).length,blockers:snapshot.blockers};
       if(!symbols.length) status.blockers.push('NO_SYMBOLS_CONFIGURED');
       else {
