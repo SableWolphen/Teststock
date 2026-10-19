@@ -1,76 +1,75 @@
-"""Optional read-only Robinhood session. No credentials are persisted."""
-import logging
+"""Supported broker observations and private paper handoffs; no login or orders."""
+import json
 import os
-import threading
-import time
-
-import pyotp
-import robin_stocks.robinhood as rh
-
-LOG = logging.getLogger(__name__)
+import re
+import shutil
+import subprocess
+from datetime import datetime, timezone
+from pathlib import Path
 
 class BrokerUnavailable(RuntimeError):
     pass
 
+def read_private_json(path, limit=4_000_000):
+    path = Path(path)
+    if path.stat().st_size > limit:
+        raise BrokerUnavailable("PRIVATE_DATA_TOO_LARGE")
+    return json.loads(path.read_text(encoding="utf-8-sig"))
+
+def fresh(stamp, now, seconds=30):
+    try:
+        at = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+        return at.tzinfo is not None and 0 <= (now-at).total_seconds() <= seconds
+    except (AttributeError, TypeError, ValueError):
+        return False
+
 class SessionManager:
-    """Read-only broker adapter. Live execution is deliberately disabled.
+    def __init__(self, state_dir=None):
+        location = state_dir or os.environ.get("TESTSTOCK_RUNTIME_STATE_DIR")
+        if not location or not Path(location).is_absolute():
+            raise BrokerUnavailable("ABSOLUTE_PRIVATE_STATE_REQUIRED")
+        self.root = Path(location).resolve()
+        self.repo = Path(__file__).resolve().parent
 
-    Unofficial robin_stocks does not guarantee order atomicity or stop
-    protection. Use officially supported APIs for production execution.
-    """
-    def __init__(self):
-        self._lock = threading.RLock()
-        self._session = None
-        self._expires_at = 0.0
-
-    def login(self):
-        with self._lock:
-            if self._session is not None and time.monotonic() < self._expires_at:
-                return self._session
-            username = os.environ.get("ROBINHOOD_USERNAME")
-            password = os.environ.get("ROBINHOOD_PASSWORD")
-            mfa_key = os.environ.get("ROBINHOOD_MFA_KEY")
-            if not all((username, password, mfa_key)):
-                raise BrokerUnavailable("Robinhood credentials are not configured")
-            if os.environ.get("ALLOW_UNOFFICIAL_ROBINHOOD_LOGIN") != "true":
-                raise BrokerUnavailable("Unofficial login is disabled by default")
-            try:
-                mfa_code = pyotp.TOTP(mfa_key).now()
-                result = rh.login(
-                    username=username,
-                    password=password,
-                    mfa_code=mfa_code,
-                    store_session=False,
-                    expiresIn=3600,
-                )
-                if not isinstance(result, dict) or not result.get("access_token"):
-                    raise BrokerUnavailable("Broker authentication not confirmed")
-                self._session = rh
-                self._expires_at = time.monotonic() + 3000
-                return rh
-            except Exception as exc:
-                self._session = None
-                self._expires_at = 0.0
-                LOG.error("Broker authentication failed (%s)", type(exc).__name__)
-                raise BrokerUnavailable("Robinhood session unavailable") from None
-
-    def account_snapshot(self):
-        api = self.login()
+    def refresh(self, proposal_path=None):
+        config = read_private_json(self.root / "installation.json")
+        node = config.get("node") or shutil.which("node")
+        if not node or not Path(node).is_file():
+            raise BrokerUnavailable("NODE_UNAVAILABLE")
+        args = [node, str(self.repo / "scripts/engine-observation.mjs"), "--state-dir", str(self.root)]
+        if proposal_path:
+            args += ["--proposal", str(Path(proposal_path).resolve())]
+        # Capture and discard upstream text: never log tokens, bodies or account IDs.
         try:
-            profile = api.profiles.load_account_profile()
-            portfolio = api.profiles.load_portfolio_profile()
-            equity = portfolio.get("equity")
-            cash = profile.get("cash_available_for_withdrawal")
-            # Withdrawal cash is conservative, but not proof of settled trading cash.
-            # A live adapter must independently verify settled buying power.
-            if equity is None or cash is None:
-                raise BrokerUnavailable("Incomplete broker account snapshot")
-            return {"equity": str(equity), "cash": str(cash),
-                    "settled_cash_verified": False}
-        except Exception:
-            raise BrokerUnavailable("Broker snapshot unavailable") from None
+            result = subprocess.run(args, capture_output=True, timeout=40, check=False)
+            if result.returncode:
+                raise BrokerUnavailable("SUPPORTED_BROKER_READ_FAILED")
+        except (OSError, subprocess.TimeoutExpired):
+            raise BrokerUnavailable("SUPPORTED_BROKER_READ_FAILED") from None
+        return self.independent_snapshot()
 
-    def execute(self, order):
-        raise BrokerUnavailable(
-            "LIVE_EXECUTION_DISABLED: no verified atomic entry/stop adapter"
-        )
+    def independent_snapshot(self, now=None):
+        now = now or datetime.now(timezone.utc)
+        observation = read_private_json(self.root / "engine-observation.json")
+        status = read_private_json(self.root / "status.json")
+        if observation.get("source") != "SUPPORTED_ROBINHOOD_READS" or observation.get("brokerWrites") is not False:
+            raise BrokerUnavailable("BROKER_SOURCE_UNVERIFIED")
+        if not fresh(observation.get("generatedAt"), now) or not fresh(observation.get("readStartedAt"), now):
+            raise BrokerUnavailable("BROKER_OBSERVATION_STALE")
+        if not fresh(status.get("at"), now) or status.get("brokerConnected") is not True or status.get("liveEnabled") is not False:
+            raise BrokerUnavailable("CURRENT_MONITOR_UNVERIFIED")
+        snapshot = observation.get("snapshot", {})
+        if not re.fullmatch(r"[0-9a-f]{64}", str(observation.get("accountFingerprint", ""))) or snapshot.get("accountFingerprint") != observation.get("accountFingerprint"):
+            raise BrokerUnavailable("BROKER_ACCOUNT_CHANGED")
+        if snapshot.get("positionsReadComplete") is not True or snapshot.get("orderHistoryReadComplete") is not True:
+            raise BrokerUnavailable("BROKER_RECONCILIATION_INCOMPLETE")
+        return observation, status
+
+    def execution_status(self, observation, status):
+        blockers = list(observation["snapshot"].get("blockers", []))
+        blockers += status.get("protection", {}).get("blockers", [])
+        if observation.get("policy", {}).get("liveExecutionEnabled") is not True:
+            blockers.append("LIVE_DEPLOYMENT_LOCKED")
+        return {"broker_writes": False, "live_eligible": False,
+                "execution_owner": "CONNECTED_ROBINHOOD_EXECUTOR",
+                "blockers": sorted(set(blockers))}

@@ -175,3 +175,5 @@ The repository is **paper by default**. `TESTSTOCK_EXECUTION_MODE` defaults to `
 ## Safe Windows setup
 
 See [Windows read-only monitor](docs/WINDOWS-MONITOR.md) for installation, Task Scheduler, private logs, supported authentication and go-live gates. The legacy live executor is now hard-disabled pending independent entry/exit and authorization verification; the older live-mode environment instructions above no longer enable orders.
+
+Supported broker observations, private review handoffs, exact-contract option monitoring and fail-closed scanner diagnostics: [operating guide](docs/SUPPORTED-ENGINE-REVIEW.md).

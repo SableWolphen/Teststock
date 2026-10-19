@@ -3,7 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {acquireMonitorLock} from './monitor-lock.mjs';
 import {fileURLToPath} from 'node:url';
-const KNOWN_CODES=['MONITOR_HEARTBEAT_STALE_OR_MISSING','BROKER_MONITOR_BLOCKED','MARKET_DATA_BLOCKED','RECONCILIATION_INCOMPLETE','UNEXPECTED_LIVE_STATE','MONITOR_STOP_REQUESTED','WATCHDOG_STATE_INVALID','BROKER_SNAPSHOT_STALE_OR_MISSING','MARKET_DATA_STALE_OR_MISSING','HOLDING_PROTECTION_UNVERIFIED','OPTION_EXPIRATION_REVIEW_REQUIRED','CRYPTO_PROTECTION_UNVERIFIED'];
+const KNOWN_CODES=['MONITOR_HEARTBEAT_STALE_OR_MISSING','BROKER_MONITOR_BLOCKED','MARKET_DATA_BLOCKED','RECONCILIATION_INCOMPLETE','UNEXPECTED_LIVE_STATE','MONITOR_STOP_REQUESTED','WATCHDOG_STATE_INVALID','BROKER_SNAPSHOT_STALE_OR_MISSING','MARKET_DATA_STALE_OR_MISSING','HOLDING_PROTECTION_UNVERIFIED','OPTION_EXPIRATION_REVIEW_REQUIRED','CRYPTO_PROTECTION_UNVERIFIED','OPTION_PRICE_MONITORING_UNVERIFIED'];
 export function watchdog(root,{now=Date.now()}={}) {
  fs.mkdirSync(root,{recursive:true});
  const lock=path.join(root,'watchdog.lock');
@@ -20,7 +20,7 @@ export function watchdog(root,{now=Date.now()}={}) {
   const stale=stamp=>{const age=now-Date.parse(stamp);return !Number.isFinite(age)||age< -2000||age>120000;};
   if(status?.brokerConnected===true&&stale(status?.reconciliation?.at))codes.push('BROKER_SNAPSHOT_STALE_OR_MISSING');
   if(status?.entryData?.connected===true&&stale(status?.entryData?.verifiedAt))codes.push('MARKET_DATA_STALE_OR_MISSING');
-  for(const code of ['HOLDING_PROTECTION_UNVERIFIED','OPTION_EXPIRATION_REVIEW_REQUIRED','CRYPTO_PROTECTION_UNVERIFIED'])if(status?.protection?.blockers?.includes(code))codes.push(code);
+  for(const code of ['HOLDING_PROTECTION_UNVERIFIED','OPTION_EXPIRATION_REVIEW_REQUIRED','CRYPTO_PROTECTION_UNVERIFIED','OPTION_PRICE_MONITORING_UNVERIFIED'])if(status?.protection?.blockers?.includes(code))codes.push(code);
   const stateFile=path.join(root,'watchdog-status.json');let previous=[];
   if(fs.existsSync(stateFile)) {
    try {previous=JSON.parse(fs.readFileSync(stateFile,'utf8')).activeCodes;if(!Array.isArray(previous)||previous.some(code=>!KNOWN_CODES.includes(code)))throw Error();}

@@ -22,7 +22,7 @@ The monitor emits only protection counts and codes in `status.json`. `READ_ONLY_
 
 ## Stable Windows runtime
 
-The installer packages ten fixed read-only modules into a content-hashed private bundle. The scheduled action and start script use the bundle path, independently of future checkout or branch changes. Credentials, journals and the order executor are excluded. Existing content under a bundle hash is integrity-checked rather than overwritten. Corruption fails installation. Reinstalling records a new version when source changes; prior bundles remain available for rollback.
+The installer packages eleven fixed read-only modules into a content-hashed private bundle. The scheduled action and start script use the bundle path, independently of future checkout or branch changes. Credentials, journals and the order executor are excluded. Existing content under a bundle hash is integrity-checked rather than overwritten. Corruption fails installation. Reinstalling records a new version when source changes; prior bundles remain available for rollback.
 
 ## Remaining go-live evidence
 

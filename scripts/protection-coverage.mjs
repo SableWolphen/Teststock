@@ -23,6 +23,7 @@ export function assessProtectionSnapshot({snapshot,status,now=Date.now()}={}) {
   if(!session.regularHours)blockers.push('REGULAR_SESSION_UNVERIFIED_OR_CLOSED');
   // This reader cannot inspect advanced-order relationships. No empty standard list clears this gate.
   blockers.push('ADVANCED_ORDER_COVERAGE_UNVERIFIED','LIVE_ENTRY_PROTECTION_EXIT_CYCLE_UNVERIFIED','ALERT_RECEIPT_UNVERIFIED');
+  if(snapshot?.options?.some(p=>Number(p.quantity)>0)&&snapshot?.optionMarketData?.complete!==true)blockers.push('OPTION_PRICE_MONITORING_UNVERIFIED');
   const assessments=[];
   if(currentReadVerified&&schemaVerified) {
     for(const asset of ['EQUITY','OPTION']) for(const p of asset==='EQUITY'?snapshot.equities:snapshot.options) {
