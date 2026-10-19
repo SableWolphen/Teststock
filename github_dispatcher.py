@@ -10,7 +10,7 @@ import sqlite3
 import urllib.request
 
 from session_manager import SessionManager, BrokerUnavailable, read_private_json, fresh
-from risk_validator import validate_trade, RiskRejected
+from risk_validator import validate_trade, RiskRejected, amount
 
 REPOSITORY = "SableWolphen/Teststock"
 
