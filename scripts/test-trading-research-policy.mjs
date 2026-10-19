@@ -107,3 +107,13 @@ test('private loss guard persists latch atomically and fails closed on lock/corr
  await fs.writeFile(file+'.lock','');assert.equal((await updateDailyLossGuard(file,a,8000,now)).reason,'DAILY_STATE_UNAVAILABLE');await fs.rm(file+'.lock');
  await fs.writeFile(file,'bad json');assert.equal((await updateDailyLossGuard(file,a,8000,now)).allowed,false);
 }));
+
+
+test('research clock tolerates bounded transport skew without weakening quote freshness',async()=>{
+ const {validResearchClock,fresh}=await import('./trading-research-policy.mjs');
+ for(const offset of [-2000,-1,0,60000])assert.equal(validResearchClock({is_open:false,timestamp:new Date(now-offset).toISOString()},now),true);
+ for(const offset of [-2001,60001])assert.equal(validResearchClock({is_open:true,timestamp:new Date(now-offset).toISOString()},now),false);
+ assert.equal(validResearchClock({timestamp:t},now),false);
+ assert.equal(validResearchClock({is_open:true,timestamp:'bad'},now),false);
+ assert.equal(fresh(new Date(now+1).toISOString(),now,120000),false);
+});

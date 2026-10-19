@@ -3,6 +3,12 @@ import path from 'node:path';
 export const DEFAULT_STRATEGY=Object.freeze({version:1,maxSpreadBps:150,maxStockSymbols:2000,maxCryptoSymbols:500,discoverAssets:true,batchSize:100,concurrency:3,maxRequests:240,maxRuntimeMs:240000,maxOptionUnderlyings:5,maxHistorySymbols:20,volumeSpikeRatio:2,macroDropFraction:-0.03,earningsBlackoutHours:48,dailyLossLimitCents:8000});
 export const validSymbol=(s,asset)=>typeof s==='string'&&(asset==='crypto'?/^[A-Z0-9]{1,15}\/USD$/:asset==='option'?/^[A-Z]{1,6}\d{6}[CP]\d{8}$/:/^[A-Z][A-Z0-9.-]{0,9}$/).test(s);
 export const fresh=(t,now,age)=>typeof t==='string'&&Number.isFinite(Date.parse(t))&&now-Date.parse(t)>=0&&now-Date.parse(t)<=age;
+// Clock transport can arrive slightly ahead of the local wall clock. This
+// tolerance is only for research session observation, never quote eligibility.
+export function validResearchClock(clock,now) {
+  const age=now-Date.parse(clock?.timestamp);
+  return typeof clock?.is_open==='boolean'&&Number.isFinite(age)&&age>=-2000&&age<=60000;
+}
 export function strategyConfig(input={}) {
   if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!Object.hasOwn(DEFAULT_STRATEGY,k)))throw Error('STRATEGY_INVALID');
   const c={...DEFAULT_STRATEGY,...input};
