@@ -10,13 +10,16 @@ New-Item -ItemType Directory -Force $state | Out-Null
 $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 & icacls.exe $state /inheritance:r /grant:r "${identity}:(OI)(CI)F" | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Could not protect private runtime folder.' }
-$config = @{ node=$node; repo=$repo; state=$state }
+$bundleJson = & $node (Join-Path $repo 'scripts/monitor-runtime-bundle.mjs') --state-dir $state
+if ($LASTEXITCODE -ne 0) { throw 'Could not package the read-only runtime.' }
+$bundle = $bundleJson | ConvertFrom-Json
+$config = @{ node=$node; repo=$repo; state=$state; monitorRunner=$bundle.monitorRunner; protectionAudit=$bundle.protectionAudit; bundleDigest=$bundle.bundleDigest }
 $config | ConvertTo-Json | Set-Content (Join-Path $state 'installation.json')
 $env:TESTSTOCK_RUNTIME_STATE_DIR = $state
-& $node (Join-Path $repo 'scripts/windows-monitor.mjs') --once
+& $node $config.monitorRunner --state-dir $state --once
 if ($LASTEXITCODE -notin @(0,2)) { throw 'Monitor smoke check failed.' }
 if ($RegisterTask) {
-  $runner = Join-Path $repo 'scripts/windows-monitor.mjs'
+  $runner = $config.monitorRunner
   $action = New-ScheduledTaskAction -Execute $node -Argument "`"$runner`" --state-dir `"$state`"" -WorkingDirectory $repo
   $trigger = New-ScheduledTaskTrigger -AtLogOn -User $identity
   $principal = New-ScheduledTaskPrincipal -UserId $identity -LogonType Interactive -RunLevel Limited

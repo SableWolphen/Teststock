@@ -67,6 +67,16 @@ test('upstream credential text never enters logs',async t=>{
  const root=temp(t);await cycle({root,now,client:{version:'mock',call:async()=>{throw Error('secret-account-token');}}});
  assert.doesNotMatch(fs.readFileSync(path.join(root,'status.json'),'utf8'),/secret-account-token/);
 });
+
+test('read health stays separate from option protection and private holdings never enter status',async t=>{
+ const root=temp(t),option={option_id:'private-contract',chain_symbol:'PRIVATEHOLDING',quantity:'1',type:'long',expiration_date:'2030-10-16',pending_assignment_quantity:'0',pending_exercise_quantity:'0',pending_expiration_quantity:'0',pending_buy_quantity:'0',pending_sell_quantity:'0'};
+ const client={version:'mock',call:async(name)=>({structuredContent:{data:name==='get_accounts'?{accounts:[{account_number:'test-account',agentic_allowed:true,state:'active'}]}:name==='get_equity_quotes'?{results:[{quote:{...quote,venue_bid_time:new Date().toISOString(),venue_ask_time:new Date().toISOString()}}]}:name==='get_option_positions'?{positions:[option]}:name.includes('positions')?{positions:[]}:{orders:[]}}})};
+ const status=await cycle({root,client,symbols:['SPY']});
+ assert.equal(status.health,'READ_ONLY_HEALTHY');assert.equal(status.protection.currentReadVerified,true);assert.equal(status.protection.holdingCount,1);assert.equal(status.protection.matchedStopCount,0);
+ assert.ok(status.protection.blockers.includes('HOLDING_PROTECTION_UNVERIFIED'));assert.equal(status.tradingReady,false);
+ assert.doesNotMatch(JSON.stringify(status),/private-contract|PRIVATEHOLDING/);
+ assert.ok(Date.parse(status.at)>=Date.parse(status.cycleStartedAt));
+});
 test('legacy live switches cannot submit orders',()=>{
  const child=spawnSync(process.execPath,['scripts/chatgpt-executor.mjs'],{encoding:'utf8',env:{...process.env,TESTSTOCK_EXECUTION_MODE:'live',TESTSTOCK_LIVE_TRADING:'I_UNDERSTAND_REAL_ORDERS'}});
  assert.equal(child.status,1);assert.match(child.stdout,/LIVE_DISABLED/);
