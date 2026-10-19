@@ -52,11 +52,13 @@ export async function startAlpacaSetup(root,{onReady,transport=fetch,store=alpac
  const token=crypto.randomBytes(32).toString('base64url');let origin;let saved=false;let busy=false;let settle;
  const completed=new Promise(resolve=>{settle=resolve;});
  const server=http.createServer(async(req,res)=>{
-  res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Content-Security-Policy',"default-src 'none'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'");
+  // no-referrer makes browser navigation POSTs send Origin: null, rejecting our
+  // own form. same-origin preserves the local origin without leaking it off-site.
+  res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','same-origin');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Content-Security-Policy',"default-src 'none'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'");
   const validHost=req.headers.host===new URL(origin).host;
   if(!validHost) {res.writeHead(403);res.end();return;}
   if(req.method==='GET'&&req.url===`/setup/${token}`) {res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(html(token));return;}
-  if(req.method!=='POST'||req.url!==`/configure/${token}`||req.headers.origin!==origin||!req.headers['content-type']?.startsWith('application/x-www-form-urlencoded')||saved||busy) {res.writeHead(403);res.end();return;}
+  if(req.method!=='POST'||req.url!==`/configure/${token}`||req.headers.origin!==origin||!req.headers['content-type']?.startsWith('application/x-www-form-urlencoded')||saved||busy) {res.writeHead(403);res.end('Setup request rejected. Open the original setup link and submit the form from there. No credentials were saved.');return;}
   busy=true;
   try {
    let body='';for await(const chunk of req) {body+=chunk.toString();if(Buffer.byteLength(body)>8192) throw Error('ALPACA_INPUT_TOO_LARGE');}
@@ -66,7 +68,13 @@ export async function startAlpacaSetup(root,{onReady,transport=fetch,store=alpac
    const verified=await new AlpacaDataReader({credentials,transport}).probe();
    store.save(credentials);saved=true;
    res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8'});res.end('Alpaca paper data verified. Credentials saved with Windows encryption. Live trading remains disabled. You may close this tab.',()=>settle(verified));
-  } catch {res.writeHead(400,{'Content-Type':'text/plain; charset=utf-8'});res.end('Could not verify paper credentials/data access. Return to the setup URL and retry with paper-account keys. No credentials were saved.');}
+  } catch(error) {
+   // Embedded browsers can replace HTTP error bodies with a generic error page.
+   // This is a rendered form result, not a successful credential verification.
+   const code=/^ALPACA_(HTTP_\d{3}|INVALID_CREDENTIALS|INVALID_CLOCK|INVALID_CALENDAR|INVALID_BARS)$/.test(error.message)?error.message:'ALPACA_VERIFICATION_FAILED';
+   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});
+   res.end(`<!doctype html><html><head><meta charset="utf-8"><title>Alpaca connection not saved</title></head><body><h1>Connection not saved</h1><p>${code}</p><p>Could not verify paper credentials/data access. No credentials were saved. Live trading remains disabled.</p><p><a href="/setup/${token}">Return to the key-entry form</a></p></body></html>`);
+  }
   finally {busy=false;}
  });
  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});
