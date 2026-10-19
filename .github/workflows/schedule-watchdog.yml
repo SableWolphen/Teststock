@@ -32,6 +32,24 @@ jobs:
       - name: Record pass start time
         run: echo "WATCHDOG_STARTED_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
 
+      - name: Recover expired enabled core research without duplicating a run
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        with:
+          script: |
+            const fs = await import('node:fs/promises');
+            const {coreResearchRecovery} = await import(`${process.env.GITHUB_WORKSPACE}/scripts/core-research-recovery.mjs`);
+            const read = async path => { try { return JSON.parse(await fs.readFile(path, 'utf8')); } catch { return null; } };
+            const control = await read('.github/trading-bot-control.json');
+            if (control?.enabled !== true) { core.info('Core research remains paused or unverified.'); return; }
+            const packet = await read('docs/data/safe-trading-core-research.json');
+            const {data} = await github.rest.actions.listWorkflowRuns({...context.repo, workflow_id:'trading_bot.yml', per_page:100});
+            if (!Array.isArray(data.workflow_runs)) throw new Error('Research run state unavailable; refusing duplicate dispatch.');
+            const decision = coreResearchRecovery({control,packet,runs:data.workflow_runs});
+            core.info(decision.reason);
+            if (decision.dispatch) {
+              await github.rest.actions.createWorkflowDispatch({...context.repo,workflow_id:'trading_bot.yml',ref:context.payload.repository.default_branch,inputs:{action:'scan',scope:'CURRENT_ACCESS_CORE'}});
+            }
+
       - name: Re-dispatch static-scan.yml if published signal data has gone stale
         env:
           GH_TOKEN: ${{ github.token }}
