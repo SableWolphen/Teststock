@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {SAFETY_POLICY} from './safety-policy.mjs';
-import {DEFAULT_STRATEGY,strategyConfig,loadResearchInputs,validSymbol,fresh,intradaySignal,antiTradeReasons,researchPacket} from './trading-research-policy.mjs';
+import {DEFAULT_STRATEGY,strategyConfig,loadResearchInputs,validSymbol,fresh,validResearchClock,intradaySignal,antiTradeReasons,researchPacket} from './trading-research-policy.mjs';
 import {evaluateDailyLoss} from './daily-loss-guard.mjs';
 
 const positive = x => typeof x === 'number' && Number.isFinite(x) && x > 0;
@@ -117,7 +117,7 @@ export async function scan(reader,{now=Date.now(),inputs={universe:UNIVERSE,conf
   const report={generatedAt:new Date(now).toISOString(),mode:'RESEARCH_ONLY',liveOrdersEnabled:false,dailyLossLimitCents:config.dailyLossLimitCents,dailyLossGate:'PRIVATE_ACCOUNT_AND_PERSISTED_STATE_REQUIRED',candidates:[],lanes:{},sources:inputs.sources??[],coverage:{},metrics:{}};
   let macro=null;
   let marketOpen=false;
-  try {const clock=await reader.get('clock');if(typeof clock.is_open!=='boolean'||!fresh(clock.timestamp,evaluationNow(),60000))throw Error();marketOpen=clock.is_open;report.lanes.session=marketOpen?'OPEN':'CLOSED';}
+  try {const clock=await reader.get('clock');if(!validResearchClock(clock,evaluationNow()))throw Error();marketOpen=clock.is_open;report.lanes.session=marketOpen?'OPEN':'CLOSED';}
   catch {report.lanes.session='UNVERIFIED';}
   const rowsByAsset={stock:new Map(),crypto:new Map(),option:new Map()};
   for(const asset of ['stock','crypto']) {
