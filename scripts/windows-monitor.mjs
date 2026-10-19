@@ -5,6 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {vault, accessToken} from './robinhood-oauth.mjs';
 import {collectReadOnlySnapshot} from './monitor-reconciliation.mjs';
 import {probeStoredAlpaca} from './alpaca-data-client.mjs';
+import {assessProtectionSnapshot} from './protection-coverage.mjs';
 import {acquireMonitorLock} from './monitor-lock.mjs';
 import {selectStockQuotes,readAlpacaQuotes} from './stock-quote-fallback.mjs';
 
@@ -90,8 +91,8 @@ function unpack(result) {
 }
 export async function cycle({root,client,symbols=[],now,fallbackReader=readAlpacaQuotes}) {
   const at=new Date(now??Date.now()).toISOString();
-  const status={at,mode:'read-only',liveEnabled:false,brokerConnected:false,quoteCount:0,blockers:[]};
-  let primaryQuotes=[];
+  const status={at,cycleStartedAt:at,mode:'read-only',liveEnabled:false,brokerConnected:false,quoteCount:0,blockers:[]};
+  let primaryQuotes=[],snapshot;
   if(!client) status.blockers.push('AUTHENTICATION_NOT_CONFIGURED');
   else {
     try {
@@ -101,7 +102,7 @@ export async function cycle({root,client,symbols=[],now,fallbackReader=readAlpac
       let previous;
       try { previous=JSON.parse(fs.readFileSync(path.join(root,'broker-reconciliation.json'),'utf8')); }
       catch(error) { if(error.code!=='ENOENT') throw error; }
-      const snapshot=await collectReadOnlySnapshot(client,{accountFingerprint:previous?.accountFingerprint});
+      snapshot=await collectReadOnlySnapshot(client,{accountFingerprint:previous?.accountFingerprint});
       fs.mkdirSync(root,{recursive:true});
       atomicJson(path.join(root,'broker-reconciliation.json'),snapshot);
       status.reconciliation={at:snapshot.generatedAt,positionsReadComplete:true,orderHistoryReadComplete:true,allAssetReconciliationComplete:false,positionCount:snapshot.managedPositions.length,orderCount:snapshot.orders.length,fillCount:snapshot.fills.length,workingOrderCount:snapshot.orders.filter(o=>o.working).length,blockers:snapshot.blockers};
@@ -129,6 +130,9 @@ export async function cycle({root,client,symbols=[],now,fallbackReader=readAlpac
   // Backup pricing never clears broker authentication/reconciliation/primary-quote blockers.
   status.health=status.blockers.length?'BLOCKED':'READ_ONLY_HEALTHY';
   status.entryData=await probeStoredAlpaca(root);
+  status.at=new Date(now??Date.now()).toISOString();
+  const coverage=assessProtectionSnapshot({snapshot,status,now:now??Date.now()});
+  status.protection={currentReadVerified:coverage.currentReadVerified,holdingCount:coverage.holdingCount,matchedStopCount:coverage.matchedStopCount,blockers:coverage.blockers,liveCycleVerified:false};
   status.tradingReady=false;
   fs.mkdirSync(root,{recursive:true});
   const log=path.join(root,`monitor-${at.slice(0,10)}.jsonl`);
@@ -155,11 +159,12 @@ async function main() {
   const client=store.exists()?new ReadOnlyMcp({tokenProvider:()=>accessToken(store)}):token?new ReadOnlyMcp({token}):null;
   try { do {
     if(fs.existsSync(path.join(root,'STOP'))) break;
+    const nextCycleAt=Date.now()+30000;
     const status=await cycle({root,client,symbols});
     process.stdout.write(JSON.stringify(status)+'\n');
     if(process.argv.includes('--once')) { if(status.health==='BLOCKED') process.exitCode=2; break; }
-    // Fixed bounded cadence; no LLM cost and no overlapping cycles.
-    for(let i=0;i<30&&!stopped;i++) await new Promise(resolve=>setTimeout(resolve,1000));
+    // Target 30 seconds start-to-start; slow reads never overlap or imply timely protection.
+    while(!stopped&&Date.now()<nextCycleAt) await new Promise(resolve=>setTimeout(resolve,Math.min(1000,nextCycleAt-Date.now())));
   } while(!stopped); } finally { fs.unlinkSync(lock); }
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) main().catch(()=>{process.stderr.write('MONITOR_FAILED: inspect private state and configuration\n');process.exitCode=1;});
