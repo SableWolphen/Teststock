@@ -5,6 +5,8 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
+from types import SimpleNamespace
 from concurrent.futures import ThreadPoolExecutor
 
 from risk_validator import validate_trade, RiskRejected
@@ -25,6 +27,22 @@ def inputs(kind="stock"):
     return proposal, account, market
 
 class EngineRiskTests(unittest.TestCase):
+    def test_windows_private_refresh_suppresses_console_and_captures_output(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            node = root / "node.exe"
+            node.touch()
+            (root / "installation.json").write_text(json.dumps({"node": str(node)}))
+            session = SessionManager(root)
+            with patch("session_manager.os", SimpleNamespace(name="nt")), \
+                 patch("session_manager.subprocess.CREATE_NO_WINDOW", 0x08000000, create=True), \
+                 patch("session_manager.subprocess.run", return_value=SimpleNamespace(returncode=0)) as run, \
+                 patch.object(session, "independent_snapshot", return_value=("observation", "status")):
+                self.assertEqual(session.refresh(), ("observation", "status"))
+            self.assertEqual(run.call_args.kwargs["creationflags"], 0x08000000)
+            self.assertTrue(run.call_args.kwargs["capture_output"])
+            self.assertNotIn("shell", run.call_args.kwargs)
+
     def test_paper_plan_has_no_broker_or_live_authority(self):
         p, a, m = inputs()
         plan = validate_trade(p, a, m, NOW)
