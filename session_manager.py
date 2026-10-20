@@ -41,7 +41,9 @@ class SessionManager:
             args += ["--proposal", str(Path(proposal_path).resolve())]
         # Capture and discard upstream text: never log tokens, bodies or account IDs.
         try:
-            result = subprocess.run(args, capture_output=True, timeout=40, check=False)
+            # A pythonw/scheduled caller must never create a console window.
+            result = subprocess.run(args, capture_output=True, timeout=40, check=False,
+                                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
             if result.returncode:
                 raise BrokerUnavailable("SUPPORTED_BROKER_READ_FAILED")
         except (OSError, subprocess.TimeoutExpired):
