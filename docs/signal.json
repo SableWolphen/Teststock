@@ -2,7 +2,7 @@
   "schemaVersion": 44,
   "source": "Teststock",
   "purpose": "Hands-off $100-first growth autopilot with automatic protective exits, expectancy scoring, adaptive sizing, loss brakes, profit locks, correlation controls, explicit asset routing, and user-only funding.",
-  "generatedAt": "2026-10-21T19:38:56.953Z",
+  "generatedAt": "2026-10-21T19:59:15.008Z",
   "funding": {
     "mode": "USER_DEPOSITS_ONLY",
     "initialUserFundingIntentDollars": 100,
@@ -350,11 +350,11 @@
   ],
   "stockPlan": {
     "assetClass": "STOCK",
-    "overallAction": "DO_NOT_TRADE",
-    "reason": "Cash is the selected position.",
-    "confidence": "CASH",
-    "signalAsOf": "2026-10-21T19:38:49.195Z",
-    "expiresAt": "2026-10-21T20:23:49.195Z",
+    "overallAction": "AUTO_BUY_STOCK_ELIGIBLE",
+    "reason": "One or more high-quality stock allocations passed expectancy and entry gates; live-account protection, profit locks, and circuit breakers must also pass.",
+    "confidence": "A_PLUS",
+    "signalAsOf": "2026-10-21T19:54:29.116Z",
+    "expiresAt": "2026-10-21T20:39:29.116Z",
     "policy": {
       "maxPlannedPortfolioStopPct": 3,
       "maxOptionPremiumPct": 8,
@@ -383,14 +383,14 @@
         "highCorporateActionRiskBlocksEntry": true
       },
       "runtimeRegimePolicy": {
-        "regime": "TRENDING_DOWN",
-        "samplesPrimary": 3,
-        "samplesSecond": 2,
+        "regime": "TRENDING_UP",
+        "samplesPrimary": 27,
+        "samplesSecond": 19,
         "allowNewStocks": true,
-        "allowOptions": false,
-        "stockSizeMultiplier": 0.5,
-        "status": "SPARSE_REDUCE",
-        "reason": "Untouched holdout samples are too thin to judge robustness; keep reduced stock size and collect more data."
+        "allowOptions": true,
+        "stockSizeMultiplier": 0.85,
+        "status": "DUAL_HOLDOUT_CONFIRMED",
+        "reason": "Both untouched holdouts remained positive under the regime-specific entry profile."
       },
       "disabledRegimes": [
         "MIXED"
@@ -412,14 +412,14 @@
         "aTier": "Existing elite regime profile; normal allowed size.",
         "bTier": "Positive-expectancy best-acceptable entries after A-tier priority while live capacity remains; 25% micro-probation candidate-size multiplier.",
         "bTierFloors": {
-          "minScore": 90,
-          "minGrowthQuality": 93,
-          "minWinRate": 58,
-          "minExpectedR": 0.65,
-          "minSamples": 25,
+          "minScore": 82,
+          "minGrowthQuality": 88,
+          "minWinRate": 53,
+          "minExpectedR": 0.45,
+          "minSamples": 20,
           "minRewardRisk": 2.25,
-          "breadthFloor": 55,
-          "maxAtrPct": 6
+          "breadthFloor": 45,
+          "maxAtrPct": 7
         },
         "neverRelax": [
           "bullish direction",
@@ -469,135 +469,1288 @@
       "optionsLocked": false,
       "reason": "Scanner/model trade-history is diagnostic only. It must never pause or size live Robinhood trading. Live outcome brakes are computed only from confirmed Robinhood fills/history at runtime."
     },
-    "stockOrders": [],
+    "stockOrders": [
+      {
+        "assetClass": "STOCK",
+        "rank": 1,
+        "ticker": "PEB",
+        "sector": null,
+        "action": "WAIT_FOR_TRIGGER",
+        "allocationPctOfRobinhoodBuyingPower": 16.15,
+        "scanPrice": 21.14,
+        "minimumEntry": 21.21,
+        "maximumEntry": 21.63,
+        "stop": 19.24,
+        "target1": 24.17,
+        "target2": 26.33,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 1.5,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "expectancy": {
+          "expectedR": 1.84,
+          "conservativeExpectedR": 1.84,
+          "costAdjustedConservativeExpectedR": 1.81,
+          "assumedRoundTripFrictionPct": 0.3,
+          "frictionR": 0.032
+        },
+        "adaptivePerformance": {
+          "samples": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "sizeMultiplier": 1,
+          "qualityAdjustment": 0,
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+        },
+        "historicalWinRate": 79,
+        "historicalSamples": 33,
+        "exitPlan": {
+          "target1SellPctOfOriginal": 25,
+          "target2Action": "DYNAMIC_TO_RUNNER_SIGNAL",
+          "maxRunnerPctOfOriginal": 0,
+          "moderateRunnerPctOfOriginal": 15,
+          "noRunnerPctOfOriginal": 0,
+          "runnerPolicyRef": "signal.runnerContinuationPolicy",
+          "validatedPolicy": "T1_25_T2_75",
+          "target2BaseSellPctOfOriginal": 75,
+          "runnerSignal": "NONE",
+          "runnerPctOfOriginal": 0,
+          "runnerAction": "EXIT_REMAINDER_AT_TARGET2"
+        },
+        "protectionPlan": {
+          "determineFromLiveQuantity": true,
+          "wholeShares": "BROKER_PERSISTENT_STOP_WHEN_SUPPORTED",
+          "fractionalRemainder": "SYNTHETIC_STOP_ONLY_IF_ACTIVE_MONITORING_PASSES",
+          "fractionalMaxPlannedStopRiskPctOfLiveEquity": 0.75,
+          "syntheticMonitoringMaxMinutes": 5,
+          "policyRef": "signal.fractionalProtectionPolicy"
+        },
+        "operationalSafety": {
+          "signalReferencePrice": 21.21,
+          "entryToStopDistancePct": 9.288,
+          "wholeShareRuntimeCheckRequired": true,
+          "wholeShareProtectabilityIsTieBreakerOnly": true,
+          "smallAccountAccessPolicyRef": "signal.smallAccountAccessPolicy",
+          "multiStockCompetitionPolicyRef": "signal.multiStockCompetitionPolicy",
+          "nonLlmTriggerMonitorRef": "signal.nonLlmTriggerMonitor",
+          "eventDrivenExecutionDispatchRef": "signal.eventDrivenExecutionDispatch",
+          "signalDriftPolicyRef": "signal.signalDriftPolicy",
+          "portfolioHeatPolicyRef": "signal.portfolioHeatPolicy",
+          "killSwitchRef": "signal.automationKillSwitch"
+        },
+        "entryTier": "A",
+        "entryTierLabel": "ELITE",
+        "entryTierSizeMultiplier": 1,
+        "bestAcceptableFallback": false
+      },
+      {
+        "assetClass": "STOCK",
+        "rank": 2,
+        "ticker": "CON",
+        "sector": null,
+        "action": "WAIT_FOR_TRIGGER",
+        "allocationPctOfRobinhoodBuyingPower": 6.48,
+        "scanPrice": 39.16,
+        "minimumEntry": 39.47,
+        "maximumEntry": 40.26,
+        "stop": 36.73,
+        "target1": 43.58,
+        "target2": 46.59,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.45,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "expectancy": {
+          "expectedR": 1.84,
+          "conservativeExpectedR": 1.77,
+          "costAdjustedConservativeExpectedR": 1.73,
+          "assumedRoundTripFrictionPct": 0.3,
+          "frictionR": 0.043
+        },
+        "adaptivePerformance": {
+          "samples": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "sizeMultiplier": 1,
+          "qualityAdjustment": 0,
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+        },
+        "historicalWinRate": 79,
+        "historicalSamples": 28,
+        "exitPlan": {
+          "target1SellPctOfOriginal": 25,
+          "target2Action": "DYNAMIC_TO_RUNNER_SIGNAL",
+          "maxRunnerPctOfOriginal": 0,
+          "moderateRunnerPctOfOriginal": 15,
+          "noRunnerPctOfOriginal": 0,
+          "runnerPolicyRef": "signal.runnerContinuationPolicy",
+          "validatedPolicy": "T1_25_T2_75",
+          "target2BaseSellPctOfOriginal": 75,
+          "runnerSignal": "NONE",
+          "runnerPctOfOriginal": 0,
+          "runnerAction": "EXIT_REMAINDER_AT_TARGET2"
+        },
+        "protectionPlan": {
+          "determineFromLiveQuantity": true,
+          "wholeShares": "BROKER_PERSISTENT_STOP_WHEN_SUPPORTED",
+          "fractionalRemainder": "SYNTHETIC_STOP_ONLY_IF_ACTIVE_MONITORING_PASSES",
+          "fractionalMaxPlannedStopRiskPctOfLiveEquity": 0.75,
+          "syntheticMonitoringMaxMinutes": 5,
+          "policyRef": "signal.fractionalProtectionPolicy"
+        },
+        "operationalSafety": {
+          "signalReferencePrice": 39.47,
+          "entryToStopDistancePct": 6.942,
+          "wholeShareRuntimeCheckRequired": true,
+          "wholeShareProtectabilityIsTieBreakerOnly": true,
+          "smallAccountAccessPolicyRef": "signal.smallAccountAccessPolicy",
+          "multiStockCompetitionPolicyRef": "signal.multiStockCompetitionPolicy",
+          "nonLlmTriggerMonitorRef": "signal.nonLlmTriggerMonitor",
+          "eventDrivenExecutionDispatchRef": "signal.eventDrivenExecutionDispatch",
+          "signalDriftPolicyRef": "signal.signalDriftPolicy",
+          "portfolioHeatPolicyRef": "signal.portfolioHeatPolicy",
+          "killSwitchRef": "signal.automationKillSwitch"
+        },
+        "entryTier": "A",
+        "entryTierLabel": "ELITE",
+        "entryTierSizeMultiplier": 1,
+        "bestAcceptableFallback": false
+      }
+    ],
     "stockCandidateQueue": [
       {
-        "ticker": "HONA",
-        "minimumEntry": 159.62,
-        "maximumEntry": 162.02,
-        "stop": 155.3,
-        "target1": 168.1,
-        "target2": 173.22,
-        "setupType": "TREND",
-        "growthQuality": 0,
-        "rewardRisk": 2.5,
+        "assetClass": "STOCK",
+        "rank": 1,
+        "ticker": "PEB",
+        "sector": null,
+        "action": "PROFITABILITY_ADMISSION_BLOCK",
+        "allocationPctOfRobinhoodBuyingPower": 16.15,
+        "scanPrice": 21.14,
+        "minimumEntry": 21.21,
+        "maximumEntry": 21.63,
+        "stop": 19.24,
+        "target1": 24.17,
+        "target2": 26.33,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 1.5,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "expectancy": {
+          "expectedR": 1.84,
+          "conservativeExpectedR": 1.84,
+          "costAdjustedConservativeExpectedR": 1.81,
+          "assumedRoundTripFrictionPct": 0.3,
+          "frictionR": 0.032
+        },
+        "adaptivePerformance": {
+          "samples": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "sizeMultiplier": 1,
+          "qualityAdjustment": 0,
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+        },
+        "historicalWinRate": 79,
+        "historicalSamples": 33,
+        "queueRank": 1,
+        "queueRole": "PRIMARY",
         "entryTier": "A",
+        "entryTierLabel": "ELITE",
+        "entryTierSizeMultiplier": 1,
+        "bestAcceptableFallback": false,
+        "adaptiveLearning": {
+          "matched": [],
+          "priorityScoreDelta": 0,
+          "positiveInfluenceCap": 0,
+          "sizeMultiplier": 1,
+          "blocked": false,
+          "globalSizeCap": 1,
+          "globalBlock": false,
+          "globalReasons": [],
+          "reasons": []
+        },
+        "adaptiveTournamentScore": 54.3,
+        "adaptiveSizeMultiplier": 0,
         "profitabilityAdmission": {
           "state": "SHADOW_ONLY",
           "sizeMultiplier": 0,
           "entryTier": "A",
           "setupType": "TREND",
-          "runtimeRegime": "UNKNOWN",
+          "runtimeRegime": "TRENDING_UP",
           "historical": {
-            "samples": 0,
-            "winRatePct": null,
-            "rewardRisk": 2.5
+            "samples": 33,
+            "winRatePct": 79,
+            "rewardRisk": 2.6
           },
           "historicalEvidenceIsDiagnosticOnly": true,
           "regimeDisabled": false,
-          "contradictoryShadow": false,
+          "contradictoryShadow": true,
           "negativeRealProbation": false,
           "shadow": {
-            "scope": "NEW_LISTING_COHORT",
-            "samples": 645,
-            "winRatePct": 55.3,
-            "averageR": null,
+            "scope": "SETUP_FALLBACK",
+            "samples": 136,
+            "distinctTradingDays": 15,
+            "winRatePct": 11.029411764705882,
+            "averageR": -0.6029411764705883,
+            "profitFactor": 0.3223140495867769,
             "realFillSamples": 0,
-            "shadowOnlySamples": 0
+            "shadowOnlySamples": 136,
+            "independenceKey": "decisionDate+symbol+setup+regime",
+            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
+            "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
           },
           "real": {
             "samples": 0,
             "winRatePct": null,
             "averageRealizedR": null
           },
-          "thresholds": {},
-          "reason": "New-listing cross-sectional cohort evidence only; never treated as same-stock validated. Eligible only for the shared stock seed-lane cap."
+          "thresholds": {
+            "minimumIndependentShadowSamplesForMicro": 100,
+            "minimumIndependentShadowSamples": 200,
+            "minimumDistinctTradingDaysForMicro": 20,
+            "minimumDistinctTradingDays": 30,
+            "minimumShadowWinRatePct": 47,
+            "minimumShadowAverageR": 0.03,
+            "minimumShadowProfitFactor": 1.25,
+            "minimumRealSamplesForSuspensionCheck": 6,
+            "minimumRealSamplesForFullAdmission": 12,
+            "minimumRealAverageRForFullAdmission": 0.08
+          },
+          "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
         },
-        "adaptiveSizeMultiplier": 0,
-        "action": "PROFITABILITY_ADMISSION_BLOCK",
         "seedLane": {
           "eligible": false
         },
         "dayTradeSeedLane": {
           "eligible": false
         },
-        "newListingCohortEvidence": {
-          "setupType": "TREND",
-          "samples": 645,
-          "winRatePct": 55.3,
-          "avgForwardReturnPct": 6.92,
-          "cohortGeneratedAt": "2026-10-20T19:26:38.433Z"
-        },
-        "newsCatalyst": {
-          "articleCount": 9,
-          "windowHours": 72,
-          "binaryRisk": false,
-          "sentimentHint": "MIXED_OR_UNKNOWN",
-          "sourcesUsed": [
-            "GOOGLE_NEWS",
-            "YAHOO",
-            "ALPACA"
-          ],
-          "headlines": [
-            {
-              "headline": "Bank Pictet &amp; Cie Europe AG Purchases 8,101 Shares of Honeywell Aerospace $HONA - MarketBeat",
-              "createdAt": "2026-10-20T17:20:23.000Z",
-              "source": "GOOGLE_NEWS:MarketBeat",
-              "link": "https://news.google.com/rss/articles/CBMi0gFBVV95cUxPeTkwdFFiMElJT2p5dy1pNEZLbVNDenlZbDF2cWRrb0hOSGlPdHFvZ3VaNEF5blloOUNHSjEtb25GUGFXdzhzaUZsdEdMQUNzV1JhMllBeU9jaUpnN1cxY1RSQkdsUlBYRzFlc2gxM1kxd18zNTFIWVp3cEFkYVNUSWo1VHc2bWJFN3I3Vk40b0prX21DQU5pY2pWdkI1MUxsZXpUaWhzWnJUZV9fNTNWdnB0T0FBUWJjLWpPSnBUdnpqNGFTTmYtRWRvdTNrcGpRTFE?oc=5"
-            },
-            {
-              "headline": "Is Honeywell Stock A Real Bargain?",
-              "createdAt": "2026-10-20T17:06:23.000Z",
-              "source": "YAHOO:Trefis",
-              "link": "https://finance.yahoo.com/markets/stocks/articles/honeywell-stock-real-bargain-170623525.html"
-            },
-            {
-              "headline": "HONA Price Today: Honeywell Aerospace Inc. Stock Price, Quote &amp; Chart | MEXC - MEXC",
-              "createdAt": "2026-10-20T15:07:33.000Z",
-              "source": "GOOGLE_NEWS:MEXC",
-              "link": "https://news.google.com/rss/articles/CBMiR0FVX3lxTFBSUzJqQnpmWW1FdWFBRFRobnptVWRFbkR4SXNjUGtzWWd4X2ljTy1xMDNxVXlfSmRwblFYWHVHOEs5WjQ2dEZN?oc=5"
-            },
-            {
-              "headline": "Indxx Aerospace & Defense (MISL) Buys $29 Million More Honeywell Aerospace on Friday",
-              "createdAt": "2026-10-20T11:05:46.000Z",
-              "source": "YAHOO:GuruFocus.com",
-              "link": "https://finance.yahoo.com/markets/stocks/articles/indxx-aerospace-defense-misl-buys-110546539.html"
-            },
-            {
-              "headline": "Reported Earlier, Honeywell Aerospace Sees Global Business Aviation Fleet Growing 29% To Nearly 51,000 Aircraft By 2035, With 9,950 Business Jet Deliveries Expected",
-              "createdAt": "2026-10-20T05:29:51Z",
-              "source": "ALPACA",
-              "link": "https://www.benzinga.com/news/26/10/62457614/reported-earlier-honeywell-aerospace-sees-global-business-aviation-fleet-growing-29-nearly-51-000-ai"
-            }
-          ],
-          "sourcesQueried": [
-            "ALPACA_NEWS",
-            "GOOGLE_NEWS_RSS",
-            "YAHOO_FINANCE_SEARCH"
-          ],
-          "note": "Keyword-based diagnostic only across multiple free/public sources; never a hard eligibility gate. A live pre-trade news check (including Robinhood and Stocklake news) still applies before any order."
-        },
-        "queueRole": "RESERVE",
-        "queueRank": 1,
         "decisionIntelligence": {
-          "decisionScore": 8.4,
+          "decisionScore": 63.91,
           "rankBeforeOptimization": 1,
           "eligibleAfterOverlay": false,
           "eligibleForSeedLane": false,
           "eligibleForDayTradeSeedLane": false,
           "upstreamActionAllowed": false,
           "setupDiagnostics": {
-            "setupType": "TREND",
-            "technicalScore": 28,
-            "patternConfidencePct": null,
-            "historicalSamples": 0,
-            "historicalWinRatePct": null,
-            "rewardRisk": 2.5,
-            "backtestStatus": "SPARSE",
+            "setupType": "STOCK_TREND",
+            "technicalScore": 91.2,
+            "patternConfidencePct": 79,
+            "historicalSamples": 33,
+            "historicalWinRatePct": 79,
+            "rewardRisk": 2.6,
+            "backtestStatus": "SUPPORTED",
+            "newsCatalyst": {
+              "articleCount": 19,
+              "windowHours": 72,
+              "binaryRisk": true,
+              "sentimentHint": "MIXED_OR_UNKNOWN",
+              "sourcesUsed": [
+                "GOOGLE_NEWS",
+                "ALPACA",
+                "YAHOO"
+              ],
+              "headlines": [
+                {
+                  "headline": "BNL,NTHI,IMRX,ATLO,OPAL,SDHC,VSH,PEB,INNV,GRNT,NEWT,MTDR,ABR,LUCK,GROV,RLMD,DOC,IRIX,BUSE,BLNE | Stock Prices | Quote Comparison - Yahoo! Finance Canada",
+                  "createdAt": "2026-10-21T16:53:35.000Z",
+                  "source": "GOOGLE_NEWS:Yahoo! Finance Canada",
+                  "link": "https://news.google.com/rss/articles/CBMiywFBVV95cUxPQzlFTmZ1WEJxT0ptamFDdm5MVHJCTF9ldFhFVy1JMTY0SkpSOVZnbUZVelRuYUs1Q3NxM1VUa1JBY0dlalBCYWFmaUN2V3JtY1dxazM1aGpaSFBEWGo2R3pORHExRTMzMnhWT2ZtMExyanNzNFNmVkJkT1pRRnUyRTJoRURzcHhWV3VjMjB5VzdXb0xNLUtzNnNrUlgtci0yOHFhWjVQbm1vMU16Z0RfZzhiTXdpSHBLN3VtN3psLWdyNzhTa0llRGpUSQ?oc=5"
+                },
+                {
+                  "headline": "BNL,NTHI,IMRX,ATLO,OPAL,VSH,SDHC,PEB,INNV,GRNT,NEWT,MTDR,ABR,LUCK,GROV,RLMD,BUSE,IRIX,HURC,BLNE | Stock Prices | Quote Comparison - Yahoo! Finance Canada",
+                  "createdAt": "2026-10-21T16:36:53.000Z",
+                  "source": "GOOGLE_NEWS:Yahoo! Finance Canada",
+                  "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxQS19pY3dQanZnZnM0MWduSVY1VkpBMVRjaFhnS3BNMmZ0ZkF2czZ4MjFGQ0c2cXlmTUhsZ3U5Z25nRzJpb0tEM2VXZ001dUVJN1Q1LURDaVI0ZnY0QWs0dVdGWXJFeE55TlFOZ0dlU3ItTjZWdk9MYkZYNnpRckFmZTd3Y0gwMGNOcUtvbDd1Z3hrOXAwalJPRmZ5SF9TUUs3Y0FBQjNpc2xzM25ITnEzeWdQWWE0eEpsaW8yN2dJQy1VdF9rS1RFMlNWMXY?oc=5"
+                },
+                {
+                  "headline": "SUNS,BNL,BCDA,FG,ZOMDF,NTHI,BATRA,ATLO,OPAL,MRP,NEOG,PEB,SAIC,INNV,NEWT,MTDR,VG,LUCK,GROV,EVH,BUSE,IRIX,BLNE,RNXT | Stock Prices | Quote Comparison - Yahoo! Finance Canada",
+                  "createdAt": "2026-10-21T16:26:12.000Z",
+                  "source": "GOOGLE_NEWS:Yahoo! Finance Canada",
+                  "link": "https://news.google.com/rss/articles/CBMi5AFBVV95cUxOXzJIOFlHS2RPdjFCMGlHbXRETDY4ZFRtZVZfS0p0QWVCRmdraXBLOTh3bG9veF82cDdEZzZ1M3BUNVhDSWxycGVMZzhQcGg3WHRrZ2F3SDE4eDNrczFZTC1YalhyTUdSUlYtNWVHbTVLQ3FpcG5FSG16QkxOR0hvY1djYl9XUjB0MWhpVzlsazJGZzRuS3VYb0dCWHhITzU0MEJfVUdLM05qajJFeUltTGMwcjl0c2xfSWZnN3cxckNVaTR2eHFoUHY4YnVfQ1BfeVRRMWVLWUp0bWp0cTNTZmtGem4?oc=5"
+                },
+                {
+                  "headline": "Morgan Stanley Adjusts Pebblebrook Hotel Trust Price Target to $15",
+                  "createdAt": "2026-10-21T13:33:09Z",
+                  "source": "ALPACA",
+                  "link": "https://www.marketscreener.com/news/morgan-stanley-adjusts-pebblebrook-hotel-trust-pt-to-15-from-14-maintains-underweight-rating-ce785cd9d88af222"
+                },
+                {
+                  "headline": "Best Momentum Stock to Buy for October 21st - Yahoo Finance",
+                  "createdAt": "2026-10-21T13:00:00.000Z",
+                  "source": "GOOGLE_NEWS:Yahoo Finance",
+                  "link": "https://news.google.com/rss/articles/CBMinAFBVV95cUxOcVZvQnEyWDFyQkVISS1NanJaVU5TUGFBV3prSVFreFBXcWdKVWt1WklWbGRWNDJtSzVVbUJOS1VaNTRHSk96ZlptMDdyZ045d05rYWt1eDNxVHhMR2gzSV9zWmpOclMxdmpqRWQ1ZUpPMlJZVnY3OEFwcDh1d2ljQUNHVXZBcTYwMGRhZW1jN0Rjc0d6U3NRdlZSbzY?oc=5"
+                }
+              ],
+              "sourcesQueried": [
+                "ALPACA_NEWS",
+                "GOOGLE_NEWS_RSS",
+                "YAHOO_FINANCE_SEARCH"
+              ],
+              "note": "Keyword-based diagnostic only across multiple free/public sources; never a hard eligibility gate. A live pre-trade news check (including Robinhood and Stocklake news) still applies before any order."
+            },
+            "warnings": [
+              "LIQUIDITY_UNKNOWN"
+            ]
+          },
+          "screener": {
+            "fundamentals": "FAIL",
+            "liquidity": "UNKNOWN",
+            "spreadPct": null,
+            "unknownIsNotAnOverride": true
+          },
+          "opportunityDecay": {
+            "scanAgeMinutes": 0,
+            "halfLifeMinutes": 15,
+            "entryProximity": 0.944,
+            "freshnessMultiplier": 1,
+            "combinedMultiplier": 0.978,
+            "expired": false
+          },
+          "portfolioOptimization": {
+            "maxCorrelationToHigherRanked": 0,
+            "penalty": 0,
+            "hardGateStillRequired": true
+          },
+          "admissionState": "SHADOW_ONLY",
+          "hardGatesRemainAuthoritative": true
+        },
+        "decisionScore": 63.91,
+        "decisionRank": 1
+      },
+      {
+        "assetClass": "STOCK",
+        "rank": 2,
+        "ticker": "CON",
+        "sector": null,
+        "action": "PROFITABILITY_ADMISSION_BLOCK",
+        "allocationPctOfRobinhoodBuyingPower": 6.48,
+        "scanPrice": 39.16,
+        "minimumEntry": 39.47,
+        "maximumEntry": 40.26,
+        "stop": 36.73,
+        "target1": 43.58,
+        "target2": 46.59,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": 0.45,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "expectancy": {
+          "expectedR": 1.84,
+          "conservativeExpectedR": 1.77,
+          "costAdjustedConservativeExpectedR": 1.73,
+          "assumedRoundTripFrictionPct": 0.3,
+          "frictionR": 0.043
+        },
+        "adaptivePerformance": {
+          "samples": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "sizeMultiplier": 1,
+          "qualityAdjustment": 0,
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+        },
+        "historicalWinRate": 79,
+        "historicalSamples": 28,
+        "queueRank": 2,
+        "queueRole": "PRIMARY",
+        "entryTier": "A",
+        "entryTierLabel": "ELITE",
+        "entryTierSizeMultiplier": 1,
+        "bestAcceptableFallback": false,
+        "adaptiveLearning": {
+          "matched": [],
+          "priorityScoreDelta": 0,
+          "positiveInfluenceCap": 0,
+          "sizeMultiplier": 1,
+          "blocked": false,
+          "globalSizeCap": 1,
+          "globalBlock": false,
+          "globalReasons": [],
+          "reasons": []
+        },
+        "adaptiveTournamentScore": 53.8,
+        "adaptiveSizeMultiplier": 0,
+        "profitabilityAdmission": {
+          "state": "SHADOW_ONLY",
+          "sizeMultiplier": 0,
+          "entryTier": "A",
+          "setupType": "TREND",
+          "runtimeRegime": "TRENDING_UP",
+          "historical": {
+            "samples": 28,
+            "winRatePct": 79,
+            "rewardRisk": 2.6
+          },
+          "historicalEvidenceIsDiagnosticOnly": true,
+          "regimeDisabled": false,
+          "contradictoryShadow": true,
+          "negativeRealProbation": false,
+          "shadow": {
+            "scope": "SETUP_FALLBACK",
+            "samples": 136,
+            "distinctTradingDays": 15,
+            "winRatePct": 11.029411764705882,
+            "averageR": -0.6029411764705883,
+            "profitFactor": 0.3223140495867769,
+            "realFillSamples": 0,
+            "shadowOnlySamples": 136,
+            "independenceKey": "decisionDate+symbol+setup+regime",
+            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
+            "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
+          },
+          "real": {
+            "samples": 0,
+            "winRatePct": null,
+            "averageRealizedR": null
+          },
+          "thresholds": {
+            "minimumIndependentShadowSamplesForMicro": 100,
+            "minimumIndependentShadowSamples": 200,
+            "minimumDistinctTradingDaysForMicro": 20,
+            "minimumDistinctTradingDays": 30,
+            "minimumShadowWinRatePct": 47,
+            "minimumShadowAverageR": 0.03,
+            "minimumShadowProfitFactor": 1.25,
+            "minimumRealSamplesForSuspensionCheck": 6,
+            "minimumRealSamplesForFullAdmission": 12,
+            "minimumRealAverageRForFullAdmission": 0.08
+          },
+          "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
+        },
+        "seedLane": {
+          "eligible": false
+        },
+        "dayTradeSeedLane": {
+          "eligible": false
+        },
+        "decisionIntelligence": {
+          "decisionScore": 63.33,
+          "rankBeforeOptimization": 2,
+          "eligibleAfterOverlay": false,
+          "eligibleForSeedLane": false,
+          "eligibleForDayTradeSeedLane": false,
+          "upstreamActionAllowed": false,
+          "setupDiagnostics": {
+            "setupType": "STOCK_TREND",
+            "technicalScore": 91.2,
+            "patternConfidencePct": 77.1,
+            "historicalSamples": 28,
+            "historicalWinRatePct": 79,
+            "rewardRisk": 2.6,
+            "backtestStatus": "LIMITED",
             "newsCatalyst": {
               "articleCount": 9,
               "windowHours": 72,
+              "binaryRisk": true,
+              "sentimentHint": "POSITIVE",
+              "sourcesUsed": [
+                "YAHOO",
+                "GOOGLE_NEWS",
+                "ALPACA"
+              ],
+              "headlines": [
+                {
+                  "headline": "Elevance Health, Inc. (ELV) Hits Fresh High: Is There Still Room to Run?",
+                  "createdAt": "2026-10-21T18:41:59.000Z",
+                  "source": "YAHOO:Zacks",
+                  "link": "https://finance.yahoo.com/markets/stocks/articles/elevance-health-inc-elv-hits-184159175.html"
+                },
+                {
+                  "headline": "JD.com, Inc. (JD) Stock Price, News, Quote &amp; History - Yahoo! Finance Canada",
+                  "createdAt": "2026-10-21T15:40:09.000Z",
+                  "source": "GOOGLE_NEWS:Yahoo! Finance Canada",
+                  "link": "https://news.google.com/rss/articles/CBMiT0FVX3lxTE9ybkhaUUc5Z19kLWdFLVNpa0ZIS19Kdlc5UTNMVTQ5a2xsRXozMzcxUUwyZXQ4SmZvU1NhUUZMRnByc05ULUo5SzRJeFJmOEE?oc=5"
+                },
+                {
+                  "headline": "ELV Beats Q3 Earnings Estimates on Carelon Strength, Raises 2026 Outlook",
+                  "createdAt": "2026-10-21T14:19:00.000Z",
+                  "source": "YAHOO:Zacks",
+                  "link": "https://finance.yahoo.com/healthcare/articles/elv-beats-q3-earnings-estimates-141900134.html"
+                },
+                {
+                  "headline": "Stephens & Co. Initiates Coverage On Concentra Group Holdings with Overweight Rating, Announces Price Target of $45",
+                  "createdAt": "2026-10-20T14:24:22Z",
+                  "source": "ALPACA",
+                  "link": "https://www.benzinga.com/news/26/10/62469608/stephens-co-initiates-coverage-concentra-group-holdings-overweight-rating-announces-price-target-45"
+                },
+                {
+                  "headline": "Stephens Initiates Coverage on Concentra Group Holdings Parent",
+                  "createdAt": "2026-10-20T11:33:55Z",
+                  "source": "ALPACA",
+                  "link": "https://www.moomoo.com/hans/news/post/1001711034"
+                }
+              ],
+              "sourcesQueried": [
+                "ALPACA_NEWS",
+                "GOOGLE_NEWS_RSS",
+                "YAHOO_FINANCE_SEARCH"
+              ],
+              "note": "Keyword-based diagnostic only across multiple free/public sources; never a hard eligibility gate. A live pre-trade news check (including Robinhood and Stocklake news) still applies before any order."
+            },
+            "warnings": [
+              "FUNDAMENTALS_UNKNOWN",
+              "LIQUIDITY_UNKNOWN"
+            ]
+          },
+          "screener": {
+            "fundamentals": "UNKNOWN",
+            "liquidity": "UNKNOWN",
+            "spreadPct": null,
+            "unknownIsNotAnOverride": true
+          },
+          "opportunityDecay": {
+            "scanAgeMinutes": 0,
+            "halfLifeMinutes": 15,
+            "entryProximity": 0.869,
+            "freshnessMultiplier": 1,
+            "combinedMultiplier": 0.948,
+            "expired": false
+          },
+          "portfolioOptimization": {
+            "maxCorrelationToHigherRanked": 0,
+            "penalty": 0,
+            "hardGateStillRequired": true
+          },
+          "admissionState": "SHADOW_ONLY",
+          "hardGatesRemainAuthoritative": true
+        },
+        "decisionScore": 63.33,
+        "decisionRank": 2
+      },
+      {
+        "assetClass": "STOCK",
+        "queueRank": 3,
+        "queueRole": "RESERVE",
+        "rank": 3,
+        "ticker": "AVTR",
+        "sector": null,
+        "action": "PROFITABILITY_ADMISSION_BLOCK",
+        "allocationPctOfRobinhoodBuyingPower": 0,
+        "requiresLiveSizing": true,
+        "scanPrice": 17.29,
+        "minimumEntry": 17.29,
+        "maximumEntry": 17.64,
+        "stop": 15.69,
+        "target1": 19.69,
+        "target2": 21.45,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": null,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "expectancy": {
+          "expectedR": 1.92,
+          "conservativeExpectedR": 1.58,
+          "costAdjustedConservativeExpectedR": 1.55,
+          "assumedRoundTripFrictionPct": 0.3,
+          "frictionR": 0.032
+        },
+        "adaptivePerformance": {
+          "samples": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "sizeMultiplier": 1,
+          "qualityAdjustment": 0,
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+        },
+        "historicalWinRate": 81,
+        "historicalSamples": 21,
+        "entryTier": "A",
+        "entryTierLabel": "ELITE",
+        "entryTierSizeMultiplier": 1,
+        "bestAcceptableFallback": false,
+        "adaptiveLearning": {
+          "matched": [],
+          "priorityScoreDelta": 0,
+          "positiveInfluenceCap": 0,
+          "sizeMultiplier": 1,
+          "blocked": false,
+          "globalSizeCap": 1,
+          "globalBlock": false,
+          "globalReasons": [],
+          "reasons": []
+        },
+        "adaptiveTournamentScore": 53.5,
+        "adaptiveSizeMultiplier": 0,
+        "profitabilityAdmission": {
+          "state": "SHADOW_ONLY",
+          "sizeMultiplier": 0,
+          "entryTier": "A",
+          "setupType": "TREND",
+          "runtimeRegime": "TRENDING_UP",
+          "historical": {
+            "samples": 21,
+            "winRatePct": 81,
+            "rewardRisk": 2.6
+          },
+          "historicalEvidenceIsDiagnosticOnly": true,
+          "regimeDisabled": false,
+          "contradictoryShadow": true,
+          "negativeRealProbation": false,
+          "shadow": {
+            "scope": "SETUP_FALLBACK",
+            "samples": 136,
+            "distinctTradingDays": 15,
+            "winRatePct": 11.029411764705882,
+            "averageR": -0.6029411764705883,
+            "profitFactor": 0.3223140495867769,
+            "realFillSamples": 0,
+            "shadowOnlySamples": 136,
+            "independenceKey": "decisionDate+symbol+setup+regime",
+            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
+            "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
+          },
+          "real": {
+            "samples": 0,
+            "winRatePct": null,
+            "averageRealizedR": null
+          },
+          "thresholds": {
+            "minimumIndependentShadowSamplesForMicro": 100,
+            "minimumIndependentShadowSamples": 200,
+            "minimumDistinctTradingDaysForMicro": 20,
+            "minimumDistinctTradingDays": 30,
+            "minimumShadowWinRatePct": 47,
+            "minimumShadowAverageR": 0.03,
+            "minimumShadowProfitFactor": 1.25,
+            "minimumRealSamplesForSuspensionCheck": 6,
+            "minimumRealSamplesForFullAdmission": 12,
+            "minimumRealAverageRForFullAdmission": 0.08
+          },
+          "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
+        },
+        "seedLane": {
+          "eligible": false
+        },
+        "dayTradeSeedLane": {
+          "eligible": false
+        },
+        "decisionIntelligence": {
+          "decisionScore": 62.65,
+          "rankBeforeOptimization": 3,
+          "eligibleAfterOverlay": false,
+          "eligibleForSeedLane": false,
+          "eligibleForDayTradeSeedLane": false,
+          "upstreamActionAllowed": false,
+          "setupDiagnostics": {
+            "setupType": "STOCK_TREND",
+            "technicalScore": 92.2,
+            "patternConfidencePct": 71.7,
+            "historicalSamples": 21,
+            "historicalWinRatePct": 81,
+            "rewardRisk": 2.6,
+            "backtestStatus": "LIMITED",
+            "newsCatalyst": {
+              "articleCount": 3,
+              "windowHours": 72,
               "binaryRisk": false,
+              "sentimentHint": "MIXED_OR_UNKNOWN",
+              "sourcesUsed": [
+                "GOOGLE_NEWS",
+                "YAHOO"
+              ],
+              "headlines": [
+                {
+                  "headline": "Avantor (AVTR) is Regaining Market Confidence - Yahoo Finance",
+                  "createdAt": "2026-10-21T13:07:03.000Z",
+                  "source": "GOOGLE_NEWS:Yahoo Finance",
+                  "link": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxNUHRuZ0tWVmctNklBUnRWdVZNaXBKRG0wd2hBeVpvRU5uOE5rOTZXZjdUSzYtYWNJd1AxSEE5R0RjdElvVlpOeEZIcXUxN0IwNHpFSzhsbDFtY0hHM0k3czNBX1ZSa21zU09IeURTTldfYXFVUDBLMmVDZjNkWkdxbUpaeVp2UHBvdHgtaEwtTmpSZ1kxQ3R6c2xlVHNWa09oVmRZYjR6UGM?oc=5"
+                },
+                {
+                  "headline": "Avantor (AVTR) is Regaining Market Confidence",
+                  "createdAt": "2026-10-21T13:07:03.000Z",
+                  "source": "YAHOO:Insider Monkey",
+                  "link": "https://finance.yahoo.com/markets/stocks/articles/avantor-avtr-regaining-market-confidence-130703682.html"
+                },
+                {
+                  "headline": "Trading Systems Reacting to (AVTR) Volatility - Stock Traders Daily",
+                  "createdAt": "2026-10-20T23:56:01.000Z",
+                  "source": "GOOGLE_NEWS:Stock Traders Daily",
+                  "link": "https://news.google.com/rss/articles/CBMivwFBVV95cUxPSGhxb05xNEdpX0o1RDNpM2loeUhNWHBIOG5VejFRYXVhTndob1F2T2FVM0ZVandXQVJlX1RyQzA2TzBEWlRpSFgwQ0Uwam43MW1aUHhyekxMVjVESGs2R0ZLNUhQdnlZVW54T0ZPaXhIZGt5a3ZhczRhUlFaa1dLZUY1SEkzNTdWLTBZcmhNUjY0S2dVVHR3SERBWENEN0ZTYXFsdi1WN2wtVDVDb2dUTEpOTWdvTGk1SnB1dkh6OA?oc=5"
+                }
+              ],
+              "sourcesQueried": [
+                "ALPACA_NEWS",
+                "GOOGLE_NEWS_RSS",
+                "YAHOO_FINANCE_SEARCH"
+              ],
+              "note": "Keyword-based diagnostic only across multiple free/public sources; never a hard eligibility gate. A live pre-trade news check (including Robinhood and Stocklake news) still applies before any order."
+            },
+            "warnings": [
+              "FUNDAMENTALS_UNKNOWN",
+              "LIQUIDITY_UNKNOWN"
+            ]
+          },
+          "screener": {
+            "fundamentals": "UNKNOWN",
+            "liquidity": "UNKNOWN",
+            "spreadPct": null,
+            "unknownIsNotAnOverride": true
+          },
+          "opportunityDecay": {
+            "scanAgeMinutes": 0,
+            "halfLifeMinutes": 15,
+            "entryProximity": 1,
+            "freshnessMultiplier": 1,
+            "combinedMultiplier": 1,
+            "expired": false
+          },
+          "portfolioOptimization": {
+            "maxCorrelationToHigherRanked": 0,
+            "penalty": 0,
+            "hardGateStillRequired": true
+          },
+          "admissionState": "SHADOW_ONLY",
+          "hardGatesRemainAuthoritative": true
+        },
+        "decisionScore": 62.65,
+        "decisionRank": 3
+      },
+      {
+        "assetClass": "STOCK",
+        "queueRank": 4,
+        "queueRole": "RESERVE",
+        "rank": 6,
+        "ticker": "HNGE",
+        "sector": null,
+        "action": "PROFITABILITY_ADMISSION_BLOCK",
+        "allocationPctOfRobinhoodBuyingPower": 0,
+        "requiresLiveSizing": true,
+        "scanPrice": 111.92,
+        "minimumEntry": 111.95,
+        "maximumEntry": 114.19,
+        "stop": 100.31,
+        "target1": 129.41,
+        "target2": 142.21,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": null,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "expectancy": {
+          "expectedR": 1.92,
+          "conservativeExpectedR": 1.58,
+          "costAdjustedConservativeExpectedR": 1.55,
+          "assumedRoundTripFrictionPct": 0.3,
+          "frictionR": 0.029
+        },
+        "adaptivePerformance": {
+          "samples": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "sizeMultiplier": 1,
+          "qualityAdjustment": 0,
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+        },
+        "historicalWinRate": 81,
+        "historicalSamples": 21,
+        "entryTier": "A",
+        "entryTierLabel": "ELITE",
+        "entryTierSizeMultiplier": 1,
+        "bestAcceptableFallback": false,
+        "adaptiveLearning": {
+          "matched": [],
+          "priorityScoreDelta": 0,
+          "positiveInfluenceCap": 0,
+          "sizeMultiplier": 1,
+          "blocked": false,
+          "globalSizeCap": 1,
+          "globalBlock": false,
+          "globalReasons": [],
+          "reasons": []
+        },
+        "adaptiveTournamentScore": 53.5,
+        "adaptiveSizeMultiplier": 0,
+        "profitabilityAdmission": {
+          "state": "SHADOW_ONLY",
+          "sizeMultiplier": 0,
+          "entryTier": "A",
+          "setupType": "TREND",
+          "runtimeRegime": "TRENDING_UP",
+          "historical": {
+            "samples": 21,
+            "winRatePct": 81,
+            "rewardRisk": 2.6
+          },
+          "historicalEvidenceIsDiagnosticOnly": true,
+          "regimeDisabled": false,
+          "contradictoryShadow": true,
+          "negativeRealProbation": false,
+          "shadow": {
+            "scope": "SETUP_FALLBACK",
+            "samples": 136,
+            "distinctTradingDays": 15,
+            "winRatePct": 11.029411764705882,
+            "averageR": -0.6029411764705883,
+            "profitFactor": 0.3223140495867769,
+            "realFillSamples": 0,
+            "shadowOnlySamples": 136,
+            "independenceKey": "decisionDate+symbol+setup+regime",
+            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
+            "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
+          },
+          "real": {
+            "samples": 0,
+            "winRatePct": null,
+            "averageRealizedR": null
+          },
+          "thresholds": {
+            "minimumIndependentShadowSamplesForMicro": 100,
+            "minimumIndependentShadowSamples": 200,
+            "minimumDistinctTradingDaysForMicro": 20,
+            "minimumDistinctTradingDays": 30,
+            "minimumShadowWinRatePct": 47,
+            "minimumShadowAverageR": 0.03,
+            "minimumShadowProfitFactor": 1.25,
+            "minimumRealSamplesForSuspensionCheck": 6,
+            "minimumRealSamplesForFullAdmission": 12,
+            "minimumRealAverageRForFullAdmission": 0.08
+          },
+          "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
+        },
+        "seedLane": {
+          "eligible": false
+        },
+        "dayTradeSeedLane": {
+          "eligible": false
+        },
+        "decisionIntelligence": {
+          "decisionScore": 62.65,
+          "rankBeforeOptimization": 4,
+          "eligibleAfterOverlay": false,
+          "eligibleForSeedLane": false,
+          "eligibleForDayTradeSeedLane": false,
+          "upstreamActionAllowed": false,
+          "setupDiagnostics": {
+            "setupType": "STOCK_TREND",
+            "technicalScore": 92.2,
+            "patternConfidencePct": 71.7,
+            "historicalSamples": 21,
+            "historicalWinRatePct": 81,
+            "rewardRisk": 2.6,
+            "backtestStatus": "LIMITED",
+            "newsCatalyst": {
+              "articleCount": 3,
+              "windowHours": 72,
+              "binaryRisk": false,
+              "sentimentHint": "MIXED_OR_UNKNOWN",
+              "sourcesUsed": [
+                "GOOGLE_NEWS",
+                "ALPACA"
+              ],
+              "headlines": [
+                {
+                  "headline": "Is Hinge Health (HNGE) Trading At A Premium After A 128% Rally? - Simply Wall Street",
+                  "createdAt": "2026-10-20T20:29:13.000Z",
+                  "source": "GOOGLE_NEWS:Simply Wall Street",
+                  "link": "https://news.google.com/rss/articles/CBMiygFBVV95cUxNNm5TSmg4d0lwMnE5YTRMbXFobVpDbFdtVGxRSzltd21VQUh5WHlES2pUdldPLW1HY1U2MTlXVGF5VjIyTjhvRGdzV2RFRnpORl8xTjRGRWlmLVJVanZ0YTduSjY1OFVpT1diaVZheUFGbWN6VFVtb0p4bU1kOFhVak5QWmNKZzlXRDJTZ21iVGU2NFkzUXJVSjdLLXc4N1haelBmVTh4TlZNMmpCVElvX1ZPbV9uTWcxSWRiOGQ1UVYtWTRDNXFmd3Jn0gHPAUFVX3lxTE1RekRjdS1zZUNpZEdLVC1uY2l6NXAxM1dVRG1MbGtpTUNNZDJrR1dvR0JZS0RWWFRzRFJRMU5xVkkyM2dQcWxSRWpIajVrbWdLUS1oR2FmczFpX3NObjNvN01FRFl5Mi1uQTJqSHRDSUdXcjZoeWFJRy1Pa2RWQ2o1WlVZZEZ6c1doeWxJMjRpNFlnb1BSUlZHN1R0d2JjMktNMllORUZFY0N1QUtRVk1JSzJRdDkwNksxUm5qUjZEX1JsaHFkcURvRTV1T1NLNA?oc=5"
+                },
+                {
+                  "headline": "Watching Hinge Health; Shares See Volume To The Upside, Hearing Investor Business Daily SwingTrader Buys Stock",
+                  "createdAt": "2026-10-20T17:29:09Z",
+                  "source": "ALPACA",
+                  "link": "https://www.benzinga.com/quote/HNGE"
+                },
+                {
+                  "headline": "Hinge Health (NYSE:HNGE) Hits New 12-Month High - Here's What Happened - MarketBeat",
+                  "createdAt": "2026-10-20T16:23:45.000Z",
+                  "source": "GOOGLE_NEWS:MarketBeat",
+                  "link": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxQQl8xdF81RWNjNGJ4dXJyS0V6RWlEVHprdnliZGJZazZrdk5Zc282aWgweXN5UlRLOTZsYUg2Q21JYmtvVkNycE5BTUFiaUtsZzNhbzlySmQyWGZ3VHVpVTl5eHA5emZWdHRsdnRNUVQxUGpEQkNqLXpDTS1lTEZPRTE5UVFlSnJiUXQ2VmFsb2hCZWRRWkFBeEk4Wm9aUEVWTHVrZ1Z3aUNVUzJnQjI3VlVZRVVjMl9fRWt4UGZqZGQtUnM?oc=5"
+                }
+              ],
+              "sourcesQueried": [
+                "ALPACA_NEWS",
+                "GOOGLE_NEWS_RSS",
+                "YAHOO_FINANCE_SEARCH"
+              ],
+              "note": "Keyword-based diagnostic only across multiple free/public sources; never a hard eligibility gate. A live pre-trade news check (including Robinhood and Stocklake news) still applies before any order."
+            },
+            "warnings": [
+              "LIQUIDITY_UNKNOWN"
+            ]
+          },
+          "screener": {
+            "fundamentals": "FAIL",
+            "liquidity": "UNKNOWN",
+            "spreadPct": null,
+            "unknownIsNotAnOverride": true
+          },
+          "opportunityDecay": {
+            "scanAgeMinutes": 0,
+            "halfLifeMinutes": 15,
+            "entryProximity": 0.996,
+            "freshnessMultiplier": 1,
+            "combinedMultiplier": 0.998,
+            "expired": false
+          },
+          "portfolioOptimization": {
+            "maxCorrelationToHigherRanked": 0,
+            "penalty": 0,
+            "hardGateStillRequired": true
+          },
+          "admissionState": "SHADOW_ONLY",
+          "hardGatesRemainAuthoritative": true
+        },
+        "decisionScore": 62.65,
+        "decisionRank": 4
+      },
+      {
+        "assetClass": "STOCK",
+        "queueRank": 5,
+        "queueRole": "RESERVE",
+        "rank": 4,
+        "ticker": "ROIV",
+        "sector": null,
+        "action": "PROFITABILITY_ADMISSION_BLOCK",
+        "allocationPctOfRobinhoodBuyingPower": 0,
+        "requiresLiveSizing": true,
+        "scanPrice": 36.66,
+        "minimumEntry": 38.11,
+        "maximumEntry": 38.87,
+        "stop": 34.94,
+        "target1": 42.87,
+        "target2": 46.35,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": null,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "expectancy": {
+          "expectedR": 1.59,
+          "conservativeExpectedR": 1.59,
+          "costAdjustedConservativeExpectedR": 1.56,
+          "assumedRoundTripFrictionPct": 0.3,
+          "frictionR": 0.036
+        },
+        "adaptivePerformance": {
+          "samples": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "sizeMultiplier": 1,
+          "qualityAdjustment": 0,
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+        },
+        "historicalWinRate": 72,
+        "historicalSamples": 32,
+        "entryTier": "A",
+        "entryTierLabel": "ELITE",
+        "entryTierSizeMultiplier": 1,
+        "bestAcceptableFallback": false,
+        "adaptiveLearning": {
+          "matched": [],
+          "priorityScoreDelta": 0,
+          "positiveInfluenceCap": 0,
+          "sizeMultiplier": 1,
+          "blocked": false,
+          "globalSizeCap": 1,
+          "globalBlock": false,
+          "globalReasons": [],
+          "reasons": []
+        },
+        "adaptiveTournamentScore": 52.8,
+        "adaptiveSizeMultiplier": 0,
+        "profitabilityAdmission": {
+          "state": "SHADOW_ONLY",
+          "sizeMultiplier": 0,
+          "entryTier": "A",
+          "setupType": "TREND",
+          "runtimeRegime": "TRENDING_UP",
+          "historical": {
+            "samples": 32,
+            "winRatePct": 72,
+            "rewardRisk": 2.6
+          },
+          "historicalEvidenceIsDiagnosticOnly": true,
+          "regimeDisabled": false,
+          "contradictoryShadow": true,
+          "negativeRealProbation": false,
+          "shadow": {
+            "scope": "SETUP_FALLBACK",
+            "samples": 136,
+            "distinctTradingDays": 15,
+            "winRatePct": 11.029411764705882,
+            "averageR": -0.6029411764705883,
+            "profitFactor": 0.3223140495867769,
+            "realFillSamples": 0,
+            "shadowOnlySamples": 136,
+            "independenceKey": "decisionDate+symbol+setup+regime",
+            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
+            "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
+          },
+          "real": {
+            "samples": 0,
+            "winRatePct": null,
+            "averageRealizedR": null
+          },
+          "thresholds": {
+            "minimumIndependentShadowSamplesForMicro": 100,
+            "minimumIndependentShadowSamples": 200,
+            "minimumDistinctTradingDaysForMicro": 20,
+            "minimumDistinctTradingDays": 30,
+            "minimumShadowWinRatePct": 47,
+            "minimumShadowAverageR": 0.03,
+            "minimumShadowProfitFactor": 1.25,
+            "minimumRealSamplesForSuspensionCheck": 6,
+            "minimumRealSamplesForFullAdmission": 12,
+            "minimumRealAverageRForFullAdmission": 0.08
+          },
+          "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
+        },
+        "seedLane": {
+          "eligible": false
+        },
+        "dayTradeSeedLane": {
+          "eligible": false
+        },
+        "decisionIntelligence": {
+          "decisionScore": 61.39,
+          "rankBeforeOptimization": 5,
+          "eligibleAfterOverlay": false,
+          "eligibleForSeedLane": false,
+          "eligibleForDayTradeSeedLane": false,
+          "upstreamActionAllowed": false,
+          "setupDiagnostics": {
+            "setupType": "STOCK_TREND",
+            "technicalScore": 87.7,
+            "patternConfidencePct": 72,
+            "historicalSamples": 32,
+            "historicalWinRatePct": 72,
+            "rewardRisk": 2.6,
+            "backtestStatus": "SUPPORTED",
+            "newsCatalyst": {
+              "articleCount": 22,
+              "windowHours": 72,
+              "binaryRisk": false,
+              "sentimentHint": "MIXED_OR_UNKNOWN",
+              "sourcesUsed": [
+                "ALPACA",
+                "GOOGLE_NEWS",
+                "YAHOO"
+              ],
+              "headlines": [
+                {
+                  "headline": "Why Is Roivant Sciences Stock Surging Wednesday?",
+                  "createdAt": "2026-10-21T17:14:50Z",
+                  "source": "ALPACA",
+                  "link": "https://www.benzinga.com/markets/biotech/26/10/62505206/why-is-roivant-sciences-stock-surging-wednesday"
+                },
+                {
+                  "headline": "Why Is Roivant Sciences Stock Surging Wednesday? - Benzinga",
+                  "createdAt": "2026-10-21T17:14:50.000Z",
+                  "source": "GOOGLE_NEWS:Benzinga",
+                  "link": "https://news.google.com/rss/articles/CBMipgFBVV95cUxOWk05b29qSjUxeE5GMlh2ZE9GSENlcUNKR055b3lSb2lNTFlzN216RHFJWGx3T29EVVlyUm9lUURtQVd0NkF4ZFdHRG1IaUJiV3dmaWNZZTlYbVEyTjRSZnhkaVVwSFRmVGFTWWExU1M3STdjY3pwN25wMTRUT2VoS3hhY3FWV2lydjVmNjJUckszZnlYRjY3eDhIVXJoNUw3QVFrb19n?oc=5"
+                },
+                {
+                  "headline": "Roivant Sciences’ Brepocitinib Delivers Positive Phase III Uveitis Results",
+                  "createdAt": "2026-10-21T15:04:23.000Z",
+                  "source": "YAHOO:MarketBeat",
+                  "link": "https://finance.yahoo.com/healthcare/articles/roivant-sciences-brepocitinib-delivers-positive-150423240.html"
+                },
+                {
+                  "headline": "Why is Roivant Sciences stock rallying today? By Investing.com - Investing.com South Africa",
+                  "createdAt": "2026-10-21T14:30:09.000Z",
+                  "source": "GOOGLE_NEWS:Investing.com South Africa",
+                  "link": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxQeGJTcWJNeVozZkw2WWtiSnoyeEVHTGk3eUFjNDVkMVhfNmJPVnowLV93Zk5IS1ItajY0QkpLQlA1NnZVMXN6Q2tJLTJub1AtX3dYR0JUNEczOUpyaWlERlRMNFZ1YlNhTkxTSjdKVG1rbGl4SS1ZaHBLTHZzaGRKZlk3VUxVYzVzRG1qNDBPNEh1Yy0wWHd5amlhUTBhbm8xN05TX1M0YVg?oc=5"
+                },
+                {
+                  "headline": "Roivant stock gains on late-stage trial win (ROIV:NASDAQ) - Seeking Alpha",
+                  "createdAt": "2026-10-21T13:23:59.000Z",
+                  "source": "GOOGLE_NEWS:Seeking Alpha",
+                  "link": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxQS0ZacTQwNjJIRWloRDJ1bk9NcE13M05WWS1YaWd4SUt4b1ZSTC05a3FxUzVEZUFSZXFFRV9vMmlqeW5vWTNxcS12Y3dmd2staXRiWWMwWFFOUzl2b1ZjZkNnUW8yYXBLcGlpdUpBZ3BDU0Q4Ni1MTlRGWGs2RVlsOVc2ZTV0SW5qaEdHbTVvcXBxV0w2TDNhcWU0NDhSR2Z3aUs5Wmt1Wk5nNi1KczlwZEhZNG9uOURLV01F?oc=5"
+                }
+              ],
+              "sourcesQueried": [
+                "ALPACA_NEWS",
+                "GOOGLE_NEWS_RSS",
+                "YAHOO_FINANCE_SEARCH"
+              ],
+              "note": "Keyword-based diagnostic only across multiple free/public sources; never a hard eligibility gate. A live pre-trade news check (including Robinhood and Stocklake news) still applies before any order."
+            },
+            "warnings": [
+              "FUNDAMENTALS_UNKNOWN",
+              "LIQUIDITY_UNKNOWN"
+            ]
+          },
+          "screener": {
+            "fundamentals": "UNKNOWN",
+            "liquidity": "UNKNOWN",
+            "spreadPct": null,
+            "unknownIsNotAnOverride": true
+          },
+          "opportunityDecay": {
+            "scanAgeMinutes": 0,
+            "halfLifeMinutes": 15,
+            "entryProximity": 0.364,
+            "freshnessMultiplier": 1,
+            "combinedMultiplier": 0.746,
+            "expired": false
+          },
+          "portfolioOptimization": {
+            "maxCorrelationToHigherRanked": 0,
+            "penalty": 0,
+            "hardGateStillRequired": true
+          },
+          "admissionState": "SHADOW_ONLY",
+          "hardGatesRemainAuthoritative": true
+        },
+        "decisionScore": 61.39,
+        "decisionRank": 5
+      },
+      {
+        "assetClass": "STOCK",
+        "queueRank": 6,
+        "queueRole": "RESERVE",
+        "rank": 5,
+        "ticker": "HST",
+        "sector": null,
+        "action": "PROFITABILITY_ADMISSION_BLOCK",
+        "allocationPctOfRobinhoodBuyingPower": 0,
+        "requiresLiveSizing": true,
+        "scanPrice": 25.08,
+        "minimumEntry": 25.2,
+        "maximumEntry": 25.7,
+        "stop": 22.98,
+        "target1": 28.53,
+        "target2": 30.97,
+        "plannedStopRiskPctOfRobinhoodBuyingPower": null,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "expectancy": {
+          "expectedR": 1.56,
+          "conservativeExpectedR": 1.5,
+          "costAdjustedConservativeExpectedR": 1.47,
+          "assumedRoundTripFrictionPct": 0.3,
+          "frictionR": 0.034
+        },
+        "adaptivePerformance": {
+          "samples": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "sizeMultiplier": 1,
+          "qualityAdjustment": 0,
+          "label": "UNPROVEN",
+          "source": "MODEL_RESEARCH_ONLY",
+          "modelReportedSizeMultiplier": 1,
+          "canIncreaseLiveSize": false,
+          "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+        },
+        "historicalWinRate": 71,
+        "historicalSamples": 28,
+        "entryTier": "A",
+        "entryTierLabel": "ELITE",
+        "entryTierSizeMultiplier": 1,
+        "bestAcceptableFallback": false,
+        "adaptiveLearning": {
+          "matched": [],
+          "priorityScoreDelta": 0,
+          "positiveInfluenceCap": 0,
+          "sizeMultiplier": 1,
+          "blocked": false,
+          "globalSizeCap": 1,
+          "globalBlock": false,
+          "globalReasons": [],
+          "reasons": []
+        },
+        "adaptiveTournamentScore": 52.2,
+        "adaptiveSizeMultiplier": 0,
+        "profitabilityAdmission": {
+          "state": "SHADOW_ONLY",
+          "sizeMultiplier": 0,
+          "entryTier": "A",
+          "setupType": "TREND",
+          "runtimeRegime": "TRENDING_UP",
+          "historical": {
+            "samples": 28,
+            "winRatePct": 71,
+            "rewardRisk": 2.6
+          },
+          "historicalEvidenceIsDiagnosticOnly": true,
+          "regimeDisabled": false,
+          "contradictoryShadow": true,
+          "negativeRealProbation": false,
+          "shadow": {
+            "scope": "SETUP_FALLBACK",
+            "samples": 136,
+            "distinctTradingDays": 15,
+            "winRatePct": 11.029411764705882,
+            "averageR": -0.6029411764705883,
+            "profitFactor": 0.3223140495867769,
+            "realFillSamples": 0,
+            "shadowOnlySamples": 136,
+            "independenceKey": "decisionDate+symbol+setup+regime",
+            "duplicateResolutionRule": "Keep the most adverse realized R for duplicate keys.",
+            "evidencePoolNote": "Pool includes hypothetical shadow outcomes and resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split."
+          },
+          "real": {
+            "samples": 0,
+            "winRatePct": null,
+            "averageRealizedR": null
+          },
+          "thresholds": {
+            "minimumIndependentShadowSamplesForMicro": 100,
+            "minimumIndependentShadowSamples": 200,
+            "minimumDistinctTradingDaysForMicro": 20,
+            "minimumDistinctTradingDays": 30,
+            "minimumShadowWinRatePct": 47,
+            "minimumShadowAverageR": 0.03,
+            "minimumShadowProfitFactor": 1.25,
+            "minimumRealSamplesForSuspensionCheck": 6,
+            "minimumRealSamplesForFullAdmission": 12,
+            "minimumRealAverageRForFullAdmission": 0.08
+          },
+          "reason": "Candidate is not eligible because a hard profitability/regime contradiction remains."
+        },
+        "seedLane": {
+          "eligible": false
+        },
+        "dayTradeSeedLane": {
+          "eligible": false
+        },
+        "decisionIntelligence": {
+          "decisionScore": 60.59,
+          "rankBeforeOptimization": 6,
+          "eligibleAfterOverlay": false,
+          "eligibleForSeedLane": false,
+          "eligibleForDayTradeSeedLane": false,
+          "upstreamActionAllowed": false,
+          "setupDiagnostics": {
+            "setupType": "STOCK_TREND",
+            "technicalScore": 87.2,
+            "patternConfidencePct": 69.6,
+            "historicalSamples": 28,
+            "historicalWinRatePct": 71,
+            "rewardRisk": 2.6,
+            "backtestStatus": "LIMITED",
+            "newsCatalyst": {
+              "articleCount": 6,
+              "windowHours": 72,
+              "binaryRisk": true,
               "sentimentHint": "MIXED_OR_UNKNOWN",
               "sourcesUsed": [
                 "GOOGLE_NEWS",
@@ -606,34 +1759,34 @@
               ],
               "headlines": [
                 {
-                  "headline": "Bank Pictet &amp; Cie Europe AG Purchases 8,101 Shares of Honeywell Aerospace $HONA - MarketBeat",
-                  "createdAt": "2026-10-20T17:20:23.000Z",
-                  "source": "GOOGLE_NEWS:MarketBeat",
-                  "link": "https://news.google.com/rss/articles/CBMi0gFBVV95cUxPeTkwdFFiMElJT2p5dy1pNEZLbVNDenlZbDF2cWRrb0hOSGlPdHFvZ3VaNEF5blloOUNHSjEtb25GUGFXdzhzaUZsdEdMQUNzV1JhMllBeU9jaUpnN1cxY1RSQkdsUlBYRzFlc2gxM1kxd18zNTFIWVp3cEFkYVNUSWo1VHc2bWJFN3I3Vk40b0prX21DQU5pY2pWdkI1MUxsZXpUaWhzWnJUZV9fNTNWdnB0T0FBUWJjLWpPSnBUdnpqNGFTTmYtRWRvdTNrcGpRTFE?oc=5"
+                  "headline": "HST vs. CUBE: Which Stock Should Value Investors Buy Now? - Yahoo Finance Australia",
+                  "createdAt": "2026-10-21T14:40:02.000Z",
+                  "source": "GOOGLE_NEWS:Yahoo Finance Australia",
+                  "link": "https://news.google.com/rss/articles/CBMifEFVX3lxTE0yR1owN2pVSWdXbjFqdGNobjdzY093QldYbUo4NWVucHprdExNaXc1ajR2LUJSc3hueVUyS3lGTkFpOHphS1ZJa3JIanphRElxRFFVOHBobWZuc01uWllpOE5Jb1RpUTZaeEJEUzl2dEFDS1hpY2kzRzBhT0I?oc=5"
                 },
                 {
-                  "headline": "Is Honeywell Stock A Real Bargain?",
-                  "createdAt": "2026-10-20T17:06:23.000Z",
-                  "source": "YAHOO:Trefis",
-                  "link": "https://finance.yahoo.com/markets/stocks/articles/honeywell-stock-real-bargain-170623525.html"
+                  "headline": "HST vs. CUBE: Which Stock Should Value Investors Buy Now?",
+                  "createdAt": "2026-10-21T14:40:02.000Z",
+                  "source": "YAHOO:Zacks",
+                  "link": "https://finance.yahoo.com/markets/stocks/articles/hst-vs-cube-stock-value-144002951.html"
                 },
                 {
-                  "headline": "HONA Price Today: Honeywell Aerospace Inc. Stock Price, Quote &amp; Chart | MEXC - MEXC",
-                  "createdAt": "2026-10-20T15:07:33.000Z",
-                  "source": "GOOGLE_NEWS:MEXC",
-                  "link": "https://news.google.com/rss/articles/CBMiR0FVX3lxTFBSUzJqQnpmWW1FdWFBRFRobnptVWRFbkR4SXNjUGtzWWd4X2ljTy1xMDNxVXlfSmRwblFYWHVHOEs5WjQ2dEZN?oc=5"
-                },
-                {
-                  "headline": "Indxx Aerospace & Defense (MISL) Buys $29 Million More Honeywell Aerospace on Friday",
-                  "createdAt": "2026-10-20T11:05:46.000Z",
-                  "source": "YAHOO:GuruFocus.com",
-                  "link": "https://finance.yahoo.com/markets/stocks/articles/indxx-aerospace-defense-misl-buys-110546539.html"
-                },
-                {
-                  "headline": "Reported Earlier, Honeywell Aerospace Sees Global Business Aviation Fleet Growing 29% To Nearly 51,000 Aircraft By 2035, With 9,950 Business Jet Deliveries Expected",
-                  "createdAt": "2026-10-20T05:29:51Z",
+                  "headline": "Baird Adjusts Price Target on Host Hotels & Resorts to $25 From $24",
+                  "createdAt": "2026-10-20T11:32:23Z",
                   "source": "ALPACA",
-                  "link": "https://www.benzinga.com/news/26/10/62457614/reported-earlier-honeywell-aerospace-sees-global-business-aviation-fleet-growing-29-nearly-51-000-ai"
+                  "link": "https://www.marketscreener.com/news/baird-adjusts-price-target-on-host-hotels-resorts-to-25-from-24-ce785cd8d98af427"
+                },
+                {
+                  "headline": "Will Raised Guidance Change Host Hotels' (HST) Narrative - Simply Wall Street",
+                  "createdAt": "2026-10-20T07:37:06.000Z",
+                  "source": "GOOGLE_NEWS:Simply Wall Street",
+                  "link": "https://news.google.com/rss/articles/CBMi0wFBVV95cUxNdDdiQmZ6Wi1HYnhkbWFqeDFhOFBjRFlobHpVMHA2bDFyaWFqcTZDSmU4eTQzV1kzNEFlUVN5SV9iNDVGdXNzTkwzaEIxS1F6bkJvU1hhdWVhdFhZZjA0aFhZVHk5NEFzMjVfWjRNMFNkZzJrNDlYMFcwRGNCYUF3MTRNWkVwVmRTV29UVmNUWEhDUlpHWWFiNXo1ODh6MWdfVEFBRDhId1MzdUZMOXlZQnlNUXZmUFRXeTdkaTlxWmRvT282ODlqMExpZ1RMaDdLeDhn0gHTAUFVX3lxTE10N2JCZnpaLUdieGRtYWp4MWE4UGNEWWhselUwcDZsMXJpYWpxNkNKZTh5NDNXWTM0QWVRU3lJX2I0NUZ1c3NOTDNoQjFLUXpuQm9TWGF1ZWF0WFlmMDRoWFlUeTk0QXMyNV9aNE0wU2RnMms0OVgwVzBEY0JhQXcxNE1aRXBWZFNXb1RWY1RYSENSWkdZYWI1ejU4OHoxZ19UQUFEOEh3UzN1Rkw5eVlCeU1RdmZQVFd5N2RpOXFaZG9PbzY4OWowTGlnVExoN0t4OGc?oc=5"
+                },
+                {
+                  "headline": "Host Hotels &amp; Resorts (HST) Stock May Be A Bargain As Guidance Rises - Yahoo Finance",
+                  "createdAt": "2026-10-19T23:24:23.000Z",
+                  "source": "GOOGLE_NEWS:Yahoo Finance",
+                  "link": "https://news.google.com/rss/articles/CBMimgFBVV95cUxOOHYwam1kMDNTTjltQzd4b0ZsZGg2ZnlRc0xfTmlWanZCY3ljWEJXaDN2VXJvYXRWaGJYSDlJYlhqRVR0dDdtQTFhU2dHM1IyMm5zbFRxMndSdXoxcVVOTEd6cjBGOWJjWTNyVzlzOENvdEhRakZ3OFZiT09PaEw5VkNvOHhGNGc1czNWMFdaUzFTejZaYjlqejZB?oc=5"
                 }
               ],
               "sourcesQueried": [
@@ -644,14 +1797,11 @@
               "note": "Keyword-based diagnostic only across multiple free/public sources; never a hard eligibility gate. A live pre-trade news check (including Robinhood and Stocklake news) still applies before any order."
             },
             "warnings": [
-              "SPARSE_SETUP_BACKTEST",
-              "PATTERN_CONFIDENCE_UNKNOWN",
-              "FUNDAMENTALS_UNKNOWN",
               "LIQUIDITY_UNKNOWN"
             ]
           },
           "screener": {
-            "fundamentals": "UNKNOWN",
+            "fundamentals": "PASS",
             "liquidity": "UNKNOWN",
             "spreadPct": null,
             "unknownIsNotAnOverride": true
@@ -659,9 +1809,9 @@
           "opportunityDecay": {
             "scanAgeMinutes": 0,
             "halfLifeMinutes": 15,
-            "entryProximity": 0,
+            "entryProximity": 0.92,
             "freshnessMultiplier": 1,
-            "combinedMultiplier": 0.6,
+            "combinedMultiplier": 0.968,
             "expired": false
           },
           "portfolioOptimization": {
@@ -672,212 +1822,8 @@
           "admissionState": "SHADOW_ONLY",
           "hardGatesRemainAuthoritative": true
         },
-        "decisionScore": 8.4,
-        "decisionRank": 1
-      },
-      {
-        "ticker": "TEVA",
-        "minimumEntry": 41,
-        "maximumEntry": 41.62,
-        "stop": 39.97,
-        "target1": 43.07,
-        "target2": 44.31,
-        "setupType": "TREND",
-        "growthQuality": 0,
-        "rewardRisk": 2.5,
-        "entryTier": "A",
-        "profitabilityAdmission": {
-          "state": "SHADOW_ONLY",
-          "sizeMultiplier": 0,
-          "entryTier": "A",
-          "setupType": "TREND",
-          "runtimeRegime": "UNKNOWN",
-          "historical": {
-            "samples": 0,
-            "winRatePct": null,
-            "rewardRisk": 2.5
-          },
-          "historicalEvidenceIsDiagnosticOnly": true,
-          "regimeDisabled": false,
-          "contradictoryShadow": false,
-          "negativeRealProbation": false,
-          "shadow": {
-            "scope": "NEW_LISTING_COHORT",
-            "samples": 645,
-            "winRatePct": 55.3,
-            "averageR": null,
-            "realFillSamples": 0,
-            "shadowOnlySamples": 0
-          },
-          "real": {
-            "samples": 0,
-            "winRatePct": null,
-            "averageRealizedR": null
-          },
-          "thresholds": {},
-          "reason": "New-listing cross-sectional cohort evidence only; never treated as same-stock validated. Eligible only for the shared stock seed-lane cap."
-        },
-        "adaptiveSizeMultiplier": 0,
-        "action": "PROFITABILITY_ADMISSION_BLOCK",
-        "seedLane": {
-          "eligible": false
-        },
-        "dayTradeSeedLane": {
-          "eligible": false
-        },
-        "newListingCohortEvidence": {
-          "setupType": "TREND",
-          "samples": 645,
-          "winRatePct": 55.3,
-          "avgForwardReturnPct": 6.92,
-          "cohortGeneratedAt": "2026-10-20T19:26:38.433Z"
-        },
-        "newsCatalyst": {
-          "articleCount": 6,
-          "windowHours": 72,
-          "binaryRisk": true,
-          "sentimentHint": "MIXED_OR_UNKNOWN",
-          "sourcesUsed": [
-            "YAHOO",
-            "ALPACA",
-            "GOOGLE_NEWS"
-          ],
-          "headlines": [
-            {
-              "headline": "Alvotech's Manufacturing Progress, Simponi Launch Potential Support Recovery, UBS Says",
-              "createdAt": "2026-10-20T16:11:48.000Z",
-              "source": "YAHOO:MT Newswires",
-              "link": "https://finance.yahoo.com/healthcare/articles/alvotech-apos-manufacturing-progress-simponi-161148918.html"
-            },
-            {
-              "headline": "Teva Pharmaceuticals, Sanofi Report Positive 44-Week Duvakitug Data in Ulcerative Colitis, Crohn's Disease",
-              "createdAt": "2026-10-20T14:02:01.000Z",
-              "source": "YAHOO:MT Newswires",
-              "link": "https://finance.yahoo.com/healthcare/articles/teva-pharmaceuticals-sanofi-report-positive-140201807.html"
-            },
-            {
-              "headline": "Teva Pharma And Sanofi Report Duvakitug Maintained Efficacy Through 44 Weeks In Ulcerative Colitis And Crohn's Disease",
-              "createdAt": "2026-10-20T12:02:42Z",
-              "source": "ALPACA",
-              "link": "https://www.benzinga.com/news/26/10/62462852/teva-pharma-and-sanofi-report-duvakitug-maintained-efficacy-through-44-weeks-ulcerative-colitis-and-"
-            },
-            {
-              "headline": "Among initial responders, week-44 remission was 58% for ulcerative colitis and 84% for Crohn’s on the higher dose. - Stock Titan",
-              "createdAt": "2026-10-20T12:00:00.000Z",
-              "source": "GOOGLE_NEWS:Stock Titan",
-              "link": "https://news.google.com/rss/articles/CBMivgFBVV95cUxOcFBsTlNBY2hJRjVMWElJd2NvZmN0T291Sk5CUTVfR1RxeUtiWG9aU000eUZVRzMwWmxSQkdaejFGT0M5V0NWR2I1ZGxVVnI2a2I1WW5JOTkteHl4N0RYNEpDckVEZ05OSVVfMVEwYlB1LWF6Z2tjTFFweTE4c0VkaWY2Zmo4M2RJcS1HSkdDUDQ0MVZuMkxkVmpma0EyeTV3TFpwZDN5Q3BRQzV6OGtqLWNzcjZfZkU5b0lZMFBR?oc=5"
-            },
-            {
-              "headline": "UEG Week: Teva and Sanofi’s Duvakitug Maintained Long-Term Positive Outcomes in New Phase 2b Data for Ulcerative Colitis and Crohn’s Disease",
-              "createdAt": "2026-10-20T12:00:00.000Z",
-              "source": "YAHOO:GlobeNewswire",
-              "link": "https://finance.yahoo.com/healthcare/articles/ueg-week-teva-sanofi-duvakitug-120000290.html"
-            }
-          ],
-          "sourcesQueried": [
-            "ALPACA_NEWS",
-            "GOOGLE_NEWS_RSS",
-            "YAHOO_FINANCE_SEARCH"
-          ],
-          "note": "Keyword-based diagnostic only across multiple free/public sources; never a hard eligibility gate. A live pre-trade news check (including Robinhood and Stocklake news) still applies before any order."
-        },
-        "queueRole": "RESERVE",
-        "queueRank": 2,
-        "decisionIntelligence": {
-          "decisionScore": 8.4,
-          "rankBeforeOptimization": 2,
-          "eligibleAfterOverlay": false,
-          "eligibleForSeedLane": false,
-          "eligibleForDayTradeSeedLane": false,
-          "upstreamActionAllowed": false,
-          "setupDiagnostics": {
-            "setupType": "TREND",
-            "technicalScore": 28,
-            "patternConfidencePct": null,
-            "historicalSamples": 0,
-            "historicalWinRatePct": null,
-            "rewardRisk": 2.5,
-            "backtestStatus": "SPARSE",
-            "newsCatalyst": {
-              "articleCount": 6,
-              "windowHours": 72,
-              "binaryRisk": true,
-              "sentimentHint": "MIXED_OR_UNKNOWN",
-              "sourcesUsed": [
-                "YAHOO",
-                "ALPACA",
-                "GOOGLE_NEWS"
-              ],
-              "headlines": [
-                {
-                  "headline": "Alvotech's Manufacturing Progress, Simponi Launch Potential Support Recovery, UBS Says",
-                  "createdAt": "2026-10-20T16:11:48.000Z",
-                  "source": "YAHOO:MT Newswires",
-                  "link": "https://finance.yahoo.com/healthcare/articles/alvotech-apos-manufacturing-progress-simponi-161148918.html"
-                },
-                {
-                  "headline": "Teva Pharmaceuticals, Sanofi Report Positive 44-Week Duvakitug Data in Ulcerative Colitis, Crohn's Disease",
-                  "createdAt": "2026-10-20T14:02:01.000Z",
-                  "source": "YAHOO:MT Newswires",
-                  "link": "https://finance.yahoo.com/healthcare/articles/teva-pharmaceuticals-sanofi-report-positive-140201807.html"
-                },
-                {
-                  "headline": "Teva Pharma And Sanofi Report Duvakitug Maintained Efficacy Through 44 Weeks In Ulcerative Colitis And Crohn's Disease",
-                  "createdAt": "2026-10-20T12:02:42Z",
-                  "source": "ALPACA",
-                  "link": "https://www.benzinga.com/news/26/10/62462852/teva-pharma-and-sanofi-report-duvakitug-maintained-efficacy-through-44-weeks-ulcerative-colitis-and-"
-                },
-                {
-                  "headline": "Among initial responders, week-44 remission was 58% for ulcerative colitis and 84% for Crohn’s on the higher dose. - Stock Titan",
-                  "createdAt": "2026-10-20T12:00:00.000Z",
-                  "source": "GOOGLE_NEWS:Stock Titan",
-                  "link": "https://news.google.com/rss/articles/CBMivgFBVV95cUxOcFBsTlNBY2hJRjVMWElJd2NvZmN0T291Sk5CUTVfR1RxeUtiWG9aU000eUZVRzMwWmxSQkdaejFGT0M5V0NWR2I1ZGxVVnI2a2I1WW5JOTkteHl4N0RYNEpDckVEZ05OSVVfMVEwYlB1LWF6Z2tjTFFweTE4c0VkaWY2Zmo4M2RJcS1HSkdDUDQ0MVZuMkxkVmpma0EyeTV3TFpwZDN5Q3BRQzV6OGtqLWNzcjZfZkU5b0lZMFBR?oc=5"
-                },
-                {
-                  "headline": "UEG Week: Teva and Sanofi’s Duvakitug Maintained Long-Term Positive Outcomes in New Phase 2b Data for Ulcerative Colitis and Crohn’s Disease",
-                  "createdAt": "2026-10-20T12:00:00.000Z",
-                  "source": "YAHOO:GlobeNewswire",
-                  "link": "https://finance.yahoo.com/healthcare/articles/ueg-week-teva-sanofi-duvakitug-120000290.html"
-                }
-              ],
-              "sourcesQueried": [
-                "ALPACA_NEWS",
-                "GOOGLE_NEWS_RSS",
-                "YAHOO_FINANCE_SEARCH"
-              ],
-              "note": "Keyword-based diagnostic only across multiple free/public sources; never a hard eligibility gate. A live pre-trade news check (including Robinhood and Stocklake news) still applies before any order."
-            },
-            "warnings": [
-              "SPARSE_SETUP_BACKTEST",
-              "PATTERN_CONFIDENCE_UNKNOWN",
-              "FUNDAMENTALS_UNKNOWN",
-              "LIQUIDITY_UNKNOWN"
-            ]
-          },
-          "screener": {
-            "fundamentals": "UNKNOWN",
-            "liquidity": "UNKNOWN",
-            "spreadPct": null,
-            "unknownIsNotAnOverride": true
-          },
-          "opportunityDecay": {
-            "scanAgeMinutes": 0,
-            "halfLifeMinutes": 15,
-            "entryProximity": 0,
-            "freshnessMultiplier": 1,
-            "combinedMultiplier": 0.6,
-            "expired": false
-          },
-          "portfolioOptimization": {
-            "maxCorrelationToHigherRanked": 0,
-            "penalty": 0,
-            "hardGateStillRequired": true
-          },
-          "admissionState": "SHADOW_ONLY",
-          "hardGatesRemainAuthoritative": true
-        },
-        "decisionScore": 8.4,
-        "decisionRank": 2
+        "decisionScore": 60.59,
+        "decisionRank": 6
       }
     ],
     "candidateQueuePolicy": {
@@ -957,7 +1903,7 @@
   "entryGateRobustness": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/entry-gate-validation.json",
     "status": "RED_FLAG",
-    "generatedAt": "2026-10-21T18:00:32.603Z",
+    "generatedAt": "2026-10-21T19:56:16.498Z",
     "holdoutStart": "2024-01-01",
     "holdoutEnd": "2025-12-31",
     "secondHoldoutStart": "2026-01-01",
@@ -1233,7 +2179,7 @@
   },
   "shadowDiagnostics": {
     "reportUrl": "https://sablewolphen.github.io/Teststock/data/shadow-trades.json",
-    "generatedAt": "2026-10-20T19:24:47.566Z",
+    "generatedAt": "2026-10-21T19:57:48.285Z",
     "summary": {
       "ACCEPTED": {
         "resolved": 3,
@@ -1241,9 +2187,9 @@
         "averageR": -1
       },
       "REJECTED": {
-        "resolved": 174,
-        "winRatePct": 11.5,
-        "averageR": -0.59
+        "resolved": 181,
+        "winRatePct": 12.2,
+        "averageR": -0.56
       },
       "opportunityCostSignal": "REJECTED_OUTPERFORMED_ACCEPTED",
       "note": "Diagnostic only. One same-day symbol/decision/setup episode contributes at most one statistical observation; variants are retained as metadata. Shadow outcomes may support profitability admission but must never loosen a hard live-money gate."
@@ -1257,7 +2203,7 @@
   },
   "probabilityFirstPolicy": {
     "schemaVersion": 5,
-    "generatedAt": "2026-10-21T19:38:56.701Z",
+    "generatedAt": "2026-10-21T19:59:14.948Z",
     "objective": "Increase the probability of positive compounding while keeping stocks primary, options exceptional, crypto active around the clock, and cash acceptable. Prefer elite A stocks at normal encoded size, allow a tightly capped B best-acceptable micro-probation stock after A-tier priority whenever live capacity remains, and let crypto surface more reasonable 24/7 opportunities without removing hard risk controls. This policy cannot eliminate market loss risk.",
     "stocks": {
       "minGrowthQuality": 85,
@@ -1559,15 +2505,15 @@
   },
   "dataFreshness": {
     "status": "GENERATED_THIS_RUN",
-    "lastSuccessfulGeneration": "2026-10-21T19:38:57.087Z",
+    "lastSuccessfulGeneration": "2026-10-21T19:59:15.056Z",
     "expectedRefreshCadenceMinutes": 10,
     "stockExpectedRefreshMinutesDuringMarket": 10,
     "cryptoExpectedRefreshMinutes": 10,
-    "stockSignalAsOf": "2026-10-21T19:38:49.195Z",
+    "stockSignalAsOf": "2026-10-21T19:54:29.116Z",
     "cryptoSignalAsOf": "2026-09-25T21:26:20.100Z",
-    "stockAgeMinutes": 0,
-    "cryptoAgeMinutes": 37333,
-    "entryGateValidationAgeMinutes": 98,
+    "stockAgeMinutes": 5,
+    "cryptoAgeMinutes": 37353,
+    "entryGateValidationAgeMinutes": 3,
     "staleAfterMinutes": {
       "unified": 20,
       "stockDuringMarket": 25,
@@ -1659,12 +2605,12 @@
     }
   },
   "systemHealth": {
-    "generatedAt": "2026-10-21T19:38:57.087Z",
+    "generatedAt": "2026-10-21T19:59:15.056Z",
     "signalAgeMinutes": 0,
     "dataFreshnessStatus": "GENERATED_THIS_RUN",
     "entryGateValidation": {
       "status": "RED_FLAG",
-      "ageMinutes": 98,
+      "ageMinutes": 3,
       "required": true
     },
     "probabilityFirstOverlay": {
@@ -1674,12 +2620,12 @@
     },
     "crossAssetRanking": {
       "status": "AVAILABLE",
-      "ageMinutes": 87951,
+      "ageMinutes": 87971,
       "required": true
     },
     "shadowLedger": {
       "status": "AVAILABLE",
-      "ageMinutes": 1454,
+      "ageMinutes": 1,
       "requiredForTrading": false
     },
     "runtimeBroker": {
@@ -1925,8 +2871,8 @@
     }
   },
   "exitPolicyValidation": {
-    "status": "UNAVAILABLE_FAILSAFE_BASELINE",
-    "generatedAt": "2026-10-20T19:23:48.852Z",
+    "status": "AVAILABLE",
+    "generatedAt": "2026-10-21T19:56:21.024Z",
     "recommendedPolicy": "T1_25_T2_75",
     "recommendationReason": "The no-runner baseline was the strongest policy in development, so no runner policy is promoted.",
     "reportUrl": "https://raw.githubusercontent.com/SableWolphen/Teststock/main/docs/data/exit-policy-validation.json",
@@ -1940,7 +2886,7 @@
   },
   "portfolioCorrelationIntelligence": {
     "status": "AVAILABLE",
-    "generatedAt": "2026-10-21T18:00:25.583Z",
+    "generatedAt": "2026-10-21T19:56:11.089Z",
     "lookbackTradingDays": 90,
     "highCorrelationThreshold": 0.75,
     "veryHighCorrelationThreshold": 0.88,
@@ -1956,15 +2902,15 @@
   },
   "championChallenger": {
     "status": "AVAILABLE",
-    "generatedAt": "2026-10-21T18:00:32.654Z",
+    "generatedAt": "2026-10-21T19:56:21.101Z",
     "mode": "CHAMPION_CHALLENGER",
     "champion": {
       "exitPolicy": "T1_25_T2_75",
       "status": "LIVE_POLICY_ONLY_IF_ALL_RUNTIME_GUARDS_PASS",
       "evidence": {
-        "exitValidationGeneratedAt": "2026-10-20T19:23:48.852Z",
-        "entryValidationGeneratedAt": "2026-10-21T18:00:32.603Z",
-        "probabilityPolicyGeneratedAt": "2026-10-21T17:51:03.939Z"
+        "exitValidationGeneratedAt": "2026-10-21T19:56:21.024Z",
+        "entryValidationGeneratedAt": "2026-10-21T19:56:16.498Z",
+        "probabilityPolicyGeneratedAt": "2026-10-21T19:38:56.701Z"
       }
     },
     "promotionPolicy": {
@@ -1993,7 +2939,7 @@
   },
   "adaptivePerformance": {
     "status": "ACTIVE",
-    "generatedAt": "2026-10-21T19:38:56.363Z",
+    "generatedAt": "2026-10-21T19:59:14.249Z",
     "resolvedRealStockTrades": 1,
     "sourceOfTruth": "ROBINHOOD_CONFIRMED_REAL_FILLS_ONLY",
     "policy": {
@@ -2147,7 +3093,7 @@
   },
   "dayTradeOnlyEntryPolicy": {
     "enabled": true,
-    "startedAt": "2026-10-21T19:38:57.564Z",
+    "startedAt": "2026-10-21T19:59:15.184Z",
     "objective": "Take small, frequent, same-day gains to build the account up before returning to larger multi-day swing targets (user-requested 2026-09-22, given the PDT day-trade-count restriction was eliminated by FINRA effective 2026-06-04 -- confirmed already implemented by Robinhood -- so frequent same-day stock entries are no longer capped at 3 per 5 business days).",
     "scope": "NEW_STOCK_ENTRIES_ONLY",
     "existingSwingPositionsUnaffected": true,
@@ -2398,12 +3344,12 @@
       {
         "round": "UNIVERSE",
         "input": 6086,
-        "output": 2677,
+        "output": 2361,
         "rule": "Scan every legitimate active/tradable operating-company stock available from the connected U.S. equity universe, up to a 20,000-symbol ceiling. Never invent symbols or pad with ETFs/warrants just to hit 20,000."
       },
       {
         "round": "UP_TO_20000",
-        "input": 2677,
+        "input": 2361,
         "output": 1200,
         "rule": "Rank the entire available discovery pool by market quality, liquidity and momentum; send the best 2,000 to deeper daily-history analysis."
       },
@@ -2422,13 +3368,13 @@
       {
         "round": "TOP_100",
         "input": 100,
-        "output": 0,
+        "output": 6,
         "rule": "Apply A-tier elite gates first, then a 25% B best-acceptable micro tier with positive expectancy/history/R:R floors. Hard account, price, spread, gap, correlation and protection gates never relax."
       },
       {
         "round": "LIVE_FINAL",
-        "input": 0,
-        "output": 0,
+        "input": 6,
+        "output": 1,
         "rule": "Choose live A candidates first at up to normal encoded size. If no A survives, choose the strongest live B candidate at micro-probation size capped at 25%. If it fails before submission, try the next eligible fallback. Hold cash only when no A or B survives every hard guard."
       }
     ],
@@ -2444,63 +3390,84 @@
     "noEligibleCandidateAction": "HOLD_CASH_AND_KEEP_SCANNING",
     "researchChampion": {
       "rank": 1,
-      "ticker": "BTSG",
-      "name": "BrightSpring Health Services, Inc. Common Stock",
+      "ticker": "PEB",
+      "name": "Pebblebrook Hotel Trust",
       "setupType": "TREND",
-      "tournamentScore": 89.83,
+      "tournamentScore": 88.83,
       "quality": 100,
-      "historicalWinRate": 85,
-      "historicalSamples": 39,
+      "historicalWinRate": 79,
+      "historicalSamples": 33,
       "rewardRisk": 2.6,
-      "spreadPct": 0.127,
-      "entry": 65.27,
-      "stop": 60.67,
-      "target1": 72.17,
-      "target2": 77.23,
-      "entryTier": null,
-      "entryTierLabel": null,
-      "fundamentals": null,
-      "corporateActions": null,
-      "recentFilings": [],
+      "spreadPct": 0.047,
+      "entry": 21.21,
+      "stop": 19.24,
+      "target1": 24.17,
+      "target2": 26.33,
+      "entryTier": "A",
+      "entryTierLabel": "ELITE",
+      "fundamentals": {
+        "label": "WEAK",
+        "coverage": 1,
+        "revenueGrowthPct": 2,
+        "latestAnnualNetIncome": -78017000,
+        "latestEquityEstimate": 2787874000,
+        "source": "SEC_COMPANYFACTS",
+        "note": "Backward-looking SEC fundamentals only; this does not predict earnings."
+      },
+      "corporateActions": {
+        "risk": "CLEAR",
+        "windowStart": "2026-10-07",
+        "windowEnd": "2026-12-05",
+        "events": [],
+        "source": "ALPACA_CORPORATE_ACTIONS",
+        "warning": "Corporate-action data can arrive late; live broker/news checks still apply."
+      },
+      "recentFilings": [
+        {
+          "form": "8-K",
+          "filingDate": "2026-10-09"
+        }
+      ],
       "newsCatalyst": {
-        "articleCount": 7,
+        "articleCount": 19,
         "windowHours": 72,
-        "binaryRisk": false,
+        "binaryRisk": true,
         "sentimentHint": "MIXED_OR_UNKNOWN",
         "sourcesUsed": [
           "GOOGLE_NEWS",
+          "ALPACA",
           "YAHOO"
         ],
         "headlines": [
           {
-            "headline": "AMN,HLF,BSBK,FXNC,IMRX,MRBK,TISI,PDYN,FRST,GRNT,TPL,FTHM,VSTS,GEF-B,RVSB,SHEN,TMCI,BCRX,BTSG,NBBK,USCB,CION | Stock Prices | Quote Comparison - Yahoo! Finance Canada",
-            "createdAt": "2026-10-21T11:59:49.000Z",
+            "headline": "BNL,NTHI,IMRX,ATLO,OPAL,SDHC,VSH,PEB,INNV,GRNT,NEWT,MTDR,ABR,LUCK,GROV,RLMD,DOC,IRIX,BUSE,BLNE | Stock Prices | Quote Comparison - Yahoo! Finance Canada",
+            "createdAt": "2026-10-21T16:53:35.000Z",
             "source": "GOOGLE_NEWS:Yahoo! Finance Canada",
-            "link": "https://news.google.com/rss/articles/CBMi3AFBVV95cUxPRXlMU0pUMVhSRHpydmFCeHVrTlMtNG5vWHlTSXdBS0pPeVp4NW9lTTNWZ2RaNmFNT3Q5dndqN09RU1RXeC1sdkhhZjhJLXFxS1FPY2p4R3JyUk1KdUcxMmdXTmFsSXpSMC1iRnU1ajREWk54NG9IdzNWWjZQM256YzByVjVFcTV2VUpqOHhxUW9ZLUFUUTUtWlo3d0laRFBpWUtUSTJjZy1mZG1nUkNmLWVRNVRaRFl0dnFheGdUYU5Mc2RqUzJHVzVQbjlhWHgxTXZLLWUyZTYyVnFW?oc=5"
+            "link": "https://news.google.com/rss/articles/CBMiywFBVV95cUxPQzlFTmZ1WEJxT0ptamFDdm5MVHJCTF9ldFhFVy1JMTY0SkpSOVZnbUZVelRuYUs1Q3NxM1VUa1JBY0dlalBCYWFmaUN2V3JtY1dxazM1aGpaSFBEWGo2R3pORHExRTMzMnhWT2ZtMExyanNzNFNmVkJkT1pRRnUyRTJoRURzcHhWV3VjMjB5VzdXb0xNLUtzNnNrUlgtci0yOHFhWjVQbm1vMU16Z0RfZzhiTXdpSHBLN3VtN3psLWdyNzhTa0llRGpUSQ?oc=5"
           },
           {
-            "headline": "AMN,EG,HLF,PGY,BSBK,IMRX,CRMT,MRBK,ORN,FRST,TISI,GRNT,TPL,OVLY,RVSB,GEF-B,NBBK,BTSG,USCB | Stock Prices | Quote Comparison - Yahoo! Finance Canada",
-            "createdAt": "2026-10-21T11:34:47.000Z",
+            "headline": "BNL,NTHI,IMRX,ATLO,OPAL,VSH,SDHC,PEB,INNV,GRNT,NEWT,MTDR,ABR,LUCK,GROV,RLMD,BUSE,IRIX,HURC,BLNE | Stock Prices | Quote Comparison - Yahoo! Finance Canada",
+            "createdAt": "2026-10-21T16:36:53.000Z",
             "source": "GOOGLE_NEWS:Yahoo! Finance Canada",
-            "link": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxORmljS1M2T2szZFhUMUVvemZMY2JPbmZEUVB5eDBKaXRRNU01SXlZTlJ0V1JTYmRmTnFobDdiU3JUSGNqamN5WlhkMjctdVEzTkdaUzFtYk9YYWI2YllSQUIwd3NjM1lHRFM1RzhOQlAtQmdDYmppUk1NNGJhVXU2cExsdkpfbldwaXVSN3QtQWhuT2Q1UDdOTU0tVzBrMFZROXpjVVB6YkRhRjNBdlg5MVZrMFo2QlFITjFYX3hmZUdxUE0?oc=5"
+            "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxQS19pY3dQanZnZnM0MWduSVY1VkpBMVRjaFhnS3BNMmZ0ZkF2czZ4MjFGQ0c2cXlmTUhsZ3U5Z25nRzJpb0tEM2VXZ001dUVJN1Q1LURDaVI0ZnY0QWs0dVdGWXJFeE55TlFOZ0dlU3ItTjZWdk9MYkZYNnpRckFmZTd3Y0gwMGNOcUtvbDd1Z3hrOXAwalJPRmZ5SF9TUUs3Y0FBQjNpc2xzM25ITnEzeWdQWWE0eEpsaW8yN2dJQy1VdF9rS1RFMlNWMXY?oc=5"
           },
           {
-            "headline": "What iShares Russell 2000 Index Fund (IWM) Bought: Axos Leads on Monday",
-            "createdAt": "2026-10-21T11:03:49.000Z",
-            "source": "YAHOO:GuruFocus.com",
-            "link": "https://finance.yahoo.com/markets/stocks/articles/ishares-russell-2000-index-fund-110349928.html"
+            "headline": "SUNS,BNL,BCDA,FG,ZOMDF,NTHI,BATRA,ATLO,OPAL,MRP,NEOG,PEB,SAIC,INNV,NEWT,MTDR,VG,LUCK,GROV,EVH,BUSE,IRIX,BLNE,RNXT | Stock Prices | Quote Comparison - Yahoo! Finance Canada",
+            "createdAt": "2026-10-21T16:26:12.000Z",
+            "source": "GOOGLE_NEWS:Yahoo! Finance Canada",
+            "link": "https://news.google.com/rss/articles/CBMi5AFBVV95cUxOXzJIOFlHS2RPdjFCMGlHbXRETDY4ZFRtZVZfS0p0QWVCRmdraXBLOTh3bG9veF82cDdEZzZ1M3BUNVhDSWxycGVMZzhQcGg3WHRrZ2F3SDE4eDNrczFZTC1YalhyTUdSUlYtNWVHbTVLQ3FpcG5FSG16QkxOR0hvY1djYl9XUjB0MWhpVzlsazJGZzRuS3VYb0dCWHhITzU0MEJfVUdLM05qajJFeUltTGMwcjl0c2xfSWZnN3cxckNVaTR2eHFoUHY4YnVfQ1BfeVRRMWVLWUp0bWp0cTNTZmtGem4?oc=5"
           },
           {
-            "headline": "EG,AMN,PGY,HLF,BSBK,IMRX,LCNB,CRMT,ORN,MRBK,TISI,FRST,GRNT,TPL,OVLY,GEF-B,BTSG,NBBK,HBT,BOTJ | Stock Prices | Quote Comparison - Yahoo! Finance Canada",
-            "createdAt": "2026-10-21T05:00:27.000Z",
-            "source": "GOOGLE_NEWS:Yahoo! Finance Canada",
-            "link": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxQa2NPcG1iNnhRYWZoUWtTUGlLWlFlbE4xN2R3Wl9yRDNGRnhoY0xPMHQ0Q2dTd0R5MDBRWmJuZ1ZreC15WmlGSzFDRlVxU1UzR1ZQM2xIVmZTMFZlVnBfX0dEN28zeXJtbWpQS1BiQThSQ3l5eXNrQWlEZm5QQXl0cnVWRjhYM0VrZkY4dzhCUEVZTnE3cElTYTJ2TTBmbnhURWEwTG94TXlSOHVJZDVVb1R1VlZWbVRZOExTeU9UVzVEY0JZQVVLbA?oc=5"
+            "headline": "Morgan Stanley Adjusts Pebblebrook Hotel Trust Price Target to $15",
+            "createdAt": "2026-10-21T13:33:09Z",
+            "source": "ALPACA",
+            "link": "https://www.marketscreener.com/news/morgan-stanley-adjusts-pebblebrook-hotel-trust-pt-to-15-from-14-maintains-underweight-rating-ce785cd9d88af222"
           },
           {
-            "headline": "HLF,BSBK,FXNC,IMRX,MRBK,TISI,FRST,PDYN,GRNT,TPL,FTHM,VSTS,RVSB,GEF-B,TMCI,SHEN,BCRX,NBBK,BTSG,USCB,CION | Stock Prices | Quote Comparison - Yahoo! Finance Canada",
-            "createdAt": "2026-10-20T14:42:33.000Z",
-            "source": "GOOGLE_NEWS:Yahoo! Finance Canada",
-            "link": "https://news.google.com/rss/articles/CBMi1wFBVV95cUxQcXN6TnZYT2Y1eHV1eENDb3NKRHJTYzEyYk5rYmRVSG5MaDh3c250bWZVem9IbTJLdlBUWVg4ZDAzRHBabUVQSWgxZ2UzYUZKQzhQLU8zSThRSWk1STJoOXhWcHpXTHBMTFFqb1Y3THozLWVuVlFlTllHSHYxN0Y3a0l5M19hM1JDVjdrMmVkcUh1TGktNm1QMFNnSTZLM29jZlNIeEhlQXFPRjQxZ1hIaDFySC1GbEc4dnhhbFBiV3NSZDI0Q3U4d01BNE8xT2dZbmxhbVU2SQ?oc=5"
+            "headline": "Best Momentum Stock to Buy for October 21st - Yahoo Finance",
+            "createdAt": "2026-10-21T13:00:00.000Z",
+            "source": "GOOGLE_NEWS:Yahoo Finance",
+            "link": "https://news.google.com/rss/articles/CBMinAFBVV95cUxOcVZvQnEyWDFyQkVISS1NanJaVU5TUGFBV3prSVFreFBXcWdKVWt1WklWbGRWNDJtSzVVbUJOS1VaNTRHSk96ZlptMDdyZ045d05rYWt1eDNxVHhMR2gzSV9zWmpOclMxdmpqRWQ1ZUpPMlJZVnY3OEFwcDh1d2ljQUNHVXZBcTYwMGRhZW1jN0Rjc0d6U3NRdlZSbzY?oc=5"
           }
         ],
         "sourcesQueried": [
@@ -2510,7 +3477,7 @@
         ],
         "note": "Keyword-based diagnostic only across multiple free/public sources; never a hard eligibility gate. A live pre-trade news check (including Robinhood and Stocklake news) still applies before any order."
       },
-      "fundamentalEligibility": null,
+      "fundamentalEligibility": false,
       "adaptiveLearning": {
         "matched": [],
         "priorityScoreDelta": 0,
@@ -2522,8 +3489,8 @@
         "globalReasons": [],
         "reasons": []
       },
-      "adaptiveBaseTournamentScore": 89.83,
-      "adaptiveTournamentScore": 89.83,
+      "adaptiveBaseTournamentScore": 88.83,
+      "adaptiveTournamentScore": 88.83,
       "adaptiveSizeMultiplier": 1
     },
     "liveBuyChampion": null,
@@ -2537,7 +3504,7 @@
       "performanceState": "INSUFFICIENT_DATA",
       "source": "docs/data/adaptive-performance.json",
       "selfLearningStateSource": "docs/data/self-learning-state.json",
-      "currentRegime": "TRENDING_DOWN",
+      "currentRegime": "TRENDING_UP",
       "resolvedRealStockTrades": 1,
       "positiveInfluenceCap": 0,
       "dimensionTrust": {
@@ -2606,42 +3573,6 @@
     },
     "topMatchedCandidates": [
       {
-        "ticker": "TEVA",
-        "netActivityScore": 1.3,
-        "buyWeight": 0.112,
-        "sellWeight": 0,
-        "distinctPoliticians": 1,
-        "bipartisan": false,
-        "sourceCount": 1,
-        "recordCount": 1,
-        "latestReportedDate": "2026-07-20",
-        "confidence": 43
-      },
-      {
-        "ticker": "XOM",
-        "netActivityScore": -1.3,
-        "buyWeight": 0,
-        "sellWeight": 0.112,
-        "distinctPoliticians": 1,
-        "bipartisan": false,
-        "sourceCount": 1,
-        "recordCount": 1,
-        "latestReportedDate": "2026-07-20",
-        "confidence": 43
-      },
-      {
-        "ticker": "GMAB",
-        "netActivityScore": 1.3,
-        "buyWeight": 0.112,
-        "sellWeight": 0,
-        "distinctPoliticians": 1,
-        "bipartisan": false,
-        "sourceCount": 1,
-        "recordCount": 1,
-        "latestReportedDate": "2026-07-20",
-        "confidence": 43
-      },
-      {
         "ticker": "HMC",
         "netActivityScore": 1.3,
         "buyWeight": 0.112,
@@ -2652,6 +3583,18 @@
         "recordCount": 1,
         "latestReportedDate": "2026-07-20",
         "confidence": 43
+      },
+      {
+        "ticker": "MDT",
+        "netActivityScore": -0.9,
+        "buyWeight": 0.112,
+        "sellWeight": 0.187,
+        "distinctPoliticians": 2,
+        "bipartisan": false,
+        "sourceCount": 1,
+        "recordCount": 2,
+        "latestReportedDate": "2026-08-05",
+        "confidence": 46
       }
     ]
   },
@@ -2708,7 +3651,7 @@
   },
   "unifiedMarketIntelligence": {
     "schemaVersion": 1,
-    "generatedAt": "2026-10-21T19:39:14.818Z",
+    "generatedAt": "2026-10-21T19:59:15.456Z",
     "architecture": "TWO_TOURNAMENTS_UNIFIED_EVIDENCE",
     "objective": "Improve cost-adjusted expectancy and reduce avoidable losses through diverse evidence, forward validation, broker reconciliation and hard risk limits. No win or income guarantee.",
     "providers": [
@@ -3161,8 +4104,8 @@
         "proxySymbol": "QQQ",
         "marketExposure": "NASDAQ_100",
         "proxyBias": "MIXED",
-        "proxyPrice": 725.8,
-        "proxyScore": 8.1,
+        "proxyPrice": 725.85,
+        "proxyScore": 9.2,
         "researchStatus": "WAIT_PROXY_DIRECTION",
         "liveExecutionEligible": false,
         "admissionStateRequired": [
@@ -3199,15 +4142,15 @@
         "evidenceRule": "QQQ/DIA establishes research direction only. A shadow or live result counts only from the exact Robinhood-resolved XND/DJX contract using executable ask at entry and executable bid at exit.",
         "proxyReference": {
           "symbol": "QQQ",
-          "price": 725.8,
-          "ma20": 725.92,
-          "ma50": 722.11,
+          "price": 725.85,
+          "ma20": 726.04,
+          "ma50": 722.23,
           "ma200": null,
           "atrPct": null,
           "direction": "MIXED",
           "optionBias": "MIXED",
-          "score": 8.1,
-          "momentumPct": -0.151,
+          "score": 9.2,
+          "momentumPct": 0.211,
           "underlyingType": "INDEX_ETF",
           "source": "ALPACA_15MIN_PROXY"
         }
@@ -3217,9 +4160,9 @@
         "underlyingType": "INDEX_OPTION",
         "proxySymbol": "DIA",
         "marketExposure": "DOW_JONES_INDUSTRIAL_AVERAGE",
-        "proxyBias": "MIXED",
-        "proxyPrice": 526.81,
-        "proxyScore": 6.1,
+        "proxyBias": "UNKNOWN",
+        "proxyPrice": null,
+        "proxyScore": null,
         "researchStatus": "WAIT_PROXY_DIRECTION",
         "liveExecutionEligible": false,
         "admissionStateRequired": [
@@ -3254,20 +4197,7 @@
           "verifyWithTaxProfessional": true
         },
         "evidenceRule": "QQQ/DIA establishes research direction only. A shadow or live result counts only from the exact Robinhood-resolved XND/DJX contract using executable ask at entry and executable bid at exit.",
-        "proxyReference": {
-          "symbol": "DIA",
-          "price": 526.81,
-          "ma20": 526.15,
-          "ma50": 524.86,
-          "ma200": null,
-          "atrPct": null,
-          "direction": "MIXED",
-          "optionBias": "MIXED",
-          "score": 6.1,
-          "momentumPct": -0.118,
-          "underlyingType": "INDEX_ETF",
-          "source": "ALPACA_15MIN_PROXY"
-        }
+        "proxyReference": null
       }
     ],
     "riskRule": "Index options remain defined-risk long premium only. Premium paid, live spread/slippage, account cash, capital-tier risk, same-day exit, and all broker protections remain hard gates.",
