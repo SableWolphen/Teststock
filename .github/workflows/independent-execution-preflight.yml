@@ -1,0 +1,38 @@
+name: Teststock independent execution preflight
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/10 13-22 * * 1-5'
+permissions:
+  contents: read
+concurrency:
+  group: teststock-execution-preflight
+  cancel-in-progress: true
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify preflight fail-closed invariants
+        run: node --test scripts/test-unattended-execution-service.mjs
+      - name: Produce no-order execution readiness report
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/unattended-execution-service.mjs | tee execution-preflight.json
+          echo '## Independent Teststock execution preflight' >> "$GITHUB_STEP_SUMMARY"
+          echo 'This job never places, cancels, or modifies broker orders.' >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat execution-preflight.json >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: teststock-execution-preflight
+          path: execution-preflight.json
+          retention-days: 7
