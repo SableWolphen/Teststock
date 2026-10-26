@@ -1,5 +1,6 @@
 name: Publish ChatGPT execution handoff
-# GitHub produces signals only. ChatGPT's connected Robinhood tools place orders.
+# Signals only: connected Robinhood order actions require a separately authenticated
+# user-facing ChatGPT session and a fresh per-order review.
 on:
   workflow_dispatch:
 permissions:
@@ -14,8 +15,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Report intelligence handoff status
+      - name: Validate dispatch and report execution handoff
+        shell: bash
         run: |
+          set -euo pipefail
+          node scripts/validate-execution-dispatch.mjs
           needed=$(node scripts/dispatch-needed.mjs docs/data/execution-dispatch.json)
-          echo "ChatGPT connected execution requested by packet: $needed"
-          echo 'This workflow never invokes broker tools or places orders.'
+          echo "ChatGPT execution candidate requested by packet: $needed"
+          {
+            echo '## Teststock order handoff'
+            echo ''
+            echo "- Dispatch candidate: **$needed**"
+            echo '- GitHub broker execution: **DISABLED**'
+            echo '- ChatGPT connector access: **must be verified in the active session**'
+            echo '- Robinhood order: **not submitted by this job**'
+            echo ''
+            echo 'Any candidate requires fresh broker state, cash buying power, market session,'
+            echo 'order review, protective-exit capability, and explicit per-order authorization.'
+            echo 'An approved order must be submitted through the connected broker tool,'
+            echo 'then its receipt and resulting position must be reconciled.'
+            echo 'Workflow success only proves the dispatch validator ran.'
+          } >> "$GITHUB_STEP_SUMMARY"
