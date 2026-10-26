@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {evaluatePreflight,runOnce} from './unattended-execution-service.mjs';
+const now=Date.parse('2026-10-26T14:00:00Z');
+const dispatch={generatedAt:new Date(now).toISOString(),dispatchHealth:'OK',manualExecutionOnly:false,riskCreationBlockedByExecutor:false,pendingAction:{fingerprint:'x',trigger:'BUY_TRIGGER',isActionable:true,freshnessAnchor:new Date(now).toISOString()}};
+const health={generatedAt:new Date(now).toISOString(),status:'OK',newRiskPermission:'ALLOWED'};
+test('no attestation means absolutely no live order',()=>{const x=evaluatePreflight({dispatch,health,now});assert.equal(x.brokerWrite,false);assert.equal(x.status,'NO_ORDER');assert.ok(x.reasons.includes('UNVERIFIED_UNATTENDED_BROKER_EXECUTION'));});
+test('stale data fails closed',()=>{const x=evaluatePreflight({dispatch:{...dispatch,generatedAt:'2026-10-20T00:00:00Z'},health,now});assert.ok(x.reasons.includes('STALE_DISPATCH'));});
+test('deployment lock cannot be defeated by fake broker evidence',()=>{const attestation={broker:{agenticAllowed:true,optionLevel:'option_level_2'},scheduler:{healthy:true,exitEscalationVerified:true},reconciliation:{positions:true,orders:true,fills:true}};const capability={verifiedAt:new Date(now).toISOString(),liveOrderSubmission:true,liveEquityEntrySubmission:true,liveEquityExitSubmission:true,liveOptionEntrySubmission:true,liveOptionExitSubmission:true,liveOptionExitVerifiedThisSession:true};const x=evaluatePreflight({dispatch,health,capability,attestation,now});assert.equal(x.status,'NO_ORDER');assert.equal(x.checks.deploymentEnabled,false);});
+test('repository fixture remains read only',()=>{const x=runOnce({now});assert.equal(x.mode,'READ_ONLY_PREFLIGHT');assert.equal(x.brokerWrite,false);});
