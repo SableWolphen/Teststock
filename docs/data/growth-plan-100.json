@@ -1,12 +1,12 @@
 {
   "schemaVersion": 11,
-  "generatedAt": "2026-10-28T18:26:03.556Z",
-  "asOf": "2026-10-28T18:25:50.365Z",
+  "generatedAt": "2026-10-28T18:40:05.867Z",
+  "asOf": "2026-10-28T18:39:51.825Z",
   "budget": 100,
   "market": "OPEN",
   "session": {
     "isOpen": true,
-    "timestamp": "2026-10-28T14:25:48.173106246-04:00",
+    "timestamp": "2026-10-28T14:39:49.236091765-04:00",
     "nextOpen": "2026-10-29T09:30:00-04:00",
     "nextClose": "2026-10-28T16:00:00-04:00",
     "label": "OPEN"
@@ -14,7 +14,7 @@
   "regime": {
     "label": "MIXED",
     "score": 62,
-    "bias": "BEARISH",
+    "bias": "BULLISH",
     "tradeGate": "SELECTIVE",
     "detail": "Only exceptional setups should pass"
   },
@@ -53,14 +53,14 @@
       "highCorporateActionRiskBlocksEntry": true
     },
     "runtimeRegimePolicy": {
-      "regime": "TRENDING_DOWN",
-      "samplesPrimary": 3,
-      "samplesSecond": 2,
+      "regime": "TRENDING_UP",
+      "samplesPrimary": 27,
+      "samplesSecond": 19,
       "allowNewStocks": true,
-      "allowOptions": false,
-      "stockSizeMultiplier": 0.5,
-      "status": "SPARSE_REDUCE",
-      "reason": "Untouched holdout samples are too thin to judge robustness; keep reduced stock size and collect more data."
+      "allowOptions": true,
+      "stockSizeMultiplier": 0.85,
+      "status": "DUAL_HOLDOUT_CONFIRMED",
+      "reason": "Both untouched holdouts remained positive under the regime-specific entry profile."
     },
     "disabledRegimes": [
       "MIXED"
@@ -82,14 +82,14 @@
       "aTier": "Existing elite regime profile; normal allowed size.",
       "bTier": "Positive-expectancy best-acceptable entries after A-tier priority while live capacity remains; 25% micro-probation candidate-size multiplier.",
       "bTierFloors": {
-        "minScore": 90,
-        "minGrowthQuality": 93,
-        "minWinRate": 58,
-        "minExpectedR": 0.65,
-        "minSamples": 25,
+        "minScore": 82,
+        "minGrowthQuality": 88,
+        "minWinRate": 53,
+        "minExpectedR": 0.45,
+        "minSamples": 20,
         "minRewardRisk": 2.25,
-        "breadthFloor": 55,
-        "maxAtrPct": 6
+        "breadthFloor": 45,
+        "maxAtrPct": 7
       },
       "neverRelax": [
         "bullish direction",
@@ -135,9 +135,81 @@
     "optionsLocked": false,
     "reason": "Scanner/model trade-history is diagnostic only. It must never pause or size live Robinhood trading. Live outcome brakes are computed only from confirmed Robinhood fills/history at runtime."
   },
-  "action": "WAIT",
+  "action": "TRADE CANDIDATE",
   "confidence": "CASH",
-  "ranked": [],
+  "ranked": [
+    {
+      "rank": 1,
+      "symbol": "AVTR",
+      "sector": "Other",
+      "price": 16.59,
+      "score": 96,
+      "entry": 17.42,
+      "stop": 15.95,
+      "target1": 19.63,
+      "target2": 21.24,
+      "allocation": 100,
+      "shares": 5.7405,
+      "estimatedCost": 100,
+      "maxLossAtStop": 8.44,
+      "riskWeight": 100,
+      "fundamentals": {
+        "source": "SEC EDGAR",
+        "filedThrough": "2026-02-11",
+        "coverage": 5,
+        "score": 68,
+        "revenueGrowth": -3.4,
+        "quarterlyRevenueGrowth": 0.9,
+        "netMargin": -8.1,
+        "operatingCashFlowPositive": true,
+        "operatingCashFlowYield": 5.5,
+        "liabilityRatio": 52.8,
+        "shareDilution": 0.2,
+        "pe": null,
+        "priceToSales": 1.7,
+        "estimatedNextReport": "2027-01-27",
+        "label": "ACCEPTABLE"
+      },
+      "validation": {
+        "samples": 17,
+        "winRate": 100,
+        "avgMove": 13.8
+      },
+      "corporateActions": {
+        "source": "Alpaca corporate actions",
+        "risk": "NONE",
+        "events": []
+      },
+      "holdingStyle": "Position trade: several weeks to several months",
+      "reviewCadence": "Weekly",
+      "rewardRiskTarget1": 1.5,
+      "rewardRiskTarget2": 2.6,
+      "rewardRisk": 2.6,
+      "rewardRiskQualificationTarget": "TARGET2",
+      "expectancy": {
+        "expectedR": 2.6,
+        "conservativeExpectedR": 1.82,
+        "costAdjustedConservativeExpectedR": 1.78,
+        "assumedRoundTripFrictionPct": 0.3,
+        "frictionR": 0.036
+      },
+      "adaptivePerformance": {
+        "samples": 0,
+        "wins": 0,
+        "losses": 0,
+        "winRate": null,
+        "sizeMultiplier": 1,
+        "qualityAdjustment": 0,
+        "label": "UNPROVEN",
+        "source": "MODEL_RESEARCH_ONLY",
+        "modelReportedSizeMultiplier": 1,
+        "canIncreaseLiveSize": false,
+        "note": "Scanner/model history may rank or reduce risk, but may never increase live size. Only confirmed Robinhood real-fill evidence can participate in future risk scaling."
+      },
+      "growthQuality": 100,
+      "portfolioOpportunityScore": 132.2
+    }
+  ],
   "allocations": [],
   "keepCashDollars": 100,
   "estimatedPortfolioStopLoss": 0,
@@ -148,15 +220,15 @@
     "dte": null,
     "checks": {
       "exists": false,
-      "tradeCandidate": false,
+      "tradeCandidate": true,
       "bullish": false,
-      "quality": false,
-      "learning": false,
+      "quality": true,
+      "learning": true,
       "historical": false,
-      "expectancy": false,
+      "expectancy": true,
       "rewardRisk": false,
       "market": false,
-      "sector": false,
+      "sector": true,
       "intraday": false,
       "adaptive": true,
       "definedRisk": false,
@@ -165,12 +237,12 @@
     },
     "contract": null,
     "probabilityFirstResearchChecks": {
-      "underlyingGrowthQuality": false,
-      "samples": false,
-      "winRate": false,
-      "expectancy": false,
-      "costAdjustedExpectancy": false,
-      "rewardRisk": false
+      "underlyingGrowthQuality": true,
+      "samples": true,
+      "winRate": true,
+      "expectancy": true,
+      "costAdjustedExpectancy": true,
+      "rewardRisk": true
     },
     "liveEvidenceGate": {
       "required": true,
@@ -186,15 +258,15 @@
     "entryGateValidationStatus": "RED_FLAG",
     "systemWideStockPause": false,
     "validationScope": "REGIME_SPECIFIC",
-    "runtimeRegime": "TRENDING_DOWN",
+    "runtimeRegime": "TRENDING_UP",
     "regimePolicy": {
-      "samplesPrimary": 3,
-      "samplesSecond": 2,
+      "samplesPrimary": 27,
+      "samplesSecond": 19,
       "allowNewStocks": true,
-      "allowOptions": false,
-      "stockSizeMultiplier": 0.5,
-      "status": "SPARSE_REDUCE",
-      "reason": "Untouched holdout samples are too thin to judge robustness; keep reduced stock size and collect more data."
+      "allowOptions": true,
+      "stockSizeMultiplier": 0.85,
+      "status": "DUAL_HOLDOUT_CONFIRMED",
+      "reason": "Both untouched holdouts remained positive under the regime-specific entry profile."
     },
     "calmRetuning": null,
     "researchPriority": [
@@ -204,43 +276,64 @@
       "TRENDING_DOWN",
       "UNKNOWN"
     ],
-    "eventBySymbol": {},
+    "eventBySymbol": {
+      "AVTR": {
+        "stockBlocked": false,
+        "optionBlocked": false,
+        "daysToEstimatedReport": 92,
+        "corporateActionRisk": "NONE",
+        "reasons": []
+      }
+    },
     "blockedSymbols": [],
-    "rejectedCandidates": [],
+    "rejectedCandidates": [
+      {
+        "symbol": "AVTR",
+        "entry": 17.42,
+        "stop": 15.95,
+        "target1": 19.63,
+        "target2": 21.24,
+        "rewardRisk": 2.6,
+        "growthQuality": 100,
+        "reasons": [
+          "Did not clear one or more stock eligibility/position-sizing gates"
+        ]
+      }
+    ],
     "automaticLooseningAllowed": false,
     "note": "The overall validation status is diagnostic and must not freeze unrelated stock regimes. Block or reduce only the CURRENT runtime regime according to runtimePolicy. MIXED is disabled. CALM remains blocked when its own holdouts fail. Sparse regimes stay reduced. TRENDING_UP stays eligible when its own policy allows it."
   },
   "qualifiedCandidateQueue": [],
   "opportunityExpansion": {
-    "regime": "TRENDING_DOWN",
+    "regime": "TRENDING_UP",
     "profile": {
-      "minScore": 94,
-      "minGrowthQuality": 96,
-      "minWinRate": 60,
-      "minExpectedR": 0.8,
-      "minSamples": 25,
-      "maxAtrPct": 6,
-      "breadthFloor": 60,
-      "sizeMultiplier": 0.35,
-      "label": "COUNTERTREND_EXCEPTION_ONLY"
+      "minScore": 86,
+      "minGrowthQuality": 90,
+      "minWinRate": 55,
+      "minExpectedR": 0.6,
+      "minSamples": 20,
+      "maxAtrPct": 7,
+      "breadthFloor": 50,
+      "sizeMultiplier": 1,
+      "label": "TREND_FOLLOW"
     },
     "bestAcceptableProfile": {
-      "minScore": 90,
-      "minGrowthQuality": 93,
-      "minWinRate": 58,
-      "minExpectedR": 0.65,
-      "minSamples": 25,
-      "maxAtrPct": 6,
-      "breadthFloor": 55,
+      "minScore": 82,
+      "minGrowthQuality": 88,
+      "minWinRate": 53,
+      "minExpectedR": 0.45,
+      "minSamples": 20,
+      "maxAtrPct": 7,
+      "breadthFloor": 45,
       "sizeMultiplier": 0.25,
-      "label": "COUNTERTREND_EXCEPTION_ONLY_BEST_ACCEPTABLE"
+      "label": "TREND_FOLLOW_BEST_ACCEPTABLE"
     },
     "breadth": {
       "symbols": 28,
       "above20": 64,
-      "above50": 61,
+      "above50": 64,
       "above200": 68,
-      "bullishSignals": 64
+      "bullishSignals": 68
     },
     "maxConcurrentQualifiedStocks": 8,
     "minimumVisibleCandidateTarget": 8,
