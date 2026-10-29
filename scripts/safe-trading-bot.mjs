@@ -4,7 +4,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {SAFETY_POLICY} from './safety-policy.mjs';
 import {DEFAULT_STRATEGY,strategyConfig,loadResearchInputs,validSymbol,fresh,validResearchClock,intradaySignal,antiTradeReasons,researchPacket} from './trading-research-policy.mjs';
-import {evaluateDailyLoss} from './daily-loss-guard.mjs';
+import {evaluateDailyLoss,effectiveDailyLossLimitCents} from './daily-loss-guard.mjs';
 
 const positive = x => typeof x === 'number' && Number.isFinite(x) && x > 0;
 const cents = x => Number.isSafeInteger(x) && x >= 0;
@@ -83,7 +83,7 @@ export function inspectCandidate(symbol, snapshot, asset, now=Date.now(),config=
 export function planSettledCash(candidates, account, now=Date.now(),config=DEFAULT_STRATEGY) {
   const blocked=code=>({mode:'RESEARCH_ONLY',liveOrdersEnabled:false,blockers:[code],proposals:[]});
   if(!account||account.source!=='robinhood'||account.reconciled!==true||account.uncertainOrders!==false||!fresh(account.asOf,now,60000))return blocked('ACCOUNT_NOT_VERIFIED');
-  const daily=evaluateDailyLoss(account,account.dailyLossState,config.dailyLossLimitCents,now);
+  const daily=evaluateDailyLoss(account,account.dailyLossState,effectiveDailyLossLimitCents(account.equityCents,config.dailyLossLimitCents),now);
   if(!daily.allowed)return blocked(daily.reason);
   const keys=['equityCents','settledCashCents','cashBuyingPowerCents','pendingBuyCommitmentsCents','openRiskCents'];
   if(!keys.every(k=>cents(account[k]))||!account.equityCents||!Array.isArray(account.exposureSymbols)||!account.exposureSymbols.every(s=>typeof s==='string'))return blocked('INVALID_ACCOUNT');

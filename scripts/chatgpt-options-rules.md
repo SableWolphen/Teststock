@@ -1,5 +1,7 @@
 # Teststock automatic stock/ETF + index-options lanes
 
+> Every live option entry and exit must first pass `scripts/account-risk-gate.mjs` (see the "Hard account-relative risk gate" section of `scripts/chatgpt-executor-prompt.md`). Its 15%-of-account premium cap, 7-60 DTE window, $0.20 minimum ask, and limit-only exits override anything looser below.
+
 These lanes are explicitly authorized for automatic execution only through OpenAI executor + Robinhood Trading MCP. Earned stock/ETF option admission remains preferred, but the generated policy may explicitly enable a user-authorized cash-only live bootstrap from `SHADOW_ONLY`; `LIVE_SUSPENDED` remains blocked. XND/DJX separately permit `LIVE_MICRO_BOOTSTRAP`. Live Robinhood cash/unleveraged buying power, not a fixed repo dollar cap, is the affordability ceiling.
 
 ## Objective

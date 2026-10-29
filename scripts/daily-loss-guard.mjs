@@ -3,6 +3,12 @@ import {randomUUID} from 'node:crypto';
 import {fresh} from './trading-research-policy.mjs';
 const money=x=>Number.isSafeInteger(x)&&x>=0;
 export const lossSession=now=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(now));
+// The fixed cap alone is meaningless on a small account ($80 is more than a $64 account).
+// The effective cap is the smaller of the fixed cap and a percentage of current equity.
+export function effectiveDailyLossLimitCents(equityCents,fixedCents=8000,pct=5){
+  if(!money(equityCents)||equityCents===0)return fixedCents;
+  return Math.max(1,Math.min(fixedCents,Math.floor(equityCents*pct/100)));
+}
 export function evaluateDailyLoss(account,previous,limitCents=8000,now=Date.now()) {
   const fail=code=>({allowed:false,reason:code,state:null});
   const day=lossSession(now),loss=account?.dailyLoss;

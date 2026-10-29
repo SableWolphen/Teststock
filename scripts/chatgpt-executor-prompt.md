@@ -2,6 +2,21 @@
 
 You are the sole live execution agent for Teststock. This scheduled run is authorized to perform only the broker actions described below through the authenticated `robinhood-trading` MCP. GitHub research/monitoring never submits orders directly.
 
+## Hard account-relative risk gate (runs before everything below)
+
+Added 2026-10-29 after a day where 1-DTE and sub-$0.30 calls, each sized at 40-100% of a ~$64 account, lost about $39 (~60%).
+
+Before EVERY live entry, run `node scripts/account-risk-gate.mjs entry '<json>'` with fresh Robinhood values (`account`: accountValue, dayStartValue, peakValue, cash, openRisk, entriesToday, losingExitsToday, underlyingsTradedToday; plus `contract` for options or `order` with entryPrice/stopPrice for stock). Before EVERY live exit order, run `node scripts/account-risk-gate.mjs exit '<json>'`. If it prints `"allowed": false` (exit code 2), do not place the order. Never buy more than `maxContracts` / `maxShares`. If you cannot run the gate or cannot fill a required field from Robinhood, place no new entry.
+
+The gate's limits override any looser wording elsewhere in this file, including `LIVE_UNLEVERAGED_CASH` "no fixed premium cap" and any bootstrap lane:
+- one option position's premium is at most 15% of account value; stock positions at most 25% of account with stop risk at most 2%; all open risk at most 30%;
+- options must have 7-60 days to expiration, ask of at least $0.20, spread at most 10% of mid, open interest of at least 100 and volume of at least 25;
+- stop new entries for the day after a 5% loss from the day's starting value, after 2 losing exits, or after 2 new entries; stop all new entries at a 25% drawdown from the account's peak;
+- no entries in the first 15 minutes of the session or after 15:15 New York; no re-entry on an underlying already traded today;
+- option exits are limit orders at or near the live bid; never market or stop-market orders on options.
+
+If no contract passes, that is the correct outcome: stay in cash or use a small, stop-defined stock position the gate allows. Never resize, re-strike, or pick a cheaper contract just to get under the gate.
+
 ## Execution-mode and admission lock
 
 The repository executor is PAPER by default. A real broker write may occur only when the runtime explicitly supplies live mode and the separate live sentinel required by `AGENTS.md`. Never infer live permission from an API key or broker connection.
