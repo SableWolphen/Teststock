@@ -54,6 +54,28 @@ class DispatchSafetyTests(unittest.TestCase):
             for field in ("automaticStockCandidates", "seedLaneCandidates", "optionCandidates"):
                 self.assertFalse(d.get(field, []))
 
+    def test_exit_fill_is_not_inferred_from_submitted_stop(self):
+        """A submitted protective order is not evidence of a completed exit."""
+        d = self.payload
+        c = d["executorCapability"]
+        evidence = c.get("optionExitEvidence") or {}
+        if evidence.get("filledQuantity", 0) == 0:
+            self.assertFalse(c.get("liveOptionExitVerifiedThisSession", False))
+        if c.get("mode") == "MANUAL_ONLY_FAIL_CLOSED":
+            self.assertFalse(c.get("optionEntryAllowed", False))
+            self.assertFalse(c.get("equityEntryAllowed", False))
+
+    def test_live_option_entry_requires_fresh_verified_exit(self):
+        """A later fill must not silently turn on unattended entries."""
+        c = self.payload["executorCapability"]
+        if c.get("optionEntryAllowed") is True:
+            self.assertTrue(c.get("capabilityFresh"))
+            self.assertTrue(c.get("liveOrderSubmission"))
+            self.assertTrue(c.get("liveOptionEntrySubmission"))
+            self.assertTrue(c.get("liveOptionExitSubmission"))
+            self.assertTrue(c.get("liveOptionExitVerifiedThisSession"))
+            self.assertTrue(c.get("riskCreationAllowed"))
+
     def test_dispatch_requires_reconciliation(self):
         instruction = self.payload.get("actionInstruction", "").lower()
         self.assertIn("reconcile", instruction)

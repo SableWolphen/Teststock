@@ -6,6 +6,27 @@ const dispatch=JSON.parse(await fs.readFile(file,'utf8'));
 const fail=message=>{throw new Error(`Invalid execution dispatch: ${message}`);};
 
 if(![1,2,3,4].includes(dispatch.schemaVersion)) fail('unsupported schemaVersion');
+
+const capability=dispatch.executorCapability||{};
+const exitEvidence=capability.optionExitEvidence||{};
+if(capability.optionEntryAllowed===true){
+  if(capability.capabilityFresh!==true||capability.liveOrderSubmission!==true||
+     capability.liveOptionEntrySubmission!==true||capability.liveOptionExitSubmission!==true||
+     capability.liveOptionExitVerifiedThisSession!==true||capability.riskCreationAllowed!==true)
+    fail('option entry allowed without fresh verified entry and exit capability');
+}
+if(capability.equityEntryAllowed===true){
+  if(capability.capabilityFresh!==true||capability.liveOrderSubmission!==true||
+     capability.liveEquityEntrySubmission!==true||capability.liveEquityExitSubmission!==true||
+     capability.riskCreationAllowed!==true)
+    fail('equity entry allowed without fresh verified entry and exit capability');
+}
+if(capability.mode==='MANUAL_ONLY_FAIL_CLOSED' &&
+   (capability.optionEntryAllowed===true||capability.equityEntryAllowed===true))
+  fail('manual-only executor cannot authorize entries');
+if(Number(exitEvidence.filledQuantity||0)===0 && capability.liveOptionExitVerifiedThisSession===true)
+  fail('unfilled exit cannot verify same-session option exit');
+
 if(!['OK','FAIL_CLOSED_STALE_OR_UNHEALTHY_BOARD'].includes(dispatch.dispatchHealth)) fail('unknown dispatchHealth');
 if(dispatch.chatgptShouldPollMarket!==false) fail('ChatGPT market polling must remain disabled');
 if(dispatch.chatgptShouldRun){
