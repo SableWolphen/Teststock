@@ -23,3 +23,14 @@ The repository is **not** an unattended live broker until the items below are in
 - Live stock and options entry/exit attestations are not verified.
 - Hosted unattended broker executor, heartbeat, and independent alerts are not deployed.
 - The PR is not merged; tests and production runtime have not been verified here.
+
+## Always-on service (`npm run service`)
+`scripts/trading-service.mjs` runs the existing executor every `TESTSTOCK_TICK_SECONDS` (default 300) during New York regular hours, Mon-Fri. It places no orders itself and cannot bypass executor gates; the repo's current options lock (`SHADOW_ONLY`) and capability attestation still block live entries.
+
+- **Kill switch:** create the file `~/.teststock-runtime/KILL` (or set `TESTSTOCK_KILL=1`). All ticks stop and an alert is sent. Remove the file to resume.
+- **Fail-closed:** a failed `git pull`, a dispatch older than 15 minutes, or 3 consecutive failures halt ticks and alert. A halted service also stops handling exits.
+- **Alerts:** set `TESTSTOCK_ALERT_WEBHOOK_URL` (Slack/Discord-compatible `{text}` POST). Without it, alerts go to stderr only.
+- **Holidays:** no built-in calendar; set `TESTSTOCK_HOLIDAYS=YYYY-MM-DD,...`.
+- **Heartbeat:** `~/.teststock-runtime/service-heartbeat.json`; monitor its `at` timestamp from a separate system.
+- **Mode:** paper unless `TESTSTOCK_EXECUTION_MODE=live` and `TESTSTOCK_LIVE_TRADING=I_UNDERSTAND_REAL_ORDERS` are both set by you on the host.
+- Run under a supervisor (systemd, Docker restart policy, Fly/Railway) so it restarts after crashes.
