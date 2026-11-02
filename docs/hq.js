@@ -399,7 +399,8 @@ const routines = {
     const p = payroll(), w = p.wk; await waitFree(a);
     if (Math.random() < .5) await say(a, w.verdict === 'profit' ? `We made ${usd(w.usd)} this week. Full paychecks plus bonus. 🎉` : w.verdict === 'loss' ? `We lost ${usd(w.usd)} this week. No paychecks until we're back in profit.` : `Flat week so far: half pay. Protect capital, then earn.`, 3600);
     else if (Math.random() < .5) { const room = pick(['research', 'trading', 'risk', 'vault', 'diagnostics']); const r = ROOMS[room]; await waitFree(a); a.busy++; try { await walkTo(a, (r.x0 + r.x1) / 2 + rnd(-.8, .8), (r.y0 + r.y1) / 2 + rnd(-.5, .5), 'Spot-checking ' + r.short); await say(a, pick(['Show me the numbers.', 'Are we following the rules?', 'What did we learn today?', 'Every trade has a reason, right?']), 2400); await goHome(a); } finally { a.busy--; } }
-    else await say(a, D.audit ? `Audit: ${esc(D.audit.ceo.summary)}.` : 'Waiting on the first management audit.', 3800);
+    else if (D.ocfg?.promotion?.active) await say(a, `I approved Sim's <b>${esc(D.ocfg.promotion.strategyName)}</b> research for live trading. It auto-reverts if it loses.`, 3800);
+    else { const lb = (D.pled?.leaderboard || []).filter(r => r.desk === 'options').sort((x, y) => y.trades - x.trades)[0]; await say(a, lb && lb.trades ? `Watching the Paper Lab: ${esc(lb.name)} has ${lb.trades}/20 trades toward approval.` : (D.audit ? `Audit: ${esc(D.audit.ceo.summary)}.` : 'Waiting on the first management audit.'), 3800); }
   },
   async atlas(a) {
     if (Math.random() < .5) return checkin(a);
@@ -477,14 +478,14 @@ const routines = {
     const best = b[0];
     await say(a, best && best.trades ? `Paper leader: <b>${esc(best.name)}</b> ${usd(best.pnlUsd)} over ${best.trades} spreads.` : `Running ${b.length || 5} paper strategies. No closed paper spreads yet.`, 3200);
     if (Math.random() < .6) await visit(a, R.options, [['a', m?.open ? `My paper copy of you holds ${esc(m.open.label)}.` : `Paper says: ${esc((m?.runs || []).slice(-1)[0]?.detail || 'waiting for the next scan')}.`], ['b', 'Good. Compare our fills when we both close.']]);
-    else await visit(a, R.guard, [['a', `"No event pause" trades through events on paper.`], ['b', "Fine on paper. Live rules don't change without the boss's OK."]]);
+    else await visit(a, R.guard, [['a', `"No event pause" trades through events on paper.`], ['b', "That one removes a safety rule, so it needs the board, not just the CEO."]]);
   },
   async echo(a) {
     const c = D.pled?.strategies?.cryraw;
     await wander(a, [[8.6, 4.6], [7.9, 4.9]]);
     await waitFree(a);
     await say(a, c?.open ? `Paper position: ${esc(c.open.symbol)} from ${c.open.entry}.` : `Paper crypto: ${esc((c?.runs || []).slice(-1)[0]?.detail || 'no setup yet')}.`, 3200);
-    if (Math.random() < .6) await visit(a, R.crypto, [['a', c?.summary?.trades ? `Ignoring the filters would be ${usd(c.summary.pnlUsd)} on $15 positions.` : "I'm testing what happens if we ignore the risk-off filter."], ['b', "Show me 20 trades of proof first."]]);
+    if (Math.random() < .6) await visit(a, R.crypto, [['a', c?.summary?.trades ? `Ignoring the filters would be ${usd(c.summary.pnlUsd)} on $15 positions.` : "I'm testing what happens if we ignore the risk-off filter."], ['b', "Prove it over 20 trades. The CEO can approve parameter tweaks, but removing filters needs the board."]]);
   },
   async ledger(a) {
     await wander(a, [[17.3, 10.6], [16.4, 9.8], [18.0, 11.6]]);
@@ -706,7 +707,7 @@ function paperCard() {
   const body = b.length ? `<div class="scroll"><table><thead><tr><th>Paper strategy</th><th>Desk</th><th>Trades</th><th>Win %</th><th>P&amp;L</th><th>Profit factor</th><th>Now</th><th>What it tests</th></tr></thead><tbody>${b.map(r => { const st = S[r.id] || {};
       return `<tr><td><b>${esc(r.name)}</b>${r.promotionCandidate ? ' <span class="tag bull">PROMOTE?</span>' : ''}</td><td>${r.desk}</td><td class="mono">${r.trades}</td><td class="mono">${r.winRatePct ?? '–'}</td><td class="mono ${cls(r.pnlUsd)}">${usd(r.pnlUsd)}</td><td class="mono">${r.profitFactor ?? '–'}</td><td>${st.open ? '<span class="org">' + esc(st.open.label || st.open.symbol) + '</span>' : 'flat'}</td><td style="white-space:normal;color:var(--muted)">${esc(st.about || '')}</td></tr>`; }).join('')}</tbody></table></div>`
     : '<div class="empty">The Paper Lab starts with the next hourly run.</div>';
-  return card('🧪 Paper Lab · runs alongside live trading, no real money', `<p style="margin:0 0 10px">Sim and Echo paper-trade different versions of the rules on the same live Robinhood quotes. Options P&amp;L is per spread; crypto uses $15 paper positions. A version can only replace a live rule after 20+ paper trades with profit factor ≥ 1.3, and only with your OK.</p>${body}<p>Updated ${L?.updatedAt ? ago(L.updatedAt) : 'never'}.</p>`, 'span3');
+  return card('🧪 Paper Lab · runs alongside live trading, no real money', `<p style="margin:0 0 10px">Sim and Echo paper-trade different versions of the rules on the same live Robinhood quotes. Options P&amp;L is per spread; crypto uses $15 paper positions. <b>CEO auto-approval:</b> a variant that reaches 20+ paper trades with profit factor ≥ 1.3 and beats the live rules is promoted to live automatically, within hard limits, and rolled back automatically if it loses live. Variants that remove a safety rule still need the board.</p>${body}<p>Updated ${L?.updatedAt ? ago(L.updatedAt) : 'never'}.</p>`, 'span3');
 }
 function payrollCard() {
   const p = payroll(); const order = ['claude', 'atlas', 'analyst', 'guard', 'scout', 'sim', 'echo', 'medic', 'ledger', 'planner', 'crypto', 'options'];

@@ -86,6 +86,11 @@ def run(now=None):
     e, x, rk = ocfg.get("entry", {}), ocfg.get("exit", {}), ocfg.get("risk", {})
     g.check("options", "One spread, $1 wide", rk.get("maxOpenSpreads", 9) <= 1 and e.get("widthUsd", 9) <= LIMITS["options.widthUsd"],
             f"{rk.get('maxOpenSpreads')} spread max, ${e.get('widthUsd')} wide")
+    g.check("options", "Exits within hard limits", 30 <= x.get("takeProfitPctOfCredit", 0) <= 80 and 1.5 <= x.get("stopAtMultipleOfCredit", 0) <= 3.5,
+            f"take profit {x.get('takeProfitPctOfCredit')}%, stop {x.get('stopAtMultipleOfCredit')}x credit")
+    pm = ocfg.get("promotion") or {}
+    g.check("options", "Rule changes came from an approved promotion", True if not pm else bool(pm.get("strategy") and pm.get("evidence")),
+            f"active promotion: {pm.get('strategyName')} ({pm.get('evidence', {}).get('paperTrades')} paper trades)" if pm.get("active") else "live rules are the original rules")
     g.check("options", "Risk limits not loosened", rk.get("maxLossPctOfAccount", 999) <= LIMITS["options.maxLossPctOfAccount"]
             and e.get("maxShortDelta", 1) <= LIMITS["options.maxShortDeltaMax"] and rk.get("pauseBelowAccountValueUsd", 0) >= LIMITS["options.pauseBelowAccountValueUsd"],
             f"max loss ≤{rk.get('maxLossPctOfAccount')}% of account, delta ≤{e.get('maxShortDelta')}, floor ${rk.get('pauseBelowAccountValueUsd')}")

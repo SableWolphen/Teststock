@@ -50,7 +50,7 @@ returns `none`/`wait`. Never place a buy when the ledger already has an open pos
 ```
 python3 claudebot/bot.py snapshot /tmp/facts.json
 # (run Parts B, C and D below first, then:)
-git add docs/data/claudebot-ledger.json docs/data/claudebot-options-ledger.json docs/data/claudebot-paper-ledger.json docs/data/claudebot-audit.json
+git add docs/data/claudebot-ledger.json docs/data/claudebot-options-ledger.json docs/data/claudebot-paper-ledger.json docs/data/claudebot-audit.json claudebot/options_config.json
 git commit -m "ClaudeBot run <UTC time>: <what happened>"
 git pull --rebase -X theirs origin main && git push origin HEAD:main
 ```
@@ -149,3 +149,21 @@ rules not loosened, stops in place, books reconcile, no private data published, 
 runs fresh. Add `docs/data/claudebot-audit.json` to the same commit. If the CEO status is
 `fail`, message the user with the failing checks (one line each). The audit only reads
 files; it never trades or changes rules.
+
+---
+
+# Part C2: CEO auto-approval (after the Paper Lab, before the audit)
+
+```
+python3 claudebot/promote.py
+```
+Board policy (2026-11-02): the CEO approves proven Paper Lab research automatically.
+- `promote`: a parameter variant (delta, min credit, take profit, stop) had 20+ paper
+  trades, profit factor ≥ 1.3 and beat the live rules on paper, so it has been written into
+  `claudebot/options_config.json`. Commit that file with the ledgers and tell the user in one line.
+- `rollback`: the promoted rules lost money live (profit factor < 1.0 after 10 trades), so the
+  previous rules have been restored. Commit and tell the user in one line.
+- `board`: a strategy that removes a safety rule qualified. Do NOT change anything;
+  tell the user it's waiting for their approval.
+- `none`: nothing to do.
+Never edit the rules by hand: only promote.py may change them, and only within its hard limits.
