@@ -151,7 +151,7 @@
     if (oled?.open) {
       const p = oled.open;
       await say('options', `I'm short ${p.label} for ${p.credit} credit. Max loss $${p.maxLossUsd}.`);
-      await say('guard', `I'll pull you out at 50% profit, at ${(p.credit * 2.5).toFixed(2)} to buy back, or if ${p.underlying} breaks ${p.shortStrike}.`);
+      await say('guard', `Take-profit order rests at ${(p.credit * 0.35).toFixed(2)}. I'll pull you out at ${(p.credit * 2.5).toFixed(2)} to buy back, or if ${p.underlying} breaks ${p.shortStrike}.`);
     } else if (lo) {
       await say('options', `Last scan ${ago(lo.t)}: ${lo.detail}`);
       await say('guard', 'Good. One spread at a time, never more than ~$85 at risk.');
@@ -176,6 +176,7 @@
       ['guard', 'Rule #1: exits before entries.'],
       ['crypto', 'Spread on Robinhood crypto is brutal today…'],
       ['options', 'Theta is paid while we wait. ⏳'],
+      ['guard', 'Fills within a penny of mid or no trade. Slippage kills this edge.'],
       ['ledger', 'No account numbers in here. Just prices and percents.'],
     ];
     const [who, line] = idle[Math.floor(Math.random() * idle.length)];

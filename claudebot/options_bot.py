@@ -124,21 +124,36 @@ def plan(facts, cfg, ledger):
         S = float(u["price"])
         debit = spread_debit(legs, pos)
         dte = (date.fromisoformat(pos["expiration"]) - local.date()).days
+        tp_price = c2(pos["credit"] * (1 - x["takeProfitPctOfCredit"] / 100))
+        opened_today = ts(pos["enteredAt"]).astimezone(CT).date() == local.date()
+        tp_order = facts.get("tpOrder") if live else None
+        # live: the spread vanished from Robinhood -> the resting take-profit (or something else) filled
+        if live and facts.get("spreadOnBroker") is False:
+            return dict(actions=[dict(do="record_broker_close", shortId=pos["shortId"], longId=pos["longId"],
+                                      expectedTpPrice=tp_price,
+                                      note="find the filled closing order for these legs and record its net debit")])
         why = None
-        if debit <= c2(pos["credit"] * (1 - x["takeProfitPctOfCredit"] / 100)):
-            why = "take profit"
-        elif debit >= c2(pos["credit"] * x["stopAtMultipleOfCredit"]):
+        if debit >= c2(pos["credit"] * x["stopAtMultipleOfCredit"]):
             why = "stop"
         elif S < pos["shortStrike"]:
             why = "short strike breached"
         elif dte <= x["closeAtDte"] and local.time() >= time(13, 0):
             why = "close before expiry"
+        elif debit <= tp_price and not opened_today and not tp_order:
+            why = "take profit"
         if why:
-            return dict(actions=[dict(do="close_spread", debit=debit, limitPrice=c2(min(debit + 0.02, pos["width"])),
-                                      reason=why, underlying=pos["underlying"],
-                                      shortId=pos["shortId"], longId=pos["longId"])])
+            acts = [dict(do="cancel_order", orderId=tp_order["id"], why="free the legs for the exit")] if tp_order else []
+            acts.append(dict(do="close_spread", debit=debit, limitPrice=c2(min(debit + 0.02, pos["width"])),
+                             reason=why, underlying=pos["underlying"],
+                             shortId=pos["shortId"], longId=pos["longId"]))
+            return dict(actions=acts)
+        # live: rest a GTC take-profit order from the day after entry (avoids same-day round trips / PDT)
+        if live and not tp_order and not opened_today:
+            return dict(actions=[dict(do="place_tp", limitPrice=tp_price, shortId=pos["shortId"], longId=pos["longId"],
+                                      underlying=pos["underlying"])])
         pnl_now = c2((pos["credit"] - debit) * 100)
-        return none(f"holding {pos['label']}: buy-back {debit} vs credit {pos['credit']} ({pnl_now:+.2f} USD), {dte} DTE")
+        extra = " (profit target hit, but held overnight to avoid a same-day round trip)" if debit <= tp_price and opened_today else ""
+        return none(f"holding {pos['label']}: buy-back {debit} vs credit {pos['credit']} ({pnl_now:+.2f} USD), {dte} DTE{extra}")
 
     # ---------------- look for an entry
     if not cfg.get("enabled", True):
@@ -215,7 +230,7 @@ def plan(facts, cfg, ledger):
         return dict(actions=[dict(
             do="open_spread", underlying=sym, expiration=exp, width=w,
             shortStrike=K, longStrike=K - w, shortId=sh["id"], longId=lg["id"],
-            credit=credit, limitPrice=c2(mid), minAcceptableCredit=credit, maxLossUsd=max_loss,
+            credit=credit, limitPrice=c2(mid), minAcceptableCredit=max(c2(mid - 0.01), e['minCreditUsd']), maxLossUsd=max_loss,
             shortDelta=float(sh["delta"]), underlyingPrice=S,
             label=f"{sym} {exp[5:]} {K:g}/{K - w:g}P")])
     return none("; ".join(reasons) or "no candidates")

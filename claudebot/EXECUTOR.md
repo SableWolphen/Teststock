@@ -77,9 +77,11 @@ several days); `"paper"` = record only, place nothing. Tickers and rules live in
   venue_last_trade_time is within 15 minutes. If closed: write `{"now":..., "marketOpen": false}`,
   run plan (it returns none), skip to B3.
 - `accountValue` = get_portfolio total_value, `buyingPower` = buying_power.buying_power.
-- Reconcile: `get_option_positions(nonzero=true)` and open `get_option_orders`. If Robinhood
-  shows option positions or open option orders the ledger doesn't know about (or the
-  ledger shows a spread Robinhood doesn't have), do NOT trade: log an error and stop Part B.
+- Reconcile: `get_option_positions(nonzero=true)` and open `get_option_orders` (state queued/confirmed).
+  - `spreadOnBroker` = true if both the ledger spread's legs are held (short shortId, long longId), false if neither is.
+  - `tpOrder` = `{id, price}` of an open debit order that closes exactly those two legs, else null.
+  - If Robinhood holds option positions or open option orders the ledger doesn't explain (anything else, or only one
+    leg), do NOT trade: log an error and stop Part B.
 - `underlyings[SYM]` for the open spread's ticker, or (when flat) for each ticker the planner
   asks for via `need_underlying`: `price` from get_equity_quotes (most recent of
   last_trade_price / last_non_reg_trade_price), `closes` = last 21 daily closes from
