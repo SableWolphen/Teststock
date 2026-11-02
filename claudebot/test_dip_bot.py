@@ -48,4 +48,6 @@ a = act(); assert a["do"] == "buy" and a["symbol"] == "SPY" and a["dollarAmount"
 both = {**F, "symbols": {"SPY": F["symbols"]["SPY"], "QQQ": {"price": dip[-1] - 2, "closes": dip, "heldQty": 0}}}
 a = act(both); assert a["dollarAmount"] == "55.50" and a["symbol"] == "SPY", a                                       # two signals: split
 assert act({**F, "buyingPower": 1.5})["do"] == "none"                                                               # nothing left to spend
+lost = {**LED, "trades": [{"pnlUsd": -1.0}] * 3}
+a = act(F, lost); assert a["dollarAmount"] == "25.00" and "loss brake" in a["why"], a                                # 3 losses in a row: small size
 print("all dip desk scenarios pass")

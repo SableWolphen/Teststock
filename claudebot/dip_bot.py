@@ -162,7 +162,9 @@ def plan(facts, cfg, led):
     if not hits:
         return none("no dip today: " + ", ".join(looked))
     sym, rv = hits[0]                                   # strongest ETF first (config order)
-    if r.get("deployAllCash"):
+    tr_ = led.get("trades") or []
+    brake = len(tr_) >= 3 and all(t["pnlUsd"] < 0 for t in tr_[-3:])   # loss brake: 3 losing trades in a row -> back to small size until a win
+    if r.get("deployAllCash") and not brake:
         # board order: don't sit in cash when there is something to buy -> split free cash across today's signals
         slots = min(len(hits), r["maxOpenPositions"] - len(held))
         size = round(max(size, (bp - r["minBuyingPowerAfterUsd"]) / max(slots, 1)), 2)
@@ -170,7 +172,7 @@ def plan(facts, cfg, led):
         if size < 1:
             return none("not enough free cash")
     return {"actions": [{"do": "buy", "symbol": sym, "dollarAmount": f"{size:.2f}", "pctOfAccount": round(100 * size / max(float(facts.get("accountValue", 0)), 1), 1),
-                         "why": f"{sym} RSI(2) {rv:.1f} < {e['rsi2Below']} above its 200-day average" + (f"; {len(hits)} signals today, free cash split between them" if r.get("deployAllCash") else "")}]}
+                         "why": f"{sym} RSI(2) {rv:.1f} < {e['rsi2Below']} above its 200-day average" + ("; loss brake on (3 losses in a row): small size until a win" if brake else f"; {len(hits)} signals today, free cash split between them" if r.get("deployAllCash") else "")}]}
 
 
 def main(argv=None):
