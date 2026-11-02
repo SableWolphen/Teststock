@@ -302,11 +302,11 @@ async function wander(a, pts) { await waitFree(a); a.busy++; try { const [x, y] 
 /* ============================== data ============================== */
 const D = {};
 async function refresh() {
-  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt] = await Promise.all([
+  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled] = await Promise.all([
     getJSON('docs/data/claudebot-signal.json'), getJSON('docs/data/claudebot-ledger.json'), getJSON('docs/data/claudebot-options-ledger.json'),
     getJSON('docs/data/live-trading-health.json'), getJSON('docs/data/latest-50.json'), getJSON('claudebot/options_config.json'), getJSON('claudebot/config.json'),
-    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json')]);
-  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt });
+    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json')]);
+  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled });
   renderAll();
 }
 function botHealth() {
@@ -330,7 +330,7 @@ function tradingToday() {
   return ['CLOSED', 'options entries done today', ''];
 }
 const cryptoIdx = () => { const s = D.led?.snapshots || []; return s.length ? s[s.length - 1].index : (D.led?.equityIndex ?? 100); };
-const optPnl = () => (D.oled?.trades || []).reduce((a, t) => a + t.pnlUsd, 0);
+const optPnl = () => (D.oled?.mode === 'live' ? (D.oled?.trades || []) : []).reduce((a, t) => a + t.pnlUsd, 0) + (D.bled?.trades || []).reduce((a, t) => a + t.pnlUsd, 0);
 const dipPnl = () => (D.dled?.trades || []).reduce((a, t) => a + t.pnlUsd, 0);
 const todayCT = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
 const blackoutToday = () => D.ocfg?.risk?.noNewEntryDates?.[todayCT()];
@@ -346,10 +346,11 @@ function weekStart(offsetWeeks = 0) { const ct = new Date(new Date().toLocaleStr
 function companyResult(offsetWeeks = 0) {
   const a = weekStart(offsetWeeks), b = weekStart(offsetWeeks - 1); const inWk = t => { const x = new Date(new Date(t).toLocaleString('en-US', { timeZone: 'America/Chicago' })); return x >= a && x < b; };
   const acct = D.ocfg?.backtest?.startingAccountUsd || 113;
-  const opt = (D.oled?.trades || []).filter(t => inWk(t.exitedAt)).reduce((s, t) => s + t.pnlUsd, 0);
+  const liveOpt = [...(D.oled?.mode === 'live' ? (D.oled?.trades || []) : []), ...(D.bled?.trades || [])];
+  const opt = liveOpt.filter(t => inWk(t.exitedAt)).reduce((s, t) => s + t.pnlUsd, 0);
   const cry = (D.led?.trades || []).filter(t => inWk(t.exitedAt)).reduce((s, t) => s + (t.accountImpactPct || 0) / 100 * acct, 0);
   const dip = (D.dled?.trades || []).filter(t => inWk(t.exitedAt)).reduce((s, t) => s + t.pnlUsd, 0);
-  const n = (D.oled?.trades || []).filter(t => inWk(t.exitedAt)).length + (D.led?.trades || []).filter(t => inWk(t.exitedAt)).length + (D.dled?.trades || []).filter(t => inWk(t.exitedAt)).length;
+  const n = liveOpt.filter(t => inWk(t.exitedAt)).length + (D.led?.trades || []).filter(t => inWk(t.exitedAt)).length + (D.dled?.trades || []).filter(t => inWk(t.exitedAt)).length;
   const usdv = Math.round((opt + cry + dip) * 100) / 100;
   const verdict = usdv > 0.004 ? 'profit' : usdv < -0.004 ? 'loss' : 'flat';
   return { usd: usdv, opt, cry, trades: n, verdict, mult: verdict === 'profit' ? 1 : verdict === 'flat' ? .5 : 0, from: a };
@@ -387,10 +388,13 @@ function payroll() {
   for (const r of au?.reports || []) { const f = r.checks.filter(c => c.status === 'fail').length; if (rows[r.manager] && f) { rows[r.manager].score -= 10 * f; rows[r.manager].why += ` · ${f} team check${f > 1 ? 's' : ''} failed`; } for (const c of r.checks) if (c.status === 'fail' && rows[c.agent]) { rows[c.agent].score -= 20; rows[c.agent].why += ` · failed: ${c.check}`; } }
   // company result decides how much of the paycheck is paid this week
   const wk = companyResult(0), last = companyResult(1);
-  const pool = wk.verdict === 'profit' ? Math.round(wk.usd * 1000) : 0;   // 1,000 credits of bonus per $1 the company made
+  const pool0 = wk.verdict === 'profit' ? Math.round(wk.usd * 1000) : 0;   // 1,000 credits of bonus per $1 the company made
+  // 🏆 $1K milestone (board, 2026-11-02): when trading profits take the $117 start to $1,000, a one-time 100,000-credit bonus
+  const life = optPnl() + dipPnl(), goal = 1000 - 117, hit = life >= goal;
+  const pool = pool0 + (hit ? 100000 : 0);
   const tot = Object.values(rows).reduce((a, r) => a + Math.max(0, r.score), 0) || 1;
   for (const [k, r] of Object.entries(rows)) { r.score = Math.round(clamp(r.score)); r.bonus = Math.round(pool * r.score / tot); r.earned = Math.round(r.base * r.score / 100); r.pay = Math.round(r.earned * wk.mult) + r.bonus; r.docked = r.earned - Math.round(r.earned * wk.mult); r.grade = r.score >= 90 ? 'A' : r.score >= 80 ? 'B' : r.score >= 70 ? 'C' : r.score >= 60 ? 'D' : 'F'; }
-  return { rows, pool, wk, last, total: Object.values(rows).reduce((a, r) => a + r.pay, 0), team: Math.round(team) };
+  return { rows, pool, life, goal, hit, wk, last, total: Object.values(rows).reduce((a, r) => a + r.pay, 0), team: Math.round(team) };
 }
 const credits = n => '🪙 ' + Math.round(n).toLocaleString();
 function nextPayday() { const d = new Date(); const day = d.getDay(); const add = (5 - day + 7) % 7; const p = new Date(d); p.setDate(d.getDate() + add); return add === 0 ? 'today (Friday)' : p.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }); }
@@ -754,6 +758,7 @@ function payrollCard() {
   const lastTxt = { profit: `Last week: profit ${usd(p.last.usd)} · full pay`, flat: 'Last week: flat · half pay', loss: `Last week: loss ${usd(p.last.usd)} · no pay` }[p.last.verdict];
   return card('🎮 Office payroll · just for fun', `<p style="margin:0 0 8px">Agents earn made-up <b>HQ credits</b>. Their score comes from doing their real jobs well, and from passing their boss's audit. <b>How much of it gets paid depends on the company's real result this week</b>: profit means full pay plus a bonus, flat means half pay, a loss means no paychecks. <b>No real money is paid, and credits are not dollars.</b></p>
     <p class="${v[0]}" style="font-weight:600">${v[1]}</p>
+    <p>🏆 <b>$1K bonus:</b> when trading profits grow the $117 start to <b>$1,000</b>, everyone shares a one-time <b>🪙 100,000</b> bonus. Progress: <b class="${cls(p.life)}">${usd(p.life)}</b> of ${usd(p.goal)} (${Math.max(0, Math.min(100, p.life / p.goal * 100)).toFixed(1)}%)${p.hit ? ' · <b class="up">HIT!</b>' : ''}</p>
     <div class="scroll"><table><thead><tr><th>Agent</th><th>Boss</th><th>Score</th><th>Grade</th><th>Earned</th><th>Docked</th><th>Bonus</th><th>Paycheck</th><th>Why</th></tr></thead><tbody>${order.map(k => { const r = p.rows[k], a = agents[k];
       return `<tr><td><b style="color:${a.kind === 'chief' ? '#fff' : a.color}">${a.name}</b> <span style="color:var(--muted);font-size:11px">${esc(a.title || '')}</span></td><td>${a.boss ? agents[a.boss].name : '–'}</td><td class="mono">${r.score}</td><td class="mono ${gc(r.grade)}">${r.grade}</td><td class="mono">${credits(r.earned)}</td><td class="mono ${r.docked ? 'down' : ''}">${r.docked ? '−' + credits(r.docked).slice(3) : '0'}</td><td class="mono">${credits(r.bonus)}</td><td class="mono"><b>${credits(r.pay)}</b></td><td style="white-space:normal;color:var(--muted)">${esc(r.why)}</td></tr>`; }).join('')}</tbody></table></div>
     <p>Total paychecks <b>${credits(p.total)}</b> · team score <b>${p.team}</b> · ${lastTxt} · next payday ${nextPayday()}</p>`, 'span3');
