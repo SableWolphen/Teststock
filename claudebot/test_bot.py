@@ -13,6 +13,7 @@ F = {"now": NOW, "accountValue": 17.26, "cryptoBuyingPower": 12.97, "positions":
 def act(f=F, s=SIG, l=LED): return bot.plan(copy.deepcopy(f), cfg, copy.deepcopy(s), copy.deepcopy(l))["actions"]
 
 a = act(); assert a[0]["do"] == "buy_market" and a[0]["dollarAmount"] == "12.32", a
+assert act(f={**F, "cryptoBuyingPower": 112.97})[0]["dollarAmount"] == "15.00"
 assert act(s={**SIG, "bestCandidate": None})[0]["do"] == "none"
 assert act(s={**SIG, "generatedAt": "2026-11-01T20:00:00Z"})[0]["do"] == "none"
 assert act(s={**SIG, "regime": {"riskOff": True}})[0]["do"] == "none"

@@ -181,6 +181,7 @@ def plan(facts: dict, cfg: dict, signal: dict, ledger: dict) -> dict:
     if chase > risk["maxChasePctAboveSignalClose"]:
         return skip(f"{best} ran {chase:.1f}% past the signal - not chasing")
     dollars = math.floor(facts["cryptoBuyingPower"] * risk["positionPctOfCryptoBuyingPower"]) / 100
+    dollars = min(dollars, risk.get("maxPositionUsd", dollars))
     if dollars < risk["minOrderUsd"]:
         return skip(f"only ${dollars:.2f} crypto buying power")
     return dict(actions=[dict(
