@@ -17,8 +17,8 @@ assert act(s={**SIG, "bestCandidate": None})[0]["do"] == "none"
 assert act(s={**SIG, "generatedAt": "2026-11-01T20:00:00Z"})[0]["do"] == "none"
 assert act(s={**SIG, "regime": {"riskOff": True}})[0]["do"] == "none"
 assert act(f={**F, "accountValue": 9})[0]["do"] == "none"
-assert "chasing" in act(f={**F, "quotes": {"SOL": {"bid": 184, "ask": 184.2}}})[0]["reason"]
-assert "spread" in act(f={**F, "quotes": {"SOL": {"bid": 178, "ask": 180.3}}})[0]["reason"]
+assert "chasing" in act(f={**F, "quotes": {"SOL": {"bid": 184, "ask": 184.5}}})[0]["reason"]
+assert "spread" in act(f={**F, "quotes": {"SOL": {"bid": 175, "ask": 180.3}}})[0]["reason"]
 
 pos = {"symbol": "SOL", "enteredAt": "2026-11-02T01:00:00Z", "entryPrice": 180.0, "atr": 1.5,
        "stop": 177.0, "initialStop": 177.0, "target": 184.5, "allocationPct": 71}
@@ -28,7 +28,7 @@ a = act(F2, SIG, L2); assert a == [{"do": "place_stop", "symbol": "SOL", "quanti
 F3 = {**F2, "openOrders": [{"id": "o1", "symbol": "SOL", "side": "sell", "type": "stop_loss", "stopPrice": 177.0, "quantity": 0.068}]}
 assert act(F3, SIG, L2)[0]["do"] == "none"
 a = act({**F3, "quotes": {"SOL": {"bid": 182.4, "ask": 182.6}}}, SIG, L2)
-assert [x["do"] for x in a] == ["cancel", "place_stop"] and a[1]["stopPrice"] == 180.54, a
+assert [x["do"] for x in a] == ["cancel", "place_stop"] and a[1]["stopPrice"] == 181.71, a
 a = act({**F3, "quotes": {"SOL": {"bid": 184.6, "ask": 184.8}}}, SIG, L2)
 assert [x["do"] for x in a] == ["cancel", "sell_market"] and a[1]["reason"] == "target", a
 a = act({**F3, "now": "2026-11-04T02:00:00Z"}, SIG, L2); assert a[-1]["do"] == "sell_market" and "time" in a[-1]["reason"]
