@@ -330,6 +330,8 @@ function tradingToday() {
   return ['CLOSED', 'options entries done today', ''];
 }
 const cryptoIdx = () => { const s = D.led?.snapshots || []; return s.length ? s[s.length - 1].index : (D.led?.equityIndex ?? 100); };
+const livePos = () => [D.led?.open?.symbol, D.oled?.mode === 'live' ? D.oled?.open?.label : null, ...((D.dled?.positions ?? (D.dled?.open ? [D.dled.open] : [])).map(x => x.symbol)), D.bled?.open?.label].filter(Boolean);
+const paperSpread = () => D.oled?.mode !== 'live' && D.oled?.open ? D.oled.open.label : null;
 const optPnl = () => (D.oled?.mode === 'live' ? (D.oled?.trades || []) : []).reduce((a, t) => a + t.pnlUsd, 0) + (D.bled?.trades || []).reduce((a, t) => a + t.pnlUsd, 0);
 const dipPnl = () => (D.dled?.trades || []).reduce((a, t) => a + t.pnlUsd, 0);
 const todayCT = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
@@ -428,7 +430,7 @@ const routines = {
       research: [['a', `Analyst, what's the market mood?`], ['b', `${esc(D.latest?.regime?.label || 'Unclear')}: ${esc(D.latest?.regime?.detail || 'no regime yet')}.`]],
       diagnostics: [['a', 'Medic, are we healthy?'], ['b', botHealth().ok ? `ClaudeBot is <b>healthy</b>. The old Teststock engine is ${esc((h?.status || '?').toLowerCase())}, but it's locked and we don't use it.` : `ClaudeBot needs a look: ${esc(botHealth().issues.join(', '))}.`]],
       freedom: [['a', 'Planner, how far to $10k a month?'], ['b', `At ${freedomPlan().annualReturn}%/yr we'd need ${money(freedomPlan().requiredCapital)}. We're ${freedomPlan().progress.toFixed(2)}% there.`]],
-      trading: [['a', 'Desk, anything open?'], ['b', D.led?.open || D.oled?.open ? `Yes: ${esc([D.led?.open?.symbol, D.oled?.open?.label].filter(Boolean).join(' and '))}.` : 'All cash. Nothing passes the checks yet.']],
+      trading: [['a', 'Desk, anything open?'], ['b', livePos().length ? `Yes: ${esc(livePos().join(' and '))}.` : (paperSpread() ? `Real money: all cash. Paper only: ${esc(paperSpread())}.` : 'All cash. Nothing passes the checks yet.')]],
       risk: [['a', 'Guard, are new trades allowed today?'], ['b', blackoutToday() ? `No new spreads today: ${esc(blackoutToday())}.` : (D.sig?.regime?.riskOff ? 'Crypto is risk-off. Options only if every check passes.' : 'Allowed, if every check passes.')]],
       vault: [['a', 'Ledger, how are the books?'], ['b', `Crypto ${pct(cryptoIdx() - 100)}, options ${usd(optPnl())} over ${(D.oled?.trades || []).length} spreads.`]],
     }[room];
@@ -594,7 +596,7 @@ function agentStatus(a) {
     case 'medic': return botHealth().ok ? ['ok', 'ClaudeBot healthy'] : ['warn', 'ClaudeBot: check'];
     case 'planner': return ['work', 'Planning'];
     case 'crypto': return D.led?.open ? ['hold', 'Holding ' + D.led.open.symbol] : ['', 'Idle · cash'];
-    case 'options': return D.oled?.open ? ['hold', 'Holding spread'] : blackoutToday() ? ['warn', 'Event pause'] : ['', 'Idle'];
+    case 'options': return D.bled?.open ? ['hold', 'Holding ' + D.bled.open.label] : D.oled?.open ? ['', 'Paper spread'] : blackoutToday() ? ['warn', 'Event pause'] : ['', 'Idle'];
     case 'guard': return D.sig?.regime?.riskOff ? ['warn', 'Risk-off'] : ['ok', 'Watching'];
     case 'ledger': return ['ok', 'Books balanced'];
     case 'quinn': return D.dled?.open ? ['hold', 'Holding ' + D.dled.open.symbol] : ['work', 'Watching for dips'];
@@ -617,13 +619,13 @@ function updateStatuses() {
 }
 setInterval(updateStatuses, 500);
 function renderKpis() {
-  const h = D.health, open = (D.led?.open ? 1 : 0) + (D.oled?.open ? 1 : 0);
+  const h = D.health, lp = livePos(), open = lp.length;
   const runs = [...(D.led?.runs || []), ...(D.oled?.runs || [])].sort((a, b) => new Date(b.t) - new Date(a.t));
   const k = [
     ['ClaudeBot health', botHealth().status, botHealth().ok ? 'scan ' + Math.round(botHealth().sigAge) + 'm · trader ' + Math.round(botHealth().runAge) + 'm ago' : botHealth().issues[0], botHealth().ok ? 'up' : 'warn'],
     ['Trading today', tradingToday()[0], tradingToday()[1] + (D.sig?.regime?.riskOff ? ' · crypto risk-off' : ''), tradingToday()[2]],
     ['Market', D.latest?.regime?.label || '–', 'call: ' + (D.latest?.action || '–'), /OFF/.test(D.latest?.regime?.label || '') ? 'down' : ''],
-    ['Open positions', String(open), [D.led?.open?.symbol, D.oled?.open?.label].filter(Boolean).join(' · ') || 'all cash', open ? 'org' : ''],
+    ['Real positions', String(open), (lp.join(' · ') || 'all cash') + (paperSpread() ? ` · paper: ${paperSpread()}` : ''), open ? 'org' : ''],
     ['ClaudeBot', `${pct(cryptoIdx() - 100)} · ${usd(optPnl() + dipPnl())}`, 'crypto · options + dip since start', cls(cryptoIdx() - 100 + optPnl() + dipPnl())],
     ['Management audit', D.audit ? `${D.audit.reports.reduce((a, r) => a + r.passed, 0)}/${D.audit.reports.reduce((a, r) => a + r.total, 0)} ✓` : '–', D.audit ? `${D.audit.ceo.status.toUpperCase()} · ${ago(D.audit.generatedAt)}` : 'first audit at :14', D.audit?.ceo?.status === 'pass' ? 'up' : D.audit?.ceo?.status === 'fail' ? 'down' : 'warn'],
   ];
@@ -661,7 +663,7 @@ const CONSOLES = {
     <div class="cgrid">
       ${card('ClaudeBot health', `<div class="big ${botHealth().ok ? 'up' : 'warn'}">${botHealth().status}</div><p>${botHealth().ok ? 'Price scan and hourly trader are running on schedule.' : esc(botHealth().issues.join(' · '))}</p><p>Trading today: <b>${tradingToday()[0]}</b> · ${esc(tradingToday()[1])}</p>`)}
       ${card('Market regime', `<div class="big ${/OFF/.test(r?.label || '') ? 'down' : 'up'}">${esc(r?.label || '–')}</div><p>${esc(r?.detail || '')}</p><p>Today's call: <b>${esc(D.latest?.action || '–')}</b></p>`)}
-      ${card('ClaudeBot', `<div class="big ${cls(cryptoIdx() - 100)}">${pct(cryptoIdx() - 100)}</div><p>Crypto since start · options ${usd(optPnl())} realized</p><p>${D.led?.open || D.oled?.open ? 'Open: ' + esc([D.led?.open?.symbol, D.oled?.open?.label].filter(Boolean).join(' · ')) : 'All cash right now'}</p>`)}
+      ${card('ClaudeBot', `<div class="big ${cls(cryptoIdx() - 100)}">${pct(cryptoIdx() - 100)}</div><p>Crypto since start · options ${usd(optPnl())} realized</p><p>${livePos().length ? 'Open: ' + esc(livePos().join(' · ')) : 'All cash right now'}${paperSpread() ? ' · paper: ' + esc(paperSpread()) : ''}</p>`)}
       ${card('Legacy Teststock engine (not ClaudeBot)', `<p>The older stock engine reports <b>${esc(h?.status || '–')}</b> with new risk <b>${esc(h?.newRiskPermission || '–')}</b>. Its live trading is locked by design and ClaudeBot does not depend on it. Its reasons:</p><ul class="list">${(h?.reasons || []).map(x => li(esc(x), 'y')).join('') || li('Nothing blocking', 'g')}</ul>`, 'span2')}
       ${orgCard()}
       ${card('Up next', `<ul class="list">${li('Price scan: every hour at :04')}${li('ClaudeBot trade check: every hour at :14')}${li(blackoutToday() ? 'Options: no new spreads today (' + esc(blackoutToday()) + ')' : 'Options: entries 9:00–1:30 CT', blackoutToday() ? 'y' : 'g')}</ul>`)}
