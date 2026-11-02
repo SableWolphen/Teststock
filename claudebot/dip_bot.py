@@ -68,8 +68,11 @@ OPTIONS_LEDGER = os.path.join(ROOT, "docs", "data", "claudebot-options-ledger.js
 
 
 def options_open():
+    """True when no cash needs holding back for the options desk (a live spread is already
+    open, or the desk is paper-only and never uses real cash)."""
     try:
-        return bool(load(OPTIONS_LEDGER).get("open"))
+        o = load(OPTIONS_LEDGER)
+        return o.get("mode") != "live" or bool(o.get("open"))
     except Exception:  # noqa: BLE001
         return True    # unknown: don't hold cash back, the broker's buying power is the limit
 
