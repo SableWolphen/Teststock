@@ -294,6 +294,26 @@ async function refresh() {
   Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled });
   renderAll();
 }
+function botHealth() {
+  const sigAge = D.sig ? (Date.now() - new Date(D.sig.generatedAt)) / 6e4 : Infinity;
+  const runs = [...(D.led?.runs || []), ...(D.oled?.runs || [])].sort((a, b) => new Date(b.t) - new Date(a.t));
+  const runAge = runs[0] ? (Date.now() - new Date(runs[0].t)) / 6e4 : Infinity;
+  const errs = runs.filter(r => r.action === 'error' && (Date.now() - new Date(r.t)) < 864e5).length;
+  const issues = [];
+  if (sigAge > 150) issues.push(`price scan ${Math.round(sigAge)}m old`);
+  if (runAge > 130) issues.push(`trader last ran ${isFinite(runAge) ? Math.round(runAge) + 'm' : 'never'} ago`);
+  if (errs) issues.push(`${errs} error${errs > 1 ? 's' : ''} in 24h`);
+  return { ok: !issues.length, status: issues.length ? 'CHECK' : 'HEALTHY', issues, sigAge, runAge };
+}
+function tradingToday() {
+  const ev = blackoutToday(); const ct = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+  const wk = ct.getDay() > 0 && ct.getDay() < 6, mins = ct.getHours() * 60 + ct.getMinutes();
+  if (ev) return ['PAUSED', 'options: ' + ev, 'warn'];
+  if (!wk) return ['WEEKEND', 'options closed · crypto 24/7', ''];
+  if (mins < 540) return ['PRE-OPEN', 'options entries from 9:00 CT', ''];
+  if (mins <= 810) return ['OPEN', 'options entries until 1:30 CT', 'up'];
+  return ['CLOSED', 'options entries done today', ''];
+}
 const cryptoIdx = () => { const s = D.led?.snapshots || []; return s.length ? s[s.length - 1].index : (D.led?.equityIndex ?? 100); };
 const optPnl = () => (D.oled?.trades || []).reduce((a, t) => a + t.pnlUsd, 0);
 const todayCT = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
@@ -319,7 +339,7 @@ function payroll() {
   const rows = {
     scout:   { base: 1000, score: freshScore(ageMin(D.sig?.generatedAt), 75, 360), why: `Price scan is ${Math.round(ageMin(D.sig?.generatedAt))}m old (fresh within 75m)` },
     analyst: { base: 1000, score: clamp(freshScore(ageMin(D.latest?.asOf), 90, 1440) - ((D.latest?.cards || []).length ? 0 : 15)), why: `Watchlist updated ${ago(D.latest?.asOf)} · ${(D.latest?.cards || []).length} picks` },
-    medic:   { base: 1000, score: Math.round(40 + freshOk * 60 - (h?.runner?.healthy ? 0 : 20)), why: `${Math.round(freshOk * 100)}% of data feeds within limits · runner ${h?.runner?.healthy ? 'healthy' : 'unhealthy'}` },
+    medic:   { base: 1000, score: botHealth().ok ? 100 : clamp(100 - botHealth().issues.length * 25), why: botHealth().ok ? 'ClaudeBot pipelines healthy' : 'Issues: ' + botHealth().issues.join(', ') },
     crypto:  { base: 1100, score: clamp(85 + cIdx * 4 - (D.led?.open && !D.led.open.stop ? 30 : 0)), why: D.led?.open ? `Holding ${D.led.open.symbol} with a stop · crypto ${pct(cIdx)}` : `Disciplined cash in a risk-off market · crypto ${pct(cIdx)}` },
     options: { base: 1100, score: clamp(85 + oP * .8), why: `${ot.length} spreads closed · ${usd(oP)} realized${blackoutToday() ? ' · respecting today\'s event pause' : ''}` },
     guard:   { base: 1100, score: clamp(100 - losses * 8 - errors24 * 10), why: `${losses} losing trade${losses === 1 ? '' : 's'} so far · ${errors24} errors in 24h` },
@@ -347,7 +367,7 @@ const routines = {
     const h = D.health, room = pick(['research', 'diagnostics', 'freedom', 'trading', 'risk', 'vault']);
     const lines = {
       research: [['a', `Analyst, what's the market mood?`], ['b', `${esc(D.latest?.regime?.label || 'Unclear')}: ${esc(D.latest?.regime?.detail || 'no regime yet')}.`]],
-      diagnostics: [['a', 'Medic, are we healthy?'], ['b', `Status <b>${esc(h?.status || '?')}</b>. ${esc((h?.reasons || [])[0] || 'All checks passing')}.`]],
+      diagnostics: [['a', 'Medic, are we healthy?'], ['b', botHealth().ok ? `ClaudeBot is <b>healthy</b>. The old Teststock engine is ${esc((h?.status || '?').toLowerCase())}, but it's locked and we don't use it.` : `ClaudeBot needs a look: ${esc(botHealth().issues.join(', '))}.`]],
       freedom: [['a', 'Planner, how far to $10k a month?'], ['b', `At ${freedomPlan().annualReturn}%/yr we'd need ${money(freedomPlan().requiredCapital)}. We're ${freedomPlan().progress.toFixed(2)}% there.`]],
       trading: [['a', 'Desk, anything open?'], ['b', D.led?.open || D.oled?.open ? `Yes: ${esc([D.led?.open?.symbol, D.oled?.open?.label].filter(Boolean).join(' and '))}.` : 'All cash. Nothing passes the checks yet.']],
       risk: [['a', 'Guard, are new trades allowed today?'], ['b', blackoutToday() ? `No new spreads today: ${esc(blackoutToday())}.` : (D.sig?.regime?.riskOff ? 'Crypto is risk-off. Options only if every check passes.' : 'Allowed, if every check passes.')]],
@@ -356,7 +376,7 @@ const routines = {
     const target = { research: R.analyst, diagnostics: R.medic, freedom: R.planner, trading: pick([R.crypto, R.options]), risk: R.guard, vault: R.ledger }[room];
     await visit(a, target, lines);
     await sleep(rnd(2000, 5000));
-    await waitFree(a); await say(a, `Office status: <b>${esc(D.health?.newRiskPermission === 'BLOCKED' ? 'new risk blocked' : 'trading allowed')}</b> · market ${esc(D.latest?.regime?.label || '–')}.`, 3200);
+    await waitFree(a); await say(a, `ClaudeBot <b>${botHealth().status.toLowerCase()}</b> · trading today: ${tradingToday()[0].toLowerCase()} · market ${esc(D.latest?.regime?.label || '–')}.`, 3200);
   },
   async scout(a) {
     const s = D.sig, top = s?.coins?.[0];
@@ -378,7 +398,7 @@ const routines = {
     const h = D.health; const f = h?.freshness || {}, mx = h?.freshnessMaximumAgeMinutes || {};
     const stale = Object.keys(f).filter(k => mx[k] != null && f[k] > mx[k]);
     await wander(a, [[11.0, 1.9], [12.0, 1.9], [13.4, 4.4]]);
-    await waitFree(a); await say(a, stale.length ? `${stale.length} data feed${stale.length > 1 ? 's are' : ' is'} stale: ${esc(stale.map(k => k.replace('AgeMinutes', '')).join(', '))}.` : 'All data feeds are fresh. ✓', 3000);
+    await waitFree(a); await say(a, botHealth().ok ? `ClaudeBot checks out ✓${stale.length ? ` (old engine has ${stale.length} stale feeds, not ours)` : ''}.` : `ClaudeBot issue: ${esc(botHealth().issues[0])}.`, 3000);
     if (Math.random() < .55) await visit(a, R.crypto, [['a', 'Checking the Robinhood link…'], ['b', 'Broker state gets verified live on every run.']]);
     else await visit(a, R.atlas, [['a', `Runner ${h?.runner?.healthy ? 'is healthy' : 'needs attention'}; status <b>${esc(h?.status || '?')}</b>.`], ['b', 'Keep watching it.']]);
   },
@@ -476,8 +496,8 @@ setTimeout(() => $('hint').style.opacity = 0, 9000);
 /* ============================== rendering ============================== */
 function renderWalls() {
   const h = D.health;
-  lobbyT[1].textContent = (h?.status || 'LOADING').toUpperCase(); lobbyT[1].setAttribute('fill', h?.status === 'HEALTHY' || h?.status === 'OK' ? '#3ddc84' : '#f5c451');
-  lobbyT[2].textContent = 'New risk: ' + (h?.newRiskPermission || '–'); lobbyT[3].textContent = 'Market: ' + (D.latest?.regime?.label || '–') + ' · ' + (D.latest?.action || '');
+  const bh = botHealth(); lobbyT[1].textContent = 'CLAUDEBOT ' + bh.status; lobbyT[1].setAttribute('fill', bh.ok ? '#3ddc84' : '#f5c451');
+  lobbyT[2].textContent = 'Trading today: ' + tradingToday()[0]; lobbyT[3].textContent = 'Market: ' + (D.latest?.regime?.label || '–') + ' · ' + (D.latest?.action || '');
   const cards = D.latest?.cards || [];
   for (let i = 0; i < 4; i++) resT[i + 1].textContent = cards[i] ? `${cards[i].symbol}  ${cards[i].direction === 'BEARISH' ? '▼' : cards[i].direction === 'BULLISH' ? '▲' : '•'}  ${cards[i].score}` : '';
   const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40; let z = 72; const ph = (i % 10); if (ph === 4) z = 86; if (ph === 5) z = 60; if (ph === 6) z = 78; pts.push(iso(10.85 + t * 3.3, 0, z)); }
@@ -493,10 +513,10 @@ function agentStatus(a) {
   if (a.state === 'walk') return ['walk', a.doing];
   const h = D.health;
   switch (a.k) {
-    case 'atlas': return h?.newRiskPermission === 'BLOCKED' ? ['warn', 'New risk blocked'] : ['ok', 'Running the office'];
+    case 'atlas': return botHealth().ok ? ['ok', 'Running the office'] : ['warn', 'Checking an issue'];
     case 'scout': return D.sig && (Date.now() - new Date(D.sig.generatedAt)) < 75 * 6e4 ? ['work', 'Scanning'] : ['warn', 'Signal stale'];
     case 'analyst': return ['work', (D.latest?.regime?.label || 'Researching')];
-    case 'medic': return h?.status && h.status !== 'HEALTHY' ? ['warn', h.status] : ['ok', 'All healthy'];
+    case 'medic': return botHealth().ok ? ['ok', 'ClaudeBot healthy'] : ['warn', 'ClaudeBot: check'];
     case 'planner': return ['work', 'Planning'];
     case 'crypto': return D.led?.open ? ['hold', 'Holding ' + D.led.open.symbol] : ['', 'Idle · cash'];
     case 'options': return D.oled?.open ? ['hold', 'Holding spread'] : blackoutToday() ? ['warn', 'Event pause'] : ['', 'Idle'];
@@ -524,8 +544,8 @@ function renderKpis() {
   const h = D.health, open = (D.led?.open ? 1 : 0) + (D.oled?.open ? 1 : 0);
   const runs = [...(D.led?.runs || []), ...(D.oled?.runs || [])].sort((a, b) => new Date(b.t) - new Date(a.t));
   const k = [
-    ['System', h?.status || '–', h ? 'health ' + ago(h.generatedAt) : '', h?.status === 'HEALTHY' ? 'up' : 'warn'],
-    ['New risk', h?.newRiskPermission || '–', (h?.reasons || []).length + ' blocking reasons', h?.newRiskPermission === 'BLOCKED' ? 'warn' : 'up'],
+    ['ClaudeBot health', botHealth().status, botHealth().ok ? 'scan ' + Math.round(botHealth().sigAge) + 'm · trader ' + Math.round(botHealth().runAge) + 'm ago' : botHealth().issues[0], botHealth().ok ? 'up' : 'warn'],
+    ['Trading today', tradingToday()[0], tradingToday()[1] + (D.sig?.regime?.riskOff ? ' · crypto risk-off' : ''), tradingToday()[2]],
     ['Market', D.latest?.regime?.label || '–', 'call: ' + (D.latest?.action || '–'), /OFF/.test(D.latest?.regime?.label || '') ? 'down' : ''],
     ['Open positions', String(open), [D.led?.open?.symbol, D.oled?.open?.label].filter(Boolean).join(' · ') || 'all cash', open ? 'org' : ''],
     ['ClaudeBot', `${pct(cryptoIdx() - 100)} · ${usd(optPnl())}`, 'crypto · options since start', cls(cryptoIdx() - 100 + optPnl())],
@@ -562,10 +582,10 @@ const CONSOLES = {
     const h = D.health, r = D.latest?.regime;
     return `<div class="ch"><h2>🛋️ Lobby · Overview</h2><span class="who">Atlas keeps the big picture</span><a class="full" href="overview.html">Classic overview ↗</a></div>
     <div class="cgrid">
-      ${card('System health', `<div class="big ${h?.status === 'HEALTHY' ? 'up' : 'warn'}">${esc(h?.status || '–')}</div><p>New risk: <b>${esc(h?.newRiskPermission || '–')}</b> · updated ${ago(h?.generatedAt)}</p>`)}
+      ${card('ClaudeBot health', `<div class="big ${botHealth().ok ? 'up' : 'warn'}">${botHealth().status}</div><p>${botHealth().ok ? 'Price scan and hourly trader are running on schedule.' : esc(botHealth().issues.join(' · '))}</p><p>Trading today: <b>${tradingToday()[0]}</b> · ${esc(tradingToday()[1])}</p>`)}
       ${card('Market regime', `<div class="big ${/OFF/.test(r?.label || '') ? 'down' : 'up'}">${esc(r?.label || '–')}</div><p>${esc(r?.detail || '')}</p><p>Today's call: <b>${esc(D.latest?.action || '–')}</b></p>`)}
       ${card('ClaudeBot', `<div class="big ${cls(cryptoIdx() - 100)}">${pct(cryptoIdx() - 100)}</div><p>Crypto since start · options ${usd(optPnl())} realized</p><p>${D.led?.open || D.oled?.open ? 'Open: ' + esc([D.led?.open?.symbol, D.oled?.open?.label].filter(Boolean).join(' · ')) : 'All cash right now'}</p>`)}
-      ${card('Why new trades are blocked', `<ul class="list">${(h?.reasons || []).map(x => li(esc(x), 'y')).join('') || li('Nothing blocking', 'g')}</ul>`, 'span2')}
+      ${card('Legacy Teststock engine (not ClaudeBot)', `<p>The older stock engine reports <b>${esc(h?.status || '–')}</b> with new risk <b>${esc(h?.newRiskPermission || '–')}</b>. Its live trading is locked by design and ClaudeBot does not depend on it. Its reasons:</p><ul class="list">${(h?.reasons || []).map(x => li(esc(x), 'y')).join('') || li('Nothing blocking', 'g')}</ul>`, 'span2')}
       ${card('Up next', `<ul class="list">${li('Price scan: every hour at :04')}${li('ClaudeBot trade check: every hour at :14')}${li(blackoutToday() ? 'Options: no new spreads today (' + esc(blackoutToday()) + ')' : 'Options: entries 9:00–1:30 CT', blackoutToday() ? 'y' : 'g')}</ul>`)}
     </div>`;
   },
@@ -587,11 +607,11 @@ const CONSOLES = {
     const sigAge = D.sig ? (Date.now() - new Date(D.sig.generatedAt)) / 6e4 : null; const runs = [...(D.led?.runs || []), ...(D.oled?.runs || [])].sort((a, b) => new Date(b.t) - new Date(a.t));
     return `<div class="ch"><h2>🩺 Diagnostics</h2><span class="who">Medic watches data, runners and breakers</span><a class="full" href="trading-health.html">Full health report ↗</a></div>
     <div class="cgrid">
-      ${card('Data freshness (age vs limit)', rows || '<div class="empty">No freshness data.</div>', 'span2')}
+      ${card('Legacy engine data freshness (age vs limit)', rows || '<div class="empty">No freshness data.</div>', 'span2')}
       ${card('Breakers & watchdogs', `<ul class="list">${li('Circuit breaker: <b>' + esc(h?.circuitBreaker || '–') + '</b>', h?.circuitBreaker === 'OK' ? 'g' : 'y')}${li('Data watchdog: <b>' + esc(h?.dataWatchdog || '–') + '</b>', h?.dataWatchdog === 'OK' ? 'g' : 'y')}${li('Drawdown risk: <b>' + esc(h?.drawdownRisk || '–') + '</b>', h?.drawdownRisk === 'NORMAL' ? 'g' : 'y')}${li('Broker link: <b>' + esc(h?.brokerMcp?.state || '–') + '</b>', 'y')}</ul>`)}
-      ${card('Teststock runner', `<div class="big ${h?.runner?.healthy ? 'up' : 'warn'}">${h?.runner?.healthy ? 'HEALTHY' : esc(h?.runner?.state || '–')}</div><p>${esc(h?.runner?.schedule || '')} · last seen ${h?.runner ? Math.round(h.runner.ageMinutes) + 'm ago' : '–'}</p>${h?.runner?.runUrl ? `<p><a href="${esc(h.runner.runUrl)}" style="color:var(--accent)">Latest run ↗</a></p>` : ''}`)}
+      ${card('Legacy engine runner', `<div class="big ${h?.runner?.healthy ? 'up' : 'warn'}">${h?.runner?.healthy ? 'HEALTHY' : esc(h?.runner?.state || '–')}</div><p>${esc(h?.runner?.schedule || '')} · last seen ${h?.runner ? Math.round(h.runner.ageMinutes) + 'm ago' : '–'}</p>${h?.runner?.runUrl ? `<p><a href="${esc(h.runner.runUrl)}" style="color:var(--accent)">Latest run ↗</a></p>` : ''}`)}
       ${card('ClaudeBot pipelines', `<ul class="list">${li('Price scan: ' + (sigAge == null ? '–' : Math.round(sigAge) + 'm old'), sigAge != null && sigAge < 75 ? 'g' : 'y')}${li('Trader: last run ' + (runs[0] ? ago(runs[0].t) : '–'), runs[0] && (Date.now() - new Date(runs[0].t)) < 2 * 36e5 ? 'g' : 'y')}${li('Options mode: <b>' + esc((D.oled?.mode || '–').toUpperCase()) + '</b>')}</ul>`)}
-      ${card('Blocking reasons', `<ul class="list">${(h?.reasons || []).map(x => li(esc(x), 'r')).join('') || li('None', 'g')}</ul>`)}
+      ${card('Legacy engine blocking reasons', `<ul class="list">${(h?.reasons || []).map(x => li(esc(x), 'r')).join('') || li('None', 'g')}</ul>`)}
     </div>`;
   },
   freedom() {
