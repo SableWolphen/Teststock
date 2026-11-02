@@ -298,6 +298,43 @@ const todayCT = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Americ
 const blackoutToday = () => D.ocfg?.risk?.noNewEntryDates?.[todayCT()];
 function freedomPlan() { let saved = {}; try { saved = JSON.parse(localStorage.getItem('hq-freedom') || '{}'); } catch (e) {} try { return projectPlan({ ...DEFAULT_PLAN, ...saved }); } catch (e) { return projectPlan(DEFAULT_PLAN); } }
 
+/* ============================== 🎮 office payroll (game) ============================== */
+// Just for fun: agents earn made-up "HQ credits" based on how well they did their real jobs.
+// No real money is paid. Credits are not dollars.
+const clamp = (v, a = 0, b = 100) => Math.max(a, Math.min(b, v));
+const ageMin = t => t ? (Date.now() - new Date(t)) / 6e4 : Infinity;
+const freshScore = (age, good, bad) => age <= good ? 100 : age >= bad ? 20 : Math.round(100 - (age - good) / (bad - good) * 80);
+function payroll() {
+  const h = D.health, f = h?.freshness || {}, mx = h?.freshnessMaximumAgeMinutes || {};
+  const keys = Object.keys(f).filter(k => mx[k] != null), freshOk = keys.length ? keys.filter(k => f[k] <= mx[k]).length / keys.length : .5;
+  const runs = [...(D.led?.runs || []), ...(D.oled?.runs || [])];
+  const runs24 = (D.led?.runs || []).filter(r => ageMin(r.t) < 1440).length;
+  const errors24 = runs.filter(r => r.action === 'error' && ageMin(r.t) < 1440).length;
+  const cIdx = cryptoIdx() - 100, oP = optPnl();
+  const ct = D.led?.trades || [], ot = D.oled?.trades || [];
+  const losses = [...ct.filter(t => t.returnPct < 0), ...ot.filter(t => t.pnlUsd < 0)].length;
+  const lastRunAge = Math.min(...[...runs.map(r => ageMin(r.t)), Infinity]);
+  const rows = {
+    scout:   { base: 1000, score: freshScore(ageMin(D.sig?.generatedAt), 75, 360), why: `Price scan is ${Math.round(ageMin(D.sig?.generatedAt))}m old (fresh within 75m)` },
+    analyst: { base: 1000, score: clamp(freshScore(ageMin(D.latest?.asOf), 90, 1440) - ((D.latest?.cards || []).length ? 0 : 15)), why: `Watchlist updated ${ago(D.latest?.asOf)} · ${(D.latest?.cards || []).length} picks` },
+    medic:   { base: 1000, score: Math.round(40 + freshOk * 60 - (h?.runner?.healthy ? 0 : 20)), why: `${Math.round(freshOk * 100)}% of data feeds within limits · runner ${h?.runner?.healthy ? 'healthy' : 'unhealthy'}` },
+    crypto:  { base: 1100, score: clamp(85 + cIdx * 4 - (D.led?.open && !D.led.open.stop ? 30 : 0)), why: D.led?.open ? `Holding ${D.led.open.symbol} with a stop · crypto ${pct(cIdx)}` : `Disciplined cash in a risk-off market · crypto ${pct(cIdx)}` },
+    options: { base: 1100, score: clamp(85 + oP * .8), why: `${ot.length} spreads closed · ${usd(oP)} realized${blackoutToday() ? ' · respecting today\'s event pause' : ''}` },
+    guard:   { base: 1100, score: clamp(100 - losses * 8 - errors24 * 10), why: `${losses} losing trade${losses === 1 ? '' : 's'} so far · ${errors24} errors in 24h` },
+    ledger:  { base: 950,  score: clamp(freshScore(lastRunAge, 75, 360) - errors24 * 10), why: `Books updated ${isFinite(lastRunAge) ? Math.round(lastRunAge) + 'm' : 'never'} ago · ${runs24} crypto checks logged in 24h` },
+    planner: { base: 950,  score: clamp(70 + (cIdx + oP >= 0 ? 15 : -10) + (freedomPlan().contribution > 0 ? 15 : 0)), why: `Plan ${freedomPlan().contribution > 0 ? 'includes' : 'has no'} monthly contributions · results ${cIdx + oP >= 0 ? 'not negative' : 'negative'}` },
+  };
+  const team = Object.values(rows).reduce((a, r) => a + r.score, 0) / Object.keys(rows).length;
+  rows.atlas = { base: 1500, score: Math.round(team), why: `Team average · ${errors24 ? errors24 + ' errors today' : 'no errors today'}` };
+  // profit-sharing bonus pool: 1,000 credits per +1% crypto and per +$1 options (never negative)
+  const pool = Math.max(0, Math.round(cIdx * 1000 + oP * 1000));
+  const tot = Object.values(rows).reduce((a, r) => a + r.score, 0) || 1;
+  for (const [k, r] of Object.entries(rows)) { r.score = Math.round(clamp(r.score)); r.bonus = Math.round(pool * r.score / tot); r.pay = Math.round(r.base * r.score / 100) + r.bonus; r.grade = r.score >= 90 ? 'A' : r.score >= 80 ? 'B' : r.score >= 70 ? 'C' : r.score >= 60 ? 'D' : 'F'; }
+  return { rows, pool, total: Object.values(rows).reduce((a, r) => a + r.pay, 0), team: Math.round(team) };
+}
+const credits = n => '🪙 ' + Math.round(n).toLocaleString();
+function nextPayday() { const d = new Date(); const day = d.getDay(); const add = (5 - day + 7) % 7; const p = new Date(d); p.setDate(d.getDate() + add); return add === 0 ? 'today (Friday)' : p.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }); }
+
 /* ============================== agent routines ============================== */
 const R = agents;
 const routines = {
@@ -369,8 +406,12 @@ const routines = {
   },
   async ledger(a) {
     await wander(a, [[17.3, 10.6], [16.4, 9.8], [18.0, 11.6]]);
-    if (Math.random() < .5) await visit(a, pick([R.crypto, R.options]), [['a', 'Any fills to record?'], ['b', (D.led?.trades?.length || 0) + (D.oled?.trades?.length || 0) ? 'Already in your books.' : 'Not yet. Waiting for a clean setup.']]);
-    else { await waitFree(a); await say(a, 'Prices and percents only. No account numbers on these pages.', 2600); }
+    const roll = Math.random();
+    if (roll < .4) {
+      const k = pick(Object.keys(R).filter(x => x !== 'ledger')), r = payroll().rows[k];
+      await visit(a, R[k], [['a', `Paycheck for you, ${R[k].name}: <b>${credits(r.pay)}</b> (score ${r.score}, grade ${r.grade}).`], ['b', r.score >= 85 ? 'Nice, thanks! 🎉' : r.score >= 70 ? "Thanks. I'll do better next week." : 'Ouch. Noted.']]);
+    } else if (roll < .7) await visit(a, pick([R.crypto, R.options]), [['a', 'Any fills to record?'], ['b', (D.led?.trades?.length || 0) + (D.oled?.trades?.length || 0) ? 'Already in your books.' : 'Not yet. Waiting for a clean setup.']]);
+    else { await waitFree(a); const p = payroll(); await say(a, `This week's payroll: <b>${credits(p.total)}</b>. Team score ${p.team}. (Game credits, not dollars.)`, 3200); }
   },
 };
 async function runAgent(k) { const a = agents[k]; await sleep(rnd(500, 4000)); for (;;) { try { await routines[k](a); } catch (e) { console.error(k, e); } await sleep(rnd(1500, 4500)); } }
@@ -566,10 +607,19 @@ const CONSOLES = {
       ${card('Closed trades', `<div class="big">${all.length}</div><p>${wins} won · ${all.length - wins} lost</p>`)}
       ${card('Crypto since start', `<div class="big ${cls(cryptoIdx() - 100)}">${pct(cryptoIdx() - 100)}</div><p>equity index (start = 100)</p>`)}
       ${card('Options realized', `<div class="big ${cls(optPnl())}">${usd(optPnl())}</div><p>per-spread dollars after fees</p>`)}
+      ${payrollCard()}
       ${card('Ledger', all.length ? `<div class="scroll"><table><thead><tr><th>Desk</th><th>Trade</th><th>Closed</th><th>Result</th><th>Detail</th></tr></thead><tbody>${all.map(t => `<tr><td>${t.k}</td><td><b>${esc(t.w)}</b></td><td>${when(t.x)}</td><td class="mono ${cls(t.c)}">${t.r}</td><td>${esc(t.a)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">The books are empty, so no trades have closed yet.</div>', 'span3')}
     </div>`;
   },
 };
+function payrollCard() {
+  const p = payroll(); const order = ['atlas', 'scout', 'analyst', 'medic', 'planner', 'crypto', 'options', 'guard', 'ledger'];
+  const gc = g => g === 'A' || g === 'B' ? 'up' : g === 'C' ? 'warn' : 'down';
+  return card('🎮 Office payroll · just for fun', `<p style="margin:0 0 10px">Agents earn made-up <b>HQ credits</b> for doing their real jobs well. Scores come from the bot's live data; the bonus pool grows only when real results are positive. <b>No real money is paid, and credits are not dollars.</b></p>
+    <div class="scroll"><table><thead><tr><th>Agent</th><th>Score</th><th>Grade</th><th>Base</th><th>Bonus</th><th>This week</th><th>Why</th></tr></thead><tbody>${order.map(k => { const r = p.rows[k], a = agents[k];
+      return `<tr><td><b style="color:${a.kind === 'chief' ? '#fff' : a.color}">${a.name}</b></td><td class="mono"><div style="display:flex;align-items:center;gap:8px"><span>${r.score}</span><div class="bar" style="width:70px;margin:0"><i style="width:${r.score}%"></i></div></div></td><td class="mono ${gc(r.grade)}">${r.grade}</td><td class="mono">${credits(r.base)}</td><td class="mono">${credits(r.bonus)}</td><td class="mono"><b>${credits(r.pay)}</b></td><td style="white-space:normal;color:var(--muted)">${esc(r.why)}</td></tr>`; }).join('')}</tbody></table></div>
+    <p>Total payroll <b>${credits(p.total)}</b> · team score <b>${p.team}</b> · profit-sharing pool ${credits(p.pool)} · next payday ${nextPayday()}</p>`, 'span3');
+}
 function planOut(p) {
   const mx = Math.max(...p.scenarios.map(s => s.value), 1);
   return `${card('Capital needed', `<div class="big">${money(p.requiredCapital)}</div><p>to draw ${money(p.incomeAtDeadline)}/month in ${p.months} months at ${p.withdrawalRate}%</p><div class="bar"><i style="width:${Math.max(.5, p.progress)}%"></i></div><p>${p.progress.toFixed(3)}% of the way there today</p>`)}
@@ -578,8 +628,8 @@ function planOut(p) {
       ${card('Return scenarios', `<div class="sbars">${p.scenarios.map(s => `<div class="sbar"><span class="mono ${cls(s.annualReturn)}">${s.annualReturn > 0 ? '+' : ''}${s.annualReturn}%/yr</span><div class="bar"><i style="width:${Math.max(1, s.value / mx * 100)}%"></i></div><span class="mono">${money(s.value)}</span></div>`).join('')}</div>`, 'span2')}
       ${card('Milestones', `<ul class="list">${p.milestones.map(m => li(`${money(m.capital)} → ${money(m.monthlyIncome)}/mo ${m.achieved ? '· reached' : m.projected ? '· on track' : ''}`, m.achieved ? 'g' : m.projected ? 'y' : '')).join('')}</ul>`)}`;
 }
-const ROOM_BLURB = { lobby: 'System status, market regime and what is blocking new trades.', research: 'Stock watchlist and the hourly crypto scanner.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The full trade ledger and results.' };
-const TITLES = { office: ['Office', "What are ClaudeBot's agents doing right now?"], lobby: ['Lobby · Overview', 'The big picture'], research: ['Research Lab', 'What the agents are watching'], diagnostics: ['Diagnostics', 'Is everything healthy?'], freedom: ['Freedom Room', 'Planning the path to monthly income'], trading: ['Trading Floor', 'Positions and trades'], risk: ['Risk Office', 'The rules every order must pass'], vault: ['Vault · Ledger', 'Every trade, on the record'] };
+const ROOM_BLURB = { lobby: 'System status, market regime and what is blocking new trades.', research: 'Stock watchlist and the hourly crypto scanner.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The trade ledger, results and the 🎮 agent payroll.' };
+const TITLES = { office: ['Office', "What are ClaudeBot's agents doing right now?"], lobby: ['Lobby · Overview', 'The big picture'], research: ['Research Lab', 'What the agents are watching'], diagnostics: ['Diagnostics', 'Is everything healthy?'], freedom: ['Freedom Room', 'Planning the path to monthly income'], trading: ['Trading Floor', 'Positions and trades'], risk: ['Risk Office', 'The rules every order must pass'], vault: ['Vault · Ledger', 'Every trade on the record, plus the agent payroll game'] };
 let current = 'office';
 function renderConsole() {
   $('console').innerHTML = CONSOLES[current]();
