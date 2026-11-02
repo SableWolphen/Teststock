@@ -23,7 +23,7 @@ const money = v => v == null || !isFinite(v) ? '–' : (v < 0 ? '-$' : '$') + (M
 const cls = v => v > 0 ? 'up' : v < 0 ? 'down' : '';
 
 /* ============================== scene geometry ============================== */
-const TW = 64, TH = 32, W = 25, DEPTH = 14, WH = 120;
+const TW = 64, TH = 32, W = 30, DEPTH = 14, WH = 120;
 let cam = { cx: 96, cy: 240, s: 1 };
 const iso = (x, y, z = 0) => [(x - y) * TW / 2, (x + y) * TH / 2 - z];
 const P = pts => pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
@@ -36,16 +36,17 @@ const ROOMS = {
   research:    { name: 'Research Lab', short: 'Research', x0: 5, x1: 10, y0: 0, y1: 6, c: ['#3d5f63', '#38595d'], icon: '🔬' },
   diagnostics: { name: 'Diagnostics', short: 'Diagnostics', x0: 10, x1: 15, y0: 0, y1: 6, c: ['#33405a', '#2f3b54'], icon: '🩺' },
   freedom:     { name: 'Freedom Room', short: 'Freedom', x0: 15, x1: 20, y0: 0, y1: 6, c: ['#5b6b4a', '#556545'], icon: '🎯' },
-  hall:        { name: 'Hallway', short: 'Hall', x0: 0, x1: 25, y0: 6, y1: 8, c: ['#4a4e58', '#454953'] },
+  hall:        { name: 'Hallway', short: 'Hall', x0: 0, x1: 30, y0: 6, y1: 8, c: ['#4a4e58', '#454953'] },
   trading:     { name: 'Trading Floor', short: 'Trading', x0: 0, x1: 10, y0: 8, y1: 14, c: ['#3c4a72', '#364368'], icon: '📈' },
   risk:        { name: 'Risk Office', short: 'Risk', x0: 10, x1: 15, y0: 8, y1: 14, c: ['#5a3a44', '#53363f'], icon: '🛡️' },
   vault:       { name: 'Vault · Ledger', short: 'Vault', x0: 15, x1: 20, y0: 8, y1: 14, c: ['#5e5640', '#57503b'], icon: '📒' },
   strategy:    { name: 'Strategy Lab', short: 'Strategy', x0: 20, x1: 25, y0: 0, y1: 6, c: ['#4a3d66', '#44385e'], icon: '🧠' },
-  breakroom:   { name: 'Break Room', short: 'Break', x0: 20, x1: 25, y0: 8, y1: 14, c: ['#6b4f3a', '#634935'], icon: '☕' },
+  breakroom:   { name: 'Break Room', short: 'Break', x0: 20, x1: 30, y0: 8, y1: 14, c: ['#6b4f3a', '#634935'], icon: '☕' },
+  rest:        { name: 'Rest Room', short: 'Rest', x0: 25, x1: 30, y0: 0, y1: 6, c: ['#2f3550', '#2b3049'], icon: '😴' },
 };
-const ROOM_IDS = ['lobby', 'research', 'diagnostics', 'freedom', 'strategy', 'trading', 'risk', 'vault', 'breakroom'];
+const ROOM_IDS = ['lobby', 'research', 'diagnostics', 'freedom', 'strategy', 'rest', 'trading', 'risk', 'vault', 'breakroom'];
 const roomOf = (x, y) => Object.entries(ROOMS).find(([k, r]) => k !== 'hall' && x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1)?.[0] || 'hall';
-const doorX = id => id === 'trading' ? 5 : (ROOMS[id].x0 + ROOMS[id].x1) / 2;
+const doorX = id => id === 'trading' ? 5 : id === 'breakroom' ? 22.5 : (ROOMS[id].x0 + ROOMS[id].x1) / 2;
 const isBack = id => ROOMS[id].y1 <= 6;
 
 const svg = $('svg');
@@ -76,7 +77,7 @@ for (let y = .5; y < 6; y += .5) { const a = iso(0, y, 4), b = iso(0, y, WH - 4)
 poly([iso(0, 0, WH), iso(0, DEPTH, WH), iso(-.25, DEPTH, WH), iso(-.25, -.25, WH)], '#4b4038', L.walls);
 poly([iso(0, 0, WH), iso(W, 0, WH), iso(W, -.25, WH), iso(-.25, -.25, WH)], '#3b4660', L.walls);
 // windows in freedom + diagnostics
-for (const x0 of [15.6, 17.6, 22.6]) poly([iso(x0, 0, 30), iso(x0 + 1.4, 0, 30), iso(x0 + 1.4, 0, 98), iso(x0, 0, 98)], 'rgba(150,200,255,.2)', L.walls, { stroke: 'rgba(200,225,255,.4)' });
+for (const x0 of [15.6, 17.6, 22.6, 26.0, 28.0]) poly([iso(x0, 0, 30), iso(x0 + 1.4, 0, 30), iso(x0 + 1.4, 0, 98), iso(x0, 0, 98)], 'rgba(150,200,255,.2)', L.walls, { stroke: 'rgba(200,225,255,.4)' });
 
 // wall panels with live content
 function wallPanel(x0, x1, z0, z1, fill = '#0c1322') { return poly([iso(x0, 0, z0), iso(x1, 0, z0), iso(x1, 0, z1), iso(x0, 0, z1)], fill, L.walls, { stroke: '#2e3a58', 'stroke-width': 2 }); }
@@ -126,12 +127,12 @@ function glass(x0, y0, x1, y1, h) {
   }
 }
 // partitions between back rooms and along the hall, with door gaps
-for (const x of [5, 10, 15, 20]) glass(x, 0, x, 6, 66);
+for (const x of [5, 10, 15, 20, 25]) glass(x, 0, x, 6, 66);
 for (const x of [10, 15, 20]) glass(x, 8, x, 14, 30);
 function wallWithDoors(y, h, doors) {
   let x = 0; for (const dx of [...doors, 99].sort((a, b) => a - b)) { const e = Math.min(dx - .8, W); if (e > x + .05) glass(x, y, e, y, h); x = dx + .8; if (x >= W) break; }
 }
-wallWithDoors(6, 66, ['lobby', 'research', 'diagnostics', 'freedom', 'strategy'].map(doorX));
+wallWithDoors(6, 66, ['lobby', 'research', 'diagnostics', 'freedom', 'strategy', 'rest'].map(doorX));
 wallWithDoors(8, 26, ['trading', 'risk', 'vault', 'breakroom'].map(doorX));
 
 // furniture
@@ -172,7 +173,7 @@ rack(10.3, .35, 'GITHUB'); rack(11.25, .35); rack(12.2, .35, 'MONITOR'); desk(12
 // freedom
 rtable(17.4, 2.9); stool(16.5, 2.6); stool(18.3, 3.2); stool(17.3, 3.9); plant(19.35, .4, 1.15); lamp(19.3, 5.2);
 // hall
-plant(.35, 6.3, .8); plant(24.3, 6.3, .8);
+plant(.35, 6.3, .8); plant(29.3, 6.3, .8);
 // trading
 desk(1.6, 9.2, '#5b4a3c', '#ff8a3d', 1.8); desk(4.6, 9.2, '#5b4a3c', '#a78bfa', 1.8); rack(8.6, 8.5, 'ROBINHOOD'); plant(.4, 13.2, .95); plant(9.3, 13.2, .95); coffee(6.6, 12.9);
 poly([iso(1.4, 11.6), iso(7.6, 11.6), iso(7.6, 13.4), iso(1.4, 13.4)], '#2a3557', L.decal, { opacity: .7 });
@@ -185,6 +186,14 @@ couch(20.6, 12.6, '#8a5a44'); coffee(23.7, 8.6); cooler(22.9, 8.6);
 { const g = obj(21.0 + 9.0 + 1.6); box(g, 21.0, 9.4, 1.6, .9, 18, '#2f7a5b'); const a = iso(21.8, 9.4, 18), b = iso(21.8, 10.3, 18), c = iso(21.8, 10.3, 26), d = iso(21.8, 9.4, 26); poly([a, b, c, d], 'rgba(255,255,255,.55)', g); }
 { const g = obj(24.2 + 11.0 + 1.4); box(g, 24.2, 10.6, .7, .7, 58, '#3b2b6b'); poly([iso(24.2, 11.3, 34), iso(24.9, 11.3, 34), iso(24.9, 11.3, 52), iso(24.2, 11.3, 52)], '#ff5cc8', g, { class: 'led' }); }
 plant(24.4, 13.3, .9); lamp(20.4, 11.0);
+// rest room: beds where idle agents sleep
+function bed(x, y, col) { const g = obj(x + y + 2.4); box(g, x, y, 1.0, 1.9, 10, '#3a3f55'); box(g, x + .05, y + .5, .9, 1.35, 6, col, 10); box(g, x + .1, y + .08, .8, .4, 7, '#e8ecf4', 10); box(g, x, y, 1.0, .1, 26, '#4a5070'); }
+poly([iso(25.6, 2.2), iso(29.4, 2.2), iso(29.4, 4.0), iso(25.6, 4.0)], '#3d4566', L.decal, { opacity: .7 });
+bed(25.4, .35, '#6d7fd6'); bed(26.7, .35, '#d67f9b'); bed(28.0, .35, '#7fd6b0'); bed(25.4, 4.0, '#d6b47f'); bed(28.6, 4.0, '#9b7fd6');
+plant(29.4, 2.6, .8); lamp(27.4, 5.4);
+{ const p = iso(27.5, 0, 112); const t = el('text', { x: p[0], y: p[1], fill: '#c9d2ff', 'font-size': 11, 'font-weight': 800, 'text-anchor': 'middle', 'letter-spacing': 2 }, L.walls); t.textContent = 'QUIET · AGENTS RESTING'; }
+// break room annex
+couch(25.6, 12.6, '#5a6e8a'); rtable(27.6, 10.4); stool(26.8, 10.0); stool(28.4, 10.8); plant(29.4, 8.6, .9);
 // vault
 safe(18.3, 8.6); cabinet(15.6, 8.55); cabinet(16.3, 8.55); shelf(19.3, 10.6, .6, 2.6); lamp(15.7, 13.3);
 
@@ -548,10 +557,36 @@ async function coffeeBreak(a) {
     await say(a, pick(['Coffee break ☕', 'Refueling. ☕', 'Anyone up for ping-pong? 🏓', 'Five-minute break, then back to it.', 'Best perk of the job: free coffee.']), 2600);
     await sleep(rnd(1500, 3500)); await goHome(a); } finally { a.busy--; }
 }
-async function runAgent(k) { const a = agents[k]; await sleep(rnd(500, 4000)); for (;;) { try { if (Math.random() < .1) await coffeeBreak(a); else await routines[k](a); } catch (e) { console.error(k, e); } await sleep(rnd(1500, 4500)); } }
+// Who is on the clock? Agents with no work right now go rest in the Rest Room.
+function onDuty(a) {
+  const ct = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+  const wk = ct.getDay() > 0 && ct.getDay() < 6, m = ct.getHours() * 60 + ct.getMinutes();
+  const market = wk && m >= 510 && m <= 900, office = wk && m >= 480 && m <= 1020;
+  const recent = t => t && (Date.now() - new Date(t)) < 20 * 6e4;
+  switch (a.k) {
+    case 'medic': return true;                                                  // night shift: someone always watches the systems
+    case 'claude': case 'atlas': case 'planner': return office;
+    case 'quinn': case 'options': case 'guard': case 'ledger': case 'analyst': return market;
+    case 'sim': case 'echo': return market || recent(D.pled?.strategies && Object.values(D.pled.strategies)[0]?.runs?.slice(-1)[0]?.t);
+    case 'scout': return !!D.ccfg?.enabled && recent(D.sig?.generatedAt);         // crypto desk is switched off
+  }
+  return office;
+}
+const REST_SPOTS = [[25.9, 1.3], [27.2, 1.3], [28.5, 1.3], [25.9, 4.9], [29.1, 4.9], [26.4, 3.1], [27.3, 3.3], [28.2, 3.1], [26.8, 2.5], [28.8, 2.6], [27.8, 2.4], [26.0, 2.6]];
+async function rest(a) {
+  await waitFree(a); a.busy++;
+  try {
+    const i = Object.keys(agents).indexOf(a.k), [x, y] = REST_SPOTS[i % REST_SPOTS.length];
+    if (roomOf(a.x, a.y) !== 'rest') await walkTo(a, x, y, 'Going to rest 😴');
+    a.resting = true; a.doing = 'Resting 😴';
+    while (!onDuty(a)) { if (Math.random() < .25) await say(a, pick(['Zzz… 💤', 'Nothing to do until the market opens. Resting.', 'Recharging for the next session. 😴', 'Wake me if the Dip desk needs me.']), 2600); await sleep(rnd(6000, 12000)); }
+    a.resting = false; await say(a, 'Back to work! ☕', 1600); await goHome(a);
+  } finally { a.resting = false; a.busy--; }
+}
+async function runAgent(k) { const a = agents[k]; await sleep(rnd(500, 4000)); for (;;) { try { if (!onDuty(a)) await rest(a); else if (Math.random() < .1) await coffeeBreak(a); else await routines[k](a); } catch (e) { console.error(k, e); } await sleep(rnd(1500, 4500)); } }
 
 /* ============================== camera ============================== */
-const BW = 1400; const CX = 176, CY = 250;
+const BW = 1560; const CX = 256, CY = 270;
 function base() { const r = svg.getBoundingClientRect(); const ar = r.width > 0 ? r.height / r.width : .64; return { w: BW, h: BW * Math.max(.5, Math.min(1.3, ar)) }; }
 const wide = () => innerWidth > 860;
 const HOME = () => ({ cx: wide() ? CX : CX - 40, cy: CY, s: wide() ? 1 : 1.7 });
@@ -609,6 +644,7 @@ function renderWalls() {
 function agentStatus(a) {
   if (a.state === 'talk') return ['talk', 'Talking'];
   if (a.state === 'walk') return ['walk', a.doing];
+  if (a.resting) return ['rest', 'Resting 😴'];
   const h = D.health;
   switch (a.k) {
     case 'claude': { const st = D.audit?.ceo?.status; return st === 'fail' ? ['bad', 'Audit failing'] : st === 'warn' ? ['warn', 'Reviewing reports'] : ['ok', 'Running the company']; }
@@ -627,7 +663,7 @@ function agentStatus(a) {
   }
   return ['', ''];
 }
-const DOTC = { work: '#7c78ff', walk: '#3ccfcf', talk: '#ffffff', hold: '#ff8a3d', warn: '#f5c451', ok: '#3ddc84', bad: '#ff5c6c' };
+const DOTC = { rest: '#6b7bb8', work: '#7c78ff', walk: '#3ccfcf', talk: '#ffffff', hold: '#ff8a3d', warn: '#f5c451', ok: '#3ddc84', bad: '#ff5c6c' };
 function renderRoster() {
   const groups = [['CEO', ['claude']], ['Operations · Atlas', ['atlas', 'medic', 'ledger', 'planner']], ['Research · Analyst', ['analyst', 'quinn', 'scout', 'sim', 'echo']], ['Risk & Trading · Guard', ['guard', 'options']]];
   $('roster').innerHTML = groups.map(([g, ks]) => `<div class="grp">${g}<span>${ks.length}</span></div>` + ks.map(k => { const a = agents[k];
@@ -859,6 +895,15 @@ CONSOLES.strategy = function () {
     ${card('Dip trades', tr.length ? `<div class="scroll"><table><thead><tr><th>ETF</th><th>Bought</th><th>Sold</th><th>Entry</th><th>Exit</th><th>Result</th><th>Why</th></tr></thead><tbody>${tr.slice().reverse().map(t => `<tr><td><b>${t.symbol}</b></td><td>${when(t.enteredAt)}</td><td>${when(t.exitedAt)}</td><td class="mono">${t.entryPrice}</td><td class="mono">${t.exitPrice}</td><td class="mono ${cls(t.pnlUsd)}">${usd(t.pnlUsd)} (${pct(t.returnPct)})</td><td>${esc(t.reason)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No dip trades yet. Dips like this come a couple of times a month.</div>', 'span3')}
   </div>`;
 };
+CONSOLES.rest = function () {
+  const all = Object.values(agents), off = all.filter(a => !onDuty(a)), on = all.filter(a => onDuty(a));
+  return `<div class="ch"><h2>😴 Rest Room</h2><span class="who">Agents with nothing to do right now</span></div>
+  <div class="cgrid">
+    ${card('Resting now', off.length ? `<ul class="list">${off.map(a => li(`<b>${esc(a.name)}</b> · ${esc(a.title || '')}`)).join('')}</ul>` : '<p>Everyone is on the clock.</p>')}
+    ${card('On duty', on.length ? `<ul class="list">${on.map(a => li(`<b>${esc(a.name)}</b> · ${esc(a.title || '')}`)).join('')}</ul>` : '<p>Nobody right now.</p>')}
+    ${card('Shift rules', `<ul class="list">${li('Trading desks work market hours (8:30 AM–3:00 PM CT, weekdays)')}${li('Managers keep office hours (8 AM–5 PM CT, weekdays)')}${li('Medic works the night shift so systems are always watched')}${li('Scout rests while the crypto desk is switched off')}${li('Resting agents cost nothing: the real trading runs on schedule either way')}</ul>`)}
+  </div>`;
+};
 CONSOLES.breakroom = function () {
   const p = payroll(); const mood = p.wk.verdict === 'profit' ? ['😄', 'Great: profitable week, full pay plus bonus'] : p.wk.verdict === 'flat' ? ['🙂', 'Okay: flat week, half pay'] : ['😟', 'Low: losing week, no paychecks'];
   return `<div class="ch"><h2>☕ Break Room</h2><span class="who">Where the team recharges</span></div>
@@ -868,8 +913,8 @@ CONSOLES.breakroom = function () {
     ${card('House rules', `<ul class="list">${li('Breaks are short: trading checks never wait for coffee')}${li('No talking about positions you can\'t back with evidence')}${li('Ping-pong losers refill the coffee 🏓')}</ul>`)}
   </div>`;
 };
-const ROOM_BLURB = { lobby: 'ClaudeBot health, the org chart, management audit and market regime.', research: 'Stock watchlist, crypto scanner and the 🧪 Paper Lab.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The trade ledger, results and the 🎮 agent payroll.', strategy: 'Quinn and the live Dip desk: research, evidence, trades.', breakroom: 'Coffee, ping-pong and team morale.' };
-const TITLES = { office: ['Office', "What are ClaudeBot's agents doing right now?"], lobby: ['Lobby · Overview', 'The big picture'], research: ['Research Lab', 'What the agents are watching'], diagnostics: ['Diagnostics', 'Is everything healthy?'], freedom: ['Freedom Room', 'Planning the path to monthly income'], trading: ['Trading Floor', 'Positions and trades'], risk: ['Risk Office', 'The rules every order must pass'], vault: ['Vault · Ledger', 'Every trade on the record, plus the agent payroll game'], strategy: ['Strategy Lab', 'New ways to make money, tested before they trade'], breakroom: ['Break Room', 'Coffee, ping-pong and morale'] };
+const ROOM_BLURB = { rest: 'Where agents with nothing to do right now sleep until their next shift.', lobby: 'ClaudeBot health, the org chart, management audit and market regime.', research: 'Stock watchlist, crypto scanner and the 🧪 Paper Lab.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The trade ledger, results and the 🎮 agent payroll.', strategy: 'Quinn and the live Dip desk: research, evidence, trades.', breakroom: 'Coffee, ping-pong and team morale.' };
+const TITLES = { rest: ['Rest Room', 'Agents with no work right now recharge here'], office: ['Office', "What are ClaudeBot's agents doing right now?"], lobby: ['Lobby · Overview', 'The big picture'], research: ['Research Lab', 'What the agents are watching'], diagnostics: ['Diagnostics', 'Is everything healthy?'], freedom: ['Freedom Room', 'Planning the path to monthly income'], trading: ['Trading Floor', 'Positions and trades'], risk: ['Risk Office', 'The rules every order must pass'], vault: ['Vault · Ledger', 'Every trade on the record, plus the agent payroll game'], strategy: ['Strategy Lab', 'New ways to make money, tested before they trade'], breakroom: ['Break Room', 'Coffee, ping-pong and morale'] };
 let current = 'office';
 function renderConsole() {
   $('console').innerHTML = CONSOLES[current]();
