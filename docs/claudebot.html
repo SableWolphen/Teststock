@@ -115,6 +115,18 @@ td{padding:7px 8px;border-bottom:1px solid #1c1f26;white-space:nowrap}
     </div>
   </section>
 
+  <section class="card mt" id="opt">
+    <h2>Options · IWM put credit spreads <span class="pill" style="margin-left:6px;padding:2px 8px;font-size:10px;color:var(--warn);border-color:var(--warn)" id="opt-mode">PAPER</span></h2>
+    <div class="grid kpis">
+      <div><div class="small">Paper P&amp;L</div><div class="big" id="o-pnl">–</div><div class="small" id="o-pnl-s"></div></div>
+      <div><div class="small">Win rate</div><div class="big" id="o-win">–</div><div class="small" id="o-win-s"></div></div>
+      <div><div class="small">Open spread</div><div class="big" id="o-pos" style="font-size:18px">–</div><div class="small" id="o-pos-s"></div></div>
+      <div><div class="small">Modeled 2023–26</div><div class="big" id="o-bt" style="font-size:18px">–</div><div class="small" id="o-bt-s"></div></div>
+    </div>
+    <div class="scroll mt"><table><thead><tr><th>Spread</th><th>Opened</th><th>Closed</th><th>Credit</th><th>Paid back</th><th>P&amp;L</th><th>Why</th></tr></thead><tbody id="o-trades"></tbody></table></div>
+    <div class="log mt" id="o-log" style="max-height:140px"></div>
+  </section>
+
   <section class="grid two mt">
     <div class="card"><h2>Bot activity</h2><div class="log" id="log"></div></div>
     <div class="card">
@@ -253,7 +265,25 @@ async function render(){
   if(b){ $('bt').innerHTML = row('Window',`${b.windowDays} days, ${coins.length} coins`)+row('Signals taken',b.trades)+row('Win rate',b.winRatePct==null?'–':b.winRatePct+'%')+row('Avg trade (after costs)',pct(b.avgTradePct,3),cls(b.avgTradePct))+row('Profit factor',b.profitFactor??'–',b.profitFactor>=1?'up':'down')+row('Worst drawdown',pct(b.maxDrawdownPct),'down'); $('bt-note').textContent=b.note+' Coins where the rule lost money recently are skipped.'; }
   else $('bt').innerHTML='<div class="empty">Runs with the first signal.</div>';
 }
-render(); setInterval(render, 60000);
+async function renderOptions(){
+  const [L, B] = await Promise.all([getJSON('claudebot-options-ledger.json'), getJSON('claudebot-options-backtest.json')]);
+  if(!L) return;
+  const usd = v => v==null?'–':(v<0?'-$':(v>0?'+$':'$'))+Math.abs(v).toFixed(2);
+  const T = L.trades||[], wins = T.filter(t=>t.pnlUsd>0), net = T.reduce((a,t)=>a+t.pnlUsd,0);
+  $('opt-mode').textContent = (L.mode||'paper').toUpperCase();
+  $('o-pnl').innerHTML = `<span class="${cls(net)}">${usd(net)}</span>`;
+  $('o-pnl-s').textContent = `on a $${L.startingAccountUsd} paper account${L.startedAt?' · since '+when(L.startedAt):''}`;
+  $('o-win').textContent = T.length ? Math.round(100*wins.length/T.length)+'%' : '–';
+  $('o-win-s').textContent = T.length ? `${wins.length}/${T.length} · avg win ${usd(wins.length?wins.reduce((a,t)=>a+t.pnlUsd,0)/wins.length:null)}` : 'no closed spreads yet';
+  const p = L.open;
+  $('o-pos').innerHTML = p ? `<span class="acc">${esc(p.label)}</span>` : '<span style="color:var(--muted)">NONE</span>';
+  $('o-pos-s').textContent = p ? `credit ${p.credit} · max loss $${p.maxLossUsd} · delta ${p.shortDelta}` : 'scans 9:00–1:30 CT on weekdays';
+  const r = B?.results?.find(x=>x.trendFilter && x.ignoresAccountSize);
+  if(r){ $('o-bt').textContent = `${r.winRatePct}% wins`; $('o-bt').className='big'; $('o-bt').style.fontSize='18px'; $('o-bt-s').textContent = `avg win ${usd(r.avgWinUsd)} · avg loss ${usd(r.avgLossUsd)} · ${usd(r.avgPnlPerTradeUsd)}/trade`; }
+  $('o-trades').innerHTML = T.slice().reverse().map(t=>`<tr><td>${esc(t.label)}</td><td>${when(t.enteredAt)}</td><td>${when(t.exitedAt)}</td><td>${t.credit}</td><td>${t.debit}</td><td class="${cls(t.pnlUsd)}">${usd(t.pnlUsd)}</td><td>${esc(t.reason)}</td></tr>`).join('') || `<tr><td colspan="7" class="empty">No closed spreads yet.</td></tr>`;
+  $('o-log').innerHTML = (L.runs||[]).slice(-12).reverse().map(r=>`<div><span style="color:var(--muted)">${when(r.t)}</span><span class="${r.action==='open'?'up':r.action==='close'?'acc':r.action==='error'?'down':''}">${esc(r.action)}</span><span style="white-space:normal">${esc(r.detail)}</span></div>`).join('');
+}
+render(); renderOptions(); setInterval(()=>{render(); renderOptions();}, 60000);
 </script>
 </body>
 </html>

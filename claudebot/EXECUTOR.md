@@ -49,7 +49,8 @@ returns `none`/`wait`. Never place a buy when the ledger already has an open pos
 ## 3. Snapshot, save, push
 ```
 python3 claudebot/bot.py snapshot /tmp/facts.json
-git add docs/data/claudebot-ledger.json
+# (run Part B below first, then:)
+git add docs/data/claudebot-ledger.json docs/data/claudebot-options-ledger.json
 git commit -m "ClaudeBot run <UTC time>: <what happened>"
 git pull --rebase -X theirs origin main && git push origin HEAD:main
 ```
@@ -59,5 +60,52 @@ Never write account numbers, dollar balances, coin quantities or order IDs into
 the repo. The ledger only holds prices and percentages.
 
 ## 4. Report
-Only send a message when something happened (a buy, a sell, a stop moved, or an
-error). One or two lines: what, price, why, and running % since start.
+Only send a message when something happened (a buy, a sell, a stop moved, a paper
+spread opened or closed, or an error). One or two lines: what, price, why, and running % since start.
+
+---
+
+# Part B: options (IWM put credit spreads), PAPER MODE
+
+Runs in the same hourly session, after the crypto part and before the push.
+`docs/data/claudebot-options-ledger.json` has `"mode": "paper"`: **place no option
+orders**. Record what the bot would have done at the planner's pessimistic prices.
+
+## B1. Facts -> /tmp/ofacts.json
+- `get_equity_quotes(["IWM"])`: `underlying.price` = the more recent of last_trade_price /
+  last_non_reg_trade_price. `marketOpen` = true only if it's a weekday, 8:30-15:00
+  Central, and venue_last_trade_time is within the last 15 minutes. If the market is
+  closed, write `{"now": ..., "marketOpen": false}`, run plan, and skip to B3.
+- `underlying.sma20` = average of the last 20 daily closes from
+  `get_equity_historicals(["IWM"], start_time = 40 days ago, interval "day")`.
+- `expirations` = `get_option_chains("IWM").expiration_dates`.
+- If the ledger has an open spread: `legs[<shortId>]` / `legs[<longId>]` = {bid, ask}
+  from `get_option_quotes([shortId, longId])`.
+
+## B2. Plan and record (loop up to 3 times)
+`python3 claudebot/options_bot.py plan /tmp/ofacts.json`
+
+| action | what to do |
+|---|---|
+| `none` | `options_bot.py log --action hold --detail "<reason>"` (skip the log when the reason is "market closed") |
+| `need_contracts` | for each strike, `get_option_instruments(chain_symbol IWM, expiration_dates, type put, strike_price "<k>.0000")`, then one `get_option_quotes` for all found ids. Add each as `candidates[] = {id, strike, expiration, bid, ask, delta}` and re-plan. |
+| `need_leg_quotes` | fetch them into `legs`, re-plan |
+| `open_spread` | PAPER: `options_bot.py open --json '<the action JSON>'` |
+| `close_spread` | PAPER: `options_bot.py close --debit <debit> --reason "<reason>"` |
+
+## B3. Snapshot
+`python3 claudebot/options_bot.py snapshot /tmp/ofacts.json`, then add
+`docs/data/claudebot-options-ledger.json` to the same commit as the crypto ledger.
+
+## Going live later (only when the user says so)
+The user flips `"mode"` to `"live"` in the options ledger. Then `open_spread` =
+`review_option_order` + `place_option_order` for account MCP with two legs (sell
+shortId to open, buy longId to open), direction credit, limit `limitPrice`, quantity 1,
+gfd; if it doesn't fill within ~5 minutes, cancel it and log. Record with the actual
+fill price. `close_spread` = the same legs with position_effect close (buy short,
+sell long), direction debit, limit = `debit` + 0.02.
+
+Note: ClaudeBot is separate from the older Teststock execution contract in AGENTS.md.
+That contract forbids spreads and overnight options for Teststock's own lanes. Holding
+a defined-risk IWM put spread for several days is an exception the user must approve
+explicitly before options go live; paper mode needs no approval.
