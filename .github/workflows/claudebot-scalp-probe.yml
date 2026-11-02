@@ -1,0 +1,9 @@
+name: ClaudeBot options data probe
+on: { workflow_dispatch: {}, push: { branches: [main], paths: ['claudebot/alpaca_options_probe.py'] } }
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 claudebot/alpaca_options_probe.py
+        env: { ALPACA_API_KEY: "${{ secrets.ALPACA_API_KEY }}", ALPACA_API_SECRET: "${{ secrets.ALPACA_API_SECRET }}" }
