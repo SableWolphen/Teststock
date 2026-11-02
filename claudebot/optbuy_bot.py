@@ -94,8 +94,11 @@ def plan(f, cfg, led):
         return none("not enough free cash for an option")
     syms, looked, sigs = f.get("symbols", {}), [], []
     # 1) the tested ETFs (full closes, shared with the Dip desk)
+    skip = set(f.get("skip") or [])   # news veto for this run (EXECUTOR news check)
     for sym in cfg["symbols"]:
         d = syms.get(sym)
+        if sym in skip:
+            continue
         if not d:
             return {"actions": [{"do": "need_symbol", "symbol": sym}]}
         cl = [float(v) for v in d["closes"]][-(s["trendSma"] + 10):] + [float(d["price"])]
@@ -116,7 +119,7 @@ def plan(f, cfg, led):
             if miss:
                 return {"actions": [{"do": "need_scan_prices", "symbols": miss, "note": "scanPrices[SYM] = live price from get_equity_quotes"}]}
             hits = []
-            for w in scan.get("watch", []):
+            for w in [w for w in scan.get("watch", []) if w not in skip]:
                 r = scan["symbols"].get(w) or {}
                 if w in cfg["symbols"] or w not in px or not r.get("rsiTrigger"):
                     continue

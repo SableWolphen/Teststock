@@ -206,6 +206,18 @@ all free cash (minus $1) across the day's signals; always buy exactly the `dolla
    closes = the last 260 COMPLETED daily closes from get_equity_historicals (interval "day",
    start about 400 days ago; drop today's unfinished bar); heldQty = that symbol's
    `shares_available_for_sells` from get_equity_positions (0 if not held). Re-plan.
+   **News check before every buy (board order 2026-11-02; veto only, never adds a trade).**
+   Before placing a `buy` (here or in E7), run at most 2 WebSearch calls: "<SYMBOL> news today"
+   and "stock market news today". Skip that buy ONLY for a fresh (last ~24h), specific danger:
+   the fund or stock is halted, delisting, under fraud/accounting investigation, or hit by a
+   company/sector shock still unfolding (e.g. a bank failure for KRE/XLF, a chip export ban for
+   SMH); a market-wide circuit breaker or crash in progress; or a major scheduled event before the
+   next session that the event calendar misses. Ordinary bad headlines are NOT a veto: the dip
+   rule is designed to buy after bad news. If skipped, run
+   `dip_bot.py log --action news-skip --detail "<SYM>: <one-line reason + source>"` (or
+   `optbuy_bot.py log ...`), add the symbol to a `"skip": [...]` list in the facts file, and re-plan
+   (the planners ignore skipped symbols for new buys this run; exits are never skipped). Never change
+   size because of news. If search fails, proceed (the tested rule stands on its own).
 3. `buy`: review_equity_order(side buy, type market, dollar_amount = dollarAmount,
    market_hours regular_hours) then place_equity_order with the same params and a fresh UUID
    ref_id. Poll get_equity_orders(order_id) until filled (~1 min). Then

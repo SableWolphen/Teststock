@@ -50,4 +50,7 @@ a = act(both); assert a["dollarAmount"] == "55.50" and a["symbol"] == "SPY", a  
 assert act({**F, "buyingPower": 1.5})["do"] == "none"                                                               # nothing left to spend
 lost = {**LED, "trades": [{"pnlUsd": -1.0}] * 3}
 a = act(F, lost); assert a["dollarAmount"] == "25.00" and "loss brake" in a["why"], a                                # 3 losses in a row: small size
+# news veto: a skipped symbol is never bought this run
+db.options_open = lambda: True
+a = act({**F, "skip": ["SPY"]}); assert a["do"] != "buy" or a["symbol"] != "SPY", a
 print("all dip desk scenarios pass")

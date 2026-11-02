@@ -146,9 +146,10 @@ def plan(facts, cfg, led):
     if bp - size < reserve:
         return none("not enough free cash" + ("" if options_open() else f" (keeping ${reserve:.0f} free so the options desk can open its spread)"))
     looked, hits = [], []
+    skip = set(facts.get("skip") or [])   # news veto for this run (EXECUTOR news check)
     for sym in cfg["symbols"]:
         s = syms.get(sym)
-        if sym in {p["symbol"] for p in held}:
+        if sym in {p["symbol"] for p in held} or sym in skip:
             continue
         if not s:
             return {"actions": [{"do": "need_symbol", "symbol": sym}]}
