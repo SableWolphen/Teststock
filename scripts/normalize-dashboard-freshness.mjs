@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 
-const indexPath='docs/index.html';
+const indexPath='docs/overview.html';
 const cryptoPath='docs/crypto.html';
 
 let html=await fs.readFile(indexPath,'utf8');
