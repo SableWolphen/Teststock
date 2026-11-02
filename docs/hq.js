@@ -191,6 +191,8 @@ const AG = {
   options: { name: 'Options', role: 'Options trader · put credit spreads', room: 'trading', home: [5.5, 11.1], color: '#a78bfa', kind: 'penguin' },
   guard:   { name: 'Guard',   role: 'Risk officer · approves or blocks', room: 'risk', home: [12.2, 11.4], color: '#ff5c6c', kind: 'astro' },
   ledger:  { name: 'Ledger',  role: 'Bookkeeper · every fill & P&L', room: 'vault', home: [17.3, 11.2], color: '#f5c451', kind: 'owl' },
+  sim:     { name: 'Sim',     role: 'Paper Lab · 5 options variants, no real money', room: 'research', home: [6.1, 4.7], color: '#a3e635', kind: 'robot' },
+  echo:    { name: 'Echo',    role: 'Paper Lab · crypto with no filters, no real money', room: 'research', home: [8.6, 4.8], color: '#f472b6', kind: 'cat' },
 };
 function charSVG(kind, c) {
   const leg = shade(c, -34);
@@ -285,11 +287,11 @@ async function wander(a, pts) { await waitFree(a); a.busy++; try { const [x, y] 
 /* ============================== data ============================== */
 const D = {};
 async function refresh() {
-  const [sig, led, oled, health, latest, ocfg, ccfg, obt] = await Promise.all([
+  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled] = await Promise.all([
     getJSON('docs/data/claudebot-signal.json'), getJSON('docs/data/claudebot-ledger.json'), getJSON('docs/data/claudebot-options-ledger.json'),
     getJSON('docs/data/live-trading-health.json'), getJSON('docs/data/latest-50.json'), getJSON('claudebot/options_config.json'), getJSON('claudebot/config.json'),
-    getJSON('docs/data/claudebot-options-robustness.json')]);
-  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt });
+    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json')]);
+  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled });
   renderAll();
 }
 const cryptoIdx = () => { const s = D.led?.snapshots || []; return s.length ? s[s.length - 1].index : (D.led?.equityIndex ?? 100); };
@@ -324,6 +326,9 @@ function payroll() {
     ledger:  { base: 950,  score: clamp(freshScore(lastRunAge, 75, 360) - errors24 * 10), why: `Books updated ${isFinite(lastRunAge) ? Math.round(lastRunAge) + 'm' : 'never'} ago · ${runs24} crypto checks logged in 24h` },
     planner: { base: 950,  score: clamp(70 + (cIdx + oP >= 0 ? 15 : -10) + (freedomPlan().contribution > 0 ? 15 : 0)), why: `Plan ${freedomPlan().contribution > 0 ? 'includes' : 'has no'} monthly contributions · results ${cIdx + oP >= 0 ? 'not negative' : 'negative'}` },
   };
+  const pAge = ageMin(D.pled?.updatedAt), pTr = Object.values(D.pled?.strategies || {}).reduce((n, x) => n + (x.trades?.length || 0), 0);
+  rows.sim = { base: 900, score: clamp(freshScore(pAge, 75, 360) - (D.pled?.updatedAt ? 0 : 30)), why: `Paper Lab updated ${D.pled?.updatedAt ? ago(D.pled.updatedAt) : 'never'} · ${pTr} paper trades closed` };
+  rows.echo = { base: 900, score: clamp(freshScore(pAge, 75, 360) - (D.pled?.strategies?.cryraw ? 0 : 30)), why: `Crypto paper test ${D.pled?.strategies?.cryraw ? 'running' : 'not started yet'}` };
   const team = Object.values(rows).reduce((a, r) => a + r.score, 0) / Object.keys(rows).length;
   rows.atlas = { base: 1500, score: Math.round(team), why: `Team average · ${errors24 ? errors24 + ' errors today' : 'no errors today'}` };
   // profit-sharing bonus pool: 1,000 credits per +1% crypto and per +$1 options (never negative)
@@ -404,6 +409,22 @@ const routines = {
     finally { a.busy--; }
     await sleep(rnd(3000, 7000));
   },
+  async sim(a) {
+    const b = D.pled?.leaderboard?.filter(r => r.desk === 'options') || [], m = D.pled?.strategies?.mirror;
+    await wander(a, [[6.1, 4.5], [6.8, 4.9]]);
+    await waitFree(a);
+    const best = b[0];
+    await say(a, best && best.trades ? `Paper leader: <b>${esc(best.name)}</b> ${usd(best.pnlUsd)} over ${best.trades} spreads.` : `Running ${b.length || 5} paper strategies. No closed paper spreads yet.`, 3200);
+    if (Math.random() < .6) await visit(a, R.options, [['a', m?.open ? `My paper copy of you holds ${esc(m.open.label)}.` : `Paper says: ${esc((m?.runs || []).slice(-1)[0]?.detail || 'waiting for the next scan')}.`], ['b', 'Good. Compare our fills when we both close.']]);
+    else await visit(a, R.guard, [['a', `"No event pause" trades through events on paper.`], ['b', "Fine on paper. Live rules don't change without the boss's OK."]]);
+  },
+  async echo(a) {
+    const c = D.pled?.strategies?.cryraw;
+    await wander(a, [[8.6, 4.6], [7.9, 4.9]]);
+    await waitFree(a);
+    await say(a, c?.open ? `Paper position: ${esc(c.open.symbol)} from ${c.open.entry}.` : `Paper crypto: ${esc((c?.runs || []).slice(-1)[0]?.detail || 'no setup yet')}.`, 3200);
+    if (Math.random() < .6) await visit(a, R.crypto, [['a', c?.summary?.trades ? `Ignoring the filters would be ${usd(c.summary.pnlUsd)} on $15 positions.` : "I'm testing what happens if we ignore the risk-off filter."], ['b', "Show me 20 trades of proof first."]]);
+  },
   async ledger(a) {
     await wander(a, [[17.3, 10.6], [16.4, 9.8], [18.0, 11.6]]);
     const roll = Math.random();
@@ -481,12 +502,14 @@ function agentStatus(a) {
     case 'options': return D.oled?.open ? ['hold', 'Holding spread'] : blackoutToday() ? ['warn', 'Event pause'] : ['', 'Idle'];
     case 'guard': return D.sig?.regime?.riskOff ? ['warn', 'Risk-off'] : ['ok', 'Watching'];
     case 'ledger': return ['ok', 'Books balanced'];
+    case 'sim': { const o = Object.values(D.pled?.strategies || {}).filter(x => x.desk === 'options' && x.open).length; return o ? ['hold', o + ' paper spreads'] : ['work', 'Paper testing']; }
+    case 'echo': return D.pled?.strategies?.cryraw?.open ? ['hold', 'Paper ' + D.pled.strategies.cryraw.open.symbol] : ['work', 'Paper testing'];
   }
   return ['', ''];
 }
 const DOTC = { work: '#7c78ff', walk: '#3ccfcf', talk: '#ffffff', hold: '#ff8a3d', warn: '#f5c451', ok: '#3ddc84', bad: '#ff5c6c' };
 function renderRoster() {
-  const groups = [['Front office', ['atlas', 'analyst', 'scout', 'medic', 'planner']], ['Trading team', ['crypto', 'options', 'guard', 'ledger']]];
+  const groups = [['Front office', ['atlas', 'analyst', 'scout', 'medic', 'planner']], ['Trading team', ['crypto', 'options', 'guard', 'ledger']], ['Paper Lab · no real money', ['sim', 'echo']]];
   $('roster').innerHTML = groups.map(([g, ks]) => `<div class="grp">${g}<span>${ks.length}</span></div>` + ks.map(k => { const a = agents[k];
     return `<div class="ag" data-k="${k}"><div class="av"><svg viewBox="-24 -64 48 66">${charSVG(a.kind, a.color)}</svg></div><div class="mid"><div class="n">${a.name}</div><div class="r">${esc(a.role)}</div></div><span class="stt" id="st-${k}"></span></div>`; }).join('')).join('');
   document.querySelectorAll('.ag').forEach(x => x.onclick = () => focusAgent(x.dataset.k));
@@ -517,10 +540,11 @@ function renderRoomCards() {
 let jmode = 'all';
 function renderJournal() {
   const rows = []; (D.led?.runs || []).forEach(r => rows.push({ ...r, who: 'Crypto', c: '#ff8a3d', kind: 'crypto' })); (D.oled?.runs || []).forEach(r => rows.push({ ...r, who: 'Options', c: '#a78bfa', kind: 'options' }));
+  Object.values(D.pled?.strategies || {}).forEach(st => (st.runs || []).forEach(r => rows.push({ ...r, detail: `[${st.name}] ${r.detail}`, who: 'Paper', c: '#a3e635', kind: 'paper' })));
   rows.sort((a, b) => new Date(b.t) - new Date(a.t));
   $('jsub').textContent = D.led?.startedAt ? `· ClaudeBot live since ${when(D.led.startedAt)}` : '';
   if (jmode === 'tasks') { $('jlist').innerHTML = [['ClaudeBot trader', 'every hour :14', 'Crypto + options agents check Robinhood and act'], ['ClaudeBot price scan', 'every hour :04', 'GitHub Action: prices, setups, backtest'], ['Teststock intelligence', 'in-session', 'GitHub runner: research, health, triggers']].map(r => `<div class="jr"><span class="t">${r[1]}</span><span class="w">${r[0]}</span><span>${r[2]}</span></div>`).join(''); return; }
-  const f = rows.filter(r => jmode === 'all' || r.kind === jmode).slice(0, 12);
+  const f = rows.filter(r => jmode === 'all' ? r.kind !== 'paper' : r.kind === jmode).slice(0, 12);
   $('jlist').innerHTML = f.map(r => `<div class="jr"><span class="t">${when(r.t)}</span><span class="w" style="color:${r.c}">${r.who}</span><span>${esc(r.detail)}</span></div>`).join('') || '<div class="jr"><span class="t">–</span><span></span><span>Nothing logged yet.</span></div>';
 }
 document.querySelectorAll('#jseg button').forEach(b => b.onclick = () => { jmode = b.dataset.j; document.querySelectorAll('#jseg button').forEach(x => x.classList.toggle('on', x === b)); renderJournal(); });
@@ -530,7 +554,7 @@ const card = (title, body, cls = '') => `<div class="box ${cls}"><h3>${title}</h
 const li = (txt, c = '') => `<li><span class="dot ${c}"></span><span>${txt}</span></li>`;
 const CONSOLES = {
   office() {
-    return `<div class="ch"><h2>🏢 Whole office</h2><span class="who">Nine agents in seven rooms · click a room to open it</span></div>
+    return `<div class="ch"><h2>🏢 Whole office</h2><span class="who">Eleven agents in seven rooms · click a room to open it</span></div>
     <div class="cgrid">${ROOM_IDS.map(id => card(`${ROOMS[id].icon} ${ROOMS[id].name}`, `<p>${esc(ROOM_BLURB[id])}</p><p><a href="#${id}" style="color:var(--accent);font-weight:600;text-decoration:none">Open room →</a></p>`)).join('')}
     ${card('How it works', '<p>GitHub scans prices and research every hour. The hourly ClaudeBot task checks Robinhood, follows the rules in its planners, places or skips trades, and publishes what it did. These agents act out that published state.</p>', 'span2')}</div>`;
   },
@@ -548,10 +572,11 @@ const CONSOLES = {
   research() {
     const cards = D.latest?.cards || [], r = D.latest?.regime, coins = D.sig?.coins || [];
     const dir = d => d === 'BULLISH' ? 'bull' : d === 'BEARISH' ? 'bear' : 'neu';
-    return `<div class="ch"><h2>🔬 Research Lab</h2><span class="who">Analyst (stocks) and Scout (crypto)</span><a class="full" href="research.html">Full research report ↗</a></div>
+    return `<div class="ch"><h2>🔬 Research Lab</h2><span class="who">Analyst (stocks), Scout (crypto), and Sim &amp; Echo (Paper Lab)</span><a class="full" href="research.html">Full research report ↗</a></div>
     <div class="cgrid">
       ${card('Stock regime', `<div class="big ${/OFF/.test(r?.label || '') ? 'down' : 'up'}">${esc(r?.label || '–')}</div><p>${esc(r?.detail || '')} · bias ${esc(r?.bias || '–')} · gate ${esc(r?.tradeGate || '–')}</p>`)}
       ${card('Stock watchlist', cards.length ? `<div class="picks">${cards.map(c => `<div class="pick"><b>${esc(c.symbol)}</b><span class="tag ${dir(c.direction)}">${esc(c.direction || '')}</span><div class="mono" style="margin-top:4px">score ${c.score} · $${c.price}</div><div style="color:var(--muted);font-size:12px;margin-top:4px">${esc(c.label || '')} · ${esc(c.tag || '')}</div></div>`).join('')}</div>` : '<div class="empty">No stocks on watch right now.</div>', 'span2')}
+      ${paperCard()}
       ${card('Crypto scanner · 1h bars', `<div class="scroll"><table><thead><tr><th>Coin</th><th>Trend</th><th>RSI</th><th>24h</th><th>Status</th></tr></thead><tbody>${coins.map(c => `<tr><td><b>${c.symbol}</b></td><td class="${c.trend === 'up' ? 'up' : c.trend === 'down' ? 'down' : ''}">${c.trend}</td><td class="mono">${c.rsi}</td><td class="mono ${cls(c.change24hPct)}">${pct(c.change24hPct, 1)}</td><td style="white-space:normal">${c.setup ? '<b class="up">SETUP</b>' : esc((c.blockers || [])[0] || '')}</td></tr>`).join('')}</tbody></table></div><p>Signal ${ago(D.sig?.generatedAt)} · ${D.sig?.regime?.riskOff ? 'BTC risk-off' : 'BTC trend OK'}</p>`, 'span3')}
     </div>`;
   },
@@ -612,8 +637,15 @@ const CONSOLES = {
     </div>`;
   },
 };
+function paperCard() {
+  const L = D.pled, b = L?.leaderboard || [], S = L?.strategies || {};
+  const body = b.length ? `<div class="scroll"><table><thead><tr><th>Paper strategy</th><th>Desk</th><th>Trades</th><th>Win %</th><th>P&amp;L</th><th>Profit factor</th><th>Now</th><th>What it tests</th></tr></thead><tbody>${b.map(r => { const st = S[r.id] || {};
+      return `<tr><td><b>${esc(r.name)}</b>${r.promotionCandidate ? ' <span class="tag bull">PROMOTE?</span>' : ''}</td><td>${r.desk}</td><td class="mono">${r.trades}</td><td class="mono">${r.winRatePct ?? '–'}</td><td class="mono ${cls(r.pnlUsd)}">${usd(r.pnlUsd)}</td><td class="mono">${r.profitFactor ?? '–'}</td><td>${st.open ? '<span class="org">' + esc(st.open.label || st.open.symbol) + '</span>' : 'flat'}</td><td style="white-space:normal;color:var(--muted)">${esc(st.about || '')}</td></tr>`; }).join('')}</tbody></table></div>`
+    : '<div class="empty">The Paper Lab starts with the next hourly run.</div>';
+  return card('🧪 Paper Lab · runs alongside live trading, no real money', `<p style="margin:0 0 10px">Sim and Echo paper-trade different versions of the rules on the same live Robinhood quotes. Options P&amp;L is per spread; crypto uses $15 paper positions. A version can only replace a live rule after 20+ paper trades with profit factor ≥ 1.3, and only with your OK.</p>${body}<p>Updated ${L?.updatedAt ? ago(L.updatedAt) : 'never'}.</p>`, 'span3');
+}
 function payrollCard() {
-  const p = payroll(); const order = ['atlas', 'scout', 'analyst', 'medic', 'planner', 'crypto', 'options', 'guard', 'ledger'];
+  const p = payroll(); const order = ['atlas', 'scout', 'analyst', 'medic', 'planner', 'crypto', 'options', 'guard', 'ledger', 'sim', 'echo'];
   const gc = g => g === 'A' || g === 'B' ? 'up' : g === 'C' ? 'warn' : 'down';
   return card('🎮 Office payroll · just for fun', `<p style="margin:0 0 10px">Agents earn made-up <b>HQ credits</b> for doing their real jobs well. Scores come from the bot's live data; the bonus pool grows only when real results are positive. <b>No real money is paid, and credits are not dollars.</b></p>
     <div class="scroll"><table><thead><tr><th>Agent</th><th>Score</th><th>Grade</th><th>Base</th><th>Bonus</th><th>This week</th><th>Why</th></tr></thead><tbody>${order.map(k => { const r = p.rows[k], a = agents[k];
@@ -628,7 +660,7 @@ function planOut(p) {
       ${card('Return scenarios', `<div class="sbars">${p.scenarios.map(s => `<div class="sbar"><span class="mono ${cls(s.annualReturn)}">${s.annualReturn > 0 ? '+' : ''}${s.annualReturn}%/yr</span><div class="bar"><i style="width:${Math.max(1, s.value / mx * 100)}%"></i></div><span class="mono">${money(s.value)}</span></div>`).join('')}</div>`, 'span2')}
       ${card('Milestones', `<ul class="list">${p.milestones.map(m => li(`${money(m.capital)} → ${money(m.monthlyIncome)}/mo ${m.achieved ? '· reached' : m.projected ? '· on track' : ''}`, m.achieved ? 'g' : m.projected ? 'y' : '')).join('')}</ul>`)}`;
 }
-const ROOM_BLURB = { lobby: 'System status, market regime and what is blocking new trades.', research: 'Stock watchlist and the hourly crypto scanner.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The trade ledger, results and the 🎮 agent payroll.' };
+const ROOM_BLURB = { lobby: 'System status, market regime and what is blocking new trades.', research: 'Stock watchlist, crypto scanner and the 🧪 Paper Lab.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The trade ledger, results and the 🎮 agent payroll.' };
 const TITLES = { office: ['Office', "What are ClaudeBot's agents doing right now?"], lobby: ['Lobby · Overview', 'The big picture'], research: ['Research Lab', 'What the agents are watching'], diagnostics: ['Diagnostics', 'Is everything healthy?'], freedom: ['Freedom Room', 'Planning the path to monthly income'], trading: ['Trading Floor', 'Positions and trades'], risk: ['Risk Office', 'The rules every order must pass'], vault: ['Vault · Ledger', 'Every trade on the record, plus the agent payroll game'] };
 let current = 'office';
 function renderConsole() {

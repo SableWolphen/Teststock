@@ -49,8 +49,8 @@ returns `none`/`wait`. Never place a buy when the ledger already has an open pos
 ## 3. Snapshot, save, push
 ```
 python3 claudebot/bot.py snapshot /tmp/facts.json
-# (run Part B below first, then:)
-git add docs/data/claudebot-ledger.json docs/data/claudebot-options-ledger.json
+# (run Parts B and C below first, then:)
+git add docs/data/claudebot-ledger.json docs/data/claudebot-options-ledger.json docs/data/claudebot-paper-ledger.json
 git commit -m "ClaudeBot run <UTC time>: <what happened>"
 git pull --rebase -X theirs origin main && git push origin HEAD:main
 ```
@@ -115,3 +115,24 @@ spread, never change quantity from 1, never trade a ticker not in `underlyings`.
 Note: ClaudeBot is separate from the older Teststock execution contract in AGENTS.md,
 which forbids spreads and overnight options for Teststock's own lanes. The user
 explicitly approved this exception for ClaudeBot on 2026-11-02.
+
+---
+
+# Part C: Paper Lab (PAPER ONLY, never places orders)
+
+After Parts A and B (live always comes first), run the paper strategies on the same
+live data. They test variants of the rules so we learn faster without risking money.
+
+```
+python3 claudebot/paper_lab.py run /tmp/ofacts.json /tmp/facts.json
+```
+It records every paper decision itself and prints `needs`. For each need, fetch the data,
+add it to the facts files, and run it again (at most 3 rounds; skip anything slow):
+- `contracts`: like B2 `need_contracts`; append to `candidates` in /tmp/ofacts.json
+- `leg_quotes`: `get_option_quotes(ids)` into `legs` in /tmp/ofacts.json
+- `underlying`: add that ticker to `underlyings` in /tmp/ofacts.json (price, closes, expirations)
+- `crypto_quotes`: `get_crypto_quotes` into `quotes` in /tmp/facts.json
+
+Then add `docs/data/claudebot-paper-ledger.json` to the same commit. Never place, cancel
+or change any real order because of the Paper Lab. A strategy marked `promotionCandidate`
+is only a suggestion: tell the user, and change live rules only if they approve.
