@@ -209,7 +209,7 @@ the options desk by itself. Rules: `claudebot/dip_bot.py` + `claudebot/dip_confi
 3. `buy`: review_equity_order(side buy, type market, dollar_amount = dollarAmount,
    market_hours regular_hours) then place_equity_order with the same params and a fresh UUID
    ref_id. Poll get_equity_orders(order_id) until filled (~1 min). Then
-   `dip_bot.py open --symbol S --price <average fill price> --usd <filled notional>`.
+   `dip_bot.py open --symbol S --price <average fill price> --usd <filled notional> --pct <pctOfAccount from the buy action>`.
 4. `sell`: review_equity_order(side sell, type market, quantity = quantity) then place it.
    Poll until filled, then `dip_bot.py close --symbol S --price <average fill price> --reason <reason>`.
    Never sell more than the quantity given (the account holds other shares, e.g. KO).

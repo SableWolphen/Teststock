@@ -103,12 +103,12 @@ def run(now=None):
     dled = load(D("docs", "data", "claudebot-dip-ledger.json"), {})
     dcfg = load(D("claudebot", "dip_config.json"), {})
     dr = dcfg.get("risk", {})
-    g.check("dip", "Dip desk size and count caps", dr.get("positionUsd", 999) <= 30 and dr.get("maxOpenPositions", 9) <= 3 and dcfg.get("exit", {}).get("stopPct", 99) <= 8,
-            f"${dr.get('positionUsd')} per trade, {dr.get('maxOpenPositions')} at a time, {dcfg.get('exit', {}).get('stopPct')}% stop")
+    g.check("dip", "Dip desk size and count caps", dr.get("positionUsd", 999) <= 30 and dr.get("positionPctOfAccount", 0) <= 25 and dr.get("maxOpenPositions", 9) <= 3 and dcfg.get("exit", {}).get("stopPct", 99) <= 8,
+            f"{dr.get('positionPctOfAccount', 0)}% of account (min ${dr.get('positionUsd')}) per trade, {dr.get('maxOpenPositions')} at a time, {dcfg.get('exit', {}).get('stopPct')}% stop")
     dps = dled.get("positions") if dled.get("positions") is not None else ([dled["open"]] if dled.get("open") else [])
     syms_ = [p_.get("symbol") for p_ in dps]
     g.check("dip", "Dip positions within limits", len(dps) <= min(3, dr.get("maxOpenPositions", 1)) and len(set(syms_)) == len(syms_)
-            and all(p_.get("usd", 999) <= 30 and p_.get("symbol") in dcfg.get("symbols", []) for p_ in dps),
+            and all((p_.get("usd", 999) <= 30 or (p_.get("pctOfAccount") or 99) <= 25.5) and p_.get("symbol") in dcfg.get("symbols", []) for p_ in dps),
             "no open positions" if not dps else ", ".join(f"{p_['symbol']} ${p_.get('usd')}" for p_ in dps))
     reports.append(g.done())
 
@@ -141,7 +141,7 @@ def run(now=None):
         idx *= 1 + tr.get("accountImpactPct", 0) / 100
     t.check("ledger", "Crypto equity index adds up", abs(idx - led.get("equityIndex", 100)) < 0.05, f"recomputed {idx:.2f} vs book {led.get('equityIndex')}")
     dl = load(D("docs", "data", "claudebot-dip-ledger.json"), {})
-    badd = [x for x in dl.get("trades", []) if abs(round(x["entryPrice"] and x["pnlUsd"], 2) - round(25 * (x["exitPrice"] / x["entryPrice"] - 1), 2)) > 1.0]
+    badd = [x for x in dl.get("trades", []) if abs(round(x["entryPrice"] and x["pnlUsd"], 2) - round(x.get("usd", 25) * (x["exitPrice"] / x["entryPrice"] - 1), 2)) > 1.0]
     t.check("ledger", "Dip desk P&L adds up", not badd, f"{len(badd)} trades don't reconcile" if badd else f"{len(dl.get('trades', []))} trades reconcile")
     pub = json.dumps([led, oled, pled, dl])
     import re

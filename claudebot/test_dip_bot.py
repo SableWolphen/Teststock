@@ -36,4 +36,10 @@ full = [{**pos, "symbol": s_, "enteredAt": "2026-11-04T20:10:00Z"} for s_ in ("S
 Qf = {**Q, "symbols": {s_: {"price": dip[-1] - 2, "closes": dip, "heldQty": 0.0357} for s_ in ("SPY", "QQQ", "DIA")}}
 assert "limit" in act(Qf, {**LED, "positions": full})["reason"]
 a = act({**S(740), "symbols": {"SPY": {"price": 740, "closes": dip, "heldQty": 0.0357}}}, {**LED, "positions": [pos]}); assert a["do"] == "sell" and a["symbol"] == "SPY", a
+# size grows with the account: 20% of value, never below $25, cash reserve still applies
+db.options_open = lambda: True
+a = act({**F, "accountValue": 500, "buyingPower": 480}); assert a["do"] == "buy" and a["dollarAmount"] == "100.00", a
+a = act({**F, "accountValue": 117, "buyingPower": 112}); assert a["dollarAmount"] == "25.00", a
+db.options_open = lambda: False
+assert act({**F, "accountValue": 500, "buyingPower": 150})["do"] == "none"     # 150-100 < 86 reserve
 print("all dip desk scenarios pass")

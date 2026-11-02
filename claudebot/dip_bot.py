@@ -138,8 +138,9 @@ def plan(facts, cfg, led):
     if float(facts.get("accountValue", 0)) < r["pauseBelowAccountValueUsd"]:
         return none("account below the pause floor")
     bp = float(facts.get("buyingPower", 0))
+    size = round(max(r["positionUsd"], float(facts.get("accountValue", 0)) * r.get("positionPctOfAccount", 0) / 100), 2)   # grows with the account
     reserve = r["minBuyingPowerAfterUsd"] if options_open() else max(r["minBuyingPowerAfterUsd"], r.get("reserveForOptionsUsd", 0))
-    if bp - r["positionUsd"] < reserve:
+    if bp - size < reserve:
         return none("not enough free cash" + ("" if options_open() else f" (keeping ${reserve:.0f} free so the options desk can open its spread)"))
     looked = []
     for sym in cfg["symbols"]:
@@ -154,14 +155,14 @@ def plan(facts, cfg, led):
         rv, tr = rsi2(c), sma(c, e["trendSma"])
         looked.append(f"{sym} RSI2 {rv:.0f}{'' if c[-1] > tr else ' (below 200d)'}")
         if c[-1] > tr and rv < e["rsi2Below"]:
-            return {"actions": [{"do": "buy", "symbol": sym, "dollarAmount": f"{r['positionUsd']:.2f}", "why": f"{sym} RSI(2) {rv:.1f} < {e['rsi2Below']} above its 200-day average"}]}
+            return {"actions": [{"do": "buy", "symbol": sym, "dollarAmount": f"{size:.2f}", "pctOfAccount": round(100 * size / max(float(facts.get("accountValue", 0)), 1), 1), "why": f"{sym} RSI(2) {rv:.1f} < {e['rsi2Below']} above its 200-day average"}]}
     return none("no dip today: " + ", ".join(looked))
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(); sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("plan"); p.add_argument("facts")
-    p = sub.add_parser("open"); p.add_argument("--symbol", required=True); p.add_argument("--price", type=float, required=True); p.add_argument("--usd", type=float, required=True)
+    p = sub.add_parser("open"); p.add_argument("--symbol", required=True); p.add_argument("--price", type=float, required=True); p.add_argument("--usd", type=float, required=True); p.add_argument("--pct", type=float, default=None)
     p = sub.add_parser("close"); p.add_argument("--symbol", required=True); p.add_argument("--price", type=float, required=True); p.add_argument("--reason", required=True)
     p = sub.add_parser("log"); p.add_argument("--action", required=True); p.add_argument("--detail", default="")
     a = ap.parse_args(argv)
@@ -178,7 +179,7 @@ def main(argv=None):
             print(f"ERROR: already holding {a.symbol}", file=sys.stderr); return 2
         if len(ps) >= cfg["risk"]["maxOpenPositions"]:
             print("ERROR: position limit reached", file=sys.stderr); return 2
-        ps.append({"symbol": a.symbol, "entryPrice": a.price, "usd": round(a.usd, 2), "enteredAt": iso(now)})
+        ps.append({"symbol": a.symbol, "entryPrice": a.price, "usd": round(a.usd, 2), "pctOfAccount": a.pct, "enteredAt": iso(now)})
         led["startedAt"] = led.get("startedAt") or iso(now)
         log("buy", f"bought ${a.usd:.2f} of {a.symbol} at {a.price}"); save_led(led, ps); return 0
     if a.cmd == "close":
@@ -187,7 +188,7 @@ def main(argv=None):
             print(f"ERROR: no open {a.symbol} position", file=sys.stderr); return 2
         ret = 100 * (a.price / p_["entryPrice"] - 1)
         led["trades"].append({"label": p_["symbol"], "symbol": p_["symbol"], "enteredAt": p_["enteredAt"], "exitedAt": iso(now), "entryPrice": p_["entryPrice"],
-                              "exitPrice": a.price, "returnPct": round(ret, 3), "pnlUsd": round(p_["usd"] * ret / 100, 2), "reason": a.reason})
+                              "exitPrice": a.price, "usd": p_["usd"], "returnPct": round(ret, 3), "pnlUsd": round(p_["usd"] * ret / 100, 2), "reason": a.reason})
         ps.remove(p_); log("sell", f"sold {p_['symbol']} at {a.price} ({ret:+.2f}%, {a.reason})"); save_led(led, ps); return 0
     if a.cmd == "log":
         log(a.action, a.detail); save(LEDGER, led); return 0
