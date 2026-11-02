@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ClaudeBot Crypto Desk</title>
+<title>ClaudeBot Trading Desk</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -65,17 +65,71 @@ td{padding:7px 8px;border-bottom:1px solid #1c1f26;white-space:nowrap}
 .mt{margin-top:12px}
 @media (max-width:860px){.kpis,.scan{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}}
 @media (max-width:560px){.scan{grid-template-columns:1fr}.chart{height:180px}}
+
+/* ---- agent office ---- */
+.office-card{padding:0;margin-bottom:12px}
+.office-card h2{padding:14px 16px 0}
+#office{position:relative}
+.of-floor{position:relative;aspect-ratio:16/8;min-height:320px;margin:8px 12px 0;border-radius:10px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,138,61,.08), transparent 60%),
+    linear-gradient(transparent 95%, rgba(255,255,255,.035) 95%) 0 0/100% 32px,
+    linear-gradient(90deg, transparent 95%, rgba(255,255,255,.035) 95%) 0 0/32px 100%,
+    #101218;border:1px solid var(--line)}
+.of-station{position:absolute;transform:translate(-50%,-50%);text-align:center;z-index:1}
+.of-desk{position:relative;width:74px;height:40px;border-radius:9px;background:linear-gradient(180deg,#232733,#191c24);border:1px solid #2e3340;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 #0d0f14, 0 0 22px rgba(255,138,61,.08)}
+.of-ico{font-size:20px}
+.of-light{position:absolute;top:5px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.of-light.ok{background:var(--up);box-shadow:0 0 8px var(--up)}
+.of-light.busy{background:var(--accent);box-shadow:0 0 10px var(--accent);animation:pulse 1.2s infinite}
+.of-light.warn{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+.of-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--muted);margin-top:9px;white-space:nowrap}
+.of-agent{position:absolute;width:46px;transform:translate(-50%,-50%);z-index:3}
+.of-agent .bot{width:46px;height:64px;display:block;overflow:visible}
+.of-agent.flip .bot{transform:scaleX(-1)}
+.of-agent .body{animation:breathe 2.6s ease-in-out infinite;transform-origin:20px 40px}
+.of-agent.walking .body{animation:bob .32s ease-in-out infinite}
+.of-agent.walking .l1{animation:step .32s ease-in-out infinite}
+.of-agent.walking .l2{animation:step .32s ease-in-out infinite reverse}
+.of-agent .eyes{animation:blink 4.5s infinite;transform-origin:20px 15.5px}
+.of-name{font-family:var(--mono);font-size:9px;font-weight:700;text-align:center;margin-top:-2px;letter-spacing:.06em}
+.of-bubble{position:absolute;bottom:100%;left:50%;transform:translate(-50%,4px) scale(.9);opacity:0;pointer-events:none;
+  width:max-content;max-width:230px;background:#f4f5f8;color:#14161b;font-size:12px;line-height:1.35;padding:7px 10px;border-radius:10px;
+  transition:opacity .2s, transform .2s;box-shadow:0 6px 18px rgba(0,0,0,.4);z-index:5}
+.of-bubble::after{content:"";position:absolute;top:100%;left:50%;margin-left:-6px;border:6px solid transparent;border-top-color:#f4f5f8}
+.of-bubble.on{opacity:1;transform:translate(-50%,0) scale(1)}
+.of-agent.edge-r .of-bubble{left:auto;right:-6px;transform:translate(0,4px) scale(.9)}.of-agent.edge-r .of-bubble.on{transform:none}.of-agent.edge-r .of-bubble::after{left:auto;right:16px}
+.of-agent.edge-l .of-bubble{left:-6px;transform:translate(0,4px) scale(.9)}.of-agent.edge-l .of-bubble.on{transform:none}.of-agent.edge-l .of-bubble::after{left:22px}
+.blinky{animation:pulse 1.4s infinite}
+.of-feed{font-family:var(--mono);font-size:11.5px;padding:10px 16px 14px;display:grid;gap:4px;color:var(--text)}
+.of-feed div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.of-t{color:var(--muted)}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
+@keyframes breathe{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.025)}}
+@keyframes step{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes blink{0%,94%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@media (max-width:560px){.of-floor{aspect-ratio:auto;height:380px}.of-desk{width:52px;height:32px}.of-ico{font-size:15px}.of-lbl{font-size:7.5px}
+  .of-agent,.of-agent .bot{width:36px}.of-agent .bot{height:50px}.of-bubble{max-width:170px;font-size:11px}}
+@media (prefers-reduced-motion:reduce){.of-agent *{animation:none!important}.of-agent{transition:none!important}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div>
-      <h1>CLAUDE<span>BOT</span> // crypto desk</h1>
+      <h1>CLAUDE<span>BOT</span> // trading desk</h1>
       <div class="sub" id="sub">loading…</div>
     </div>
     <div class="pill" id="status"><b></b><span>…</span></div>
   </header>
+
+  <section class="card office-card">
+    <h2>Agent office <span style="text-transform:none;letter-spacing:0">· acting out the bot's real latest runs</span></h2>
+    <div id="office"></div>
+  </section>
+
 
   <section class="grid kpis">
     <div class="card"><h2>Since start</h2><div class="big" id="k-growth">–</div><div class="small" id="k-growth-s"></div></div>
@@ -285,5 +339,6 @@ async function renderOptions(){
 }
 render(); renderOptions(); setInterval(()=>{render(); renderOptions();}, 60000);
 </script>
+<script src="claudebot-office.js"></script>
 </body>
 </html>
