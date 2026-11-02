@@ -2,7 +2,7 @@
 import importlib.util, os, copy
 spec = importlib.util.spec_from_file_location("db", os.path.join(os.path.dirname(os.path.abspath(__file__)), "dip_bot.py"))
 db = importlib.util.module_from_spec(spec); spec.loader.exec_module(db)
-cfg = db.load(db.CONFIG); cfg["symbols"] = ["SPY", "QQQ"]; cfg["risk"]["reserveForOptionsUsd"] = 86; cfg["risk"]["maxOpenPositions"] = 3   # scenarios below test the reserve and 3-position rules
+cfg = db.load(db.CONFIG); cfg["symbols"] = ["SPY", "QQQ"]; cfg["risk"]["reserveForOptionsUsd"] = 86; cfg["risk"]["maxOpenPositions"] = 3; cfg["risk"]["deployAllCash"] = False   # scenarios below test the fixed-size, reserve and 3-position rules
 up = [600 + i * 0.6 for i in range(220)]                 # steady uptrend, last close ~731
 dip = up[:-3] + [up[-3] - 6, up[-3] - 13, up[-3] - 20]  # three down days, still above the 200d SMA
 LED = {"open": None, "trades": [], "runs": []}
@@ -42,4 +42,10 @@ a = act({**F, "accountValue": 500, "buyingPower": 480}); assert a["do"] == "buy"
 a = act({**F, "accountValue": 117, "buyingPower": 112}); assert a["dollarAmount"] == "25.00", a
 db.options_open = lambda: False
 assert act({**F, "accountValue": 500, "buyingPower": 150})["do"] == "none"     # 150-100 < 86 reserve
+# board order: deploy all free cash across today's signals
+cfg["risk"]["deployAllCash"] = True; cfg["risk"]["reserveForOptionsUsd"] = 0; db.options_open = lambda: True
+a = act(); assert a["do"] == "buy" and a["symbol"] == "SPY" and a["dollarAmount"] == "111.00", a                  # one signal: all cash minus $1
+both = {**F, "symbols": {"SPY": F["symbols"]["SPY"], "QQQ": {"price": dip[-1] - 2, "closes": dip, "heldQty": 0}}}
+a = act(both); assert a["dollarAmount"] == "55.50" and a["symbol"] == "SPY", a                                       # two signals: split
+assert act({**F, "buyingPower": 1.5})["do"] == "none"                                                               # nothing left to spend
 print("all dip desk scenarios pass")

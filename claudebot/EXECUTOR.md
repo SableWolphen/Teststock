@@ -194,9 +194,9 @@ Never edit the rules by hand: only promote.py may change them, and only within i
 
 # Part E: Dip desk (LIVE, stocks): after Part B, before the Paper Lab
 
-Buys $25 of an ETF from dip_config.json `symbols` after a sharp dip in an uptrend, sells
-on the bounce. Up to `maxOpenPositions` at once, one per ETF; the planner keeps cash free for
-the options desk by itself. Rules: `claudebot/dip_bot.py` + `claudebot/dip_config.json`. Ledger:
+Buys an ETF from dip_config.json `symbols` after a sharp dip in an uptrend, sells on the bounce.
+Up to `maxOpenPositions` at once, one per ETF. Board order: with `deployAllCash`, the planner splits
+all free cash (minus $1) across the day's signals; always buy exactly the `dollarAmount` it returns. Rules: `claudebot/dip_bot.py` + `claudebot/dip_config.json`. Ledger:
 `docs/data/claudebot-dip-ledger.json`.
 
 1. Write `/tmp/dfacts.json` with `now`, `marketOpen` (same rule as Part B),

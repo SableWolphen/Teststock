@@ -103,8 +103,8 @@ def run(now=None):
     dled = load(D("docs", "data", "claudebot-dip-ledger.json"), {})
     dcfg = load(D("claudebot", "dip_config.json"), {})
     dr = dcfg.get("risk", {})
-    g.check("dip", "Dip desk size and count caps", dr.get("positionUsd", 999) <= 30 and dr.get("positionPctOfAccount", 0) <= 25 and dr.get("maxOpenPositions", 9) <= 5 and dcfg.get("exit", {}).get("stopPct", 99) <= 8,
-            f"{dr.get('positionPctOfAccount', 0)}% of account (min ${dr.get('positionUsd')}) per trade, {dr.get('maxOpenPositions')} at a time, {dcfg.get('exit', {}).get('stopPct')}% stop")
+    g.check("dip", "Dip desk size and count caps", dr.get("positionUsd", 999) <= 30 and dr.get("positionPctOfAccount", 0) <= 25 and dr.get("maxOpenPositions", 9) <= 5 and dr.get("minBuyingPowerAfterUsd", 0) >= 1 and dcfg.get("exit", {}).get("stopPct", 99) <= 8,
+            f"{'all free cash split across signals' if dr.get('deployAllCash') else str(dr.get('positionPctOfAccount', 0)) + '% of account'} (min ${dr.get('positionUsd')}) per trade, {dr.get('maxOpenPositions')} at a time, {dcfg.get('exit', {}).get('stopPct')}% stop")
     dps = dled.get("positions") if dled.get("positions") is not None else ([dled["open"]] if dled.get("open") else [])
     syms_ = [p_.get("symbol") for p_ in dps]
     g.check("dip", "Dip positions within limits", len(dps) <= min(5, dr.get("maxOpenPositions", 1)) and len(set(syms_)) == len(syms_)

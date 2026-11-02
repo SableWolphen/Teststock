@@ -145,7 +145,7 @@ def plan(facts, cfg, led):
     reserve = r["minBuyingPowerAfterUsd"] if options_open() else max(r["minBuyingPowerAfterUsd"], r.get("reserveForOptionsUsd", 0))
     if bp - size < reserve:
         return none("not enough free cash" + ("" if options_open() else f" (keeping ${reserve:.0f} free so the options desk can open its spread)"))
-    looked = []
+    looked, hits = [], []
     for sym in cfg["symbols"]:
         s = syms.get(sym)
         if sym in {p["symbol"] for p in held}:
@@ -158,8 +158,19 @@ def plan(facts, cfg, led):
         rv, tr = rsi2(c), sma(c, e["trendSma"])
         looked.append(f"{sym} RSI2 {rv:.0f}{'' if c[-1] > tr else ' (below 200d)'}")
         if c[-1] > tr and rv < e["rsi2Below"]:
-            return {"actions": [{"do": "buy", "symbol": sym, "dollarAmount": f"{size:.2f}", "pctOfAccount": round(100 * size / max(float(facts.get("accountValue", 0)), 1), 1), "why": f"{sym} RSI(2) {rv:.1f} < {e['rsi2Below']} above its 200-day average"}]}
-    return none("no dip today: " + ", ".join(looked))
+            hits.append((sym, rv))
+    if not hits:
+        return none("no dip today: " + ", ".join(looked))
+    sym, rv = hits[0]                                   # strongest ETF first (config order)
+    if r.get("deployAllCash"):
+        # board order: don't sit in cash when there is something to buy -> split free cash across today's signals
+        slots = min(len(hits), r["maxOpenPositions"] - len(held))
+        size = round(max(size, (bp - r["minBuyingPowerAfterUsd"]) / max(slots, 1)), 2)
+        size = min(size, round(bp - r["minBuyingPowerAfterUsd"], 2))
+        if size < 1:
+            return none("not enough free cash")
+    return {"actions": [{"do": "buy", "symbol": sym, "dollarAmount": f"{size:.2f}", "pctOfAccount": round(100 * size / max(float(facts.get("accountValue", 0)), 1), 1),
+                         "why": f"{sym} RSI(2) {rv:.1f} < {e['rsi2Below']} above its 200-day average" + (f"; {len(hits)} signals today, free cash split between them" if r.get("deployAllCash") else "")}]}
 
 
 def main(argv=None):
