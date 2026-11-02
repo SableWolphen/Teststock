@@ -2,7 +2,7 @@
 import copy, importlib.util, os
 sp = importlib.util.spec_from_file_location("ob", os.path.join(os.path.dirname(os.path.abspath(__file__)), "optbuy_bot.py"))
 ob = importlib.util.module_from_spec(sp); sp.loader.exec_module(ob)
-cfg = ob.load(ob.CONFIG); cfg["symbols"] = ["KRE", "XLF"]
+cfg = ob.load(ob.CONFIG); cfg["symbols"] = ["KRE", "XLF"]; cfg["enabled"] = True   # test the rules even while the desk is switched off
 up = [60 + i * 0.06 for i in range(220)]
 dip = up[:-3] + [up[-3] - 0.6, up[-3] - 1.3, up[-3] - 2.0]
 LED = {"open": None, "trades": [], "runs": []}
