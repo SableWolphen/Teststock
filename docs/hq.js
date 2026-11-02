@@ -302,11 +302,11 @@ async function wander(a, pts) { await waitFree(a); a.busy++; try { const [x, y] 
 /* ============================== data ============================== */
 const D = {};
 async function refresh() {
-  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled] = await Promise.all([
+  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw] = await Promise.all([
     getJSON('docs/data/claudebot-signal.json'), getJSON('docs/data/claudebot-ledger.json'), getJSON('docs/data/claudebot-options-ledger.json'),
     getJSON('docs/data/live-trading-health.json'), getJSON('docs/data/latest-50.json'), getJSON('claudebot/options_config.json'), getJSON('claudebot/config.json'),
-    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json')]);
-  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled });
+    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json')]);
+  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw });
   renderAll();
 }
 function botHealth() {
@@ -705,6 +705,7 @@ const CONSOLES = {
       ${paperScoreCard()}
       ${paperCard()}
       ${dayCard()}
+      ${wideCard()}
       ${card('Crypto scanner · 1h bars', `<div class="scroll"><table><thead><tr><th>Coin</th><th>Trend</th><th>RSI</th><th>24h</th><th>Status</th></tr></thead><tbody>${coins.map(c => `<tr><td><b>${c.symbol}</b></td><td class="${c.trend === 'up' ? 'up' : c.trend === 'down' ? 'down' : ''}">${c.trend}</td><td class="mono">${c.rsi}</td><td class="mono ${cls(c.change24hPct)}">${pct(c.change24hPct, 1)}</td><td style="white-space:normal">${c.setup ? '<b class="up">SETUP</b>' : esc((c.blockers || [])[0] || '')}</td></tr>`).join('')}</tbody></table></div><p>Signal ${ago(D.sig?.generatedAt)} · ${D.sig?.regime?.riskOff ? 'BTC risk-off' : 'BTC trend OK'}</p>`, 'span3')}
     </div>`;
   },
@@ -765,6 +766,21 @@ const CONSOLES = {
     </div>`;
   },
 };
+function wideCard() {
+  const W = D.dtw, T = W?.today;
+  if (!T) return card('🌎 Market-wide paper lab', '<div class="empty">Every stock we watch is replayed after each close. First results tonight.</div>', 'span3');
+  const pctc = v => `<span class="${cls(v)}">${v > 0 ? '+' : ''}${v}%</span>`;
+  const strat = Object.values(T.byStrategy).map(r => `<tr><td><b>${esc(r.name)}</b></td><td class="mono">${r.trades}</td><td class="mono">${r.trades ? Math.round(100 * r.wins / r.trades) + '%' : '–'}</td><td class="mono ${cls(r.pnlUsd)}">${usd(r.pnlUsd)}</td></tr>`).join('');
+  const all = (W.leaderboard || []).map(r => `<tr><td><b>${esc(r.name)}</b></td><td class="mono">${r.trades}</td><td class="mono">${r.winRatePct ?? '–'}%</td><td class="mono ${cls(r.pnlUsd)}">${usd(r.pnlUsd)}</td><td class="mono">${r.profitFactor ?? '–'}</td></tr>`).join('');
+  const best = (T.best || []).slice(0, 5).map(t => `${esc(t.symbol)} ${pctc(t.retPct)} <small>(${esc(W.strategies?.[t.strategy]?.name || t.strategy)})</small>`).join(' · ') || 'no winning signals';
+  const movers = (T.topMovers || []).slice(0, 6).map(m => `${esc(m.symbol)} ${pctc(m.dayPct)}`).join(' · ');
+  const prom = (W.promising || []).length ? W.promising.slice(0, 6).map(p => `${esc(p.name)} (PF ${p.profitFactor}, ${p.trades} trades)`).join(' · ') : 'none yet (needs 20+ paper trades and profit factor 1.3+ on one stock)';
+  return card('🌎 Market-wide paper lab · pretend $25 trades', `<p style="margin:0 0 10px">After each close the four day-trade strategies are replayed on all ${T.stocks} stocks we watch, so the desk learns which strategies and stocks work. Paper only; anything promising still needs the board.</p>
+    <p><b>${esc(T.date)}:</b> ${T.trades} paper trades · ${T.breadthUpPct}% of stocks closed up.<br><b>Best trades:</b> ${best}<br><b>Top movers:</b> ${movers}</p>
+    <div class="scroll"><table><thead><tr><th>Today</th><th>Trades</th><th>Win %</th><th>P&amp;L</th></tr></thead><tbody>${strat}</tbody></table></div>
+    <div class="scroll"><table><thead><tr><th>All days (${(W.days || []).length})</th><th>Trades</th><th>Win %</th><th>P&amp;L</th><th>PF</th></tr></thead><tbody>${all}</tbody></table></div>
+    <p><b>Promising strategy + stock pairs:</b> ${prom}</p><p>Updated ${W.updatedAt ? ago(W.updatedAt) : 'never'}.</p>`, 'span3');
+}
 function dayCard() {
   const L = D.dtp, b = L?.leaderboard || [], H = D.dtbt, S = L?.strategies || {};
   const hist = H?.all ? (() => { const best = {}; H.all.forEach(r => { if ((r.train.trades || 0) >= 100 && (!best[r.strategy] || r.train.avgTradePct > best[r.strategy].train.avgTradePct)) best[r.strategy] = r; });

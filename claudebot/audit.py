@@ -130,6 +130,8 @@ def run(now=None):
     a.check("echo", "Crypto paper test running", "cryraw" in (pled.get("strategies") or {}), "running" if "cryraw" in (pled.get("strategies") or {}) else "not started", level="warn")
     dtp = load(D("docs", "data", "claudebot-daytrade-paper.json"), {})
     a.check("sim", "Day-trade desk is paper only", dtp.get("mode", "paper") == "paper", f"mode {dtp.get('mode', 'paper')} · {len(dtp.get('days', []))} days replayed")
+    dtw = load(D("docs", "data", "claudebot-daytrade-wide.json"), {})
+    a.check("sim", "Market-wide lab is paper only", dtw.get("mode", "paper") == "paper", f"mode {dtw.get('mode', 'paper')} · {len(dtw.get('days', []))} days replayed")
     reports.append(a.done())
 
     # ---------------- Atlas: operations (health, books, planning)
