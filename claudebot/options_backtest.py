@@ -79,7 +79,7 @@ def skew(sig, S, K):
     return sig * (1 + CFG["model"]["skewPerLogMoneyness"] * max(0.0, math.log(S / K)))
 
 
-def run(bars, ivs, trend_filter, unlimited=False):
+def run(bars, ivs, trend_filter, unlimited=False, keep_trades=False):
     e = CFG["entry"]; x = CFG["exit"]; m = CFG["model"]
     closes = [c for _, c in bars]
     dates = [date.fromisoformat(d) for d, _ in bars]
@@ -131,6 +131,8 @@ def run(bars, ivs, trend_filter, unlimited=False):
         pos = dict(d=d, exp=exp, K=K, w=w, credit=credit)
     wins = [t for t in trades if t["pnl"] > 0]
     losses = [t for t in trades if t["pnl"] <= 0]
+    if keep_trades:
+        return trades
     return dict(
         trendFilter=trend_filter, ignoresAccountSize=unlimited, trades=len(trades),
         avgPnlPerTradeUsd=round(sum(t['pnl'] for t in trades) / len(trades), 2) if trades else None,
