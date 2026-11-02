@@ -79,7 +79,7 @@ def skew(sig, S, K):
     return sig * (1 + CFG["model"]["skewPerLogMoneyness"] * max(0.0, math.log(S / K)))
 
 
-def run(bars, ivs, trend_filter):
+def run(bars, ivs, trend_filter, unlimited=False):
     e = CFG["entry"]; x = CFG["exit"]; m = CFG["model"]
     closes = [c for _, c in bars]
     dates = [date.fromisoformat(d) for d, _ in bars]
@@ -126,13 +126,14 @@ def run(bars, ivs, trend_filter):
             K -= 1
         w = e["widthUsd"]
         credit = put(S, K, T, skew(iv, S, K)) - put(S, K - w, T, skew(iv, S, K - w)) - m["slippagePerSpread"]
-        if credit < e["minCreditUsd"] or (w - credit) * 100 > acct:
+        if credit < e["minCreditUsd"] or (not unlimited and (w - credit) * 100 > acct):
             continue
         pos = dict(d=d, exp=exp, K=K, w=w, credit=credit)
     wins = [t for t in trades if t["pnl"] > 0]
     losses = [t for t in trades if t["pnl"] <= 0]
     return dict(
-        trendFilter=trend_filter, trades=len(trades),
+        trendFilter=trend_filter, ignoresAccountSize=unlimited, trades=len(trades),
+        avgPnlPerTradeUsd=round(sum(t['pnl'] for t in trades) / len(trades), 2) if trades else None,
         winRatePct=round(100 * len(wins) / len(trades), 1) if trades else None,
         avgWinUsd=round(sum(t["pnl"] for t in wins) / len(wins), 2) if wins else None,
         avgLossUsd=round(sum(t["pnl"] for t in losses) / len(losses), 2) if losses else None,
@@ -152,7 +153,7 @@ def main():
                ivSource="Cboe RVX" if ivs else "realized vol x1.2",
                days=len(bars), fromDate=bars[0][0], toDate=bars[-1][0],
                startingAccountUsd=CFG["backtest"]["startingAccountUsd"],
-               results=[run(bars, ivs, True), run(bars, ivs, False)],
+               results=[run(bars, ivs, True), run(bars, ivs, False), run(bars, ivs, True, True), run(bars, ivs, False, True)],
                caveat="Modeled option prices (Black-Scholes + vol index + skew), daily-close checks, fills worse than mid. Real fills, skew and gaps differ. Not a promise.")
     json.dump(res, open(OUT, "w"), indent=1)
     for r in res["results"]:
