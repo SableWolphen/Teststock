@@ -73,7 +73,7 @@ def run(now=None):
     reports = []
 
     # ---------------- Guard: trading desks followed the rules
-    g = Report("guard", "Chief Risk Officer", ["crypto", "options"])
+    g = Report("guard", "Chief Risk Officer", ["crypto", "options", "dip"])
     r = ccfg.get("risk", {})
     g.check("crypto", "Crypto position cap", r.get("maxPositionUsd", 999) <= LIMITS["crypto.maxPositionUsd"] and r.get("maxOpenPositions", 9) <= 1,
             f"max ${r.get('maxPositionUsd')} per buy, {r.get('maxOpenPositions')} position at a time")
@@ -100,6 +100,14 @@ def run(now=None):
     today = now.astimezone(timezone(timedelta(hours=-6))).date().isoformat()
     opened_on_blackout = [t for t in oled.get("trades", []) + ([o] if o else []) if t and t.get("enteredAt", "")[:10] in (ocfg.get("risk", {}).get("noNewEntryDates") or {})]
     g.check("options", "No spreads opened on event-pause days", not opened_on_blackout, f"{len(opened_on_blackout)} found" if opened_on_blackout else "event pauses respected")
+    dled = load(D("docs", "data", "claudebot-dip-ledger.json"), {})
+    dcfg = load(D("claudebot", "dip_config.json"), {})
+    dr = dcfg.get("risk", {})
+    g.check("dip", "Dip desk size and count caps", dr.get("positionUsd", 999) <= 30 and dr.get("maxOpenPositions", 9) <= 1 and dcfg.get("exit", {}).get("stopPct", 99) <= 8,
+            f"${dr.get('positionUsd')} per trade, {dr.get('maxOpenPositions')} at a time, {dcfg.get('exit', {}).get('stopPct')}% stop")
+    dop = dled.get("open")
+    g.check("dip", "Dip position within limits", (dop is None) or (dop.get("usd", 999) <= 30 and dop.get("symbol") in dcfg.get("symbols", [])),
+            "no open position" if dop is None else f"{dop['symbol']} ${dop.get('usd')}")
     reports.append(g.done())
 
     # ---------------- Analyst: research + Paper Lab are producing
@@ -128,7 +136,10 @@ def run(now=None):
     for tr in led.get("trades", []):
         idx *= 1 + tr.get("accountImpactPct", 0) / 100
     t.check("ledger", "Crypto equity index adds up", abs(idx - led.get("equityIndex", 100)) < 0.05, f"recomputed {idx:.2f} vs book {led.get('equityIndex')}")
-    pub = json.dumps([led, oled, pled])
+    dl = load(D("docs", "data", "claudebot-dip-ledger.json"), {})
+    badd = [x for x in dl.get("trades", []) if abs(round(x["entryPrice"] and x["pnlUsd"], 2) - round(25 * (x["exitPrice"] / x["entryPrice"] - 1), 2)) > 1.0]
+    t.check("ledger", "Dip desk P&L adds up", not badd, f"{len(badd)} trades don't reconcile" if badd else f"{len(dl.get('trades', []))} trades reconcile")
+    pub = json.dumps([led, oled, pled, dl])
     import re
     leak = re.search(r'"(account_number|rhs_account_number|order_id|buying_power|quantity)"', pub)
     t.check("ledger", "No private data in public books", not leak, "clean" if not leak else f"found field {leak.group(1)}")

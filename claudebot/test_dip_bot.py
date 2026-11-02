@@ -1,0 +1,28 @@
+"""Dip desk scenarios. Run: python claudebot/test_dip_bot.py"""
+import importlib.util, os, copy
+spec = importlib.util.spec_from_file_location("db", os.path.join(os.path.dirname(os.path.abspath(__file__)), "dip_bot.py"))
+db = importlib.util.module_from_spec(spec); spec.loader.exec_module(db)
+cfg = db.load(db.CONFIG); cfg["symbols"] = ["SPY", "QQQ"]
+up = [600 + i * 0.6 for i in range(220)]                 # steady uptrend, last close ~731
+dip = up[:-3] + [up[-3] - 6, up[-3] - 13, up[-3] - 20]  # three down days, still above the 200d SMA
+LED = {"open": None, "trades": [], "runs": []}
+NOW_W = "2026-11-04T20:14:00Z"   # 14:14 CT
+F = {"now": NOW_W, "marketOpen": True, "accountValue": 117, "buyingPower": 112, "symbols": {"SPY": {"price": dip[-1] - 2, "closes": dip, "heldQty": 0}, "QQQ": {"price": up[-1] + 1, "closes": up, "heldQty": 0}}}
+def act(f=F, l=LED): return db.plan(copy.deepcopy(f), cfg, copy.deepcopy(l))["actions"][0]
+a = act(); assert a["do"] == "buy" and a["symbol"] == "SPY" and a["dollarAmount"] == "25.00", a
+assert act({**F, "now": "2026-11-04T16:14:00Z"})["do"] == "none"                          # outside window
+assert act({**F, "buyingPower": 20})["do"] == "none"
+assert act({**F, "marketOpen": False})["reason"] == "market closed"
+down = [900 - i for i in range(220)]
+assert act({**F, "symbols": {"SPY": {"price": down[-1] - 5, "closes": down, "heldQty": 0}, "QQQ": F["symbols"]["QQQ"]}})["do"] == "none"   # below 200d: no buy
+pos = {"symbol": "SPY", "entryPrice": 700.0, "usd": 25.0, "enteredAt": "2026-11-03T20:14:00Z"}
+L2 = {**LED, "open": pos}
+S = lambda px, q=0.0357: {**F, "symbols": {"SPY": {"price": px, "closes": dip, "heldQty": q}}}
+a = act(S(740), L2); assert a["do"] == "sell" and a["reason"] == "bounce" and a["quantity"] == "0.035700", a
+a = act({**S(660), "now": "2026-11-04T16:14:00Z"}, L2); assert a["do"] == "sell" and a["reason"] == "stop", a
+assert act({**S(690), "now": "2026-11-04T16:14:00Z"}, L2)["do"] == "none"                 # no exit outside window unless stop
+assert act(S(660), {**LED, "open": {**pos, "enteredAt": "2026-11-04T20:10:00Z"}})["do"] == "none"   # no same-day exits
+assert act(S(700, 0), L2)["do"] == "record_broker_close"
+a = act({**S(705), "now": "2026-11-18T20:14:00Z"}, {**LED, "open": {**pos, "entryPrice": 720.0}}); assert a["do"] == "sell" and a["reason"] in ("time", "bounce"), a
+assert float(act(S(740, 1.5), L2)["quantity"]) <= 25 / 700 + 1e-6                        # never sells more than it bought
+print("all dip desk scenarios pass")

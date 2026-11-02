@@ -23,7 +23,7 @@ const money = v => v == null || !isFinite(v) ? '–' : (v < 0 ? '-$' : '$') + (M
 const cls = v => v > 0 ? 'up' : v < 0 ? 'down' : '';
 
 /* ============================== scene geometry ============================== */
-const TW = 64, TH = 32, W = 20, DEPTH = 14, WH = 120;
+const TW = 64, TH = 32, W = 25, DEPTH = 14, WH = 120;
 let cam = { cx: 96, cy: 240, s: 1 };
 const iso = (x, y, z = 0) => [(x - y) * TW / 2, (x + y) * TH / 2 - z];
 const P = pts => pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
@@ -36,12 +36,14 @@ const ROOMS = {
   research:    { name: 'Research Lab', short: 'Research', x0: 5, x1: 10, y0: 0, y1: 6, c: ['#3d5f63', '#38595d'], icon: '🔬' },
   diagnostics: { name: 'Diagnostics', short: 'Diagnostics', x0: 10, x1: 15, y0: 0, y1: 6, c: ['#33405a', '#2f3b54'], icon: '🩺' },
   freedom:     { name: 'Freedom Room', short: 'Freedom', x0: 15, x1: 20, y0: 0, y1: 6, c: ['#5b6b4a', '#556545'], icon: '🎯' },
-  hall:        { name: 'Hallway', short: 'Hall', x0: 0, x1: 20, y0: 6, y1: 8, c: ['#4a4e58', '#454953'] },
+  hall:        { name: 'Hallway', short: 'Hall', x0: 0, x1: 25, y0: 6, y1: 8, c: ['#4a4e58', '#454953'] },
   trading:     { name: 'Trading Floor', short: 'Trading', x0: 0, x1: 10, y0: 8, y1: 14, c: ['#3c4a72', '#364368'], icon: '📈' },
   risk:        { name: 'Risk Office', short: 'Risk', x0: 10, x1: 15, y0: 8, y1: 14, c: ['#5a3a44', '#53363f'], icon: '🛡️' },
   vault:       { name: 'Vault · Ledger', short: 'Vault', x0: 15, x1: 20, y0: 8, y1: 14, c: ['#5e5640', '#57503b'], icon: '📒' },
+  strategy:    { name: 'Strategy Lab', short: 'Strategy', x0: 20, x1: 25, y0: 0, y1: 6, c: ['#4a3d66', '#44385e'], icon: '🧠' },
+  breakroom:   { name: 'Break Room', short: 'Break', x0: 20, x1: 25, y0: 8, y1: 14, c: ['#6b4f3a', '#634935'], icon: '☕' },
 };
-const ROOM_IDS = ['lobby', 'research', 'diagnostics', 'freedom', 'trading', 'risk', 'vault'];
+const ROOM_IDS = ['lobby', 'research', 'diagnostics', 'freedom', 'strategy', 'trading', 'risk', 'vault', 'breakroom'];
 const roomOf = (x, y) => Object.entries(ROOMS).find(([k, r]) => k !== 'hall' && x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1)?.[0] || 'hall';
 const doorX = id => id === 'trading' ? 5 : (ROOMS[id].x0 + ROOMS[id].x1) / 2;
 const isBack = id => ROOMS[id].y1 <= 6;
@@ -61,7 +63,7 @@ for (const [id, r] of Object.entries(ROOMS)) {
     poly([iso(x, y), iso(x + 1, y), iso(x + 1, y + 1), iso(x, y + 1)], r.c[(x + y) % 2], L.floor, { stroke: 'rgba(0,0,0,.13)', 'stroke-width': .6 });
 }
 // hall runner + floor decals
-poly([iso(.3, 6.75), iso(19.7, 6.75), iso(19.7, 7.25), iso(.3, 7.25)], 'rgba(255,255,255,.05)', L.decal);
+poly([iso(.3, 6.75), iso(24.7, 6.75), iso(24.7, 7.25), iso(.3, 7.25)], 'rgba(255,255,255,.05)', L.decal);
 for (const id of ROOM_IDS) {
   const r = ROOMS[id]; const p = iso(r.x0 + .35, r.y1 - .35);
   const t = el('text', { transform: `matrix(0.894,0.447,-0.894,0.447,${p[0]},${p[1]})`, fill: '#fff', opacity: .28, 'font-size': 12, 'font-weight': 800, 'letter-spacing': 2.5 }, L.decal);
@@ -74,7 +76,7 @@ for (let y = .5; y < 6; y += .5) { const a = iso(0, y, 4), b = iso(0, y, WH - 4)
 poly([iso(0, 0, WH), iso(0, DEPTH, WH), iso(-.25, DEPTH, WH), iso(-.25, -.25, WH)], '#4b4038', L.walls);
 poly([iso(0, 0, WH), iso(W, 0, WH), iso(W, -.25, WH), iso(-.25, -.25, WH)], '#3b4660', L.walls);
 // windows in freedom + diagnostics
-for (const x0 of [15.6, 17.6]) poly([iso(x0, 0, 30), iso(x0 + 1.4, 0, 30), iso(x0 + 1.4, 0, 98), iso(x0, 0, 98)], 'rgba(150,200,255,.2)', L.walls, { stroke: 'rgba(200,225,255,.4)' });
+for (const x0 of [15.6, 17.6, 22.6]) poly([iso(x0, 0, 30), iso(x0 + 1.4, 0, 30), iso(x0 + 1.4, 0, 98), iso(x0, 0, 98)], 'rgba(150,200,255,.2)', L.walls, { stroke: 'rgba(200,225,255,.4)' });
 
 // wall panels with live content
 function wallPanel(x0, x1, z0, z1, fill = '#0c1322') { return poly([iso(x0, 0, z0), iso(x1, 0, z0), iso(x1, 0, z1), iso(x0, 0, z1)], fill, L.walls, { stroke: '#2e3a58', 'stroke-width': 2 }); }
@@ -88,6 +90,9 @@ wallPanel(5.5, 9.4, 46, 102, '#eef1f5');
 const resT = [wallText(5.75, 90, 10, '#3a3f4b', 800), ...[0, 1, 2, 3].map(i => wallText(5.75, 78 - i * 9, 9.5, '#1d2230', 600))];
 resT[0].textContent = 'STOCK WATCHLIST';
 // diagnostics heartbeat monitor
+wallPanel(20.5, 24.4, 46, 102, '#eef1f5');
+const stratT = [wallText(20.75, 90, 10, '#3a3f4b', 800), ...[0, 1, 2, 3].map(i => wallText(20.75, 78 - i * 9, 9.5, '#1d2230', 600))];
+stratT[0].textContent = 'DIP DESK · RSI(2) < 5';
 wallPanel(10.6, 14.4, 52, 100);
 const diagT = wallText(10.85, 90, 10, '#8fe3b0', 700); diagT.textContent = 'SYSTEM HEARTBEAT';
 const heart = el('polyline', { fill: 'none', stroke: '#3ddc84', 'stroke-width': 2 }, L.walls);
@@ -121,13 +126,13 @@ function glass(x0, y0, x1, y1, h) {
   }
 }
 // partitions between back rooms and along the hall, with door gaps
-for (const x of [5, 10, 15]) glass(x, 0, x, 6, 66);
-for (const x of [10, 15]) glass(x, 8, x, 14, 30);
+for (const x of [5, 10, 15, 20]) glass(x, 0, x, 6, 66);
+for (const x of [10, 15, 20]) glass(x, 8, x, 14, 30);
 function wallWithDoors(y, h, doors) {
   let x = 0; for (const dx of [...doors, 99].sort((a, b) => a - b)) { const e = Math.min(dx - .8, W); if (e > x + .05) glass(x, y, e, y, h); x = dx + .8; if (x >= W) break; }
 }
-wallWithDoors(6, 66, ['lobby', 'research', 'diagnostics', 'freedom'].map(doorX));
-wallWithDoors(8, 26, ['trading', 'risk', 'vault'].map(doorX));
+wallWithDoors(6, 66, ['lobby', 'research', 'diagnostics', 'freedom', 'strategy'].map(doorX));
+wallWithDoors(8, 26, ['trading', 'risk', 'vault', 'breakroom'].map(doorX));
 
 // furniture
 const glows = [];
@@ -167,12 +172,19 @@ rack(10.3, .35, 'GITHUB'); rack(11.25, .35); rack(12.2, .35, 'MONITOR'); desk(12
 // freedom
 rtable(17.4, 2.9); stool(16.5, 2.6); stool(18.3, 3.2); stool(17.3, 3.9); plant(19.35, .4, 1.15); lamp(19.3, 5.2);
 // hall
-plant(.35, 6.3, .8); plant(19.3, 6.3, .8);
+plant(.35, 6.3, .8); plant(24.3, 6.3, .8);
 // trading
 desk(1.6, 9.2, '#5b4a3c', '#ff8a3d', 1.8); desk(4.6, 9.2, '#5b4a3c', '#a78bfa', 1.8); rack(8.6, 8.5, 'ROBINHOOD'); plant(.4, 13.2, .95); plant(9.3, 13.2, .95); coffee(6.6, 12.9);
 poly([iso(1.4, 11.6), iso(7.6, 11.6), iso(7.6, 13.4), iso(1.4, 13.4)], '#2a3557', L.decal, { opacity: .7 });
 // risk
 desk(11.4, 9.2, '#5a3a44', '#ff6b7a'); cabinet(14.2, 8.6); plant(14.3, 13.2, .9); lamp(10.6, 13.3);
+// strategy lab
+desk(21.0, 1.4, '#4a3d66', '#38bdf8', 1.8); desk(23.0, 3.2, '#4a3d66', '#a78bfa'); shelf(20.3, 3.0, .6, 2.6); plant(24.4, .4, 1.1);
+// break room
+couch(20.6, 12.6, '#8a5a44'); coffee(23.7, 8.6); cooler(22.9, 8.6);
+{ const g = obj(21.0 + 9.0 + 1.6); box(g, 21.0, 9.4, 1.6, .9, 18, '#2f7a5b'); const a = iso(21.8, 9.4, 18), b = iso(21.8, 10.3, 18), c = iso(21.8, 10.3, 26), d = iso(21.8, 9.4, 26); poly([a, b, c, d], 'rgba(255,255,255,.55)', g); }
+{ const g = obj(24.2 + 11.0 + 1.4); box(g, 24.2, 10.6, .7, .7, 58, '#3b2b6b'); poly([iso(24.2, 11.3, 34), iso(24.9, 11.3, 34), iso(24.9, 11.3, 52), iso(24.2, 11.3, 52)], '#ff5cc8', g, { class: 'led' }); }
+plant(24.4, 13.3, .9); lamp(20.4, 11.0);
 // vault
 safe(18.3, 8.6); cabinet(15.6, 8.55); cabinet(16.3, 8.55); shelf(19.3, 10.6, .6, 2.6); lamp(15.7, 13.3);
 
@@ -192,6 +204,7 @@ const AG = {
   options: { name: 'Options', role: 'Options trader · put credit spreads', room: 'trading', home: [5.5, 11.1], color: '#a78bfa', kind: 'penguin' , boss: 'guard', title: 'Options desk' },
   guard:   { name: 'Guard',   role: 'Risk officer · approves or blocks', room: 'risk', home: [12.2, 11.4], color: '#ff5c6c', kind: 'astro' , boss: 'claude', title: 'Chief Risk Officer' },
   ledger:  { name: 'Ledger',  role: 'Bookkeeper · every fill & P&L', room: 'vault', home: [17.3, 11.2], color: '#f5c451', kind: 'owl' , boss: 'atlas', title: 'Bookkeeper' },
+  quinn:   { name: 'Quinn',   role: 'Strategist · runs the live Dip desk', room: 'strategy', home: [21.9, 3.0], color: '#38bdf8', kind: 'bunny', boss: 'analyst', title: 'Strategist' },
   sim:     { name: 'Sim',     role: 'Paper Lab · 5 options variants, no real money', room: 'research', home: [6.1, 4.7], color: '#a3e635', kind: 'robot' , boss: 'analyst', title: 'Paper Lab' },
   echo:    { name: 'Echo',    role: 'Paper Lab · crypto with no filters, no real money', room: 'research', home: [8.6, 4.8], color: '#f472b6', kind: 'cat' , boss: 'analyst', title: 'Paper Lab' },
 };
@@ -209,6 +222,7 @@ function charSVG(kind, c) {
     fox: `${legs}<rect x="-12" y="-29" width="24" height="21" rx="9" fill="${c}"/><ellipse cx="0" cy="-20" rx="7" ry="8" fill="#fde9d6"/><path d="M-13,-41 L-9,-57 L-2,-45 Z" fill="${c}"/><path d="M13,-41 L9,-57 L2,-45 Z" fill="${c}"/><circle cx="0" cy="-37" r="13" fill="${c}"/><ellipse cx="0" cy="-32" rx="8" ry="6" fill="#fde9d6"/>${eyes(0)}<circle cx="0" cy="-30" r="2" fill="#13161c"/><path d="M14,-14 Q27,-20 20,-33" stroke="${c}" stroke-width="7" fill="none" stroke-linecap="round"/>`,
     penguin: `${legs.replace(new RegExp(leg, 'g'), '#f5a524')}<ellipse cx="0" cy="-22" rx="14" ry="15" fill="#1d2230"/><ellipse cx="0" cy="-20" rx="9" ry="11" fill="#f4f5f8"/><circle cx="0" cy="-38" r="12" fill="#1d2230"/><ellipse cx="0" cy="-36" rx="8" ry="7" fill="#f4f5f8"/>${eyes(-1)}<path d="M-3,-31 L3,-31 L0,-27 Z" fill="#f5a524"/><rect x="-12" y="-27" width="24" height="5" rx="2.5" fill="${c}"/>`,
     astro: `${legs}<rect x="-13" y="-30" width="26" height="22" rx="9" fill="#e9edf3"/><rect x="-4" y="-25" width="8" height="6" rx="1.5" fill="${c}"/><circle cx="0" cy="-38" r="14" fill="#f3f5f9"/><rect x="-10" y="-44" width="20" height="13" rx="6.5" fill="${c}" opacity=".88"/><circle cx="-4" cy="-39" r="2.2" fill="#fff" opacity=".8"/>`,
+    bunny: `${legs}<ellipse cx="0" cy="-21" rx="13" ry="14" fill="${c}"/><ellipse cx="0" cy="-18" rx="7" ry="8" fill="#eaf8ff"/><ellipse cx="-6" cy="-56" rx="4" ry="11" fill="${c}"/><ellipse cx="6" cy="-56" rx="4" ry="11" fill="${c}"/><ellipse cx="-6" cy="-56" rx="2" ry="7" fill="#ffd1e8"/><ellipse cx="6" cy="-56" rx="2" ry="7" fill="#ffd1e8"/><circle cx="0" cy="-37" r="12.5" fill="${c}"/><ellipse cx="0" cy="-32" rx="7" ry="5" fill="#eaf8ff"/>${eyes(-1)}<circle cx="0" cy="-32" r="1.8" fill="#ff8aa8"/><rect x="9" y="-31" width="10" height="13" rx="1.5" fill="#fff" transform="rotate(10 14 -24)"/><polyline points="10,-22 13,-26 15,-24 18,-29" stroke="#3ddc84" stroke-width="1.4" fill="none" transform="rotate(10 14 -24)"/>`,
     owl: `${legs}<ellipse cx="0" cy="-24" rx="14" ry="16" fill="${c}"/><ellipse cx="0" cy="-20" rx="8" ry="9" fill="#fff4d6"/><circle cx="0" cy="-38" r="12" fill="${c}"/><path d="M-11,-46 L-7,-53 L-4,-46 Z" fill="${shade(c, -40)}"/><path d="M11,-46 L7,-53 L4,-46 Z" fill="${shade(c, -40)}"/><circle cx="-5.5" cy="-38" r="5" fill="#fff"/><circle cx="5.5" cy="-38" r="5" fill="#fff"/><circle cx="-5.5" cy="-38" r="5" fill="none" stroke="#2a2d35" stroke-width="1.6"/><circle cx="5.5" cy="-38" r="5" fill="none" stroke="#2a2d35" stroke-width="1.6"/><g class="blink"><circle cx="-5.5" cy="-38" r="2" fill="#13161c"/><circle cx="5.5" cy="-38" r="2" fill="#13161c"/></g><path d="M-2,-33 L2,-33 L0,-30 Z" fill="#e0782c"/>`,
   };
   return `<ellipse cx="0" cy="0" rx="15" ry="5" fill="#000" opacity=".35"/><g class="bodyg">${B[kind]}</g>`;
@@ -289,11 +303,11 @@ async function wander(a, pts) { await waitFree(a); a.busy++; try { const [x, y] 
 /* ============================== data ============================== */
 const D = {};
 async function refresh() {
-  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit] = await Promise.all([
+  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg] = await Promise.all([
     getJSON('docs/data/claudebot-signal.json'), getJSON('docs/data/claudebot-ledger.json'), getJSON('docs/data/claudebot-options-ledger.json'),
     getJSON('docs/data/live-trading-health.json'), getJSON('docs/data/latest-50.json'), getJSON('claudebot/options_config.json'), getJSON('claudebot/config.json'),
-    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json')]);
-  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit });
+    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json')]);
+  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg });
   renderAll();
 }
 function botHealth() {
@@ -318,6 +332,7 @@ function tradingToday() {
 }
 const cryptoIdx = () => { const s = D.led?.snapshots || []; return s.length ? s[s.length - 1].index : (D.led?.equityIndex ?? 100); };
 const optPnl = () => (D.oled?.trades || []).reduce((a, t) => a + t.pnlUsd, 0);
+const dipPnl = () => (D.dled?.trades || []).reduce((a, t) => a + t.pnlUsd, 0);
 const todayCT = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
 const blackoutToday = () => D.ocfg?.risk?.noNewEntryDates?.[todayCT()];
 function freedomPlan() { let saved = {}; try { saved = JSON.parse(localStorage.getItem('hq-freedom') || '{}'); } catch (e) {} try { return projectPlan({ ...DEFAULT_PLAN, ...saved }); } catch (e) { return projectPlan(DEFAULT_PLAN); } }
@@ -334,8 +349,9 @@ function companyResult(offsetWeeks = 0) {
   const acct = D.ocfg?.backtest?.startingAccountUsd || 113;
   const opt = (D.oled?.trades || []).filter(t => inWk(t.exitedAt)).reduce((s, t) => s + t.pnlUsd, 0);
   const cry = (D.led?.trades || []).filter(t => inWk(t.exitedAt)).reduce((s, t) => s + (t.accountImpactPct || 0) / 100 * acct, 0);
-  const n = (D.oled?.trades || []).filter(t => inWk(t.exitedAt)).length + (D.led?.trades || []).filter(t => inWk(t.exitedAt)).length;
-  const usdv = Math.round((opt + cry) * 100) / 100;
+  const dip = (D.dled?.trades || []).filter(t => inWk(t.exitedAt)).reduce((s, t) => s + t.pnlUsd, 0);
+  const n = (D.oled?.trades || []).filter(t => inWk(t.exitedAt)).length + (D.led?.trades || []).filter(t => inWk(t.exitedAt)).length + (D.dled?.trades || []).filter(t => inWk(t.exitedAt)).length;
+  const usdv = Math.round((opt + cry + dip) * 100) / 100;
   const verdict = usdv > 0.004 ? 'profit' : usdv < -0.004 ? 'loss' : 'flat';
   return { usd: usdv, opt, cry, trades: n, verdict, mult: verdict === 'profit' ? 1 : verdict === 'flat' ? .5 : 0, from: a };
 }
@@ -360,6 +376,7 @@ function payroll() {
     planner: { base: 950,  score: clamp(70 + (cIdx + oP >= 0 ? 15 : -10) + (freedomPlan().contribution > 0 ? 15 : 0)), why: `Plan ${freedomPlan().contribution > 0 ? 'includes' : 'has no'} monthly contributions · results ${cIdx + oP >= 0 ? 'not negative' : 'negative'}` },
   };
   const pAge = ageMin(D.pled?.updatedAt), pTr = Object.values(D.pled?.strategies || {}).reduce((n, x) => n + (x.trades?.length || 0), 0);
+  { const dt = D.dled?.trades || [], dp = dipPnl(); rows.quinn = { base: 1100, score: clamp(85 + dp * 4 - (D.dled?.open && !(D.dcfg?.symbols || []).includes(D.dled.open.symbol) ? 40 : 0)), why: D.dled?.open ? `Holding ${D.dled.open.symbol} from ${D.dled.open.entryPrice} · dip desk ${usd(dp)}` : `${dt.length} dip trades · ${usd(dp)} · waiting for a dip in an uptrend` }; }
   const started = !!D.pled?.updatedAt;
   rows.sim = { base: 900, score: started ? clamp(freshScore(pAge, 75, 360)) : 70, why: started ? `Paper Lab updated ${ago(D.pled.updatedAt)} · ${pTr} paper trades closed` : 'New hire: first Paper Lab run at :14' };
   rows.echo = { base: 900, score: started ? clamp(freshScore(pAge, 75, 360) - (D.pled?.strategies?.cryraw ? 0 : 20)) : 70, why: started ? `Crypto paper test ${D.pled?.strategies?.cryraw ? 'running' : 'missing'}` : 'New hire: first crypto paper test at :14' };
@@ -441,7 +458,7 @@ const routines = {
     await wander(a, [[11.0, 1.9], [12.0, 1.9], [13.4, 4.4]]);
     await waitFree(a); await say(a, botHealth().ok ? `ClaudeBot checks out ✓${stale.length ? ` (old engine has ${stale.length} stale feeds, not ours)` : ''}.` : `ClaudeBot issue: ${esc(botHealth().issues[0])}.`, 3000);
     if (Math.random() < .55) await visit(a, R.crypto, [['a', 'Checking the Robinhood link…'], ['b', 'Broker state gets verified live on every run.']]);
-    else await visit(a, R.atlas, [['a', `Runner ${h?.runner?.healthy ? 'is healthy' : 'needs attention'}; status <b>${esc(h?.status || '?')}</b>.`], ['b', 'Keep watching it.']]);
+    else await visit(a, R.atlas, [['a', botHealth().ok ? 'ClaudeBot pipelines are all healthy.' : `ClaudeBot issue: ${esc(botHealth().issues[0])}.`], ['b', 'Keep watching it.']]);
   },
   async planner(a) {
     const p = freedomPlan();
@@ -471,6 +488,13 @@ const routines = {
     finally { a.busy--; }
     await sleep(rnd(3000, 7000));
   },
+  async quinn(a) {
+    await wander(a, [[21.9, 2.8], [23.8, 4.6], [21.2, 4.6]]);
+    const o = D.dled?.open, lr = (D.dled?.runs || []).slice(-1)[0]; await waitFree(a);
+    await say(a, o ? `Holding $${o.usd} of ${esc(o.symbol)} from ${o.entryPrice}. Out on the bounce or a 5% stop.` : (lr ? `Dip desk: ${esc(lr.detail)}` : 'Dip desk is live: I buy SPY, QQQ, DIA or IWM after a sharp dip in an uptrend.'), 3600);
+    if (Math.random() < .5) await visit(a, R.guard, [['a', 'Dip desk check: $25 per trade, one at a time, 5% stop.'], ['b', 'Approved. Stay inside those limits.']]);
+    else await visit(a, R.analyst, [['a', D.dbt ? `Backtest held up: ${D.dbt.combosWithPositiveTest} settings profitable on unseen 2025–26 data.` : 'Researching the next strategy.'], ['b', "Good. Keep the evidence coming. Rising markets flatter dip-buying."]]);
+  },
   async sim(a) {
     const b = D.pled?.leaderboard?.filter(r => r.desk === 'options') || [], m = D.pled?.strategies?.mirror;
     await wander(a, [[6.1, 4.5], [6.8, 4.9]]);
@@ -498,10 +522,17 @@ const routines = {
     else { await waitFree(a); const p = payroll(); await say(a, `Payroll this week: <b>${credits(p.total)}</b> (${p.wk.verdict === 'profit' ? 'full pay + bonus' : p.wk.verdict === 'flat' ? 'half pay, flat week' : 'docked, company lost money'}). Game credits only.`, 3400); }
   },
 };
-async function runAgent(k) { const a = agents[k]; await sleep(rnd(500, 4000)); for (;;) { try { await routines[k](a); } catch (e) { console.error(k, e); } await sleep(rnd(1500, 4500)); } }
+let coffees = 0;
+async function coffeeBreak(a) {
+  await waitFree(a); a.busy++;
+  try { await walkTo(a, rnd(21, 23.8), rnd(10.2, 12), 'Coffee break ☕'); a.doing = 'Coffee break ☕'; coffees++;
+    await say(a, pick(['Coffee break ☕', 'Refueling. ☕', 'Anyone up for ping-pong? 🏓', 'Five-minute break, then back to it.', 'Best perk of the job: free coffee.']), 2600);
+    await sleep(rnd(1500, 3500)); await goHome(a); } finally { a.busy--; }
+}
+async function runAgent(k) { const a = agents[k]; await sleep(rnd(500, 4000)); for (;;) { try { if (Math.random() < .1) await coffeeBreak(a); else await routines[k](a); } catch (e) { console.error(k, e); } await sleep(rnd(1500, 4500)); } }
 
 /* ============================== camera ============================== */
-const BW = 1220; const CX = 96, CY = 240;
+const BW = 1400; const CX = 176, CY = 250;
 function base() { const r = svg.getBoundingClientRect(); const ar = r.width > 0 ? r.height / r.width : .64; return { w: BW, h: BW * Math.max(.5, Math.min(1.3, ar)) }; }
 const wide = () => innerWidth > 860;
 const HOME = () => ({ cx: wide() ? CX : CX - 40, cy: CY, s: wide() ? 1 : 1.7 });
@@ -541,6 +572,11 @@ function renderWalls() {
   const h = D.health;
   const bh = botHealth(); lobbyT[1].textContent = 'CLAUDEBOT ' + bh.status; lobbyT[1].setAttribute('fill', bh.ok ? '#3ddc84' : '#f5c451');
   lobbyT[2].textContent = 'Trading today: ' + tradingToday()[0]; lobbyT[3].textContent = 'Market: ' + (D.latest?.regime?.label || '–') + ' · ' + (D.latest?.action || '');
+  { const bt = D.dbt?.chosenOnTrain?.test, o = D.dled?.open, tr = D.dled?.trades || [];
+    stratT[1].textContent = o ? `HOLDING ${o.symbol} @ ${o.entryPrice}` : 'WAITING FOR A DIP';
+    stratT[2].textContent = `${tr.length} trades · ${usd(dipPnl())}`;
+    stratT[3].textContent = bt ? `Backtest 25-26: ${bt.winRatePct}% wins` : '';
+    stratT[4].textContent = bt ? `avg ${bt.avgTradePct}%/trade · PF ${bt.profitFactor}` : ''; }
   const cards = D.latest?.cards || [];
   for (let i = 0; i < 4; i++) resT[i + 1].textContent = cards[i] ? `${cards[i].symbol}  ${cards[i].direction === 'BEARISH' ? '▼' : cards[i].direction === 'BULLISH' ? '▲' : '•'}  ${cards[i].score}` : '';
   const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40; let z = 72; const ph = (i % 10); if (ph === 4) z = 86; if (ph === 5) z = 60; if (ph === 6) z = 78; pts.push(iso(10.85 + t * 3.3, 0, z)); }
@@ -566,6 +602,7 @@ function agentStatus(a) {
     case 'options': return D.oled?.open ? ['hold', 'Holding spread'] : blackoutToday() ? ['warn', 'Event pause'] : ['', 'Idle'];
     case 'guard': return D.sig?.regime?.riskOff ? ['warn', 'Risk-off'] : ['ok', 'Watching'];
     case 'ledger': return ['ok', 'Books balanced'];
+    case 'quinn': return D.dled?.open ? ['hold', 'Holding ' + D.dled.open.symbol] : ['work', 'Watching for dips'];
     case 'sim': { const o = Object.values(D.pled?.strategies || {}).filter(x => x.desk === 'options' && x.open).length; return o ? ['hold', o + ' paper spreads'] : ['work', 'Paper testing']; }
     case 'echo': return D.pled?.strategies?.cryraw?.open ? ['hold', 'Paper ' + D.pled.strategies.cryraw.open.symbol] : ['work', 'Paper testing'];
   }
@@ -573,7 +610,7 @@ function agentStatus(a) {
 }
 const DOTC = { work: '#7c78ff', walk: '#3ccfcf', talk: '#ffffff', hold: '#ff8a3d', warn: '#f5c451', ok: '#3ddc84', bad: '#ff5c6c' };
 function renderRoster() {
-  const groups = [['CEO', ['claude']], ['Operations · Atlas', ['atlas', 'medic', 'ledger', 'planner']], ['Research · Analyst', ['analyst', 'scout', 'sim', 'echo']], ['Risk & Trading · Guard', ['guard', 'crypto', 'options']]];
+  const groups = [['CEO', ['claude']], ['Operations · Atlas', ['atlas', 'medic', 'ledger', 'planner']], ['Research · Analyst', ['analyst', 'quinn', 'scout', 'sim', 'echo']], ['Risk & Trading · Guard', ['guard', 'crypto', 'options']]];
   $('roster').innerHTML = groups.map(([g, ks]) => `<div class="grp">${g}<span>${ks.length}</span></div>` + ks.map(k => { const a = agents[k];
     return `<div class="ag" data-k="${k}"><div class="av"><svg viewBox="-24 -64 48 66">${charSVG(a.kind, a.color)}</svg></div><div class="mid"><div class="n">${a.name} <span style="color:var(--muted);font-weight:500;font-size:11.5px">${esc(a.title || '')}</span></div><div class="r">${a.boss ? 'Reports to ' + agents[a.boss].name + ' · ' : ''}${esc(a.role)}</div></div><span class="stt" id="st-${k}"></span></div>`; }).join('')).join('');
   document.querySelectorAll('.ag').forEach(x => x.onclick = () => focusAgent(x.dataset.k));
@@ -592,7 +629,7 @@ function renderKpis() {
     ['Trading today', tradingToday()[0], tradingToday()[1] + (D.sig?.regime?.riskOff ? ' · crypto risk-off' : ''), tradingToday()[2]],
     ['Market', D.latest?.regime?.label || '–', 'call: ' + (D.latest?.action || '–'), /OFF/.test(D.latest?.regime?.label || '') ? 'down' : ''],
     ['Open positions', String(open), [D.led?.open?.symbol, D.oled?.open?.label].filter(Boolean).join(' · ') || 'all cash', open ? 'org' : ''],
-    ['ClaudeBot', `${pct(cryptoIdx() - 100)} · ${usd(optPnl())}`, 'crypto · options since start', cls(cryptoIdx() - 100 + optPnl())],
+    ['ClaudeBot', `${pct(cryptoIdx() - 100)} · ${usd(optPnl() + dipPnl())}`, 'crypto · options + dip since start', cls(cryptoIdx() - 100 + optPnl() + dipPnl())],
     ['Management audit', D.audit ? `${D.audit.reports.reduce((a, r) => a + r.passed, 0)}/${D.audit.reports.reduce((a, r) => a + r.total, 0)} ✓` : '–', D.audit ? `${D.audit.ceo.status.toUpperCase()} · ${ago(D.audit.generatedAt)}` : 'first audit at :14', D.audit?.ceo?.status === 'pass' ? 'up' : D.audit?.ceo?.status === 'fail' ? 'down' : 'warn'],
   ];
   $('kpis').innerHTML = k.map(([l, v, s, c]) => `<div class="kpi"><div class="l">${l}</div><div class="v ${c}">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join('');
@@ -604,6 +641,7 @@ function renderRoomCards() {
 let jmode = 'all';
 function renderJournal() {
   const rows = []; (D.led?.runs || []).forEach(r => rows.push({ ...r, who: 'Crypto', c: '#ff8a3d', kind: 'crypto' })); (D.oled?.runs || []).forEach(r => rows.push({ ...r, who: 'Options', c: '#a78bfa', kind: 'options' }));
+  (D.dled?.runs || []).forEach(r => rows.push({ ...r, who: 'Dip', c: '#38bdf8', kind: 'dip' }));
   Object.values(D.pled?.strategies || {}).forEach(st => (st.runs || []).forEach(r => rows.push({ ...r, detail: `[${st.name}] ${r.detail}`, who: 'Paper', c: '#a3e635', kind: 'paper' })));
   rows.sort((a, b) => new Date(b.t) - new Date(a.t));
   $('jsub').textContent = D.led?.startedAt ? `· ClaudeBot live since ${when(D.led.startedAt)}` : '';
@@ -618,7 +656,7 @@ const card = (title, body, cls = '') => `<div class="box ${cls}"><h3>${title}</h
 const li = (txt, c = '') => `<li><span class="dot ${c}"></span><span>${txt}</span></li>`;
 const CONSOLES = {
   office() {
-    return `<div class="ch"><h2>🏢 Whole office</h2><span class="who">Twelve agents in seven rooms, led by Claude (CEO) · click a room to open it</span></div>
+    return `<div class="ch"><h2>🏢 Whole office</h2><span class="who">Thirteen agents in nine rooms, led by Claude (CEO) · click a room to open it</span></div>
     <div class="cgrid">${ROOM_IDS.map(id => card(`${ROOMS[id].icon} ${ROOMS[id].name}`, `<p>${esc(ROOM_BLURB[id])}</p><p><a href="#${id}" style="color:var(--accent);font-weight:600;text-decoration:none">Open room →</a></p>`)).join('')}
     ${card('How it works', '<p>GitHub scans prices and research every hour. The hourly ClaudeBot task checks Robinhood, follows the rules in its planners, places or skips trades, and publishes what it did. These agents act out that published state.</p>', 'span2')}</div>`;
   },
@@ -710,7 +748,7 @@ function paperCard() {
   return card('🧪 Paper Lab · runs alongside live trading, no real money', `<p style="margin:0 0 10px">Sim and Echo paper-trade different versions of the rules on the same live Robinhood quotes. Options P&amp;L is per spread; crypto uses $15 paper positions. <b>CEO auto-approval:</b> a variant that reaches 20+ paper trades with profit factor ≥ 1.3 and beats the live rules is promoted to live automatically, within hard limits, and rolled back automatically if it loses live. Variants that remove a safety rule still need the board.</p>${body}<p>Updated ${L?.updatedAt ? ago(L.updatedAt) : 'never'}.</p>`, 'span3');
 }
 function payrollCard() {
-  const p = payroll(); const order = ['claude', 'atlas', 'analyst', 'guard', 'scout', 'sim', 'echo', 'medic', 'ledger', 'planner', 'crypto', 'options'];
+  const p = payroll(); const order = ['claude', 'atlas', 'analyst', 'guard', 'quinn', 'scout', 'sim', 'echo', 'medic', 'ledger', 'planner', 'crypto', 'options'];
   const gc = g => g === 'A' || g === 'B' ? 'up' : g === 'C' ? 'warn' : 'down';
   const v = { profit: ['up', `The company made ${usd(p.wk.usd)} this week: full pay plus a ${credits(p.pool)} profit-sharing bonus.`], flat: ['warn', `No money made or lost this week (${p.wk.trades} closed trades): <b>half pay</b>. Capital was protected but nothing was earned.`], loss: ['down', `The company lost ${usd(p.wk.usd)} this week: <b>no paychecks</b>. Everyone's pay is docked to zero until results turn positive.`] }[p.wk.verdict];
   const lastTxt = { profit: `Last week: profit ${usd(p.last.usd)} · full pay`, flat: 'Last week: flat · half pay', loss: `Last week: loss ${usd(p.last.usd)} · no pay` }[p.last.verdict];
@@ -724,7 +762,7 @@ function orgCard() {
   const au = D.audit; const by = Object.fromEntries((au?.reports || []).map(r => [r.manager, r]));
   const chip = st => `<span class="stt ${st === 'pass' ? 'ok' : st === 'warn' ? 'warn' : st === 'fail' ? 'bad' : ''}">${st ? st.toUpperCase() : '–'}</span>`;
   const mgrs = ['atlas', 'analyst', 'guard'];
-  const team = m => Object.keys(agents).filter(k => agents[k].boss === m);
+  const team = m => [...new Set([...Object.keys(agents).filter(k => agents[k].boss === m), ...((by[m]?.checks || []).map(c => c.agent).filter(k => agents[k]))])];
   const col = m => { const r = by[m]; return `<div class="box" style="background:#1a1f29"><h3>${agents[m].name} · ${esc(agents[m].title)} ${chip(r?.status)}</h3>
       <ul class="list">${team(m).map(k => { const cs = (r?.checks || []).filter(c => c.agent === k); const worst = cs.some(c => c.status === 'fail') ? 'r' : cs.some(c => c.status === 'warn') ? 'y' : cs.length ? 'g' : '';
         return li(`<b>${agents[k].name}</b> <span style="color:var(--muted)">${esc(agents[k].title)}</span><br>${cs.map(c => `<span style="color:${c.status === 'pass' ? 'var(--up)' : c.status === 'warn' ? 'var(--warn)' : 'var(--down)'}">${c.status === 'pass' ? '✓' : c.status === 'warn' ? '!' : '✗'}</span> ${esc(c.check)}: <span style="color:var(--muted)">${esc(c.detail)}</span>`).join('<br>') || '<span style="color:var(--muted)">no checks yet</span>'}`, worst); }).join('')}</ul></div>`; };
@@ -738,8 +776,28 @@ function planOut(p) {
       ${card('Return scenarios', `<div class="sbars">${p.scenarios.map(s => `<div class="sbar"><span class="mono ${cls(s.annualReturn)}">${s.annualReturn > 0 ? '+' : ''}${s.annualReturn}%/yr</span><div class="bar"><i style="width:${Math.max(1, s.value / mx * 100)}%"></i></div><span class="mono">${money(s.value)}</span></div>`).join('')}</div>`, 'span2')}
       ${card('Milestones', `<ul class="list">${p.milestones.map(m => li(`${money(m.capital)} → ${money(m.monthlyIncome)}/mo ${m.achieved ? '· reached' : m.projected ? '· on track' : ''}`, m.achieved ? 'g' : m.projected ? 'y' : '')).join('')}</ul>`)}`;
 }
-const ROOM_BLURB = { lobby: 'ClaudeBot health, the org chart, management audit and market regime.', research: 'Stock watchlist, crypto scanner and the 🧪 Paper Lab.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The trade ledger, results and the 🎮 agent payroll.' };
-const TITLES = { office: ['Office', "What are ClaudeBot's agents doing right now?"], lobby: ['Lobby · Overview', 'The big picture'], research: ['Research Lab', 'What the agents are watching'], diagnostics: ['Diagnostics', 'Is everything healthy?'], freedom: ['Freedom Room', 'Planning the path to monthly income'], trading: ['Trading Floor', 'Positions and trades'], risk: ['Risk Office', 'The rules every order must pass'], vault: ['Vault · Ledger', 'Every trade on the record, plus the agent payroll game'] };
+CONSOLES.strategy = function () {
+  const o = D.dled?.open, tr = D.dled?.trades || [], bt = D.dbt?.chosenOnTrain, c = D.dcfg;
+  const wins = tr.filter(t => t.pnlUsd > 0).length;
+  return `<div class="ch"><h2>🧠 Strategy Lab</h2><span class="who">Quinn the Strategist runs the live Dip desk</span></div>
+  <div class="cgrid">
+    ${card('Dip desk (LIVE)', o ? `<div class="big org">${esc(o.symbol)}</div><p>$${o.usd} bought at ${o.entryPrice} on ${when(o.enteredAt)}. Sells on the bounce (above its 5-day average), after 10 days, or at a ${c?.exit?.stopPct ?? 5}% stop.</p>` : `<div class="big">WAITING</div><p>Buys $${c?.risk?.positionUsd ?? 25} of SPY, QQQ, DIA or IWM in the last run before the close when RSI(2) &lt; ${c?.entry?.rsi2Below ?? 5} and it's above its 200-day average.</p>`)}
+    ${card('Results', `<div class="big ${cls(dipPnl())}">${usd(dipPnl())}</div><p>${tr.length} trades · ${wins} won · ${tr.length - wins} lost</p>`)}
+    ${card('Why we hired for this', bt ? `<ul class="list">${li(`Picked on 2023–24, then tested on unseen 2025–26: <b>${bt.test.trades} trades, ${bt.test.winRatePct}% wins, +${bt.test.avgTradePct}%/trade</b>, profit factor ${bt.test.profitFactor}`, 'g')}${li(`All ${D.dbt.combosWithPositiveTest} nearby settings were profitable out of sample`, 'g')}${li('Caveat: 2023–26 was mostly a rising market. A bear market will be harder; the 200-day filter keeps it out of downtrends.', 'y')}</ul>` : '<div class="empty">Backtest loading.</div>')}
+    ${card('Dip trades', tr.length ? `<div class="scroll"><table><thead><tr><th>ETF</th><th>Bought</th><th>Sold</th><th>Entry</th><th>Exit</th><th>Result</th><th>Why</th></tr></thead><tbody>${tr.slice().reverse().map(t => `<tr><td><b>${t.symbol}</b></td><td>${when(t.enteredAt)}</td><td>${when(t.exitedAt)}</td><td class="mono">${t.entryPrice}</td><td class="mono">${t.exitPrice}</td><td class="mono ${cls(t.pnlUsd)}">${usd(t.pnlUsd)} (${pct(t.returnPct)})</td><td>${esc(t.reason)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No dip trades yet. Dips like this come a couple of times a month.</div>', 'span3')}
+  </div>`;
+};
+CONSOLES.breakroom = function () {
+  const p = payroll(); const mood = p.wk.verdict === 'profit' ? ['😄', 'Great: profitable week, full pay plus bonus'] : p.wk.verdict === 'flat' ? ['🙂', 'Okay: flat week, half pay'] : ['😟', 'Low: losing week, no paychecks'];
+  return `<div class="ch"><h2>☕ Break Room</h2><span class="who">Where the team recharges</span></div>
+  <div class="cgrid">
+    ${card('Team morale', `<div class="big">${mood[0]}</div><p>${mood[1]}. Morale follows the company's results, just like pay.</p>`)}
+    ${card('Coffee breaks', `<div class="big">${coffees}</div><p>since you opened this page</p>`)}
+    ${card('House rules', `<ul class="list">${li('Breaks are short: trading checks never wait for coffee')}${li('No talking about positions you can\'t back with evidence')}${li('Ping-pong losers refill the coffee 🏓')}</ul>`)}
+  </div>`;
+};
+const ROOM_BLURB = { lobby: 'ClaudeBot health, the org chart, management audit and market regime.', research: 'Stock watchlist, crypto scanner and the 🧪 Paper Lab.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The trade ledger, results and the 🎮 agent payroll.', strategy: 'Quinn and the live Dip desk: research, evidence, trades.', breakroom: 'Coffee, ping-pong and team morale.' };
+const TITLES = { office: ['Office', "What are ClaudeBot's agents doing right now?"], lobby: ['Lobby · Overview', 'The big picture'], research: ['Research Lab', 'What the agents are watching'], diagnostics: ['Diagnostics', 'Is everything healthy?'], freedom: ['Freedom Room', 'Planning the path to monthly income'], trading: ['Trading Floor', 'Positions and trades'], risk: ['Risk Office', 'The rules every order must pass'], vault: ['Vault · Ledger', 'Every trade on the record, plus the agent payroll game'], strategy: ['Strategy Lab', 'New ways to make money, tested before they trade'], breakroom: ['Break Room', 'Coffee, ping-pong and morale'] };
 let current = 'office';
 function renderConsole() {
   $('console').innerHTML = CONSOLES[current]();

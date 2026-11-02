@@ -50,7 +50,7 @@ returns `none`/`wait`. Never place a buy when the ledger already has an open pos
 ```
 python3 claudebot/bot.py snapshot /tmp/facts.json
 # (run Parts B, C and D below first, then:)
-git add docs/data/claudebot-ledger.json docs/data/claudebot-options-ledger.json docs/data/claudebot-paper-ledger.json docs/data/claudebot-audit.json claudebot/options_config.json
+git add docs/data/claudebot-ledger.json docs/data/claudebot-options-ledger.json docs/data/claudebot-paper-ledger.json docs/data/claudebot-audit.json docs/data/claudebot-dip-ledger.json claudebot/options_config.json
 git commit -m "ClaudeBot run <UTC time>: <what happened>"
 git pull --rebase -X theirs origin main && git push origin HEAD:main
 ```
@@ -167,3 +167,29 @@ Board policy (2026-11-02): the CEO approves proven Paper Lab research automatica
   tell the user it's waiting for their approval.
 - `none`: nothing to do.
 Never edit the rules by hand: only promote.py may change them, and only within its hard limits.
+
+---
+
+# Part E: Dip desk (LIVE, stocks): after Part B, before the Paper Lab
+
+Buys $25 of an index ETF (SPY, QQQ, DIA, IWM) after a sharp dip in an uptrend, sells
+on the bounce. Rules: `claudebot/dip_bot.py` + `claudebot/dip_config.json`. Ledger:
+`docs/data/claudebot-dip-ledger.json`.
+
+1. Write `/tmp/dfacts.json` with `now`, `marketOpen` (same rule as Part B),
+   `accountValue`, `buyingPower` (from get_portfolio) and `"symbols": {}`, then run
+   `python3 claudebot/dip_bot.py plan /tmp/dfacts.json`. Only fetch symbol data when it asks.
+2. `need_symbol`: add `symbols[SYM] = {price, closes, heldQty}`: price from get_equity_quotes;
+   closes = the last 260 COMPLETED daily closes from get_equity_historicals (interval "day",
+   start about 400 days ago; drop today's unfinished bar); heldQty = that symbol's
+   `shares_available_for_sells` from get_equity_positions (0 if not held). Re-plan.
+3. `buy`: review_equity_order(side buy, type market, dollar_amount = dollarAmount,
+   market_hours regular_hours) then place_equity_order with the same params and a fresh UUID
+   ref_id. Poll get_equity_orders(order_id) until filled (~1 min). Then
+   `dip_bot.py open --symbol S --price <average fill price> --usd <filled notional>`.
+4. `sell`: review_equity_order(side sell, type market, quantity = quantity) then place it.
+   Poll until filled, then `dip_bot.py close --price <average fill price> --reason <reason>`.
+   Never sell more than the quantity given (the account holds other shares, e.g. KO).
+5. `record_broker_close`: find the filled sell in get_equity_orders and record it with `close`.
+6. `none`: `dip_bot.py log --action hold --detail "<reason>"` (skip when the reason is "market closed").
+Add `docs/data/claudebot-dip-ledger.json` to the same commit.
