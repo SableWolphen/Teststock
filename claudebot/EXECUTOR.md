@@ -49,8 +49,8 @@ returns `none`/`wait`. Never place a buy when the ledger already has an open pos
 ## 3. Snapshot, save, push
 ```
 python3 claudebot/bot.py snapshot /tmp/facts.json
-# (run Parts B and C below first, then:)
-git add docs/data/claudebot-ledger.json docs/data/claudebot-options-ledger.json docs/data/claudebot-paper-ledger.json
+# (run Parts B, C and D below first, then:)
+git add docs/data/claudebot-ledger.json docs/data/claudebot-options-ledger.json docs/data/claudebot-paper-ledger.json docs/data/claudebot-audit.json
 git commit -m "ClaudeBot run <UTC time>: <what happened>"
 git pull --rebase -X theirs origin main && git push origin HEAD:main
 ```
@@ -136,3 +136,16 @@ add it to the facts files, and run it again (at most 3 rounds; skip anything slo
 Then add `docs/data/claudebot-paper-ledger.json` to the same commit. Never place, cancel
 or change any real order because of the Paper Lab. A strategy marked `promotionCandidate`
 is only a suggestion: tell the user, and change live rules only if they approve.
+
+---
+
+# Part D: management audit (every run, last)
+
+```
+python3 claudebot/audit.py
+```
+The managers (Guard, Analyst, Atlas) check their teams' real work and report to the CEO:
+rules not loosened, stops in place, books reconcile, no private data published, scans and
+runs fresh. Add `docs/data/claudebot-audit.json` to the same commit. If the CEO status is
+`fail`, message the user with the failing checks (one line each). The audit only reads
+files; it never trades or changes rules.

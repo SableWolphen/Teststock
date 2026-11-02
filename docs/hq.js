@@ -159,7 +159,7 @@ function reception(x, y) { const g = obj(x + y + 3.4); box(g, x, y, 2.6, .8, 30,
   const p = iso(x + 1.3, y + .8, 16); const t = el('text', { x: p[0], y: p[1], fill: '#fff6e6', 'font-size': 10, 'font-weight': 800, 'text-anchor': 'middle', 'letter-spacing': 2 }, g); t.textContent = 'TESTSTOCK'; }
 
 // lobby
-reception(1.1, 1.4); couch(.5, 4.4, '#4b5a7d'); lamp(.6, 3.6); plant(4.3, .35, 1.1); cooler(3.6, .4);
+reception(1.1, 1.4); couch(.5, 4.4, '#4b5a7d'); desk(3.1, 2.9, '#3a2f27', '#ff8a3d'); { const p = iso(3.9, 2.9, 62); const t = el('text', { x: p[0], y: p[1], fill: '#ffb27a', 'font-size': 9, 'font-weight': 800, 'text-anchor': 'middle', 'letter-spacing': 1.5 }, L.walls); t.textContent = 'CEO'; } lamp(.6, 3.6); plant(4.3, .35, 1.1); cooler(3.6, .4);
 // research
 desk(5.6, 1.2, '#4e5d62', '#3ddc84'); desk(7.9, 1.2, '#4e5d62', '#3ccfcf'); shelf(9.2, 2.8, .6, 2.6); plant(5.35, 5.2, .85);
 // diagnostics
@@ -182,23 +182,25 @@ for (const id of ROOM_IDS) { const r = ROOMS[id]; hits[id] = poly([iso(r.x0, r.y
 
 /* ============================== characters ============================== */
 const AG = {
-  atlas:   { name: 'Atlas',   role: 'Chief agent · runs the office', room: 'lobby', home: [2.4, 3.2], color: '#e9edf3', kind: 'chief' },
-  scout:   { name: 'Scout',   role: 'Crypto scanner · 8 coins hourly', room: 'research', home: [6.4, 3.0], color: '#3ddc84', kind: 'robot' },
-  analyst: { name: 'Analyst', role: 'Stock research · watchlist & regime', room: 'research', home: [8.7, 3.0], color: '#3ccfcf', kind: 'cat' },
-  medic:   { name: 'Medic',   role: 'Diagnostics · data freshness & runners', room: 'diagnostics', home: [13.6, 4.2], color: '#ff6b7a', kind: 'medic' },
-  planner: { name: 'Planner', role: 'Financial-freedom planning', room: 'freedom', home: [16.3, 4.4], color: '#c58b5a', kind: 'bear' },
-  crypto:  { name: 'Crypto',  role: 'Crypto trader · one coin, stop first', room: 'trading', home: [2.5, 11.1], color: '#ff8a3d', kind: 'fox' },
-  options: { name: 'Options', role: 'Options trader · put credit spreads', room: 'trading', home: [5.5, 11.1], color: '#a78bfa', kind: 'penguin' },
-  guard:   { name: 'Guard',   role: 'Risk officer · approves or blocks', room: 'risk', home: [12.2, 11.4], color: '#ff5c6c', kind: 'astro' },
-  ledger:  { name: 'Ledger',  role: 'Bookkeeper · every fill & P&L', room: 'vault', home: [17.3, 11.2], color: '#f5c451', kind: 'owl' },
-  sim:     { name: 'Sim',     role: 'Paper Lab · 5 options variants, no real money', room: 'research', home: [6.1, 4.7], color: '#a3e635', kind: 'robot' },
-  echo:    { name: 'Echo',    role: 'Paper Lab · crypto with no filters, no real money', room: 'research', home: [8.6, 4.8], color: '#f472b6', kind: 'cat' },
+  claude:  { name: 'Claude',  role: 'CEO · reads every report, sets pay', room: 'lobby', home: [3.9, 4.6], color: '#ff8a3d', kind: 'ceo', boss: null, title: 'CEO' },
+  atlas:   { name: 'Atlas',   role: 'COO · runs operations', room: 'lobby', home: [1.6, 3.3], color: '#e9edf3', kind: 'chief', boss: 'claude', title: 'COO' },
+  scout:   { name: 'Scout',   role: 'Crypto scanner · 8 coins hourly', room: 'research', home: [6.4, 3.0], color: '#3ddc84', kind: 'robot' , boss: 'analyst', title: 'Crypto scanner' },
+  analyst: { name: 'Analyst', role: 'Stock research · watchlist & regime', room: 'research', home: [8.7, 3.0], color: '#3ccfcf', kind: 'cat' , boss: 'claude', title: 'Head of Research' },
+  medic:   { name: 'Medic',   role: 'Diagnostics · data freshness & runners', room: 'diagnostics', home: [13.6, 4.2], color: '#ff6b7a', kind: 'medic' , boss: 'atlas', title: 'Diagnostics' },
+  planner: { name: 'Planner', role: 'Financial-freedom planning', room: 'freedom', home: [16.3, 4.4], color: '#c58b5a', kind: 'bear' , boss: 'atlas', title: 'Planning' },
+  crypto:  { name: 'Crypto',  role: 'Crypto trader · one coin, stop first', room: 'trading', home: [2.5, 11.1], color: '#ff8a3d', kind: 'fox' , boss: 'guard', title: 'Crypto desk' },
+  options: { name: 'Options', role: 'Options trader · put credit spreads', room: 'trading', home: [5.5, 11.1], color: '#a78bfa', kind: 'penguin' , boss: 'guard', title: 'Options desk' },
+  guard:   { name: 'Guard',   role: 'Risk officer · approves or blocks', room: 'risk', home: [12.2, 11.4], color: '#ff5c6c', kind: 'astro' , boss: 'claude', title: 'Chief Risk Officer' },
+  ledger:  { name: 'Ledger',  role: 'Bookkeeper · every fill & P&L', room: 'vault', home: [17.3, 11.2], color: '#f5c451', kind: 'owl' , boss: 'atlas', title: 'Bookkeeper' },
+  sim:     { name: 'Sim',     role: 'Paper Lab · 5 options variants, no real money', room: 'research', home: [6.1, 4.7], color: '#a3e635', kind: 'robot' , boss: 'analyst', title: 'Paper Lab' },
+  echo:    { name: 'Echo',    role: 'Paper Lab · crypto with no filters, no real money', room: 'research', home: [8.6, 4.8], color: '#f472b6', kind: 'cat' , boss: 'analyst', title: 'Paper Lab' },
 };
 function charSVG(kind, c) {
   const leg = shade(c, -34);
   const legs = `<rect x="-9" y="-12" width="7" height="11" rx="3.5" fill="${leg}"/><rect x="2" y="-12" width="7" height="11" rx="3.5" fill="${leg}"/>`;
   const eyes = (y = 0, col = '#13161c') => `<g class="blink"><circle cx="-5.5" cy="${-35 + y}" r="2.5" fill="${col}"/><circle cx="5.5" cy="${-35 + y}" r="2.5" fill="${col}"/></g>`;
   const B = {
+    ceo: `${legs.replace(new RegExp(leg, 'g'), '#5a4636')}<rect x="-13" y="-30" width="26" height="22" rx="9" fill="#2b2f3a"/><path d="M-5,-30 L0,-14 L5,-30 Z" fill="#f4f5f8"/><path d="M-2,-28 L0,-16 L2,-28 Z" fill="${c}"/><circle cx="0" cy="-37" r="13.5" fill="#f3efe9"/><rect x="-10.5" y="-43" width="21" height="13" rx="6.5" fill="#1a1f2a"/><circle cx="-5" cy="-36.5" r="2.4" fill="${c}" class="blink"/><circle cx="5" cy="-36.5" r="2.4" fill="${c}" class="blink"/><path d="M-9,-50 L-9,-57 L-4.5,-53 L0,-59 L4.5,-53 L9,-57 L9,-50 Z" fill="#f5c451"/>`,
     chief: `${legs.replace(new RegExp(leg, 'g'), '#9aa3b5')}<rect x="-13" y="-30" width="26" height="22" rx="9" fill="#eef1f6"/><path d="M-6,-27 L0,-23 L6,-27 L6,-19 L0,-23 L-6,-19 Z" fill="#ff5c6c"/><circle cx="0" cy="-37" r="13.5" fill="#eef1f6"/><rect x="-10.5" y="-43" width="21" height="13" rx="6.5" fill="#1a1f2a"/><circle cx="-5" cy="-36.5" r="2.4" fill="#7cc4ff" class="blink"/><circle cx="5" cy="-36.5" r="2.4" fill="#7cc4ff" class="blink"/><rect x="-7" y="-55" width="14" height="5" rx="2" fill="#2a2f3c"/><rect x="-4.5" y="-61" width="9" height="7" rx="2" fill="#2a2f3c"/>`,
     robot: `${legs}<rect x="-13" y="-30" width="26" height="22" rx="9" fill="${c}"/><rect x="-6" y="-24" width="12" height="8" rx="2" fill="#0e1117" opacity=".3"/><circle cx="0" cy="-37" r="13" fill="#eef1f6"/><rect x="-10" y="-42" width="20" height="12" rx="6" fill="#1a1f2a"/><circle cx="-5" cy="-36" r="2.4" fill="#5df2a0" class="blink"/><circle cx="5" cy="-36" r="2.4" fill="#5df2a0" class="blink"/><line x1="0" y1="-50" x2="0" y2="-58" stroke="#cfd5df" stroke-width="2"/><circle cx="0" cy="-59" r="3" fill="${c}" class="led"/>`,
     cat: `${legs}<rect x="-12" y="-29" width="24" height="21" rx="9" fill="${c}"/><path d="M-12,-42 L-10,-55 L-3,-46 Z" fill="${c}"/><path d="M12,-42 L10,-55 L3,-46 Z" fill="${c}"/><circle cx="0" cy="-37" r="13" fill="${c}"/><ellipse cx="0" cy="-32" rx="8" ry="5.5" fill="#e8fbfb"/>${eyes(-1)}<circle cx="-5.5" cy="-36" r="5" fill="none" stroke="#13161c" stroke-width="1.5"/><circle cx="5.5" cy="-36" r="5" fill="none" stroke="#13161c" stroke-width="1.5"/><path d="M-2,-30 L2,-30 L0,-28 Z" fill="#ff8aa8"/><rect x="-7" y="-22" width="14" height="10" rx="1.5" fill="#f5f6f9"/>`,
@@ -287,11 +289,11 @@ async function wander(a, pts) { await waitFree(a); a.busy++; try { const [x, y] 
 /* ============================== data ============================== */
 const D = {};
 async function refresh() {
-  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled] = await Promise.all([
+  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit] = await Promise.all([
     getJSON('docs/data/claudebot-signal.json'), getJSON('docs/data/claudebot-ledger.json'), getJSON('docs/data/claudebot-options-ledger.json'),
     getJSON('docs/data/live-trading-health.json'), getJSON('docs/data/latest-50.json'), getJSON('claudebot/options_config.json'), getJSON('claudebot/config.json'),
-    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json')]);
-  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled });
+    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json')]);
+  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit });
   renderAll();
 }
 function botHealth() {
@@ -326,6 +328,17 @@ function freedomPlan() { let saved = {}; try { saved = JSON.parse(localStorage.g
 const clamp = (v, a = 0, b = 100) => Math.max(a, Math.min(b, v));
 const ageMin = t => t ? (Date.now() - new Date(t)) / 6e4 : Infinity;
 const freshScore = (age, good, bad) => age <= good ? 100 : age >= bad ? 20 : Math.round(100 - (age - good) / (bad - good) * 80);
+function weekStart(offsetWeeks = 0) { const ct = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' })); const d = new Date(ct); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - 7 * offsetWeeks); return d; }
+function companyResult(offsetWeeks = 0) {
+  const a = weekStart(offsetWeeks), b = weekStart(offsetWeeks - 1); const inWk = t => { const x = new Date(new Date(t).toLocaleString('en-US', { timeZone: 'America/Chicago' })); return x >= a && x < b; };
+  const acct = D.ocfg?.backtest?.startingAccountUsd || 113;
+  const opt = (D.oled?.trades || []).filter(t => inWk(t.exitedAt)).reduce((s, t) => s + t.pnlUsd, 0);
+  const cry = (D.led?.trades || []).filter(t => inWk(t.exitedAt)).reduce((s, t) => s + (t.accountImpactPct || 0) / 100 * acct, 0);
+  const n = (D.oled?.trades || []).filter(t => inWk(t.exitedAt)).length + (D.led?.trades || []).filter(t => inWk(t.exitedAt)).length;
+  const usdv = Math.round((opt + cry) * 100) / 100;
+  const verdict = usdv > 0.004 ? 'profit' : usdv < -0.004 ? 'loss' : 'flat';
+  return { usd: usdv, opt, cry, trades: n, verdict, mult: verdict === 'profit' ? 1 : verdict === 'flat' ? .5 : 0, from: a };
+}
 function payroll() {
   const h = D.health, f = h?.freshness || {}, mx = h?.freshnessMaximumAgeMinutes || {};
   const keys = Object.keys(f).filter(k => mx[k] != null), freshOk = keys.length ? keys.filter(k => f[k] <= mx[k]).length / keys.length : .5;
@@ -347,23 +360,49 @@ function payroll() {
     planner: { base: 950,  score: clamp(70 + (cIdx + oP >= 0 ? 15 : -10) + (freedomPlan().contribution > 0 ? 15 : 0)), why: `Plan ${freedomPlan().contribution > 0 ? 'includes' : 'has no'} monthly contributions · results ${cIdx + oP >= 0 ? 'not negative' : 'negative'}` },
   };
   const pAge = ageMin(D.pled?.updatedAt), pTr = Object.values(D.pled?.strategies || {}).reduce((n, x) => n + (x.trades?.length || 0), 0);
-  rows.sim = { base: 900, score: clamp(freshScore(pAge, 75, 360) - (D.pled?.updatedAt ? 0 : 30)), why: `Paper Lab updated ${D.pled?.updatedAt ? ago(D.pled.updatedAt) : 'never'} · ${pTr} paper trades closed` };
-  rows.echo = { base: 900, score: clamp(freshScore(pAge, 75, 360) - (D.pled?.strategies?.cryraw ? 0 : 30)), why: `Crypto paper test ${D.pled?.strategies?.cryraw ? 'running' : 'not started yet'}` };
+  const started = !!D.pled?.updatedAt;
+  rows.sim = { base: 900, score: started ? clamp(freshScore(pAge, 75, 360)) : 70, why: started ? `Paper Lab updated ${ago(D.pled.updatedAt)} · ${pTr} paper trades closed` : 'New hire: first Paper Lab run at :14' };
+  rows.echo = { base: 900, score: started ? clamp(freshScore(pAge, 75, 360) - (D.pled?.strategies?.cryraw ? 0 : 20)) : 70, why: started ? `Crypto paper test ${D.pled?.strategies?.cryraw ? 'running' : 'missing'}` : 'New hire: first crypto paper test at :14' };
   const team = Object.values(rows).reduce((a, r) => a + r.score, 0) / Object.keys(rows).length;
   rows.atlas = { base: 1500, score: Math.round(team), why: `Team average · ${errors24 ? errors24 + ' errors today' : 'no errors today'}` };
-  // profit-sharing bonus pool: 1,000 credits per +1% crypto and per +$1 options (never negative)
-  const pool = Math.max(0, Math.round(cIdx * 1000 + oP * 1000));
-  const tot = Object.values(rows).reduce((a, r) => a + r.score, 0) || 1;
-  for (const [k, r] of Object.entries(rows)) { r.score = Math.round(clamp(r.score)); r.bonus = Math.round(pool * r.score / tot); r.pay = Math.round(r.base * r.score / 100) + r.bonus; r.grade = r.score >= 90 ? 'A' : r.score >= 80 ? 'B' : r.score >= 70 ? 'C' : r.score >= 60 ? 'D' : 'F'; }
-  return { rows, pool, total: Object.values(rows).reduce((a, r) => a + r.pay, 0), team: Math.round(team) };
+  // the CEO is paid like everyone else: on the company's result and the managers' audits
+  const au = D.audit; const fails = (au?.reports || []).flatMap(r => r.checks).filter(c => c.status === 'fail').length;
+  rows.claude = { base: 2000, score: clamp(Math.round(team) - fails * 15), why: `Team average ${Math.round(team)}${fails ? ` · ${fails} failed audit checks` : ' · audits clean'}` };
+  // manager accountability: a manager loses 10 points per failed check on their team
+  for (const r of au?.reports || []) { const f = r.checks.filter(c => c.status === 'fail').length; if (rows[r.manager] && f) { rows[r.manager].score -= 10 * f; rows[r.manager].why += ` · ${f} team check${f > 1 ? 's' : ''} failed`; } for (const c of r.checks) if (c.status === 'fail' && rows[c.agent]) { rows[c.agent].score -= 20; rows[c.agent].why += ` · failed: ${c.check}`; } }
+  // company result decides how much of the paycheck is paid this week
+  const wk = companyResult(0), last = companyResult(1);
+  const pool = wk.verdict === 'profit' ? Math.round(wk.usd * 1000) : 0;   // 1,000 credits of bonus per $1 the company made
+  const tot = Object.values(rows).reduce((a, r) => a + Math.max(0, r.score), 0) || 1;
+  for (const [k, r] of Object.entries(rows)) { r.score = Math.round(clamp(r.score)); r.bonus = Math.round(pool * r.score / tot); r.earned = Math.round(r.base * r.score / 100); r.pay = Math.round(r.earned * wk.mult) + r.bonus; r.docked = r.earned - Math.round(r.earned * wk.mult); r.grade = r.score >= 90 ? 'A' : r.score >= 80 ? 'B' : r.score >= 70 ? 'C' : r.score >= 60 ? 'D' : 'F'; }
+  return { rows, pool, wk, last, total: Object.values(rows).reduce((a, r) => a + r.pay, 0), team: Math.round(team) };
 }
 const credits = n => '🪙 ' + Math.round(n).toLocaleString();
 function nextPayday() { const d = new Date(); const day = d.getDay(); const add = (5 - day + 7) % 7; const p = new Date(d); p.setDate(d.getDate() + add); return add === 0 ? 'today (Friday)' : p.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }); }
 
 /* ============================== agent routines ============================== */
 const R = agents;
+async function checkin(m) {
+  const r = (D.audit?.reports || []).find(x => x.manager === m.k); const team = Object.keys(agents).filter(k => agents[k].boss === m.k);
+  const k = pick(team), a = agents[k]; const cs = (r?.checks || []).filter(c => c.agent === k); const c = cs.length ? (cs.find(x => x.status !== 'pass') || pick(cs)) : null;
+  await visit(m, a, c ? [['a', `Check-in: <b>${esc(c.check)}</b>?`], ['b', c.status === 'pass' ? `✓ ${esc(c.detail)}.` : `${c.status === 'warn' ? 'Heads up' : 'Problem'}: ${esc(c.detail)}.`]]
+                       : [['a', `${a.name}, status report?`], ['b', 'Working on it. Audit runs at :14.']]);
+  if (Math.random() < .7) {
+    const ceo = agents.claude, st = r?.status || 'pending';
+    await visit(m, ceo, [['a', `${esc(m.title)} report: ${r ? `${r.passed}/${r.total} checks passed` : 'first audit pending'}.`],
+      ['b', st === 'pass' ? 'Good work. Keep it tight.' : st === 'warn' ? `Get that warning cleared: ${esc((r.checks.find(x => x.status === 'warn') || {}).check || '')}.` : st === 'fail' ? 'Failures go straight to the owner. Fix it now.' : 'Report back after the next run.']]);
+  }
+}
 const routines = {
+  async claude(a) {
+    await wander(a, [[3.9, 4.6], [4.4, 4.4], [3.5, 4.8]]);
+    const p = payroll(), w = p.wk; await waitFree(a);
+    if (Math.random() < .5) await say(a, w.verdict === 'profit' ? `We made ${usd(w.usd)} this week. Full paychecks plus bonus. 🎉` : w.verdict === 'loss' ? `We lost ${usd(w.usd)} this week. No paychecks until we're back in profit.` : `Flat week so far: half pay. Protect capital, then earn.`, 3600);
+    else if (Math.random() < .5) { const room = pick(['research', 'trading', 'risk', 'vault', 'diagnostics']); const r = ROOMS[room]; await waitFree(a); a.busy++; try { await walkTo(a, (r.x0 + r.x1) / 2 + rnd(-.8, .8), (r.y0 + r.y1) / 2 + rnd(-.5, .5), 'Spot-checking ' + r.short); await say(a, pick(['Show me the numbers.', 'Are we following the rules?', 'What did we learn today?', 'Every trade has a reason, right?']), 2400); await goHome(a); } finally { a.busy--; } }
+    else await say(a, D.audit ? `Audit: ${esc(D.audit.ceo.summary)}.` : 'Waiting on the first management audit.', 3800);
+  },
   async atlas(a) {
+    if (Math.random() < .5) return checkin(a);
     const h = D.health, room = pick(['research', 'diagnostics', 'freedom', 'trading', 'risk', 'vault']);
     const lines = {
       research: [['a', `Analyst, what's the market mood?`], ['b', `${esc(D.latest?.regime?.label || 'Unclear')}: ${esc(D.latest?.regime?.detail || 'no regime yet')}.`]],
@@ -388,6 +427,7 @@ const routines = {
     else await visit(a, R.crypto, [['a', 'Fresh signal is up on the wall.'], ['b', 'Thanks. I only move if Guard clears it.']]);
   },
   async analyst(a) {
+    if (Math.random() < .45) return checkin(a);
     const cards = D.latest?.cards || [];
     await wander(a, [[8.7, 2.5], [9.0, 3.4], [7.6, 4.4]]);
     await waitFree(a); await say(a, cards.length ? `Watching ${esc(cards.map(c => c.symbol).slice(0, 3).join(', '))}. Top score ${cards[0].score}.` : 'Watchlist is empty today.', 3000);
@@ -424,6 +464,7 @@ const routines = {
       : [['a', 'Can I sell a spread today?'], ['b', blackoutToday() ? `Not today: ${esc(blackoutToday())}.` : 'Only within a penny of mid, with max loss under ~$85.']]);
   },
   async guard(a) {
+    if (Math.random() < .5) return checkin(a);
     await waitFree(a); a.busy++;
     try { await walkTo(a, rnd(3, 17), rnd(6.75, 7.25), 'Patrolling the hall'); await say(a, pick(['Exits before entries. Always.', 'One spread at a time.', 'No averaging down.', 'Cash is a position.', blackoutToday() ? 'Event day: no new spreads.' : 'Every order gets a fresh broker check.']), 2400); await goHome(a); }
     finally { a.busy--; }
@@ -450,9 +491,10 @@ const routines = {
     const roll = Math.random();
     if (roll < .4) {
       const k = pick(Object.keys(R).filter(x => x !== 'ledger')), r = payroll().rows[k];
-      await visit(a, R[k], [['a', `Paycheck for you, ${R[k].name}: <b>${credits(r.pay)}</b> (score ${r.score}, grade ${r.grade}).`], ['b', r.score >= 85 ? 'Nice, thanks! 🎉' : r.score >= 70 ? "Thanks. I'll do better next week." : 'Ouch. Noted.']]);
+      const w = payroll().wk;
+      await visit(a, R[k], [['a', w.verdict === 'loss' ? `Sorry, ${R[k].name}: the company lost money, so your paycheck is <b>🪙 0</b>.` : `Paycheck for you, ${R[k].name}: <b>${credits(r.pay)}</b> (score ${r.score}, ${w.verdict === 'flat' ? 'half pay this week' : 'full pay + bonus'}).`], ['b', w.verdict === 'loss' ? "Understood. Let's earn it back the right way." : r.score >= 85 ? 'Thanks! 🎉' : "Thanks. I'll do better next week."]]);
     } else if (roll < .7) await visit(a, pick([R.crypto, R.options]), [['a', 'Any fills to record?'], ['b', (D.led?.trades?.length || 0) + (D.oled?.trades?.length || 0) ? 'Already in your books.' : 'Not yet. Waiting for a clean setup.']]);
-    else { await waitFree(a); const p = payroll(); await say(a, `This week's payroll: <b>${credits(p.total)}</b>. Team score ${p.team}. (Game credits, not dollars.)`, 3200); }
+    else { await waitFree(a); const p = payroll(); await say(a, `Payroll this week: <b>${credits(p.total)}</b> (${p.wk.verdict === 'profit' ? 'full pay + bonus' : p.wk.verdict === 'flat' ? 'half pay, flat week' : 'docked, company lost money'}). Game credits only.`, 3400); }
   },
 };
 async function runAgent(k) { const a = agents[k]; await sleep(rnd(500, 4000)); for (;;) { try { await routines[k](a); } catch (e) { console.error(k, e); } await sleep(rnd(1500, 4500)); } }
@@ -513,6 +555,7 @@ function agentStatus(a) {
   if (a.state === 'walk') return ['walk', a.doing];
   const h = D.health;
   switch (a.k) {
+    case 'claude': { const st = D.audit?.ceo?.status; return st === 'fail' ? ['bad', 'Audit failing'] : st === 'warn' ? ['warn', 'Reviewing reports'] : ['ok', 'Running the company']; }
     case 'atlas': return botHealth().ok ? ['ok', 'Running the office'] : ['warn', 'Checking an issue'];
     case 'scout': return D.sig && (Date.now() - new Date(D.sig.generatedAt)) < 75 * 6e4 ? ['work', 'Scanning'] : ['warn', 'Signal stale'];
     case 'analyst': return ['work', (D.latest?.regime?.label || 'Researching')];
@@ -529,9 +572,9 @@ function agentStatus(a) {
 }
 const DOTC = { work: '#7c78ff', walk: '#3ccfcf', talk: '#ffffff', hold: '#ff8a3d', warn: '#f5c451', ok: '#3ddc84', bad: '#ff5c6c' };
 function renderRoster() {
-  const groups = [['Front office', ['atlas', 'analyst', 'scout', 'medic', 'planner']], ['Trading team', ['crypto', 'options', 'guard', 'ledger']], ['Paper Lab · no real money', ['sim', 'echo']]];
+  const groups = [['CEO', ['claude']], ['Operations · Atlas', ['atlas', 'medic', 'ledger', 'planner']], ['Research · Analyst', ['analyst', 'scout', 'sim', 'echo']], ['Risk & Trading · Guard', ['guard', 'crypto', 'options']]];
   $('roster').innerHTML = groups.map(([g, ks]) => `<div class="grp">${g}<span>${ks.length}</span></div>` + ks.map(k => { const a = agents[k];
-    return `<div class="ag" data-k="${k}"><div class="av"><svg viewBox="-24 -64 48 66">${charSVG(a.kind, a.color)}</svg></div><div class="mid"><div class="n">${a.name}</div><div class="r">${esc(a.role)}</div></div><span class="stt" id="st-${k}"></span></div>`; }).join('')).join('');
+    return `<div class="ag" data-k="${k}"><div class="av"><svg viewBox="-24 -64 48 66">${charSVG(a.kind, a.color)}</svg></div><div class="mid"><div class="n">${a.name} <span style="color:var(--muted);font-weight:500;font-size:11.5px">${esc(a.title || '')}</span></div><div class="r">${a.boss ? 'Reports to ' + agents[a.boss].name + ' · ' : ''}${esc(a.role)}</div></div><span class="stt" id="st-${k}"></span></div>`; }).join('')).join('');
   document.querySelectorAll('.ag').forEach(x => x.onclick = () => focusAgent(x.dataset.k));
 }
 function updateStatuses() {
@@ -549,7 +592,7 @@ function renderKpis() {
     ['Market', D.latest?.regime?.label || '–', 'call: ' + (D.latest?.action || '–'), /OFF/.test(D.latest?.regime?.label || '') ? 'down' : ''],
     ['Open positions', String(open), [D.led?.open?.symbol, D.oled?.open?.label].filter(Boolean).join(' · ') || 'all cash', open ? 'org' : ''],
     ['ClaudeBot', `${pct(cryptoIdx() - 100)} · ${usd(optPnl())}`, 'crypto · options since start', cls(cryptoIdx() - 100 + optPnl())],
-    ['Last bot run', runs[0] ? ago(runs[0].t) : '–', runs[0] ? runs[0].action : 'next at :14', ''],
+    ['Management audit', D.audit ? `${D.audit.reports.reduce((a, r) => a + r.passed, 0)}/${D.audit.reports.reduce((a, r) => a + r.total, 0)} ✓` : '–', D.audit ? `${D.audit.ceo.status.toUpperCase()} · ${ago(D.audit.generatedAt)}` : 'first audit at :14', D.audit?.ceo?.status === 'pass' ? 'up' : D.audit?.ceo?.status === 'fail' ? 'down' : 'warn'],
   ];
   $('kpis').innerHTML = k.map(([l, v, s, c]) => `<div class="kpi"><div class="l">${l}</div><div class="v ${c}">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join('');
 }
@@ -574,18 +617,19 @@ const card = (title, body, cls = '') => `<div class="box ${cls}"><h3>${title}</h
 const li = (txt, c = '') => `<li><span class="dot ${c}"></span><span>${txt}</span></li>`;
 const CONSOLES = {
   office() {
-    return `<div class="ch"><h2>🏢 Whole office</h2><span class="who">Eleven agents in seven rooms · click a room to open it</span></div>
+    return `<div class="ch"><h2>🏢 Whole office</h2><span class="who">Twelve agents in seven rooms, led by Claude (CEO) · click a room to open it</span></div>
     <div class="cgrid">${ROOM_IDS.map(id => card(`${ROOMS[id].icon} ${ROOMS[id].name}`, `<p>${esc(ROOM_BLURB[id])}</p><p><a href="#${id}" style="color:var(--accent);font-weight:600;text-decoration:none">Open room →</a></p>`)).join('')}
     ${card('How it works', '<p>GitHub scans prices and research every hour. The hourly ClaudeBot task checks Robinhood, follows the rules in its planners, places or skips trades, and publishes what it did. These agents act out that published state.</p>', 'span2')}</div>`;
   },
   lobby() {
     const h = D.health, r = D.latest?.regime;
-    return `<div class="ch"><h2>🛋️ Lobby · Overview</h2><span class="who">Atlas keeps the big picture</span><a class="full" href="overview.html">Classic overview ↗</a></div>
+    return `<div class="ch"><h2>🛋️ Lobby · Overview</h2><span class="who">Claude (CEO) and Atlas (COO)</span><a class="full" href="overview.html">Classic overview ↗</a></div>
     <div class="cgrid">
       ${card('ClaudeBot health', `<div class="big ${botHealth().ok ? 'up' : 'warn'}">${botHealth().status}</div><p>${botHealth().ok ? 'Price scan and hourly trader are running on schedule.' : esc(botHealth().issues.join(' · '))}</p><p>Trading today: <b>${tradingToday()[0]}</b> · ${esc(tradingToday()[1])}</p>`)}
       ${card('Market regime', `<div class="big ${/OFF/.test(r?.label || '') ? 'down' : 'up'}">${esc(r?.label || '–')}</div><p>${esc(r?.detail || '')}</p><p>Today's call: <b>${esc(D.latest?.action || '–')}</b></p>`)}
       ${card('ClaudeBot', `<div class="big ${cls(cryptoIdx() - 100)}">${pct(cryptoIdx() - 100)}</div><p>Crypto since start · options ${usd(optPnl())} realized</p><p>${D.led?.open || D.oled?.open ? 'Open: ' + esc([D.led?.open?.symbol, D.oled?.open?.label].filter(Boolean).join(' · ')) : 'All cash right now'}</p>`)}
       ${card('Legacy Teststock engine (not ClaudeBot)', `<p>The older stock engine reports <b>${esc(h?.status || '–')}</b> with new risk <b>${esc(h?.newRiskPermission || '–')}</b>. Its live trading is locked by design and ClaudeBot does not depend on it. Its reasons:</p><ul class="list">${(h?.reasons || []).map(x => li(esc(x), 'y')).join('') || li('Nothing blocking', 'g')}</ul>`, 'span2')}
+      ${orgCard()}
       ${card('Up next', `<ul class="list">${li('Price scan: every hour at :04')}${li('ClaudeBot trade check: every hour at :14')}${li(blackoutToday() ? 'Options: no new spreads today (' + esc(blackoutToday()) + ')' : 'Options: entries 9:00–1:30 CT', blackoutToday() ? 'y' : 'g')}</ul>`)}
     </div>`;
   },
@@ -665,12 +709,25 @@ function paperCard() {
   return card('🧪 Paper Lab · runs alongside live trading, no real money', `<p style="margin:0 0 10px">Sim and Echo paper-trade different versions of the rules on the same live Robinhood quotes. Options P&amp;L is per spread; crypto uses $15 paper positions. A version can only replace a live rule after 20+ paper trades with profit factor ≥ 1.3, and only with your OK.</p>${body}<p>Updated ${L?.updatedAt ? ago(L.updatedAt) : 'never'}.</p>`, 'span3');
 }
 function payrollCard() {
-  const p = payroll(); const order = ['atlas', 'scout', 'analyst', 'medic', 'planner', 'crypto', 'options', 'guard', 'ledger', 'sim', 'echo'];
+  const p = payroll(); const order = ['claude', 'atlas', 'analyst', 'guard', 'scout', 'sim', 'echo', 'medic', 'ledger', 'planner', 'crypto', 'options'];
   const gc = g => g === 'A' || g === 'B' ? 'up' : g === 'C' ? 'warn' : 'down';
-  return card('🎮 Office payroll · just for fun', `<p style="margin:0 0 10px">Agents earn made-up <b>HQ credits</b> for doing their real jobs well. Scores come from the bot's live data; the bonus pool grows only when real results are positive. <b>No real money is paid, and credits are not dollars.</b></p>
-    <div class="scroll"><table><thead><tr><th>Agent</th><th>Score</th><th>Grade</th><th>Base</th><th>Bonus</th><th>This week</th><th>Why</th></tr></thead><tbody>${order.map(k => { const r = p.rows[k], a = agents[k];
-      return `<tr><td><b style="color:${a.kind === 'chief' ? '#fff' : a.color}">${a.name}</b></td><td class="mono"><div style="display:flex;align-items:center;gap:8px"><span>${r.score}</span><div class="bar" style="width:70px;margin:0"><i style="width:${r.score}%"></i></div></div></td><td class="mono ${gc(r.grade)}">${r.grade}</td><td class="mono">${credits(r.base)}</td><td class="mono">${credits(r.bonus)}</td><td class="mono"><b>${credits(r.pay)}</b></td><td style="white-space:normal;color:var(--muted)">${esc(r.why)}</td></tr>`; }).join('')}</tbody></table></div>
-    <p>Total payroll <b>${credits(p.total)}</b> · team score <b>${p.team}</b> · profit-sharing pool ${credits(p.pool)} · next payday ${nextPayday()}</p>`, 'span3');
+  const v = { profit: ['up', `The company made ${usd(p.wk.usd)} this week: full pay plus a ${credits(p.pool)} profit-sharing bonus.`], flat: ['warn', `No money made or lost this week (${p.wk.trades} closed trades): <b>half pay</b>. Capital was protected but nothing was earned.`], loss: ['down', `The company lost ${usd(p.wk.usd)} this week: <b>no paychecks</b>. Everyone's pay is docked to zero until results turn positive.`] }[p.wk.verdict];
+  const lastTxt = { profit: `Last week: profit ${usd(p.last.usd)} · full pay`, flat: 'Last week: flat · half pay', loss: `Last week: loss ${usd(p.last.usd)} · no pay` }[p.last.verdict];
+  return card('🎮 Office payroll · just for fun', `<p style="margin:0 0 8px">Agents earn made-up <b>HQ credits</b>. Their score comes from doing their real jobs well, and from passing their boss's audit. <b>How much of it gets paid depends on the company's real result this week</b>: profit means full pay plus a bonus, flat means half pay, a loss means no paychecks. <b>No real money is paid, and credits are not dollars.</b></p>
+    <p class="${v[0]}" style="font-weight:600">${v[1]}</p>
+    <div class="scroll"><table><thead><tr><th>Agent</th><th>Boss</th><th>Score</th><th>Grade</th><th>Earned</th><th>Docked</th><th>Bonus</th><th>Paycheck</th><th>Why</th></tr></thead><tbody>${order.map(k => { const r = p.rows[k], a = agents[k];
+      return `<tr><td><b style="color:${a.kind === 'chief' ? '#fff' : a.color}">${a.name}</b> <span style="color:var(--muted);font-size:11px">${esc(a.title || '')}</span></td><td>${a.boss ? agents[a.boss].name : '–'}</td><td class="mono">${r.score}</td><td class="mono ${gc(r.grade)}">${r.grade}</td><td class="mono">${credits(r.earned)}</td><td class="mono ${r.docked ? 'down' : ''}">${r.docked ? '−' + credits(r.docked).slice(3) : '0'}</td><td class="mono">${credits(r.bonus)}</td><td class="mono"><b>${credits(r.pay)}</b></td><td style="white-space:normal;color:var(--muted)">${esc(r.why)}</td></tr>`; }).join('')}</tbody></table></div>
+    <p>Total paychecks <b>${credits(p.total)}</b> · team score <b>${p.team}</b> · ${lastTxt} · next payday ${nextPayday()}</p>`, 'span3');
+}
+function orgCard() {
+  const au = D.audit; const by = Object.fromEntries((au?.reports || []).map(r => [r.manager, r]));
+  const chip = st => `<span class="stt ${st === 'pass' ? 'ok' : st === 'warn' ? 'warn' : st === 'fail' ? 'bad' : ''}">${st ? st.toUpperCase() : '–'}</span>`;
+  const mgrs = ['atlas', 'analyst', 'guard'];
+  const team = m => Object.keys(agents).filter(k => agents[k].boss === m);
+  const col = m => { const r = by[m]; return `<div class="box" style="background:#1a1f29"><h3>${agents[m].name} · ${esc(agents[m].title)} ${chip(r?.status)}</h3>
+      <ul class="list">${team(m).map(k => { const cs = (r?.checks || []).filter(c => c.agent === k); const worst = cs.some(c => c.status === 'fail') ? 'r' : cs.some(c => c.status === 'warn') ? 'y' : cs.length ? 'g' : '';
+        return li(`<b>${agents[k].name}</b> <span style="color:var(--muted)">${esc(agents[k].title)}</span><br>${cs.map(c => `<span style="color:${c.status === 'pass' ? 'var(--up)' : c.status === 'warn' ? 'var(--warn)' : 'var(--down)'}">${c.status === 'pass' ? '✓' : c.status === 'warn' ? '!' : '✗'}</span> ${esc(c.check)}: <span style="color:var(--muted)">${esc(c.detail)}</span>`).join('<br>') || '<span style="color:var(--muted)">no checks yet</span>'}`, worst); }).join('')}</ul></div>`; };
+  return card(`🏛️ Org chart & management audit ${chip(au?.ceo?.status)}`, `<p style="margin:0 0 10px"><b>Claude (CEO)</b> ← three managers check their teams' real work every hour and report up. ${au ? `Latest audit ${ago(au.generatedAt)}: ${esc(au.ceo.summary)}.` : 'The first audit runs with the next hourly task.'}</p><div class="cgrid" style="margin-top:0">${mgrs.map(col).join('')}</div>`, 'span3');
 }
 function planOut(p) {
   const mx = Math.max(...p.scenarios.map(s => s.value), 1);
@@ -680,7 +737,7 @@ function planOut(p) {
       ${card('Return scenarios', `<div class="sbars">${p.scenarios.map(s => `<div class="sbar"><span class="mono ${cls(s.annualReturn)}">${s.annualReturn > 0 ? '+' : ''}${s.annualReturn}%/yr</span><div class="bar"><i style="width:${Math.max(1, s.value / mx * 100)}%"></i></div><span class="mono">${money(s.value)}</span></div>`).join('')}</div>`, 'span2')}
       ${card('Milestones', `<ul class="list">${p.milestones.map(m => li(`${money(m.capital)} → ${money(m.monthlyIncome)}/mo ${m.achieved ? '· reached' : m.projected ? '· on track' : ''}`, m.achieved ? 'g' : m.projected ? 'y' : '')).join('')}</ul>`)}`;
 }
-const ROOM_BLURB = { lobby: 'System status, market regime and what is blocking new trades.', research: 'Stock watchlist, crypto scanner and the 🧪 Paper Lab.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The trade ledger, results and the 🎮 agent payroll.' };
+const ROOM_BLURB = { lobby: 'ClaudeBot health, the org chart, management audit and market regime.', research: 'Stock watchlist, crypto scanner and the 🧪 Paper Lab.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The trade ledger, results and the 🎮 agent payroll.' };
 const TITLES = { office: ['Office', "What are ClaudeBot's agents doing right now?"], lobby: ['Lobby · Overview', 'The big picture'], research: ['Research Lab', 'What the agents are watching'], diagnostics: ['Diagnostics', 'Is everything healthy?'], freedom: ['Freedom Room', 'Planning the path to monthly income'], trading: ['Trading Floor', 'Positions and trades'], risk: ['Risk Office', 'The rules every order must pass'], vault: ['Vault · Ledger', 'Every trade on the record, plus the agent payroll game'] };
 let current = 'office';
 function renderConsole() {
