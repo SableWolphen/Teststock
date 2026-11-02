@@ -348,6 +348,15 @@ function madeToday() {
   const o = D.bled?.open; if (o?.mark?.day === day) { open += (o.mark.price - o.mark.dayBase) * 100; marked.push(o.label); }
   return { total: Math.round((realized + open) * 100) / 100, realized, open, n, marked };
 }
+// all real money made since start: every closed real trade + open positions vs what we paid (last hourly mark)
+function madeAllTime() {
+  const acct = D.ocfg?.backtest?.startingAccountUsd || 113;
+  const closed = optPnl() + dipPnl() + (D.led?.trades || []).reduce((a, t) => a + (t.accountImpactPct || 0) / 100 * acct, 0);
+  let open = 0;
+  for (const p of (D.dled?.positions ?? (D.dled?.open ? [D.dled.open] : []))) if (p.mark) open += p.usd / p.entryPrice * (p.mark.price - p.entryPrice);
+  const o = D.bled?.open; if (o?.mark) open += (o.mark.price - o.entryPrice) * 100;
+  return { total: Math.round((closed + open) * 100) / 100, closed, open };
+}
 const blackoutToday = () => D.ocfg?.risk?.noNewEntryDates?.[todayCT()];
 function freedomPlan() { let saved = {}; try { saved = JSON.parse(localStorage.getItem('hq-freedom') || '{}'); } catch (e) {} try { return projectPlan({ ...DEFAULT_PLAN, ...saved }); } catch (e) { return projectPlan(DEFAULT_PLAN); } }
 
@@ -634,14 +643,14 @@ setInterval(updateStatuses, 500);
 function renderKpis() {
   const h = D.health, lp = livePos(), open = lp.length;
   const runs = [...(D.led?.runs || []), ...(D.oled?.runs || [])].sort((a, b) => new Date(b.t) - new Date(a.t));
-  const mt = madeToday();
+  const mt = madeToday(), ma = madeAllTime();
   const k = [
-    ['Made today (real $)', usd(mt.total), `${mt.n} closed ${usd(mt.realized)} · open ${mt.marked.length ? mt.marked.join(', ') + ' ' + usd(mt.open) : 'none'}`, cls(mt.total)],
+    ['Money made (real $)', `Today ${usd(mt.total)} · All time ${usd(ma.total)}`, `today: ${mt.n} closed ${usd(mt.realized)}, open ${mt.marked.length ? mt.marked.join(', ') + ' ' + usd(mt.open) : 'none'} · all time: closed ${usd(ma.closed)}, open ${usd(ma.open)}`, cls(ma.total)],
     ['ClaudeBot health', botHealth().status, botHealth().ok ? 'scan ' + Math.round(botHealth().sigAge) + 'm · trader ' + Math.round(botHealth().runAge) + 'm ago' : botHealth().issues[0], botHealth().ok ? 'up' : 'warn'],
     ['Trading today', tradingToday()[0], tradingToday()[1] + (D.sig?.regime?.riskOff ? ' · crypto risk-off' : ''), tradingToday()[2]],
     ['Market', D.latest?.regime?.label || '–', 'call: ' + (D.latest?.action || '–'), /OFF/.test(D.latest?.regime?.label || '') ? 'down' : ''],
     ['Real positions', String(open), (lp.join(' · ') || 'all cash') + (paperSpread() ? ` · paper: ${paperSpread()}` : ''), open ? 'org' : ''],
-    ['ClaudeBot', `${pct(cryptoIdx() - 100)} · ${usd(optPnl() + dipPnl())}`, 'crypto · options + dip since start', cls(cryptoIdx() - 100 + optPnl() + dipPnl())],
+    ['Closed trades P&L', usd(optPnl() + dipPnl()), `real $ since start · crypto ${pct(cryptoIdx() - 100)}`, cls(cryptoIdx() - 100 + optPnl() + dipPnl())],
     ['Paper P&L (pretend $)', usd(paperTotals().pnl), `${paperTotals().n} closed paper trades · not real money`, cls(paperTotals().pnl)],
     ['Paper win rate', paperTotals().wp == null ? '–' : paperTotals().wp + '%', `${paperTotals().open} paper trades open · could lose up to $${Math.round(paperTotals().risk)}`, paperTotals().wp == null ? '' : paperTotals().wp >= 60 ? 'up' : paperTotals().wp < 45 ? 'down' : 'warn'],
     ['Management audit', D.audit ? `${D.audit.reports.reduce((a, r) => a + r.passed, 0)}/${D.audit.reports.reduce((a, r) => a + r.total, 0)} ✓` : '–', D.audit ? `${D.audit.ceo.status.toUpperCase()} · ${ago(D.audit.generatedAt)}` : 'first audit at :14', D.audit?.ceo?.status === 'pass' ? 'up' : D.audit?.ceo?.status === 'fail' ? 'down' : 'warn'],
