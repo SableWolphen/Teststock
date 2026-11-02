@@ -2,7 +2,7 @@
 import importlib.util, os, copy
 spec = importlib.util.spec_from_file_location("ob", os.path.join(os.path.dirname(__file__), "options_bot.py"))
 ob = importlib.util.module_from_spec(spec); spec.loader.exec_module(ob)
-cfg = ob.load(ob.CONFIG); cfg["underlyings"] = ["SPY", "IWM"]
+cfg = ob.load(ob.CONFIG); cfg["underlyings"] = ["SPY", "IWM"]; BLACKOUT = cfg["risk"].pop("noNewEntryDates")
 LED = {"mode": "live", "startingAccountUsd": None, "open": None, "trades": [], "snapshots": [], "runs": []}
 NOW = "2026-11-02T16:14:00Z"  # 10:14 CT Monday
 EXPS = ["2026-11-04", "2026-11-06", "2026-11-09", "2026-11-13", "2026-11-20"]
@@ -44,4 +44,7 @@ L3 = {**LED, "trades": [{"pnlUsd": -30, "exitedAt": "2026-11-01T20:00:00Z"}]}
 assert "cooling" in act(l=L3)[0]["reason"]
 LP = {**LED, "mode": "paper", "startingAccountUsd": 113}
 assert act({**F, "candidates": SPY_BAD + IWM, "accountValue": 1}, LP)[0]["do"] == "open_spread"
+cfg["risk"]["noNewEntryDates"] = BLACKOUT
+assert "midterm" in act()[0]["reason"]
+assert act({**F, "legs": {"c": {"bid": 0.6, "ask": 0.63}, "d": {"bid": 0.55, "ask": 0.58}}}, L2)[0]["do"] == "close_spread"  # exits still work on blackout days
 print("all options scenarios pass")

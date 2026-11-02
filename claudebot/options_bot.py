@@ -146,6 +146,9 @@ def plan(facts, cfg, ledger):
     start, end = (time.fromisoformat(t) for t in e["entryWindowCT"])
     if not (start <= local.time() <= end):
         return none("outside entry window")
+    ev = r.get("noNewEntryDates", {}).get(local.date().isoformat())
+    if ev:
+        return none(f"no new spreads today: {ev}")
     eq = float(facts["accountValue"]) if live else paper_equity(ledger)
     bp = float(facts.get("buyingPower", eq)) if live else eq
     if eq < r["pauseBelowAccountValueUsd"]:
