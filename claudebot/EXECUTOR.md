@@ -14,6 +14,13 @@ cd /home/claude/teststock
 ```
 If git can't reach the repo, attach `SableWolphen/Teststock` with push access first.
 
+**Stale price scan:** GitHub often skips scheduled workflows on this busy repo. If
+`docs/data/claudebot-signal.json` `generatedAt` is more than 75 minutes old, run
+`gh api -X POST repos/SableWolphen/Teststock/actions/workflows/claudebot-signal.yml/dispatches -f ref=main` (REST; `gh workflow run` needs GraphQL, which is blocked), wait about 60 seconds
+(poll `gh run list --workflow claudebot-signal.yml -L1` until completed, max ~2 min), then
+`git pull --rebase`. If `gh` isn't available or it fails, carry on: the crypto planner
+already refuses new entries on a stale signal.
+
 ## 1. Gather live facts from Robinhood
 Use the agent-enabled account from `get_accounts` (nickname MCP). Then:
 - `get_portfolio` -> `accountValue` = total_value, `cryptoBuyingPower` = crypto_buying_power.buying_power
