@@ -187,10 +187,9 @@ couch(20.6, 12.6, '#8a5a44'); coffee(23.7, 8.6); cooler(22.9, 8.6);
 { const g = obj(24.2 + 11.0 + 1.4); box(g, 24.2, 10.6, .7, .7, 58, '#3b2b6b'); poly([iso(24.2, 11.3, 34), iso(24.9, 11.3, 34), iso(24.9, 11.3, 52), iso(24.2, 11.3, 52)], '#ff5cc8', g, { class: 'led' }); }
 plant(24.4, 13.3, .9); lamp(20.4, 11.0);
 // rest room: beds where idle agents sleep
-function bed(x, y, col) { const g = obj(x + y + 2.4); box(g, x, y, 1.0, 1.9, 10, '#3a3f55'); box(g, x + .05, y + .5, .9, 1.35, 6, col, 10); box(g, x + .1, y + .08, .8, .4, 7, '#e8ecf4', 10); box(g, x, y, 1.0, .1, 26, '#4a5070'); }
-poly([iso(25.6, 2.2), iso(29.4, 2.2), iso(29.4, 4.0), iso(25.6, 4.0)], '#3d4566', L.decal, { opacity: .7 });
-bed(25.4, .35, '#6d7fd6'); bed(26.7, .35, '#d67f9b'); bed(28.0, .35, '#7fd6b0'); bed(25.4, 4.0, '#d6b47f'); bed(28.6, 4.0, '#9b7fd6');
-plant(29.4, 2.6, .8); lamp(27.4, 5.4);
+// every agent has their own bed (drawn after the team is defined, see BEDS below)
+function bed(x, y, col, name) { const g = obj(x + y + 2.0); box(g, x, y, .95, 1.6, 9, '#3a3f55'); box(g, x + .05, y + .45, .85, 1.1, 5, col, 9); box(g, x + .1, y + .07, .75, .34, 6, '#e8ecf4', 9); box(g, x, y, .95, .09, 24, '#4a5070');
+  if (name) { const p = iso(x + .48, y, 27); const t = el('text', { x: p[0], y: p[1], fill: '#dfe5ff', 'font-size': 7.5, 'font-weight': 800, 'text-anchor': 'middle' }, g); t.textContent = name; } }
 { const p = iso(27.5, 0, 112); const t = el('text', { x: p[0], y: p[1], fill: '#c9d2ff', 'font-size': 11, 'font-weight': 800, 'text-anchor': 'middle', 'letter-spacing': 2 }, L.walls); t.textContent = 'QUIET · AGENTS RESTING'; }
 // break room annex
 couch(25.6, 12.6, '#5a6e8a'); rtable(27.6, 10.4); stool(26.8, 10.0); stool(28.4, 10.8); plant(29.4, 8.6, .9);
@@ -216,6 +215,8 @@ const AG = {
   sim:     { name: 'Sim',     role: 'Paper Lab · 5 options variants, no real money', room: 'research', home: [6.1, 4.7], color: '#a3e635', kind: 'robot' , boss: 'analyst', title: 'Paper Lab' },
   echo:    { name: 'Echo',    role: 'Paper Lab · crypto with no filters, no real money', room: 'research', home: [8.6, 4.8], color: '#f472b6', kind: 'cat' , boss: 'analyst', title: 'Paper Lab' },
 };
+const BEDS = Object.keys(AG).map((k, i) => [25.25 + (i % 4) * 1.15, .3 + Math.floor(i / 4) * 1.9]);
+Object.keys(AG).forEach((k, i) => bed(BEDS[i][0], BEDS[i][1], AG[k].color, AG[k].name));
 function charSVG(kind, c) {
   const leg = shade(c, -34);
   const legs = `<rect x="-9" y="-12" width="7" height="11" rx="3.5" fill="${leg}"/><rect x="2" y="-12" width="7" height="11" rx="3.5" fill="${leg}"/>`;
@@ -554,7 +555,7 @@ const routines = {
 let coffees = 0;
 async function coffeeBreak(a) {
   await waitFree(a); a.busy++;
-  try { await walkTo(a, rnd(21, 23.8), rnd(10.2, 12), 'Coffee break ☕'); a.doing = 'Coffee break ☕'; coffees++;
+  try { await walkTo(a, rnd(21, 23.8), rnd(10.2, 12), 'Coffee break ☕'); a.doing = 'Coffee break ☕'; coffees++; a.energy = Math.min(100, a.energy + 15);
     await say(a, pick(['Coffee break ☕', 'Refueling. ☕', 'Anyone up for ping-pong? 🏓', 'Five-minute break, then back to it.', 'Best perk of the job: free coffee.']), 2600);
     await sleep(rnd(1500, 3500)); await goHome(a); } finally { a.busy--; }
 }
@@ -573,18 +574,22 @@ function onDuty(a) {
   }
   return office;
 }
-const REST_SPOTS = [[25.9, 1.3], [27.2, 1.3], [28.5, 1.3], [25.9, 4.9], [29.1, 4.9], [26.4, 3.1], [27.3, 3.3], [28.2, 3.1], [26.8, 2.5], [28.8, 2.6], [27.8, 2.4], [26.0, 2.6]];
+const REST_SPOTS = BEDS.map(([x, y]) => [x + .48, y + .95]);   // each agent rests on their own bed
+// happiness: energy refills while resting and drains slowly while working
+for (const a of Object.values(agents)) a.energy = 70 + Math.random() * 25;
+setInterval(() => { for (const a of Object.values(agents)) a.energy = Math.max(25, Math.min(100, a.energy + (a.resting ? 3 : a.state === 'walk' ? -.25 : -.15))); }, 2000);
+const mood = a => a.energy >= 75 ? ['😄', 'happy'] : a.energy >= 50 ? ['🙂', 'okay'] : ['🥱', 'tired'];
 async function rest(a) {
   await waitFree(a); a.busy++;
   try {
     const i = Object.keys(agents).indexOf(a.k), [x, y] = REST_SPOTS[i % REST_SPOTS.length];
     if (roomOf(a.x, a.y) !== 'rest') await walkTo(a, x, y, 'Going to rest 😴');
     a.resting = true; a.doing = 'Resting 😴';
-    while (!onDuty(a)) { if (Math.random() < .25) await say(a, pick(['Zzz… 💤', 'Nothing to do until the market opens. Resting.', 'Recharging for the next session. 😴', 'Wake me if the Dip desk needs me.']), 2600); await sleep(rnd(6000, 12000)); }
-    a.resting = false; await say(a, 'Back to work! ☕', 1600); await goHome(a);
+    while (!onDuty(a)) { if (Math.random() < .25) await say(a, pick(['Zzz… 💤', 'Nothing to do until the market opens. Resting.', 'Recharging for the next session. 😴', 'Wake me if the Dip desk needs me.', 'Love having my own bed. 😊', `Energy ${Math.round(a.energy)}% and climbing.`]), 2600); await sleep(rnd(6000, 12000)); }
+    a.resting = false; await say(a, a.energy >= 75 ? 'Well rested. Back to work! 😄' : 'Back to work! ☕', 1800); await goHome(a);
   } finally { a.resting = false; a.busy--; }
 }
-async function runAgent(k) { const a = agents[k]; await sleep(rnd(500, 4000)); for (;;) { try { if (!onDuty(a)) await rest(a); else if (Math.random() < .1) await coffeeBreak(a); else await routines[k](a); } catch (e) { console.error(k, e); } await sleep(rnd(1500, 4500)); } }
+async function runAgent(k) { const a = agents[k]; await sleep(rnd(500, 4000)); for (;;) { try { if (!onDuty(a)) await rest(a); else if (Math.random() < (a.energy < 50 ? .4 : .1)) await coffeeBreak(a); else await routines[k](a); } catch (e) { console.error(k, e); } await sleep(rnd(1500, 4500)); } }
 
 /* ============================== camera ============================== */
 const BW = 1560; const CX = 256, CY = 270;
@@ -645,7 +650,7 @@ function renderWalls() {
 function agentStatus(a) {
   if (a.state === 'talk') return ['talk', 'Talking'];
   if (a.state === 'walk') return ['walk', a.doing];
-  if (a.resting) return ['rest', 'Resting 😴'];
+  if (a.resting) return ['rest', `Resting 😴 · ${Math.round(a.energy)}%`];
   const h = D.health;
   switch (a.k) {
     case 'claude': { const st = D.audit?.ceo?.status; return st === 'fail' ? ['bad', 'Audit failing'] : st === 'warn' ? ['warn', 'Reviewing reports'] : ['ok', 'Running the company']; }
@@ -901,6 +906,7 @@ CONSOLES.rest = function () {
   const all = Object.values(agents), off = all.filter(a => !onDuty(a)), on = all.filter(a => onDuty(a));
   return `<div class="ch"><h2>😴 Rest Room</h2><span class="who">Agents with nothing to do right now</span></div>
   <div class="cgrid">
+    ${card('Team happiness', `<ul class="list">${all.map(a => li(`${mood(a)[0]} <b>${esc(a.name)}</b> · ${mood(a)[1]} · energy ${Math.round(a.energy)}%${a.resting ? ' · in bed' : ''}`)).join('')}</ul><p>Agents refill energy in their own bed and on coffee breaks; tired agents take extra breaks.</p>`)}
     ${card('Resting now', off.length ? `<ul class="list">${off.map(a => li(`<b>${esc(a.name)}</b> · ${esc(a.title || '')}`)).join('')}</ul>` : '<p>Everyone is on the clock.</p>')}
     ${card('On duty', on.length ? `<ul class="list">${on.map(a => li(`<b>${esc(a.name)}</b> · ${esc(a.title || '')}`)).join('')}</ul>` : '<p>Nobody right now.</p>')}
     ${card('Shift rules', `<ul class="list">${li('Trading desks work market hours (8:30 AM–3:00 PM CT, weekdays)')}${li('Managers keep office hours (8 AM–5 PM CT, weekdays)')}${li('Medic works the night shift so systems are always watched')}${li('Scout (dip scout) works market hours and right after the nightly scan')}${li('Resting agents cost nothing: the real trading runs on schedule either way')}</ul>`)}
