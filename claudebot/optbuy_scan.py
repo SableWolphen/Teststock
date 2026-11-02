@@ -40,12 +40,15 @@ def triggers(closes, trend, rsi_below):
 def main():
     cfg = json.load(open(os.path.join(HERE, "optbuy_config.json")))
     s, sc = cfg["signal"], cfg["scan"]
-    today = datetime.now(timezone.utc).date().isoformat()
+    now = datetime.now(timezone.utc)
+    today = now.date().isoformat()
+    # after 21:00 UTC (4-5 PM ET) today's bar is final; before that only earlier sessions count
+    cutoff = today if now.hour < 21 else "9999"
     rows, watch, errors = {}, [], []
     for sym in cfg["scanUniverse"]:
         try:
             bars, src = obt.daily_bars(sym, "2025-06-01")
-            bars = [b for b in bars if b[0] < today]          # completed sessions only
+            bars = [b for b in bars if b[0] < cutoff]         # completed sessions only
             c = [x for _, x in bars]
             if len(c) < s["trendSma"] + 10:
                 errors.append(f"{sym}: only {len(c)} closes"); continue
