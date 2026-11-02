@@ -116,9 +116,9 @@ td{padding:7px 8px;border-bottom:1px solid #1c1f26;white-space:nowrap}
   </section>
 
   <section class="card mt" id="opt">
-    <h2>Options · IWM put credit spreads <span class="pill" style="margin-left:6px;padding:2px 8px;font-size:10px;color:var(--warn);border-color:var(--warn)" id="opt-mode">PAPER</span></h2>
+    <h2>Options · put credit spreads (SPY, DIA, IWM, KRE, XLF) <span class="pill" style="margin-left:6px;padding:2px 8px;font-size:10px;color:var(--warn);border-color:var(--warn)" id="opt-mode">PAPER</span></h2>
     <div class="grid kpis">
-      <div><div class="small">Paper P&amp;L</div><div class="big" id="o-pnl">–</div><div class="small" id="o-pnl-s"></div></div>
+      <div><div class="small">Options P&amp;L</div><div class="big" id="o-pnl">–</div><div class="small" id="o-pnl-s"></div></div>
       <div><div class="small">Win rate</div><div class="big" id="o-win">–</div><div class="small" id="o-win-s"></div></div>
       <div><div class="small">Open spread</div><div class="big" id="o-pos" style="font-size:18px">–</div><div class="small" id="o-pos-s"></div></div>
       <div><div class="small">Modeled 2023–26</div><div class="big" id="o-bt" style="font-size:18px">–</div><div class="small" id="o-bt-s"></div></div>
@@ -272,14 +272,14 @@ async function renderOptions(){
   const T = L.trades||[], wins = T.filter(t=>t.pnlUsd>0), net = T.reduce((a,t)=>a+t.pnlUsd,0);
   $('opt-mode').textContent = (L.mode||'paper').toUpperCase();
   $('o-pnl').innerHTML = `<span class="${cls(net)}">${usd(net)}</span>`;
-  $('o-pnl-s').textContent = `on a $${L.startingAccountUsd} paper account${L.startedAt?' · since '+when(L.startedAt):''}`;
+  $('o-pnl-s').textContent = `realized, 1 spread at a time${L.startedAt?' · since '+when(L.startedAt):''}`;
   $('o-win').textContent = T.length ? Math.round(100*wins.length/T.length)+'%' : '–';
   $('o-win-s').textContent = T.length ? `${wins.length}/${T.length} · avg win ${usd(wins.length?wins.reduce((a,t)=>a+t.pnlUsd,0)/wins.length:null)}` : 'no closed spreads yet';
   const p = L.open;
   $('o-pos').innerHTML = p ? `<span class="acc">${esc(p.label)}</span>` : '<span style="color:var(--muted)">NONE</span>';
   $('o-pos-s').textContent = p ? `credit ${p.credit} · max loss $${p.maxLossUsd} · delta ${p.shortDelta}` : 'scans 9:00–1:30 CT on weekdays';
-  const r = B?.results?.find(x=>x.trendFilter && x.ignoresAccountSize);
-  if(r){ $('o-bt').textContent = `${r.winRatePct}% wins`; $('o-bt').className='big'; $('o-bt').style.fontSize='18px'; $('o-bt-s').textContent = `avg win ${usd(r.avgWinUsd)} · avg loss ${usd(r.avgLossUsd)} · ${usd(r.avgPnlPerTradeUsd)}/trade`; }
+  const live = ['SPY','DIA','IWM','KRE','XLF']; const ps = (B?.perSymbol||[]).filter(p=>live.includes(p.symbol));
+  if(ps.length){ const n=ps.reduce((a,p)=>a+p.edge.trades,0), w=ps.reduce((a,p)=>a+p.edge.trades*p.edge.winRatePct/100,0), pnl=ps.reduce((a,p)=>a+p.edge.trades*p.edge.avgPnlPerTradeUsd,0); $('o-bt').textContent = `${Math.round(100*w/n)}% wins`; $('o-bt-s').textContent = ps.map(p=>`${p.symbol} ${usd(p.edge.avgPnlPerTradeUsd)}`).join(' · ')+' per trade'; }
   $('o-trades').innerHTML = T.slice().reverse().map(t=>`<tr><td>${esc(t.label)}</td><td>${when(t.enteredAt)}</td><td>${when(t.exitedAt)}</td><td>${t.credit}</td><td>${t.debit}</td><td class="${cls(t.pnlUsd)}">${usd(t.pnlUsd)}</td><td>${esc(t.reason)}</td></tr>`).join('') || `<tr><td colspan="7" class="empty">No closed spreads yet.</td></tr>`;
   $('o-log').innerHTML = (L.runs||[]).slice(-12).reverse().map(r=>`<div><span style="color:var(--muted)">${when(r.t)}</span><span class="${r.action==='open'?'up':r.action==='close'?'acc':r.action==='error'?'down':''}">${esc(r.action)}</span><span style="white-space:normal">${esc(r.detail)}</span></div>`).join('');
 }
