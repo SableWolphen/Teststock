@@ -49,8 +49,8 @@ returns `none`/`wait`. Never place a buy when the ledger already has an open pos
 ## 3. Snapshot, save, push
 ```
 python3 claudebot/bot.py snapshot /tmp/facts.json
-# (run Parts B, C and D below first, then:)
-git add docs/data/claudebot-ledger.json docs/data/claudebot-options-ledger.json docs/data/claudebot-paper-ledger.json docs/data/claudebot-audit.json docs/data/claudebot-dip-ledger.json claudebot/options_config.json
+# (run Parts B, E, C, C3, C2 and D below first, then:)
+git add docs/data/claudebot-ledger.json docs/data/claudebot-options-ledger.json docs/data/claudebot-paper-ledger.json docs/data/claudebot-audit.json docs/data/claudebot-dip-ledger.json docs/data/claudebot-daytrade-paper.json claudebot/options_config.json
 git commit -m "ClaudeBot run <UTC time>: <what happened>"
 git pull --rebase -X theirs origin main && git push origin HEAD:main
 ```
@@ -136,6 +136,21 @@ add it to the facts files, and run it again (at most 3 rounds; skip anything slo
 Then add `docs/data/claudebot-paper-ledger.json` to the same commit. Never place, cancel
 or change any real order because of the Paper Lab. A strategy marked `promotionCandidate`
 is only a suggestion: tell the user, and change live rules only if they approve.
+
+# Part C3: Day-trade desk (PAPER ONLY), once per market day
+
+Only on market days when the local Chicago time is between 2:41 PM and 4:30 PM (normally
+the 2:44 PM run). Skip it at any other time. It replays today on real 5-minute bars.
+1. `get_equity_historicals(symbols = SPY, QQQ, DIA, IWM, SMH, XLK, KRE, interval "5minute",
+   start_time = today 13:00Z)` and `get_equity_quotes` for the same symbols (use each
+   quote's `adjusted_previous_close`).
+2. Write `/tmp/dtbars.json` = the historicals result as-is (keep its `data.results`), plus
+   `"date": "<today, YYYY-MM-DD>"` and `"prevClose": {"SPY": ..., ...}`. If the result is too
+   big for one read, extract it with python/jq into that same shape.
+3. `python3 claudebot/daytrade_paper.py run /tmp/dtbars.json`. It records the day once
+   (`skip` if done, `wait` if the bars don't reach 15:40 ET yet; then do nothing).
+4. Add `docs/data/claudebot-daytrade-paper.json` to the same commit. Never place, cancel or
+   change any real order because of this desk. Going live needs the board's approval.
 
 ---
 

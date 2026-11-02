@@ -303,11 +303,11 @@ async function wander(a, pts) { await waitFree(a); a.busy++; try { const [x, y] 
 /* ============================== data ============================== */
 const D = {};
 async function refresh() {
-  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg] = await Promise.all([
+  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt] = await Promise.all([
     getJSON('docs/data/claudebot-signal.json'), getJSON('docs/data/claudebot-ledger.json'), getJSON('docs/data/claudebot-options-ledger.json'),
     getJSON('docs/data/live-trading-health.json'), getJSON('docs/data/latest-50.json'), getJSON('claudebot/options_config.json'), getJSON('claudebot/config.json'),
-    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json')]);
-  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg });
+    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json')]);
+  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt });
   renderAll();
 }
 function botHealth() {
@@ -680,6 +680,7 @@ const CONSOLES = {
       ${card('Stock regime', `<div class="big ${/OFF/.test(r?.label || '') ? 'down' : 'up'}">${esc(r?.label || '–')}</div><p>${esc(r?.detail || '')} · bias ${esc(r?.bias || '–')} · gate ${esc(r?.tradeGate || '–')}</p>`)}
       ${card('Stock watchlist', cards.length ? `<div class="picks">${cards.map(c => `<div class="pick"><b>${esc(c.symbol)}</b><span class="tag ${dir(c.direction)}">${esc(c.direction || '')}</span><div class="mono" style="margin-top:4px">score ${c.score} · $${c.price}</div><div style="color:var(--muted);font-size:12px;margin-top:4px">${esc(c.label || '')} · ${esc(c.tag || '')}</div></div>`).join('')}</div>` : '<div class="empty">No stocks on watch right now.</div>', 'span2')}
       ${paperCard()}
+      ${dayCard()}
       ${card('Crypto scanner · 1h bars', `<div class="scroll"><table><thead><tr><th>Coin</th><th>Trend</th><th>RSI</th><th>24h</th><th>Status</th></tr></thead><tbody>${coins.map(c => `<tr><td><b>${c.symbol}</b></td><td class="${c.trend === 'up' ? 'up' : c.trend === 'down' ? 'down' : ''}">${c.trend}</td><td class="mono">${c.rsi}</td><td class="mono ${cls(c.change24hPct)}">${pct(c.change24hPct, 1)}</td><td style="white-space:normal">${c.setup ? '<b class="up">SETUP</b>' : esc((c.blockers || [])[0] || '')}</td></tr>`).join('')}</tbody></table></div><p>Signal ${ago(D.sig?.generatedAt)} · ${D.sig?.regime?.riskOff ? 'BTC risk-off' : 'BTC trend OK'}</p>`, 'span3')}
     </div>`;
   },
@@ -740,6 +741,14 @@ const CONSOLES = {
     </div>`;
   },
 };
+function dayCard() {
+  const L = D.dtp, b = L?.leaderboard || [], H = D.dtbt, S = L?.strategies || {};
+  const hist = H?.all ? (() => { const best = {}; H.all.forEach(r => { if ((r.train.trades || 0) >= 100 && (!best[r.strategy] || r.train.avgTradePct > best[r.strategy].train.avgTradePct)) best[r.strategy] = r; });
+      return `<div class="scroll"><table><thead><tr><th>Strategy (history)</th><th>Settings</th><th>2023–24 avg/trade</th><th>2025–26 trades</th><th>Win %</th><th>Avg/trade</th><th>PF</th></tr></thead><tbody>${Object.values(best).map(r => `<tr><td><b>${esc(r.name)}</b></td><td class="mono">${esc(JSON.stringify(r.params).replace(/[{}"]/g, ''))}</td><td class="mono ${cls(r.train.avgTradePct)}">${pct(r.train.avgTradePct, 3)}</td><td class="mono">${r.test.trades ?? 0}</td><td class="mono">${r.test.winRatePct ?? '–'}</td><td class="mono ${cls(r.test.avgTradePct)}">${pct(r.test.avgTradePct, 3)}</td><td class="mono">${r.test.profitFactor ?? '–'}</td></tr>`).join('')}<tr><td><b>Baseline</b> (buy 9:35, sell 3:40)</td><td>–</td><td class="mono">${pct(H.baseline?.train?.avgTradePct, 3)}</td><td class="mono">${H.baseline?.test?.trades ?? 0}</td><td class="mono">${H.baseline?.test?.winRatePct ?? '–'}</td><td class="mono ${cls(H.baseline?.test?.avgTradePct)}">${pct(H.baseline?.test?.avgTradePct, 3)}</td><td class="mono">${H.baseline?.test?.profitFactor ?? '–'}</td></tr></tbody></table></div><p class="${H.verdict === 'edge' ? 'up' : 'warn'}"><b>Verdict:</b> ${esc(H.verdictText || '')}</p>`; })() : '<div class="empty">History test running.</div>';
+  const live = b.length ? `<div class="scroll"><table><thead><tr><th>Paper strategy</th><th>Trades</th><th>Wins</th><th>P&amp;L ($25 each)</th><th>Avg</th><th>Last trade</th></tr></thead><tbody>${b.map(r => { const t = (S[r.id]?.trades || []).slice(-1)[0];
+      return `<tr><td><b>${esc(r.name)}</b></td><td class="mono">${r.trades}</td><td class="mono">${r.wins}</td><td class="mono ${cls(r.pnlUsd)}">${usd(r.pnlUsd)}</td><td class="mono">${r.avgPct == null ? '–' : pct(r.avgPct, 2)}</td><td style="white-space:normal;color:var(--muted)">${t ? esc(`${t.day} ${t.symbol} ${t.retPct > 0 ? '+' : ''}${t.retPct}% (${t.reason})`) : '–'}</td></tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">First paper day is recorded at the 2:44 PM CT check.</div>';
+  return card('⚡ Day-trade desk · paper only', `<p style="margin:0 0 10px">The board asked for day trading. Before any real money, four classic day-trade strategies were tested on 5-minute bars from 2023 on (picked on 2023–24, checked on unseen 2025–26, 0.03% cost per side), and every trading day is now replayed on real prices with $25 pretend trades. Going live needs the board's approval and the evidence.</p>${hist}${live}<p>${L?.days?.length || 0} days replayed · updated ${L?.updatedAt ? ago(L.updatedAt) : 'never'}.</p>`, 'span3');
+}
 function paperCard() {
   const L = D.pled, b = L?.leaderboard || [], S = L?.strategies || {};
   const body = b.length ? `<div class="scroll"><table><thead><tr><th>Paper strategy</th><th>Desk</th><th>Trades</th><th>Win %</th><th>P&amp;L</th><th>Profit factor</th><th>Now</th><th>What it tests</th></tr></thead><tbody>${b.map(r => { const st = S[r.id] || {};
