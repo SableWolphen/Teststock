@@ -9,10 +9,10 @@ nothing new, log it, and stop. Doing nothing is always safe.
 
 ## 0. Get the repo
 ```
-git clone https://github.com/SableWolphen/teststock /home/claude/teststock  (or git -C ... pull --rebase if present)
+git clone https://github.com/SableWolphen/Teststock /home/claude/teststock  (or git -C ... pull --rebase if present)
 cd /home/claude/teststock
 ```
-If git can't reach the repo, attach `SableWolphen/teststock` with push access first.
+If git can't reach the repo, attach `SableWolphen/Teststock` with push access first.
 
 ## 1. Gather live facts from Robinhood
 Use the agent-enabled account from `get_accounts` (nickname MCP). Then:
