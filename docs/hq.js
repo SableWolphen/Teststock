@@ -627,6 +627,8 @@ function renderKpis() {
     ['Market', D.latest?.regime?.label || '–', 'call: ' + (D.latest?.action || '–'), /OFF/.test(D.latest?.regime?.label || '') ? 'down' : ''],
     ['Real positions', String(open), (lp.join(' · ') || 'all cash') + (paperSpread() ? ` · paper: ${paperSpread()}` : ''), open ? 'org' : ''],
     ['ClaudeBot', `${pct(cryptoIdx() - 100)} · ${usd(optPnl() + dipPnl())}`, 'crypto · options + dip since start', cls(cryptoIdx() - 100 + optPnl() + dipPnl())],
+    ['Paper P&L (pretend $)', usd(paperTotals().pnl), `${paperTotals().n} closed paper trades · not real money`, cls(paperTotals().pnl)],
+    ['Paper win rate', paperTotals().wp == null ? '–' : paperTotals().wp + '%', `${paperTotals().open} paper trades open · could lose up to $${Math.round(paperTotals().risk)}`, paperTotals().wp == null ? '' : paperTotals().wp >= 60 ? 'up' : paperTotals().wp < 45 ? 'down' : 'warn'],
     ['Management audit', D.audit ? `${D.audit.reports.reduce((a, r) => a + r.passed, 0)}/${D.audit.reports.reduce((a, r) => a + r.total, 0)} ✓` : '–', D.audit ? `${D.audit.ceo.status.toUpperCase()} · ${ago(D.audit.generatedAt)}` : 'first audit at :14', D.audit?.ceo?.status === 'pass' ? 'up' : D.audit?.ceo?.status === 'fail' ? 'down' : 'warn'],
   ];
   $('kpis').innerHTML = k.map(([l, v, s, c]) => `<div class="kpi"><div class="l">${l}</div><div class="v ${c}">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join('');
@@ -747,7 +749,7 @@ function dayCard() {
       return `<tr><td><b>${esc(r.name)}</b></td><td class="mono">${r.trades}</td><td class="mono">${r.wins}</td><td class="mono ${cls(r.pnlUsd)}">${usd(r.pnlUsd)}</td><td class="mono">${r.avgPct == null ? '–' : pct(r.avgPct, 2)}</td><td style="white-space:normal;color:var(--muted)">${t ? esc(`${t.day} ${t.symbol} ${t.retPct > 0 ? '+' : ''}${t.retPct}% (${t.reason})`) : '–'}</td></tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">First paper day is recorded at the 2:44 PM CT check.</div>';
   return card('⚡ Day-trade desk · paper only', `<p style="margin:0 0 10px">The board asked for day trading. Before any real money, four classic day-trade strategies were tested on 5-minute bars from 2023 on (picked on 2023–24, checked on unseen 2025–26, 0.03% cost per side), and every trading day is now replayed on real prices with $25 pretend trades. Going live needs the board's approval and the evidence.</p>${hist}${live}<p>${L?.days?.length || 0} days replayed · updated ${L?.updatedAt ? ago(L.updatedAt) : 'never'}.</p>`, 'span3');
 }
-function paperScoreCard() {
+function paperRows() {
   const rows = [];
   const add = (desk, name, tr, open, risk) => {
     const n = tr.length, w = tr.filter(t => t.pnlUsd > 0).length, pnl = tr.reduce((a, t) => a + t.pnlUsd, 0);
@@ -758,7 +760,15 @@ function paperScoreCard() {
   if (D.oled && D.oled.mode !== 'live') add('Options', 'Put spreads (our live rules)', D.oled.trades || [], D.oled.open?.label, D.oled.open?.maxLossUsd);
   for (const [id, st] of Object.entries(D.pled?.strategies || {})) add('Paper Lab', st.name || id, st.trades || [], st.open ? (st.open.label || st.open.symbol) : null, st.open?.maxLossUsd ?? (st.open ? 15 : null));
   for (const [id, st] of Object.entries(D.dtp?.strategies || {})) add('Day trade', st.name || id, (st.trades || []).map(t => ({ pnlUsd: t.pnlUsd })), null, null);
-  const body = rows.length ? `<div class="scroll"><table><thead><tr><th>Desk</th><th>Strategy</th><th>Trades</th><th>Win %</th><th>P&amp;L</th><th>Worst trade</th><th>Biggest drop</th><th>Open now · could lose</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r.desk}</td><td><b>${esc(r.name)}</b></td><td class="mono">${r.n}</td><td class="mono ${r.wp == null ? '' : r.wp >= 60 ? 'up' : r.wp < 45 ? 'down' : ''}">${r.wp == null ? '–' : r.wp + '%'}</td><td class="mono ${cls(r.pnl)}">${usd(r.pnl)}</td><td class="mono ${r.worst < 0 ? 'down' : ''}">${r.worst == null ? '–' : usd(r.worst)}</td><td class="mono ${r.dd < 0 ? 'down' : ''}">${r.dd < 0 ? usd(r.dd) : '–'}</td><td>${r.open ? `${esc(r.open)} · <span class="down">up to ${usd(-(r.risk ?? 0))}</span>` : 'flat'}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Paper desks start recording with the next run.</div>';
+  return rows;
+}
+function paperTotals() {
+  const r = paperRows(), n = r.reduce((a, x) => a + x.n, 0), w = r.reduce((a, x) => a + (x.wp == null ? 0 : Math.round(x.wp * x.n / 100)), 0);
+  return { n, wp: n ? Math.round(100 * w / n) : null, pnl: r.reduce((a, x) => a + x.pnl, 0), risk: r.reduce((a, x) => a + (x.open ? (x.risk || 0) : 0), 0), open: r.filter(x => x.open).length, strategies: r.length };
+}
+function paperScoreCard() {
+  const rows = paperRows(), T = paperTotals();
+  const body = rows.length ? `<div class="scroll"><table><thead><tr><th>Desk</th><th>Strategy</th><th>Trades</th><th>Win %</th><th>P&amp;L</th><th>Worst trade</th><th>Biggest drop</th><th>Open now · could lose</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r.desk}</td><td><b>${esc(r.name)}</b></td><td class="mono">${r.n}</td><td class="mono ${r.wp == null ? '' : r.wp >= 60 ? 'up' : r.wp < 45 ? 'down' : ''}">${r.wp == null ? '–' : r.wp + '%'}</td><td class="mono ${cls(r.pnl)}">${usd(r.pnl)}</td><td class="mono ${r.worst < 0 ? 'down' : ''}">${r.worst == null ? '–' : usd(r.worst)}</td><td class="mono ${r.dd < 0 ? 'down' : ''}">${r.dd < 0 ? usd(r.dd) : '–'}</td><td>${r.open ? `${esc(r.open)} · <span class="down">up to ${usd(-(r.risk ?? 0))}</span>` : 'flat'}</td></tr>`).join('')}<tr style="border-top:2px solid var(--line)"><td><b>Total</b></td><td>${T.strategies} strategies</td><td class="mono"><b>${T.n}</b></td><td class="mono"><b>${T.wp == null ? '–' : T.wp + '%'}</b></td><td class="mono ${cls(T.pnl)}"><b>${usd(T.pnl)}</b></td><td></td><td></td><td>${T.open} open · <span class="down">up to ${usd(-T.risk)}</span></td></tr></tbody></table></div>` : '<div class="empty">Paper desks start recording with the next run.</div>';
   return card('📋 Paper scorecard · pretend money, real prices', `<p style="margin:0 0 10px">How each paper strategy would be doing if it were real: how often it's right, what it made, its worst single trade, its biggest drop from a high, and what its open trade could still lose. None of this is real money.</p>${body}`, 'span3');
 }
 function paperCard() {
