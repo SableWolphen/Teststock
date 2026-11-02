@@ -53,8 +53,28 @@ jobs:
           gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/live-intraday-runner.yml/runs?per_page=20" > "$runner_state"
           echo "TESTSTOCK_RUNNER_RUNS_FILE=$runner_state" >> "$GITHUB_ENV"
 
-      # Health describes the last published generation. Recovery belongs to the
-      # serialized research/trigger publishers, never a parallel health job.
+      # Rebuild the short-lived inputs that health actually measures. Previously
+      # these files remained frozen for weeks while health.json kept refreshing.
+      # Do not let partial or failed regeneration make the health file look fresh.
+      - name: Refresh and validate day-trader and trade-quality intelligence
+        shell: bash
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+        run: |
+          set -euo pipefail
+          restore_on_failure() {
+            git restore -- docs/data/daytrader-intelligence.json docs/data/trade-quality-intelligence.json
+          }
+          trap restore_on_failure ERR
+          node scripts/build-daytrader-intelligence.mjs
+          node scripts/validate-daytrader-intelligence.mjs
+          node scripts/build-trade-quality-engine.mjs
+          node scripts/apply-model-drift.mjs
+          node scripts/validate-trade-quality-engine.mjs
+          trap - ERR
+
+      # Even on a refresh failure, publish actual stale ages and BLOCK new risk.
       - name: Publish fail-closed health even when recovery fails
         if: always()
         run: node scripts/build-live-trading-health.mjs
@@ -67,7 +87,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
-            docs/data/live-trading-health.json
+            docs/data/live-trading-health.json \
+            docs/data/daytrader-intelligence.json \
+            docs/data/trade-quality-intelligence.json
           if git diff --cached --quiet; then
             echo 'No health changes to publish.'
           else
