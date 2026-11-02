@@ -200,7 +200,6 @@ const AG = {
   analyst: { name: 'Analyst', role: 'Stock research · watchlist & regime', room: 'research', home: [8.7, 3.0], color: '#3ccfcf', kind: 'cat' , boss: 'claude', title: 'Head of Research' },
   medic:   { name: 'Medic',   role: 'Diagnostics · data freshness & runners', room: 'diagnostics', home: [13.6, 4.2], color: '#ff6b7a', kind: 'medic' , boss: 'atlas', title: 'Diagnostics' },
   planner: { name: 'Planner', role: 'Financial-freedom planning', room: 'freedom', home: [16.3, 4.4], color: '#c58b5a', kind: 'bear' , boss: 'atlas', title: 'Planning' },
-  crypto:  { name: 'Crypto',  role: 'Crypto trader · one coin, stop first', room: 'trading', home: [2.5, 11.1], color: '#ff8a3d', kind: 'fox' , boss: 'guard', title: 'Crypto desk' },
   options: { name: 'Options', role: 'Options trader · put credit spreads', room: 'trading', home: [5.5, 11.1], color: '#a78bfa', kind: 'penguin' , boss: 'guard', title: 'Options desk' },
   guard:   { name: 'Guard',   role: 'Risk officer · approves or blocks', room: 'risk', home: [12.2, 11.4], color: '#ff5c6c', kind: 'astro' , boss: 'claude', title: 'Chief Risk Officer' },
   ledger:  { name: 'Ledger',  role: 'Bookkeeper · every fill & P&L', room: 'vault', home: [17.3, 11.2], color: '#f5c451', kind: 'owl' , boss: 'atlas', title: 'Bookkeeper' },
@@ -369,7 +368,6 @@ function payroll() {
     scout:   { base: 1000, score: freshScore(ageMin(D.sig?.generatedAt), 75, 360), why: `Price scan is ${Math.round(ageMin(D.sig?.generatedAt))}m old (fresh within 75m)` },
     analyst: { base: 1000, score: clamp(freshScore(ageMin(D.latest?.asOf), 90, 1440) - ((D.latest?.cards || []).length ? 0 : 15)), why: `Watchlist updated ${ago(D.latest?.asOf)} · ${(D.latest?.cards || []).length} picks` },
     medic:   { base: 1000, score: botHealth().ok ? 100 : clamp(100 - botHealth().issues.length * 25), why: botHealth().ok ? 'ClaudeBot pipelines healthy' : 'Issues: ' + botHealth().issues.join(', ') },
-    crypto:  { base: 1100, score: clamp(85 + cIdx * 4 - (D.led?.open && !D.led.open.stop ? 30 : 0)), why: D.led?.open ? `Holding ${D.led.open.symbol} with a stop · crypto ${pct(cIdx)}` : `Disciplined cash in a risk-off market · crypto ${pct(cIdx)}` },
     options: { base: 1100, score: clamp(85 + oP * .8), why: `${ot.length} spreads closed · ${usd(oP)} realized${blackoutToday() ? ' · respecting today\'s event pause' : ''}` },
     guard:   { base: 1100, score: clamp(100 - losses * 8 - errors24 * 10), why: `${losses} losing trade${losses === 1 ? '' : 's'} so far · ${errors24} errors in 24h` },
     ledger:  { base: 950,  score: clamp(freshScore(lastRunAge, 75, 360) - errors24 * 10), why: `Books updated ${isFinite(lastRunAge) ? Math.round(lastRunAge) + 'm' : 'never'} ago · ${runs24} crypto checks logged in 24h` },
@@ -430,7 +428,7 @@ const routines = {
       risk: [['a', 'Guard, are new trades allowed today?'], ['b', blackoutToday() ? `No new spreads today: ${esc(blackoutToday())}.` : (D.sig?.regime?.riskOff ? 'Crypto is risk-off. Options only if every check passes.' : 'Allowed, if every check passes.')]],
       vault: [['a', 'Ledger, how are the books?'], ['b', `Crypto ${pct(cryptoIdx() - 100)}, options ${usd(optPnl())} over ${(D.oled?.trades || []).length} spreads.`]],
     }[room];
-    const target = { research: R.analyst, diagnostics: R.medic, freedom: R.planner, trading: pick([R.crypto, R.options]), risk: R.guard, vault: R.ledger }[room];
+    const target = { research: R.analyst, diagnostics: R.medic, freedom: R.planner, trading: R.options, risk: R.guard, vault: R.ledger }[room];
     await visit(a, target, lines);
     await sleep(rnd(2000, 5000));
     await waitFree(a); await say(a, `ClaudeBot <b>${botHealth().status.toLowerCase()}</b> · trading today: ${tradingToday()[0].toLowerCase()} · market ${esc(D.latest?.regime?.label || '–')}.`, 3200);
@@ -442,7 +440,7 @@ const routines = {
     if (Math.random() < .6) await visit(a, R.guard, [
       ['a', s?.regime?.riskOff ? 'Bitcoin is under its 200-hour average. Risk-off.' : s?.bestCandidate ? `${esc(s.bestCandidate)} has a clean setup!` : `Closest: ${esc(top?.symbol)} (${esc((top?.blockers || [])[0] || 'not ready')}).`],
       ['b', s?.bestCandidate && !s?.regime?.riskOff ? `Approved for at most $15, and the stop goes in first.` : 'With ~1.9% round-trip costs, there\'s no edge. Stay in cash.']]);
-    else await visit(a, R.crypto, [['a', 'Fresh signal is up on the wall.'], ['b', 'Thanks. I only move if Guard clears it.']]);
+    else await visit(a, R.options, [['a', 'Fresh signal is up on the wall.'], ['b', 'Thanks. I only move if Guard clears it.']]);
   },
   async analyst(a) {
     if (Math.random() < .45) return checkin(a);
@@ -457,7 +455,7 @@ const routines = {
     const stale = Object.keys(f).filter(k => mx[k] != null && f[k] > mx[k]);
     await wander(a, [[11.0, 1.9], [12.0, 1.9], [13.4, 4.4]]);
     await waitFree(a); await say(a, botHealth().ok ? `ClaudeBot checks out ✓${stale.length ? ` (old engine has ${stale.length} stale feeds, not ours)` : ''}.` : `ClaudeBot issue: ${esc(botHealth().issues[0])}.`, 3000);
-    if (Math.random() < .55) await visit(a, R.crypto, [['a', 'Checking the Robinhood link…'], ['b', 'Broker state gets verified live on every run.']]);
+    if (Math.random() < .55) await visit(a, R.options, [['a', 'Checking the Robinhood link…'], ['b', 'Broker state gets verified live on every run.']]);
     else await visit(a, R.atlas, [['a', botHealth().ok ? 'ClaudeBot pipelines are all healthy.' : `ClaudeBot issue: ${esc(botHealth().issues[0])}.`], ['b', 'Keep watching it.']]);
   },
   async planner(a) {
@@ -466,13 +464,6 @@ const routines = {
     await waitFree(a); await say(a, `Goal ${money(p.monthlyIncome)}/mo needs ${money(p.requiredCapital)} at a ${p.withdrawalRate}% withdrawal rate.`, 3400);
     if (Math.random() < .6) await visit(a, R.ledger, [['a', 'What did trading add this week?'], ['b', `Realized options ${usd(optPnl())}; crypto ${pct(cryptoIdx() - 100)}.`], ['a', 'Small steps. Contributions matter more than returns right now.']]);
     else await visit(a, R.atlas, [['a', `Scenario at 7%/yr: ${money(p.scenarios.find(s => s.annualReturn === 7)?.value)} in ${p.months} months.`], ['b', 'Keep the plan honest.']]);
-  },
-  async crypto(a) {
-    await wander(a, [[2.5, 10.9], [3.2, 11.6]]);
-    const lc = (D.led?.runs || []).slice(-1)[0];
-    await waitFree(a); await say(a, D.led?.open ? `Holding ${esc(D.led.open.symbol)} · stop ${D.led.open.stop}, target ${D.led.open.target}.` : (lc ? `Last check ${ago(lc.t)}: ${esc(lc.detail)}` : 'Standing by in cash.'), 3800);
-    if (Math.random() < .5) await visit(a, R.guard, [['a', 'Anything for me?'], ['b', D.sig?.regime?.riskOff ? 'Not while Bitcoin is risk-off.' : 'Only an A setup that clears the costs.']]);
-    else { await waitFree(a); a.busy++; try { await walkTo(a, 8.2, 9.6, 'Checking Robinhood'); await say(a, 'Robinhood link is up. 🔌', 2200); await goHome(a); } finally { a.busy--; } }
   },
   async options(a) {
     await wander(a, [[5.5, 10.9], [6.2, 11.6]]);
@@ -509,7 +500,7 @@ const routines = {
     await wander(a, [[8.6, 4.6], [7.9, 4.9]]);
     await waitFree(a);
     await say(a, c?.open ? `Paper position: ${esc(c.open.symbol)} from ${c.open.entry}.` : `Paper crypto: ${esc((c?.runs || []).slice(-1)[0]?.detail || 'no setup yet')}.`, 3200);
-    if (Math.random() < .6) await visit(a, R.crypto, [['a', c?.summary?.trades ? `Ignoring the filters would be ${usd(c.summary.pnlUsd)} on $15 positions.` : "I'm testing what happens if we ignore the risk-off filter."], ['b', "Prove it over 20 trades. The CEO can approve parameter tweaks, but removing filters needs the board."]]);
+    if (Math.random() < .6) await visit(a, R.options, [['a', c?.summary?.trades ? `Ignoring the filters would be ${usd(c.summary.pnlUsd)} on $15 positions.` : "I'm testing what happens if we ignore the risk-off filter."], ['b', "Prove it over 20 trades. The CEO can approve parameter tweaks, but removing filters needs the board."]]);
   },
   async ledger(a) {
     await wander(a, [[17.3, 10.6], [16.4, 9.8], [18.0, 11.6]]);
@@ -518,7 +509,7 @@ const routines = {
       const k = pick(Object.keys(R).filter(x => x !== 'ledger')), r = payroll().rows[k];
       const w = payroll().wk;
       await visit(a, R[k], [['a', w.verdict === 'loss' ? `Sorry, ${R[k].name}: the company lost money, so your paycheck is <b>🪙 0</b>.` : `Paycheck for you, ${R[k].name}: <b>${credits(r.pay)}</b> (score ${r.score}, ${w.verdict === 'flat' ? 'half pay this week' : 'full pay + bonus'}).`], ['b', w.verdict === 'loss' ? "Understood. Let's earn it back the right way." : r.score >= 85 ? 'Thanks! 🎉' : "Thanks. I'll do better next week."]]);
-    } else if (roll < .7) await visit(a, pick([R.crypto, R.options]), [['a', 'Any fills to record?'], ['b', (D.led?.trades?.length || 0) + (D.oled?.trades?.length || 0) ? 'Already in your books.' : 'Not yet. Waiting for a clean setup.']]);
+    } else if (roll < .7) await visit(a, R.options, [['a', 'Any fills to record?'], ['b', (D.led?.trades?.length || 0) + (D.oled?.trades?.length || 0) ? 'Already in your books.' : 'Not yet. Waiting for a clean setup.']]);
     else { await waitFree(a); const p = payroll(); await say(a, `Payroll this week: <b>${credits(p.total)}</b> (${p.wk.verdict === 'profit' ? 'full pay + bonus' : p.wk.verdict === 'flat' ? 'half pay, flat week' : 'docked, company lost money'}). Game credits only.`, 3400); }
   },
 };
@@ -610,7 +601,7 @@ function agentStatus(a) {
 }
 const DOTC = { work: '#7c78ff', walk: '#3ccfcf', talk: '#ffffff', hold: '#ff8a3d', warn: '#f5c451', ok: '#3ddc84', bad: '#ff5c6c' };
 function renderRoster() {
-  const groups = [['CEO', ['claude']], ['Operations · Atlas', ['atlas', 'medic', 'ledger', 'planner']], ['Research · Analyst', ['analyst', 'quinn', 'scout', 'sim', 'echo']], ['Risk & Trading · Guard', ['guard', 'crypto', 'options']]];
+  const groups = [['CEO', ['claude']], ['Operations · Atlas', ['atlas', 'medic', 'ledger', 'planner']], ['Research · Analyst', ['analyst', 'quinn', 'scout', 'sim', 'echo']], ['Risk & Trading · Guard', ['guard', 'options']]];
   $('roster').innerHTML = groups.map(([g, ks]) => `<div class="grp">${g}<span>${ks.length}</span></div>` + ks.map(k => { const a = agents[k];
     return `<div class="ag" data-k="${k}"><div class="av"><svg viewBox="-24 -64 48 66">${charSVG(a.kind, a.color)}</svg></div><div class="mid"><div class="n">${a.name} <span style="color:var(--muted);font-weight:500;font-size:11.5px">${esc(a.title || '')}</span></div><div class="r">${a.boss ? 'Reports to ' + agents[a.boss].name + ' · ' : ''}${esc(a.role)}</div></div><span class="stt" id="st-${k}"></span></div>`; }).join('')).join('');
   document.querySelectorAll('.ag').forEach(x => x.onclick = () => focusAgent(x.dataset.k));
@@ -757,7 +748,7 @@ function paperCard() {
   return card('🧪 Paper Lab · runs alongside live trading, no real money', `<p style="margin:0 0 10px">Sim and Echo paper-trade different versions of the rules on the same live Robinhood quotes. Options P&amp;L is per spread; crypto uses $15 paper positions. <b>CEO auto-approval:</b> a variant that reaches 20+ paper trades with profit factor ≥ 1.3 and beats the live rules is promoted to live automatically, within hard limits, and rolled back automatically if it loses live. Variants that remove a safety rule still need the board.</p>${body}<p>Updated ${L?.updatedAt ? ago(L.updatedAt) : 'never'}.</p>`, 'span3');
 }
 function payrollCard() {
-  const p = payroll(); const order = ['claude', 'atlas', 'analyst', 'guard', 'quinn', 'scout', 'sim', 'echo', 'medic', 'ledger', 'planner', 'crypto', 'options'];
+  const p = payroll(); const order = ['claude', 'atlas', 'analyst', 'guard', 'quinn', 'scout', 'sim', 'echo', 'medic', 'ledger', 'planner', 'options'];
   const gc = g => g === 'A' || g === 'B' ? 'up' : g === 'C' ? 'warn' : 'down';
   const v = { profit: ['up', `The company made ${usd(p.wk.usd)} this week: full pay plus a ${credits(p.pool)} profit-sharing bonus.`], flat: ['warn', `No money made or lost this week (${p.wk.trades} closed trades): <b>half pay</b>. Capital was protected but nothing was earned.`], loss: ['down', `The company lost ${usd(p.wk.usd)} this week: <b>no paychecks</b>. Everyone's pay is docked to zero until results turn positive.`] }[p.wk.verdict];
   const lastTxt = { profit: `Last week: profit ${usd(p.last.usd)} · full pay`, flat: 'Last week: flat · half pay', loss: `Last week: loss ${usd(p.last.usd)} · no pay` }[p.last.verdict];

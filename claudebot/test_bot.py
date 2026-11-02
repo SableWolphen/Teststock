@@ -2,7 +2,7 @@
 import importlib.util, os, copy
 spec = importlib.util.spec_from_file_location("bot", os.path.join(os.path.dirname(__file__), "bot.py"))
 bot = importlib.util.module_from_spec(spec); spec.loader.exec_module(bot)
-cfg = bot.load(bot.CONFIG)
+cfg = {**bot.load(bot.CONFIG), "enabled": True}   # rules tested as if live
 NOW = "2026-11-02T03:12:00Z"
 SIG = {"generatedAt": "2026-11-02T03:05:00Z", "regime": {"riskOff": False}, "bestCandidate": "SOL",
        "coins": [{"symbol": "SOL", "lastClose": 180.0, "score": 2.1, "rsi": 61, "trend": "up", "atr": 1.5,
