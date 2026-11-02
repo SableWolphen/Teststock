@@ -234,7 +234,8 @@ def main():
     grid = [dict(sig=s, trend=tr, dte=dt, tp=tp, stop=st, tstop=ts) for s, tr, dt, tp, st, ts in
             itertools.product(("orb", "vwapx"), (True, False), (0, 1), (5, 8, 10), (15, 25), (30, 60))]
     modes = {"acct120": 120.0, "acct1000": 1000.0}
-    sims = {(mk, i): {"eq": e0, "trades": [], "days": [], "trend": trend} for mk, e0 in modes.items() for i in range(len(grid))}
+    # each period starts fresh from the starting equity, so 2025-26 is judged on its own
+    sims = {(mk, i, per): {"eq": e0, "trades": [], "days": [], "trend": trend} for mk, e0 in modes.items() for i in range(len(grid)) for per in ("train", "test")}
     prev_vix = None; fetched = 0
     for day in days_all:
         vprev = None
@@ -243,8 +244,9 @@ def main():
             vprev = vix[ks[-1]] * 100 if ks else None
         events, opt = [], {}
         if vprev is not None and vprev > 30:
-            for s in sims.values():
-                s["days"].append((day, round(s["eq"], 2), 0.0))
+            for (mk, i, per), s in sims.items():
+                if (day < SPLIT) == (per == "train"):
+                    s["days"].append((day, round(s["eq"], 2), 0.0))
             continue
         for u in UNDS:
             bars = und[u].get(day)
@@ -274,9 +276,11 @@ def main():
                 if prev and nxt and prev[4] >= 3 and nxt[0] >= 0.05:
                     lst.append((buy_px(nxt[0]), sym))
             cand[key] = sorted(lst)
-        for (mk, i), s in sims.items():
+        for (mk, i, per), s in sims.items():
+            if (day < SPLIT) != (per == "train"):
+                continue
             if s["eq"] <= 5:
-                s["days"].append((day, round(s["eq"], 2), 0.0)); continue
+                s["days"].append((day, round(s["eq"], 2), 0.0)); continue   # account wiped out
             run_day(s, grid[i], day, events, opt, cand)
         if fetched % 50 == 0:
             print(day, "fetched", fetched, file=sys.stderr)
@@ -286,23 +290,21 @@ def main():
     for mk, e0 in modes.items():
         rows = []
         for i, p in enumerate(grid):
-            s = sims[(mk, i)]
-            tr_a = [t for t in s["trades"] if t["day"] < SPLIT]; tr_b = [t for t in s["trades"] if t["day"] >= SPLIT]
-            d_a = [d for d in s["days"] if d[0] < SPLIT]; d_b = [d for d in s["days"] if d[0] >= SPLIT]
-            # test period restarts from the starting equity so train luck doesn't carry over
-            rows.append({"params": p, "train": stats(tr_a, d_a, e0), "testCompounded": stats(tr_b, d_b, d_a[-1][1] if d_a else e0), "full": stats(s["trades"], s["days"], e0)})
-        ok = [r for r in rows if r["train"].get("trades", 0) >= 50]
+            a, b = sims[(mk, i, "train")], sims[(mk, i, "test")]
+            rows.append({"params": p, "train": stats(a["trades"], a["days"], e0), "test": stats(b["trades"], b["days"], e0)})
+        ok = [r for r in rows if r["train"].get("trades", 0) >= 20]
         best = max(ok, key=lambda r: r["train"]["netUsd"]) if ok else None
-        pos = sum(1 for r in ok if (r["testCompounded"].get("netUsd") or -1) > 0)
+        pos = sum(1 for r in ok if (r["test"].get("netUsd") or -1) > 0)
         by_tp = {}
         for tpv in (5, 8, 10):
             cand = [r for r in ok if r["params"]["tp"] == tpv]
             if cand:
-                b = max(cand, key=lambda r: r["train"]["netUsd"]); by_tp[tpv] = {"params": b["params"], "train": b["train"], "test": b["testCompounded"]}
+                b = max(cand, key=lambda r: r["train"]["netUsd"]); by_tp[tpv] = {"params": b["params"], "train": b["train"], "test": b["test"]}
         out["modes"][mk] = {"startEquity": e0, "chosenOnTrain": best, "combosPositiveInTest": f"{pos}/{len(ok)}", "bestByTakeProfit": by_tp,
                             "top10ByTrain": sorted(ok, key=lambda r: -r["train"]["netUsd"])[:10],
-                            "sampleTradesChosen": [t for t in sims[(mk, grid.index(best["params"]))]["trades"] if t["day"] >= SPLIT][:25] if best else []}
-        print(mk, "chosen", best and best["params"], "TRAIN", best and best["train"], "TEST", best and best["testCompounded"], "positive", pos, "/", len(ok))
+                            "allCombos": rows,
+                            "sampleTradesChosenTest": sims[(mk, grid.index(best["params"]), "test")]["trades"][:25] if best else []}
+        print(mk, "chosen", best and best["params"], "TRAIN", best and best["train"], "TEST", best and best["test"], "positive", pos, "/", len(ok))
     dip = json.load(open(os.path.join(ROOT, "docs", "data", "claudebot-dip-backtest.json"))).get("chosenOnTrain", {})
     out["dipComparison"] = {"params": dip.get("params"), "test": dip.get("test")}
     json.dump(out, open(OUT, "w"), indent=1)
