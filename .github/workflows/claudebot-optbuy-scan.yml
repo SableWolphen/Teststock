@@ -1,0 +1,37 @@
+name: ClaudeBot options universe scan
+# Nightly after the close: dip-trigger prices for the options-buying desk's wider universe.
+# Writes docs/data/claudebot-optbuy-scan.json. Places no orders and touches no account data.
+on:
+  schedule:
+    - cron: '17 22 * * 1-5'
+    - cron: '47 3 * * 2-6'   # backup slot: GitHub drops scheduled runs on busy repos
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['claudebot/optbuy_scan.py', 'claudebot/optbuy_config.json', '.github/workflows/claudebot-optbuy-scan.yml']
+permissions:
+  contents: write
+concurrency:
+  group: claudebot-optbuy-scan
+  cancel-in-progress: false
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: python claudebot/optbuy_scan.py
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add docs/data/claudebot-optbuy-scan.json
+          git diff --cached --quiet && exit 0
+          git commit -m "ClaudeBot options universe scan $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3 4 5; do git pull --rebase -X theirs origin main && git push origin HEAD:main && exit 0; sleep $((i*5)); done
+          exit 1

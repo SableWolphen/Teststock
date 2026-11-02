@@ -227,8 +227,10 @@ Rules: `claudebot/optbuy_bot.py` + `claudebot/optbuy_config.json`. Ledger:
 | action | what to do |
 |---|---|
 | `need_symbol` | same as the Dip desk: add `symbols[SYM] = {price, closes, heldQty}`; re-plan |
+| `need_scan_prices` | wider universe (board order: options on any stock). Load `docs/data/claudebot-optbuy-scan.json` into `scan` in /tmp/dfacts.json (once per run). Then `scanPrices[SYM]` = live price from get_equity_quotes (up to 20 symbols per call) for every symbol listed; re-plan. If the scan file is more than ~30 hours old on a weekday, first dispatch `claudebot-optbuy-scan.yml` the same way as the stale crypto scan (step 0) and pull; if it's still stale the planner skips the universe by itself |
+| `need_earnings` | `earnings[SYM]` = that stock's next report date (YYYY-MM-DD) from get_earnings_calendar (days 31; look for the symbol), or null if none in the window; re-plan |
 | `need_expirations` | `expirations[SYM]` = get_option_chains(SYM).expiration_dates; re-plan |
-| `need_calls` | get_option_instruments(chain_symbol SYM, expiration_dates, type call), keep strikes between strikeMin and strikeMax, one get_option_quotes for those ids; append `{symbol, id, strike, expiration, bid, ask, delta}` to `calls`; re-plan |
+| `need_calls` | get_option_instruments(chain_symbol SYM, expiration_dates, type call), keep strikes between strikeMin and strikeMax, one get_option_quotes for those ids; append `{symbol, id, strike, expiration, bid, ask, delta}` to `calls` and add `"SYM|expiration"` to `callsFetched` (even if nothing was in range); re-plan |
 | `need_position` | `optHeld` = quantity of that option id in get_option_positions(nonzero=true) (0 if absent); `optQuote` = {bid, ask} from get_option_quotes; `tpOrder` = {id, price} of the open sell-to-close order on that id (get_option_orders state queued/confirmed), else null; re-plan |
 | `buy` | review_option_order (one leg: option_id id, side buy, position_effect open; type limit, price limitPrice, quantity "1", gfd), then place_option_order with a fresh UUID ref_id. Poll ~every 30s up to 3 min; if unfilled, cancel and place once more at maxPrice, wait 3 min; still unfilled: cancel and log "no fill". Filled: `optbuy_bot.py open --json '<action JSON>' --price <average fill price>`, then re-plan (it will ask to place the take-profit). |
 | `place_tp` | review then place_option_order: one leg (id, side sell, position_effect close), type limit, price limitPrice, quantity "1", **time_in_force gtc**. Log it. |
@@ -236,5 +238,5 @@ Rules: `claudebot/optbuy_bot.py` + `claudebot/optbuy_config.json`. Ledger:
 | `sell` | one leg (id, side sell, position_effect close), type limit, price limitPrice, quantity "1", gfd. Poll up to 2 min; if unfilled, cancel and re-place $0.01 lower, up to 3 times (never below $0.01). Filled: `optbuy_bot.py close --price <fill> --reason "<reason>"`. |
 | `record_broker_close` | find the filled sell-to-close for that id in get_option_orders(state filled) and run `close --price <its price> --reason "take profit (resting order)"` |
 | `none` | `optbuy_bot.py log --action hold --detail "<reason>"` (skip when "market closed") |
-Never hold more than one option, never buy more than quantity 1, never sell options you didn't buy.
+Never hold more than one option, never buy more than quantity 1, never sell options you didn't buy. Universe = optbuy_config.json `symbols` (tested ETFs, tried first) plus `scanUniverse` (stocks and extra ETFs, via the nightly scan); never buy an option on a ticker outside those lists.
 Add `docs/data/claudebot-optbuy-ledger.json` to the same commit.

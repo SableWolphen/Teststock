@@ -14,7 +14,7 @@ assert act()[0]["do"] == "need_expirations"
 F2 = {**F, "expirations": {"KRE": ["2026-11-06", "2026-11-20", "2026-11-27", "2026-12-18"]}}
 a = act(F2)[0]; assert a["do"] == "need_calls" and a["expiration"] == "2026-11-27", a      # nearest to 21 days
 px = F["symbols"]["KRE"]["price"]
-C = [{"symbol": "KRE", "id": "a", "strike": round(px + 0.5), "expiration": "2026-11-27", "bid": 0.40, "ask": 0.44, "delta": 0.32},   # too expensive ($42)
+C = [{"symbol": "KRE", "id": "a", "strike": round(px + 0.5), "expiration": "2026-11-27", "bid": 0.52, "ask": 0.56, "delta": 0.32},   # too expensive ($54)
      {"symbol": "KRE", "id": "b", "strike": round(px + 2), "expiration": "2026-11-27", "bid": 0.25, "ask": 0.27, "delta": 0.21},    # fits
      {"symbol": "KRE", "id": "c", "strike": round(px + 3), "expiration": "2026-11-27", "bid": 0.10, "ask": 0.12, "delta": 0.11}]    # delta too low
 a = act({**F2, "calls": C})[0]; assert a["do"] == "buy" and a["id"] == "b" and a["limitPrice"] == "0.26", a
@@ -33,4 +33,18 @@ assert act({**H, "optHeld": 0}, L)[0]["do"] == "record_broker_close"
 a = act({**H, "now": "2026-11-13T16:14:00Z", "tpOrder": {"id": "t", "price": 0.29}}, L); assert a[-1]["do"] == "sell" and a[-1]["reason"] == "time", a
 assert act({k: v for k, v in H.items() if k != "optQuote"}, L)[0]["do"] == "need_position"
 assert ob.tick_up(0.286) == 0.29 and ob.tick_up(3.11) == 3.15
+# wider universe from the nightly scan
+SC = {"generatedAt": "2026-11-04T02:00:00Z", "asOf": "2026-11-03", "watch": ["SOFI", "XLE"],
+      "symbols": {"SOFI": {"lastClose": 20.0, "trendFloor": 17.0, "rsiTrigger": 19.0}, "XLE": {"lastClose": 90.0, "trendFloor": 80.0, "rsiTrigger": 85.0}}}
+U = {**F, "symbols": {"KRE": {"price": up[-1], "closes": up, "heldQty": 0}, "XLF": F["symbols"]["XLF"]}, "scan": SC}
+a = act(U)[0]; assert a["do"] == "need_scan_prices" and a["symbols"] == ["SOFI", "XLE"], a
+a = act({**U, "scanPrices": {"SOFI": 18.5, "XLE": 88}})[0]; assert a["do"] == "need_earnings" and a["symbol"] == "SOFI", a
+a = act({**U, "scanPrices": {"SOFI": 18.5, "XLE": 88}, "earnings": {"SOFI": "2026-11-10"}})[0]; assert a["do"] == "none" and "earnings" in a["reason"], a
+U2 = {**U, "scanPrices": {"SOFI": 18.5, "XLE": 88}, "earnings": {"SOFI": None}, "expirations": {"SOFI": ["2026-11-27"]}}
+a = act(U2)[0]; assert a["do"] == "need_calls" and a["symbol"] == "SOFI", a
+SC_ = [{"symbol": "SOFI", "id": "s1", "strike": 19, "expiration": "2026-11-27", "bid": 0.40, "ask": 0.44, "delta": 0.35}]
+a = act({**U2, "calls": SC_})[0]; assert a["do"] == "buy" and a["id"] == "s1", a
+a = act({**U2, "calls": [], "callsFetched": ["SOFI|2026-11-27"]})[0]; assert a["do"] == "none" and "SOFI" in a["reason"], a
+a = act({**U, "scan": {**SC, "generatedAt": "2026-10-20T02:00:00Z"}})[0]; assert a["do"] == "none" and "stale" in a["reason"], a
+assert act({**U, "scanPrices": {"SOFI": 19.5, "XLE": 88}})[0]["do"] == "none"     # above trigger: no signal
 print("all options-buying scenarios pass")

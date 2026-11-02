@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """ClaudeBot Options-buying desk (LIVE, single-leg calls, board order 2026-11-02).
 
-Entry: in the 14:00-14:59 CT run, when a fund in optbuy_config.json `symbols` shows the Dip
+Entry: in the 14:00-14:59 CT run, when a fund in optbuy_config.json `symbols` (or, via the nightly
+claudebot-optbuy-scan.json triggers, any name in `scanUniverse`) shows the Dip
 desk's tested signal (RSI(2) < 5 and price above its 200-day average), buy ONE call on it:
 12-35 days out (nearest 21), strike from the money up to 8% above, delta >= 0.15, quotes not
-too wide, premium <= min($30, 25% of account). Highest delta that fits wins.
+too wide, premium <= min($50, 43% of account); stocks skip earnings within 10 days. Highest delta that fits wins.
 Exit: a resting GTC limit sell at +10% goes in right after the fill (profit taken between runs);
 sell at the bid if it falls 40%, after 7 trading days, or 5 days before expiry.
 
@@ -91,7 +92,8 @@ def plan(f, cfg, led):
     budget = min(r["maxPremiumUsd"], acct * r["maxPctOfAccount"] / 100, float(f.get("buyingPower", 0)) - r["minCashAfterUsd"])
     if budget < 5:
         return none("not enough free cash for an option")
-    syms, sig, looked = f.get("symbols", {}), None, []
+    syms, looked, sigs = f.get("symbols", {}), [], []
+    # 1) the tested ETFs (full closes, shared with the Dip desk)
     for sym in cfg["symbols"]:
         d = syms.get(sym)
         if not d:
@@ -101,38 +103,70 @@ def plan(f, cfg, led):
             continue
         rv = rsi2(cl); looked.append(f"{sym} RSI2 {rv:.0f}")
         if cl[-1] > sma(cl, s["trendSma"]) and rv < s["rsi2Below"]:
-            sig = sym; break
-    if not sig:
+            sigs.append((sym, "etf", rv))
+    # 2) the wider universe (stocks + extra ETFs) from the nightly scan's trigger prices
+    scan = f.get("scan")
+    if cfg.get("scanUniverse") and scan is not None:
+        age = (now - ts(scan["generatedAt"])).total_seconds() / 3600 if scan.get("generatedAt") else 999
+        if age > cfg["scan"]["maxAgeHours"] or not scan.get("asOf") or scan["asOf"] >= today.isoformat():
+            looked.append(f"universe scan stale ({age:.0f}h old), skipped")
+        else:
+            px = f.get("scanPrices") or {}
+            miss = [w for w in scan.get("watch", []) if w not in px and w not in cfg["symbols"]]
+            if miss:
+                return {"actions": [{"do": "need_scan_prices", "symbols": miss, "note": "scanPrices[SYM] = live price from get_equity_quotes"}]}
+            hits = []
+            for w in scan.get("watch", []):
+                r = scan["symbols"].get(w) or {}
+                if w in cfg["symbols"] or w not in px or not r.get("rsiTrigger"):
+                    continue
+                p_ = float(px[w])
+                if r["trendFloor"] < p_ < r["rsiTrigger"]:
+                    hits.append((w, "etf" if w in cfg.get("scanEtfs", []) else "stock", (r["rsiTrigger"] - p_) / p_))
+                    syms.setdefault(w, {"price": p_})
+            # deepest below its trigger first
+            sigs += [(w, k, -depth) for w, k, depth in sorted(hits, key=lambda t: -t[2])]
+            looked.append(f"universe: {len(scan.get('watch', []))} on watch, {len(hits)} signals")
+    if not sigs:
         return none("no dip signal: " + ", ".join(looked))
-    exps = (f.get("expirations") or {}).get(sig)
-    if not exps:
-        return {"actions": [{"do": "need_expirations", "symbol": sig}]}
-    ok = [e for e in exps if c["minDte"] <= (date.fromisoformat(e) - today).days <= c["maxDte"]]
-    if not ok:
-        return none(f"{sig}: no {c['minDte']}-{c['maxDte']} day expiry")
-    exp = min(ok, key=lambda e: abs((date.fromisoformat(e) - today).days - c["targetDte"]))
-    px = float(syms[sig]["price"])
-    cands = [k for k in f.get("calls", []) if k["symbol"] == sig and k["expiration"] == exp]
-    if not cands:
-        return {"actions": [{"do": "need_calls", "symbol": sig, "expiration": exp, "type": "call", "strikeMin": round(px, 2), "strikeMax": round(px * (1 + c["maxStrikeAbovePct"] / 100), 2)}]}
-    fit = []
-    for k in cands:
-        bid, ask, dl = float(k["bid"]), float(k["ask"]), abs(float(k.get("delta") or 0))
-        mid = (bid + ask) / 2
-        if not (px <= float(k["strike"]) <= px * (1 + c["maxStrikeAbovePct"] / 100)) or bid <= 0 or dl < c["minDelta"]:
-            continue
-        if ask - bid > mid * c["maxSpreadPctOfMid"] / 100 + 1e-9:
-            continue
-        lim = tick_up(mid)
-        if lim * 100 + 0.04 > budget:
-            continue
-        fit.append((dl, k, lim))
-    if not fit:
-        return none(f"{sig} dip signal, but no {exp} call fits: budget ${budget:.0f}, delta >= {c['minDelta']}, tight quotes")
-    dl, k, lim = max(fit, key=lambda t: t[0])
-    return {"actions": [{"do": "buy", "symbol": sig, "id": k["id"], "strike": float(k["strike"]), "expiration": exp, "limitPrice": f"{lim:.2f}",
-                         "maxPrice": f"{min(float(k['ask']), budget / 100):.2f}", "quantity": "1", "delta": round(dl, 3),
-                         "label": f"{sig} {exp[5:]} {float(k['strike']):g}C", "why": f"{sig} dip signal; call delta {dl:.2f} for ${lim * 100:.0f}"}]}
+    skipped = []
+    for sig, kind, _ in sigs[: cfg["scan"].get("maxSignalsPerRun", 6)]:
+        if kind == "stock":
+            earn = f.get("earnings") or {}
+            if sig not in earn:
+                return {"actions": [{"do": "need_earnings", "symbol": sig, "note": "earnings[SYM] = next report date YYYY-MM-DD within ~31 days, or null"}]}
+            if earn[sig] and 0 <= (date.fromisoformat(earn[sig]) - today).days <= c["earningsBufferDays"]:
+                skipped.append(f"{sig} earnings {earn[sig]}"); continue
+        exps = (f.get("expirations") or {}).get(sig)
+        if exps is None:
+            return {"actions": [{"do": "need_expirations", "symbol": sig}]}
+        ok = [e for e in exps if c["minDte"] <= (date.fromisoformat(e) - today).days <= c["maxDte"]]
+        if not ok:
+            skipped.append(f"{sig} no {c['minDte']}-{c['maxDte']} day expiry"); continue
+        exp = min(ok, key=lambda e: abs((date.fromisoformat(e) - today).days - c["targetDte"]))
+        px = float(syms[sig]["price"])
+        cands = [k for k in f.get("calls", []) if k["symbol"] == sig and k["expiration"] == exp]
+        if not cands and f"{sig}|{exp}" not in (f.get("callsFetched") or []):
+            return {"actions": [{"do": "need_calls", "symbol": sig, "expiration": exp, "type": "call", "strikeMin": round(px, 2), "strikeMax": round(px * (1 + c["maxStrikeAbovePct"] / 100), 2)}]}
+        fit = []
+        for k in cands:
+            bid, ask, dl = float(k["bid"]), float(k["ask"]), abs(float(k.get("delta") or 0))
+            mid = (bid + ask) / 2
+            if not (px <= float(k["strike"]) <= px * (1 + c["maxStrikeAbovePct"] / 100)) or bid <= 0 or dl < c["minDelta"]:
+                continue
+            if ask - bid > mid * c["maxSpreadPctOfMid"] / 100 + 1e-9:
+                continue
+            lim = tick_up(mid)
+            if lim * 100 + 0.04 > budget:
+                continue
+            fit.append((dl, k, lim))
+        if not fit:
+            skipped.append(f"{sig} no {exp} call fits"); continue
+        dl, k, lim = max(fit, key=lambda t: t[0])
+        return {"actions": [{"do": "buy", "symbol": sig, "id": k["id"], "strike": float(k["strike"]), "expiration": exp, "limitPrice": f"{lim:.2f}",
+                             "maxPrice": f"{min(float(k['ask']), budget / 100):.2f}", "quantity": "1", "delta": round(dl, 3),
+                             "label": f"{sig} {exp[5:]} {float(k['strike']):g}C", "why": f"{sig} dip signal; call delta {dl:.2f} for ${lim * 100:.0f}"}]}
+    return none(f"dip signals but nothing fits (budget ${budget:.0f}, delta >= {c['minDelta']}, tight quotes): " + "; ".join(skipped))
 
 
 def main(argv=None):
