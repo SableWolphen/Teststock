@@ -18,6 +18,7 @@ ob = importlib.util.module_from_spec(spec); spec.loader.exec_module(ob)
 OUT = os.path.join(os.path.dirname(HERE), "docs", "data", "claudebot-dip-backtest.json")
 SYMS = ["SPY", "QQQ", "DIA", "IWM"]
 COST = 0.0003
+SECTORS = ["XLK", "XLF", "XLE", "XLV", "XLI", "XLY", "XLP", "XLU", "XLB", "SMH", "KRE", "XBI"]
 
 
 def rsi2(c):
@@ -79,6 +80,23 @@ def main():
     out = {"generatedAt": datetime.now(timezone.utc).isoformat(), "symbols": SYMS, "costPerSidePct": COST * 100,
            "chosenOnTrain": best, "combosWithPositiveTest": f"{positive_test}/{len(ok)}",
            "top": sorted(ok, key=lambda g: -(g["train"].get("avgTradePct") or -9))[:10]}
+    # Sector Analyst: does the LIVE rule (chosen on index ETFs) also work on sector funds?
+    # Parameters are frozen (no re-fitting), so this is a clean out-of-sample check per fund.
+    live = best["params"]; sec = {}
+    for s in SECTORS:
+        try:
+            bars = ob.daily_bars(s, "2022-01-01")[0]
+        except Exception as e:  # noqa: BLE001
+            sec[s] = {"error": str(e)[:80]}; continue
+        t = run(bars, live)
+        sec[s] = {"train": summ([x for x in t if x["in"] < "2025-01-01"]), "test": summ([x for x in t if x["in"] >= "2025-01-01"])}
+    good = [s for s, v in sec.items() if v.get("train", {}).get("trades", 0) >= 8 and (v["train"].get("avgTradePct") or -1) > 0.3
+            and v.get("test", {}).get("trades", 0) >= 5 and (v["test"].get("avgTradePct") or -1) > 0.3 and (v["test"].get("profitFactor") or 0) >= 1.5]
+    out["sectorScan"] = {"params": live, "rule": "add a fund only if train avg > 0.3%/trade (8+ trades) AND test avg > 0.3% with PF >= 1.5 (5+ trades)",
+                         "bySymbol": sec, "qualified": good}
+    print("SECTOR qualified:", good)
+    for s, v in sec.items():
+        print(s, v)
     json.dump(out, open(OUT, "w"), indent=1)
     print(json.dumps({k: out[k] for k in ("chosenOnTrain", "combosWithPositiveTest")}, indent=1))
     for g in out["top"]:
