@@ -57,7 +57,7 @@ returns `none`/`wait`. Never place a buy when the ledger already has an open pos
 ```
 python3 claudebot/bot.py snapshot /tmp/facts.json
 # (run Parts B, E, C, C3, C2 and D below first, then:)
-git add docs/data/claudebot-ledger.json docs/data/claudebot-options-ledger.json docs/data/claudebot-paper-ledger.json docs/data/claudebot-audit.json docs/data/claudebot-dip-ledger.json docs/data/claudebot-daytrade-paper.json claudebot/options_config.json
+git add docs/data/claudebot-ledger.json docs/data/claudebot-options-ledger.json docs/data/claudebot-paper-ledger.json docs/data/claudebot-audit.json docs/data/claudebot-dip-ledger.json docs/data/claudebot-daytrade-paper.json docs/data/claudebot-optbuy-ledger.json claudebot/options_config.json
 git commit -m "ClaudeBot run <UTC time>: <what happened>"
 git pull --rebase -X theirs origin main && git push origin HEAD:main
 ```
@@ -218,3 +218,23 @@ the options desk by itself. Rules: `claudebot/dip_bot.py` + `claudebot/dip_confi
    the planner returns one action at a time and several positions may need work in one run.
 6. `none`: `dip_bot.py log --action hold --detail "<reason>"` (skip when the reason is "market closed").
 Add `docs/data/claudebot-dip-ledger.json` to the same commit.
+
+## E7. Options-buying desk (LIVE, single-leg calls), right after the Dip desk
+
+Rules: `claudebot/optbuy_bot.py` + `claudebot/optbuy_config.json`. Ledger:
+`docs/data/claudebot-optbuy-ledger.json`. Reuse `/tmp/dfacts.json` (same `symbols` data), then
+`python3 claudebot/optbuy_bot.py plan /tmp/dfacts.json` and loop (up to 8 rounds):
+| action | what to do |
+|---|---|
+| `need_symbol` | same as the Dip desk: add `symbols[SYM] = {price, closes, heldQty}`; re-plan |
+| `need_expirations` | `expirations[SYM]` = get_option_chains(SYM).expiration_dates; re-plan |
+| `need_calls` | get_option_instruments(chain_symbol SYM, expiration_dates, type call), keep strikes between strikeMin and strikeMax, one get_option_quotes for those ids; append `{symbol, id, strike, expiration, bid, ask, delta}` to `calls`; re-plan |
+| `need_position` | `optHeld` = quantity of that option id in get_option_positions(nonzero=true) (0 if absent); `optQuote` = {bid, ask} from get_option_quotes; `tpOrder` = {id, price} of the open sell-to-close order on that id (get_option_orders state queued/confirmed), else null; re-plan |
+| `buy` | review_option_order (one leg: option_id id, side buy, position_effect open; type limit, price limitPrice, quantity "1", gfd), then place_option_order with a fresh UUID ref_id. Poll ~every 30s up to 3 min; if unfilled, cancel and place once more at maxPrice, wait 3 min; still unfilled: cancel and log "no fill". Filled: `optbuy_bot.py open --json '<action JSON>' --price <average fill price>`, then re-plan (it will ask to place the take-profit). |
+| `place_tp` | review then place_option_order: one leg (id, side sell, position_effect close), type limit, price limitPrice, quantity "1", **time_in_force gtc**. Log it. |
+| `cancel_order` | cancel_option_order(orderId) (the bot's own take-profit; pre-authorized); confirm cancelled |
+| `sell` | one leg (id, side sell, position_effect close), type limit, price limitPrice, quantity "1", gfd. Poll up to 2 min; if unfilled, cancel and re-place $0.01 lower, up to 3 times (never below $0.01). Filled: `optbuy_bot.py close --price <fill> --reason "<reason>"`. |
+| `record_broker_close` | find the filled sell-to-close for that id in get_option_orders(state filled) and run `close --price <its price> --reason "take profit (resting order)"` |
+| `none` | `optbuy_bot.py log --action hold --detail "<reason>"` (skip when "market closed") |
+Never hold more than one option, never buy more than quantity 1, never sell options you didn't buy.
+Add `docs/data/claudebot-optbuy-ledger.json` to the same commit.
