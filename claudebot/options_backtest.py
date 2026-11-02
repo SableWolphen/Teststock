@@ -145,19 +145,29 @@ def run(bars, ivs, trend_filter, unlimited=False):
     )
 
 
+VOL_INDEX = {"IWM": "RVX", "QQQ": "VXN", "SPY": "VIX", "DIA": "VIX", "GLD": "GVZ", "SLV": "VXSLV", "XLE": "VXXLE", "EEM": "VXEEM"}
+
+
 def main():
-    sym = CFG["underlying"]
-    bars, src = daily_bars(sym, CFG["backtest"]["start"])
-    ivs = vol_index("RVX") if sym == "IWM" else vol_index("VIX")
-    res = dict(generatedAt=datetime.now(timezone.utc).isoformat(), underlying=sym, priceSource=src,
-               ivSource="Cboe RVX" if ivs else "realized vol x1.2",
-               days=len(bars), fromDate=bars[0][0], toDate=bars[-1][0],
-               startingAccountUsd=CFG["backtest"]["startingAccountUsd"],
-               results=[run(bars, ivs, True), run(bars, ivs, False), run(bars, ivs, True, True), run(bars, ivs, False, True)],
-               caveat="Modeled option prices (Black-Scholes + vol index + skew), daily-close checks, fills worse than mid. Real fills, skew and gaps differ. Not a promise.")
+    syms = CFG.get("backtestUniverse") or [CFG["underlying"]]
+    per = []
+    for sym in syms:
+        try:
+            bars, src = daily_bars(sym, CFG["backtest"]["start"])
+            ivs = vol_index(VOL_INDEX[sym]) if sym in VOL_INDEX else {}
+            r_edge = run(bars, ivs, True, True)
+            r_acct = run(bars, ivs, True)
+            per.append(dict(symbol=sym, priceSource=src, ivSource=(VOL_INDEX.get(sym) if ivs else "realized vol x1.2"),
+                            lastClose=round(bars[-1][1], 2), days=len(bars), edge=r_edge, smallAccount=r_acct))
+            print(sym, {k: v for k, v in r_edge.items() if k != "last10"})
+        except Exception as e:  # noqa: BLE001
+            print("skip", sym, e, file=sys.stderr)
+    iwm = next((p for p in per if p["symbol"] == "IWM"), per[0])
+    res = dict(generatedAt=datetime.now(timezone.utc).isoformat(), underlying=iwm["symbol"],
+               startingAccountUsd=CFG["backtest"]["startingAccountUsd"], fromDate=CFG["backtest"]["start"],
+               results=[iwm["smallAccount"], iwm["edge"]], perSymbol=per,
+               caveat="Modeled option prices (Black-Scholes + vol index or realized vol + skew), daily-close checks, fills worse than mid, $1-wide spreads. Real fills, skew and gaps differ. Not a promise.")
     json.dump(res, open(OUT, "w"), indent=1)
-    for r in res["results"]:
-        print({k: v for k, v in r.items() if k != "last10"})
 
 
 if __name__ == "__main__":
