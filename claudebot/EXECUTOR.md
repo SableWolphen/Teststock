@@ -172,8 +172,9 @@ Never edit the rules by hand: only promote.py may change them, and only within i
 
 # Part E: Dip desk (LIVE, stocks): after Part B, before the Paper Lab
 
-Buys $25 of an index ETF (SPY, QQQ, DIA, IWM) after a sharp dip in an uptrend, sells
-on the bounce. Rules: `claudebot/dip_bot.py` + `claudebot/dip_config.json`. Ledger:
+Buys $25 of an ETF from dip_config.json `symbols` after a sharp dip in an uptrend, sells
+on the bounce. Up to `maxOpenPositions` at once, one per ETF; the planner keeps cash free for
+the options desk by itself. Rules: `claudebot/dip_bot.py` + `claudebot/dip_config.json`. Ledger:
 `docs/data/claudebot-dip-ledger.json`.
 
 1. Write `/tmp/dfacts.json` with `now`, `marketOpen` (same rule as Part B),
@@ -188,8 +189,10 @@ on the bounce. Rules: `claudebot/dip_bot.py` + `claudebot/dip_config.json`. Ledg
    ref_id. Poll get_equity_orders(order_id) until filled (~1 min). Then
    `dip_bot.py open --symbol S --price <average fill price> --usd <filled notional>`.
 4. `sell`: review_equity_order(side sell, type market, quantity = quantity) then place it.
-   Poll until filled, then `dip_bot.py close --price <average fill price> --reason <reason>`.
+   Poll until filled, then `dip_bot.py close --symbol S --price <average fill price> --reason <reason>`.
    Never sell more than the quantity given (the account holds other shares, e.g. KO).
-5. `record_broker_close`: find the filled sell in get_equity_orders and record it with `close`.
+5. `record_broker_close`: find the filled sell of that symbol in get_equity_orders and record it with `close --symbol S`.
+   After any buy, sell or record_broker_close, refresh buyingPower and re-plan (up to 6 rounds):
+   the planner returns one action at a time and several positions may need work in one run.
 6. `none`: `dip_bot.py log --action hold --detail "<reason>"` (skip when the reason is "market closed").
 Add `docs/data/claudebot-dip-ledger.json` to the same commit.

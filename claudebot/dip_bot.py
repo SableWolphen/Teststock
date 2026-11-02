@@ -5,11 +5,12 @@ Rule (from claudebot-dip-backtest.json, chosen on 2023-24 and confirmed on 2025-
   BUY  in the last hourly run before the close (14:00-14:59 CT) when RSI(2) < 5 and price > 200-day SMA
   SELL in that same window on a later day when price > 5-day SMA or RSI(2) > 70, or after 10 trading days
   STOP any run on a later day if price <= entry * (1 - 5%)
-One position at a time, $25 fractional market orders. Never sells shares it didn't buy.
+Up to maxOpenPositions at once (one per ETF), $25 fractional market orders; when the options desk is flat,
+enough cash stays free for it to open its spread. Never sells shares it didn't buy.
 
   python claudebot/dip_bot.py plan dfacts.json
   python claudebot/dip_bot.py open  --symbol SPY --price 741.2 --usd 25.00
-  python claudebot/dip_bot.py close --price 752.1 --reason bounce
+  python claudebot/dip_bot.py close --symbol SPY --price 752.1 --reason bounce
   python claudebot/dip_bot.py log   --action hold --detail "..."
 
 dfacts.json: {"now", "marketOpen", "accountValue", "buyingPower",
@@ -63,6 +64,27 @@ def sma(c, n):
     return sum(c[-n:]) / n
 
 
+OPTIONS_LEDGER = os.path.join(ROOT, "docs", "data", "claudebot-options-ledger.json")
+
+
+def options_open():
+    try:
+        return bool(load(OPTIONS_LEDGER).get("open"))
+    except Exception:  # noqa: BLE001
+        return True    # unknown: don't hold cash back, the broker's buying power is the limit
+
+
+def positions(led):
+    if led.get("positions") is not None:
+        return led["positions"]
+    return [led["open"]] if led.get("open") else []
+
+
+def save_led(led, ps):
+    led["positions"] = ps; led["open"] = ps[0] if ps else None    # "open" kept for the site
+    save(LEDGER, led)
+
+
 def trading_days_between(a: date, b: date):
     n, d = 0, a
     while d < b:
@@ -80,18 +102,19 @@ def plan(facts, cfg, led):
     w0, w1 = (time.fromisoformat(t) for t in e["windowCT"])
     in_window = w0 <= local.time() <= w1
     syms = facts.get("symbols", {})
-    pos = led.get("open")
-    if pos:
+    held = positions(led)
+    holds = []
+    for pos in held:                                   # exits first, one action per plan
         s = syms.get(pos["symbol"])
         if not s:
             return {"actions": [{"do": "need_symbol", "symbol": pos["symbol"]}]}
-        px, held = float(s["price"]), float(s.get("heldQty") or 0)
-        qty = round(min(held, pos["usd"] / pos["entryPrice"]), 6)
-        if held <= 0:
+        px, hq = float(s["price"]), float(s.get("heldQty") or 0)
+        qty = round(min(hq, pos["usd"] / pos["entryPrice"]), 6)
+        if hq <= 0:
             return {"actions": [{"do": "record_broker_close", "symbol": pos["symbol"], "note": "position gone at broker: find the filled sell and record it"}]}
         entered = ts(pos["enteredAt"]).astimezone(CT).date()
         if entered == local.date():
-            return none(f"holding {pos['symbol']} bought today; exits start tomorrow (no same-day round trips)")
+            holds.append(f"{pos['symbol']} bought today (exits start tomorrow)"); continue
         why = None
         if px <= pos["entryPrice"] * (1 - x["stopPct"] / 100):
             why = "stop"
@@ -103,18 +126,26 @@ def plan(facts, cfg, led):
                 why = "time"
         if why:
             return {"actions": [{"do": "sell", "symbol": pos["symbol"], "quantity": f"{qty:.6f}", "reason": why}]}
-        return none(f"holding {pos['symbol']} from {pos['entryPrice']} (now {px}, {100 * (px / pos['entryPrice'] - 1):+.2f}%)")
+        holds.append(f"{pos['symbol']} from {pos['entryPrice']} (now {px}, {100 * (px / pos['entryPrice'] - 1):+.2f}%)")
+    def none(why):
+        return {"actions": [{"do": "none", "reason": ("holding " + "; ".join(holds) + ". " if holds else "") + why}]}
+    if len(held) >= r["maxOpenPositions"]:
+        return none(f"at the {r['maxOpenPositions']}-position limit")
     if not cfg.get("enabled", True):
         return none("dip desk disabled")
     if not in_window:
         return none("entries only in the last run before the close (14:00-14:59 CT)")
     if float(facts.get("accountValue", 0)) < r["pauseBelowAccountValueUsd"]:
         return none("account below the pause floor")
-    if float(facts.get("buyingPower", 0)) < r["positionUsd"] + r["minBuyingPowerAfterUsd"]:
-        return none("not enough free buying power")
+    bp = float(facts.get("buyingPower", 0))
+    reserve = r["minBuyingPowerAfterUsd"] if options_open() else max(r["minBuyingPowerAfterUsd"], r.get("reserveForOptionsUsd", 0))
+    if bp - r["positionUsd"] < reserve:
+        return none("not enough free cash" + ("" if options_open() else f" (keeping ${reserve:.0f} free so the options desk can open its spread)"))
     looked = []
     for sym in cfg["symbols"]:
         s = syms.get(sym)
+        if sym in {p["symbol"] for p in held}:
+            continue
         if not s:
             return {"actions": [{"do": "need_symbol", "symbol": sym}]}
         c = [float(v) for v in s["closes"]][-(e["trendSma"] + 10):] + [float(s["price"])]
@@ -131,7 +162,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(); sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("plan"); p.add_argument("facts")
     p = sub.add_parser("open"); p.add_argument("--symbol", required=True); p.add_argument("--price", type=float, required=True); p.add_argument("--usd", type=float, required=True)
-    p = sub.add_parser("close"); p.add_argument("--price", type=float, required=True); p.add_argument("--reason", required=True)
+    p = sub.add_parser("close"); p.add_argument("--symbol", required=True); p.add_argument("--price", type=float, required=True); p.add_argument("--reason", required=True)
     p = sub.add_parser("log"); p.add_argument("--action", required=True); p.add_argument("--detail", default="")
     a = ap.parse_args(argv)
     cfg = load(CONFIG)
@@ -141,20 +172,23 @@ def main(argv=None):
         led.setdefault("runs", []).append({"t": iso(now), "action": act, "detail": det}); led["runs"] = led["runs"][-60:]
     if a.cmd == "plan":
         print(json.dumps(plan(load(a.facts), cfg, led), indent=1)); return 0
+    ps = positions(led)
     if a.cmd == "open":
-        if led.get("open"):
-            print("ERROR: position already open", file=sys.stderr); return 2
-        led["open"] = {"symbol": a.symbol, "entryPrice": a.price, "usd": round(a.usd, 2), "enteredAt": iso(now)}
+        if any(p_["symbol"] == a.symbol for p_ in ps):
+            print(f"ERROR: already holding {a.symbol}", file=sys.stderr); return 2
+        if len(ps) >= cfg["risk"]["maxOpenPositions"]:
+            print("ERROR: position limit reached", file=sys.stderr); return 2
+        ps.append({"symbol": a.symbol, "entryPrice": a.price, "usd": round(a.usd, 2), "enteredAt": iso(now)})
         led["startedAt"] = led.get("startedAt") or iso(now)
-        log("buy", f"bought ${a.usd:.2f} of {a.symbol} at {a.price}"); save(LEDGER, led); return 0
+        log("buy", f"bought ${a.usd:.2f} of {a.symbol} at {a.price}"); save_led(led, ps); return 0
     if a.cmd == "close":
-        p_ = led.get("open")
+        p_ = next((x for x in ps if x["symbol"] == a.symbol), None)
         if not p_:
-            print("ERROR: nothing open", file=sys.stderr); return 2
+            print(f"ERROR: no open {a.symbol} position", file=sys.stderr); return 2
         ret = 100 * (a.price / p_["entryPrice"] - 1)
         led["trades"].append({"label": p_["symbol"], "symbol": p_["symbol"], "enteredAt": p_["enteredAt"], "exitedAt": iso(now), "entryPrice": p_["entryPrice"],
                               "exitPrice": a.price, "returnPct": round(ret, 3), "pnlUsd": round(p_["usd"] * ret / 100, 2), "reason": a.reason})
-        led["open"] = None; log("sell", f"sold {p_['symbol']} at {a.price} ({ret:+.2f}%, {a.reason})"); save(LEDGER, led); return 0
+        ps.remove(p_); log("sell", f"sold {p_['symbol']} at {a.price} ({ret:+.2f}%, {a.reason})"); save_led(led, ps); return 0
     if a.cmd == "log":
         log(a.action, a.detail); save(LEDGER, led); return 0
 

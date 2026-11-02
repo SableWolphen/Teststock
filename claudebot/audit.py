@@ -103,11 +103,13 @@ def run(now=None):
     dled = load(D("docs", "data", "claudebot-dip-ledger.json"), {})
     dcfg = load(D("claudebot", "dip_config.json"), {})
     dr = dcfg.get("risk", {})
-    g.check("dip", "Dip desk size and count caps", dr.get("positionUsd", 999) <= 30 and dr.get("maxOpenPositions", 9) <= 1 and dcfg.get("exit", {}).get("stopPct", 99) <= 8,
+    g.check("dip", "Dip desk size and count caps", dr.get("positionUsd", 999) <= 30 and dr.get("maxOpenPositions", 9) <= 3 and dcfg.get("exit", {}).get("stopPct", 99) <= 8,
             f"${dr.get('positionUsd')} per trade, {dr.get('maxOpenPositions')} at a time, {dcfg.get('exit', {}).get('stopPct')}% stop")
-    dop = dled.get("open")
-    g.check("dip", "Dip position within limits", (dop is None) or (dop.get("usd", 999) <= 30 and dop.get("symbol") in dcfg.get("symbols", [])),
-            "no open position" if dop is None else f"{dop['symbol']} ${dop.get('usd')}")
+    dps = dled.get("positions") if dled.get("positions") is not None else ([dled["open"]] if dled.get("open") else [])
+    syms_ = [p_.get("symbol") for p_ in dps]
+    g.check("dip", "Dip positions within limits", len(dps) <= min(3, dr.get("maxOpenPositions", 1)) and len(set(syms_)) == len(syms_)
+            and all(p_.get("usd", 999) <= 30 and p_.get("symbol") in dcfg.get("symbols", []) for p_ in dps),
+            "no open positions" if not dps else ", ".join(f"{p_['symbol']} ${p_.get('usd')}" for p_ in dps))
     reports.append(g.done())
 
     # ---------------- Analyst: research + Paper Lab are producing

@@ -21,8 +21,19 @@ S = lambda px, q=0.0357: {**F, "symbols": {"SPY": {"price": px, "closes": dip, "
 a = act(S(740), L2); assert a["do"] == "sell" and a["reason"] == "bounce" and a["quantity"] == "0.035700", a
 a = act({**S(660), "now": "2026-11-04T16:14:00Z"}, L2); assert a["do"] == "sell" and a["reason"] == "stop", a
 assert act({**S(690), "now": "2026-11-04T16:14:00Z"}, L2)["do"] == "none"                 # no exit outside window unless stop
-assert act(S(660), {**LED, "open": {**pos, "enteredAt": "2026-11-04T20:10:00Z"}})["do"] == "none"   # no same-day exits
+assert act(S(660), {**LED, "open": {**pos, "enteredAt": "2026-11-04T20:10:00Z"}})["do"] != "sell"   # no same-day exits
 assert act(S(700, 0), L2)["do"] == "record_broker_close"
 a = act({**S(705), "now": "2026-11-18T20:14:00Z"}, {**LED, "open": {**pos, "entryPrice": 720.0}}); assert a["do"] == "sell" and a["reason"] in ("time", "bounce"), a
 assert float(act(S(740, 1.5), L2)["quantity"]) <= 25 / 700 + 1e-6                        # never sells more than it bought
+# multiple positions (board 2026-11-02): one per ETF, up to the cap, options cash reserve kept
+db.options_open = lambda: False
+Q = {**F, "symbols": {"SPY": {**F["symbols"]["SPY"], "heldQty": 0.0357}, "QQQ": {"price": dip[-1] - 2, "closes": dip, "heldQty": 0}}}
+a = act(Q, {**LED, "positions": [{**pos, "enteredAt": "2026-11-04T20:10:00Z"}]}); assert a["do"] == "buy" and a["symbol"] == "QQQ", a   # skips held SPY
+assert "holding SPY" in act({**Q, "buyingPower": 100}, {**LED, "positions": [{**pos, "enteredAt": "2026-11-04T20:10:00Z"}]})["reason"]   # 100-25 < 86 reserve
+db.options_open = lambda: True
+assert act({**Q, "buyingPower": 40}, {**LED, "positions": [{**pos, "enteredAt": "2026-11-04T20:10:00Z"}]})["do"] == "buy"   # spread already open: no reserve
+full = [{**pos, "symbol": s_, "enteredAt": "2026-11-04T20:10:00Z"} for s_ in ("SPY", "QQQ", "DIA")]
+Qf = {**Q, "symbols": {s_: {"price": dip[-1] - 2, "closes": dip, "heldQty": 0.0357} for s_ in ("SPY", "QQQ", "DIA")}}
+assert "limit" in act(Qf, {**LED, "positions": full})["reason"]
+a = act({**S(740), "symbols": {"SPY": {"price": 740, "closes": dip, "heldQty": 0.0357}}}, {**LED, "positions": [pos]}); assert a["do"] == "sell" and a["symbol"] == "SPY", a
 print("all dip desk scenarios pass")
