@@ -168,6 +168,7 @@ def main(argv=None):
     p = sub.add_parser("open"); p.add_argument("--symbol", required=True); p.add_argument("--price", type=float, required=True); p.add_argument("--usd", type=float, required=True); p.add_argument("--pct", type=float, default=None)
     p = sub.add_parser("close"); p.add_argument("--symbol", required=True); p.add_argument("--price", type=float, required=True); p.add_argument("--reason", required=True)
     p = sub.add_parser("log"); p.add_argument("--action", required=True); p.add_argument("--detail", default="")
+    p = sub.add_parser("mark"); p.add_argument("facts")
     a = ap.parse_args(argv)
     cfg = load(CONFIG)
     led = load(LEDGER) if os.path.exists(LEDGER) else {"schemaVersion": 1, "mode": "live", "open": None, "trades": [], "runs": []}
@@ -193,6 +194,17 @@ def main(argv=None):
         led["trades"].append({"label": p_["symbol"], "symbol": p_["symbol"], "enteredAt": p_["enteredAt"], "exitedAt": iso(now), "entryPrice": p_["entryPrice"],
                               "exitPrice": a.price, "usd": p_["usd"], "returnPct": round(ret, 3), "pnlUsd": round(p_["usd"] * ret / 100, 2), "reason": a.reason})
         ps.remove(p_); log("sell", f"sold {p_['symbol']} at {a.price} ({ret:+.2f}%, {a.reason})"); save_led(led, ps); return 0
+    if a.cmd == "mark":
+        # record each open position's live price for the dashboard's "made today" (prices only)
+        f, today = load(a.facts), now.astimezone(CT).date()
+        for p_ in ps:
+            d = (f.get("symbols") or {}).get(p_["symbol"])
+            if not d or not d.get("price"):
+                continue
+            new_today = ts(p_["enteredAt"]).astimezone(CT).date() == today
+            base = p_["entryPrice"] if new_today or not d.get("closes") else float(d["closes"][-1])
+            p_["mark"] = {"t": iso(now), "price": float(d["price"]), "dayBase": base, "day": today.isoformat()}
+        save_led(led, ps); return 0
     if a.cmd == "log":
         log(a.action, a.detail); save(LEDGER, led); return 0
 

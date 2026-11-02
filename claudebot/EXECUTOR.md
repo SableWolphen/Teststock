@@ -217,6 +217,7 @@ the options desk by itself. Rules: `claudebot/dip_bot.py` + `claudebot/dip_confi
    After any buy, sell or record_broker_close, refresh buyingPower and re-plan (up to 6 rounds):
    the planner returns one action at a time and several positions may need work in one run.
 6. `none`: `dip_bot.py log --action hold --detail "<reason>"` (skip when the reason is "market closed").
+7. `mark`: after the loop, while anything is held, run `python3 claudebot/dip_bot.py mark /tmp/dfacts.json` (needs `symbols[SYM].price` for held symbols) so the site can show what was made today.
 Add `docs/data/claudebot-dip-ledger.json` to the same commit.
 
 ## E7. Options-buying desk (LIVE, single-leg calls), right after the Dip desk
@@ -239,4 +240,5 @@ Rules: `claudebot/optbuy_bot.py` + `claudebot/optbuy_config.json`. Ledger:
 | `record_broker_close` | find the filled sell-to-close for that id in get_option_orders(state filled) and run `close --price <its price> --reason "take profit (resting order)"` |
 | `none` | `optbuy_bot.py log --action hold --detail "<reason>"` (skip when "market closed") |
 Never hold more than one option, never buy more than quantity 1, never sell options you didn't buy. Universe = optbuy_config.json `symbols` (tested ETFs, tried first) plus `scanUniverse` (stocks and extra ETFs, via the nightly scan); never buy an option on a ticker outside those lists.
+While an option is held, finish with `python3 claudebot/optbuy_bot.py mark /tmp/dfacts.json` (uses `optQuote`) so the site can show what was made today.
 Add `docs/data/claudebot-optbuy-ledger.json` to the same commit.

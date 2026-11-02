@@ -175,6 +175,7 @@ def main(argv=None):
     p = sub.add_parser("open"); p.add_argument("--json", required=True); p.add_argument("--price", type=float, required=True)
     p = sub.add_parser("close"); p.add_argument("--price", type=float, required=True); p.add_argument("--reason", required=True)
     p = sub.add_parser("log"); p.add_argument("--action", required=True); p.add_argument("--detail", default="")
+    p = sub.add_parser("mark"); p.add_argument("facts")
     a = ap.parse_args(argv)
     cfg = load(CONFIG)
     led = load(LEDGER) if os.path.exists(LEDGER) else {"schemaVersion": 1, "mode": "live", "open": None, "trades": [], "runs": []}
@@ -198,6 +199,21 @@ def main(argv=None):
         led["trades"].append({"label": o["label"], "symbol": o["symbol"], "enteredAt": o["enteredAt"], "exitedAt": iso(now), "entryPrice": o["entryPrice"],
                               "exitPrice": a.price, "pnlUsd": pnl, "returnPct": round(100 * (a.price / o["entryPrice"] - 1), 1), "reason": a.reason})
         led["open"] = None; log("sell", f"sold {o['label']} at {a.price} ({a.reason}, {'+' if pnl >= 0 else ''}${pnl})"); save(LEDGER, led); return 0
+    if a.cmd == "mark":
+        # record the held option's live bid for the dashboard's "made today" (prices only)
+        o, f = led.get("open"), load(a.facts)
+        q = f.get("optQuote") or {}
+        if o and q.get("bid") is not None:
+            today = now.astimezone(CT).date().isoformat(); prev = o.get("mark")
+            if ts(o["enteredAt"]).astimezone(CT).date().isoformat() == today:
+                base = o["entryPrice"]
+            elif prev and prev.get("day") == today:
+                base = prev["dayBase"]
+            else:
+                base = prev["price"] if prev else o["entryPrice"]
+            o["mark"] = {"t": iso(now), "price": float(q["bid"]), "dayBase": base, "day": today}
+            save(LEDGER, led)
+        return 0
     if a.cmd == "log":
         log(a.action, a.detail); save(LEDGER, led); return 0
 

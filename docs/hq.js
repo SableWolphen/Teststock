@@ -332,9 +332,22 @@ function tradingToday() {
 const cryptoIdx = () => { const s = D.led?.snapshots || []; return s.length ? s[s.length - 1].index : (D.led?.equityIndex ?? 100); };
 const livePos = () => [D.led?.open?.symbol, D.oled?.mode === 'live' ? D.oled?.open?.label : null, ...((D.dled?.positions ?? (D.dled?.open ? [D.dled.open] : [])).map(x => x.symbol)), D.bled?.open?.label].filter(Boolean);
 const paperSpread = () => D.oled?.mode !== 'live' && D.oled?.open ? D.oled.open.label : null;
-const optPnl = () => (D.oled?.mode === 'live' ? (D.oled?.trades || []) : []).reduce((a, t) => a + t.pnlUsd, 0) + (D.bled?.trades || []).reduce((a, t) => a + t.pnlUsd, 0);
+const liveSpreadTrades = () => D.oled?.mode === 'live' ? (D.oled?.trades || []).filter(t => t.mode !== 'paper') : [];
+const optPnl = () => liveSpreadTrades().reduce((a, t) => a + t.pnlUsd, 0) + (D.bled?.trades || []).reduce((a, t) => a + t.pnlUsd, 0);
 const dipPnl = () => (D.dled?.trades || []).reduce((a, t) => a + t.pnlUsd, 0);
 const todayCT = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+// real money made today (Chicago date): trades closed today + today's move on open positions (last hourly mark)
+function madeToday() {
+  const day = todayCT(), isToday = t => t && new Date(t).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }) === day;
+  const acct = D.ocfg?.backtest?.startingAccountUsd || 113;
+  let realized = 0, n = 0;
+  for (const t of [...liveSpreadTrades(), ...(D.bled?.trades || []), ...(D.dled?.trades || [])]) if (isToday(t.exitedAt)) { realized += t.pnlUsd; n++; }
+  for (const t of D.led?.trades || []) if (isToday(t.exitedAt)) { realized += (t.accountImpactPct || 0) / 100 * acct; n++; }
+  let open = 0, marked = [];
+  for (const p of (D.dled?.positions ?? (D.dled?.open ? [D.dled.open] : []))) if (p.mark?.day === day) { open += p.usd / p.entryPrice * (p.mark.price - p.mark.dayBase); marked.push(p.symbol); }
+  const o = D.bled?.open; if (o?.mark?.day === day) { open += (o.mark.price - o.mark.dayBase) * 100; marked.push(o.label); }
+  return { total: Math.round((realized + open) * 100) / 100, realized, open, n, marked };
+}
 const blackoutToday = () => D.ocfg?.risk?.noNewEntryDates?.[todayCT()];
 function freedomPlan() { let saved = {}; try { saved = JSON.parse(localStorage.getItem('hq-freedom') || '{}'); } catch (e) {} try { return projectPlan({ ...DEFAULT_PLAN, ...saved }); } catch (e) { return projectPlan(DEFAULT_PLAN); } }
 
@@ -348,7 +361,7 @@ function weekStart(offsetWeeks = 0) { const ct = new Date(new Date().toLocaleStr
 function companyResult(offsetWeeks = 0) {
   const a = weekStart(offsetWeeks), b = weekStart(offsetWeeks - 1); const inWk = t => { const x = new Date(new Date(t).toLocaleString('en-US', { timeZone: 'America/Chicago' })); return x >= a && x < b; };
   const acct = D.ocfg?.backtest?.startingAccountUsd || 113;
-  const liveOpt = [...(D.oled?.mode === 'live' ? (D.oled?.trades || []) : []), ...(D.bled?.trades || [])];
+  const liveOpt = [...liveSpreadTrades(), ...(D.bled?.trades || [])];
   const opt = liveOpt.filter(t => inWk(t.exitedAt)).reduce((s, t) => s + t.pnlUsd, 0);
   const cry = (D.led?.trades || []).filter(t => inWk(t.exitedAt)).reduce((s, t) => s + (t.accountImpactPct || 0) / 100 * acct, 0);
   const dip = (D.dled?.trades || []).filter(t => inWk(t.exitedAt)).reduce((s, t) => s + t.pnlUsd, 0);
@@ -621,7 +634,9 @@ setInterval(updateStatuses, 500);
 function renderKpis() {
   const h = D.health, lp = livePos(), open = lp.length;
   const runs = [...(D.led?.runs || []), ...(D.oled?.runs || [])].sort((a, b) => new Date(b.t) - new Date(a.t));
+  const mt = madeToday();
   const k = [
+    ['Made today (real $)', usd(mt.total), `${mt.n} closed ${usd(mt.realized)} · open ${mt.marked.length ? mt.marked.join(', ') + ' ' + usd(mt.open) : 'none'}`, cls(mt.total)],
     ['ClaudeBot health', botHealth().status, botHealth().ok ? 'scan ' + Math.round(botHealth().sigAge) + 'm · trader ' + Math.round(botHealth().runAge) + 'm ago' : botHealth().issues[0], botHealth().ok ? 'up' : 'warn'],
     ['Trading today', tradingToday()[0], tradingToday()[1] + (D.sig?.regime?.riskOff ? ' · crypto risk-off' : ''), tradingToday()[2]],
     ['Market', D.latest?.regime?.label || '–', 'call: ' + (D.latest?.action || '–'), /OFF/.test(D.latest?.regime?.label || '') ? 'down' : ''],
@@ -631,7 +646,7 @@ function renderKpis() {
     ['Paper win rate', paperTotals().wp == null ? '–' : paperTotals().wp + '%', `${paperTotals().open} paper trades open · could lose up to $${Math.round(paperTotals().risk)}`, paperTotals().wp == null ? '' : paperTotals().wp >= 60 ? 'up' : paperTotals().wp < 45 ? 'down' : 'warn'],
     ['Management audit', D.audit ? `${D.audit.reports.reduce((a, r) => a + r.passed, 0)}/${D.audit.reports.reduce((a, r) => a + r.total, 0)} ✓` : '–', D.audit ? `${D.audit.ceo.status.toUpperCase()} · ${ago(D.audit.generatedAt)}` : 'first audit at :14', D.audit?.ceo?.status === 'pass' ? 'up' : D.audit?.ceo?.status === 'fail' ? 'down' : 'warn'],
   ];
-  $('kpis').innerHTML = k.map(([l, v, s, c]) => `<div class="kpi"><div class="l">${l}</div><div class="v ${c}">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join('');
+  $('kpis').innerHTML = k.map(([l, v, s, c], i) => `<div class="kpi${i === 0 ? ' kpi-wide' : ''}"><div class="l">${l}</div><div class="v ${c}">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join('');
 }
 function renderRoomCards() {
   $('roomcards').innerHTML = ROOM_IDS.map(id => `<div class="rc" id="rc-${id}" data-r="${id}"><b>${ROOMS[id].icon} ${ROOMS[id].short}</b><span>–</span></div>`).join('');
