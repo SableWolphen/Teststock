@@ -214,7 +214,7 @@ def plan(facts, cfg, ledger):
             reasons.append(f"{sym} no $1-wide pair at delta <= {e['maxShortDelta']}")
             continue
         K, sh, lg = found
-        if sh["ask"] - sh["bid"] > e["maxLegSpreadUsd"] or lg["ask"] - lg["bid"] > e["maxLegSpreadUsd"]:
+        if round(sh["ask"] - sh["bid"], 4) > e["maxLegSpreadUsd"] or round(lg["ask"] - lg["bid"], 4) > e["maxLegSpreadUsd"]:
             reasons.append(f"{sym} {K:g} quotes too wide")
             continue
         mid = (sh["bid"] + sh["ask"]) / 2 - (lg["bid"] + lg["ask"]) / 2

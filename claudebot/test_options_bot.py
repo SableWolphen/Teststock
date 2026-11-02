@@ -54,7 +54,10 @@ L3 = {**LED, "trades": [{"pnlUsd": -30, "exitedAt": "2026-11-01T20:00:00Z"}]}
 assert "cooling" in act(l=L3)[0]["reason"]
 LP = {**LED, "mode": "paper", "startingAccountUsd": 113}
 assert act({**F, "candidates": SPY_BAD + IWM, "accountValue": 1}, LP)[0]["do"] == "open_spread"
-cfg["risk"]["noNewEntryDates"] = BLACKOUT
+cfg["risk"]["noNewEntryDates"] = {**BLACKOUT, "2026-11-02": "day before US midterm elections"}   # fixture
 assert "midterm" in act()[0]["reason"]
 assert act({**F, "legs": legs(4.1, 4.2, 3.7, 3.8), "spreadOnBroker": True}, L2)[0]["do"] == "close_spread"  # exits still work on blackout days
+# float noise: a 0.06 leg spread (1.60 - 1.54 = 0.0600000000005) is allowed, 0.07 is not
+cfg["risk"]["noNewEntryDates"] = BLACKOUT
+assert round(1.60 - 1.54, 4) <= cfg["entry"]["maxLegSpreadUsd"]
 print("all options scenarios pass")
