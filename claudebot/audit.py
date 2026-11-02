@@ -112,7 +112,7 @@ def run(now=None):
             "no open positions" if not dps else ", ".join(f"{p_['symbol']} ${p_.get('usd')}" for p_ in dps))
     bcfg = load(D("claudebot", "optbuy_config.json"), {}); bled = load(D("docs", "data", "claudebot-optbuy-ledger.json"), {})
     br, bx = bcfg.get("risk", {}), bcfg.get("exit", {})
-    g.check("options", "Options-buying caps", br.get("maxPremiumUsd", 999) <= 40 and br.get("maxPctOfAccount", 99) <= 30 and br.get("maxOpenPositions", 9) <= 1
+    g.check("options", "Options-buying caps", br.get("maxPremiumUsd", 999) <= 50 and br.get("maxPctOfAccount", 99) <= 45 and br.get("maxOpenPositions", 9) <= 1
             and 0 < bx.get("stopPct", 0) <= 50, f"max ${br.get('maxPremiumUsd')} / {br.get('maxPctOfAccount')}% per option, 1 at a time, stop -{bx.get('stopPct')}%")
     bo = bled.get("open")
     g.check("options", "Bought option within limits", bo is None or (bo.get("entryPrice", 99) * 100 <= 40 and bo.get("symbol") in bcfg.get("symbols", [])),

@@ -168,7 +168,8 @@ def plan(facts, cfg, ledger):
     bp = float(facts.get("buyingPower", eq)) if live else eq
     if eq < r["pauseBelowAccountValueUsd"]:
         return none(f"account {eq} below pause floor {r['pauseBelowAccountValueUsd']}")
-    last = (ledger.get("trades") or [None])[-1]
+    # only trades from the current mode count (a retired paper loss must not cool down the live desk)
+    last = ([t for t in ledger.get("trades") or [] if t.get("mode", "paper") == ledger.get("mode", "paper")] or [None])[-1]
     if last and last["pnlUsd"] < 0 and now - ts(last["exitedAt"]) < timedelta(days=r["cooldownDaysAfterLoss"]):
         return none("cooling down after a loss")
 
