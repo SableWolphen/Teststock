@@ -676,6 +676,7 @@ const CONSOLES = {
     <div class="cgrid">
       ${card('Stock regime', `<div class="big ${/OFF/.test(r?.label || '') ? 'down' : 'up'}">${esc(r?.label || '–')}</div><p>${esc(r?.detail || '')} · bias ${esc(r?.bias || '–')} · gate ${esc(r?.tradeGate || '–')}</p>`)}
       ${card('Stock watchlist', cards.length ? `<div class="picks">${cards.map(c => `<div class="pick"><b>${esc(c.symbol)}</b><span class="tag ${dir(c.direction)}">${esc(c.direction || '')}</span><div class="mono" style="margin-top:4px">score ${c.score} · $${c.price}</div><div style="color:var(--muted);font-size:12px;margin-top:4px">${esc(c.label || '')} · ${esc(c.tag || '')}</div></div>`).join('')}</div>` : '<div class="empty">No stocks on watch right now.</div>', 'span2')}
+      ${paperScoreCard()}
       ${paperCard()}
       ${dayCard()}
       ${card('Crypto scanner · 1h bars', `<div class="scroll"><table><thead><tr><th>Coin</th><th>Trend</th><th>RSI</th><th>24h</th><th>Status</th></tr></thead><tbody>${coins.map(c => `<tr><td><b>${c.symbol}</b></td><td class="${c.trend === 'up' ? 'up' : c.trend === 'down' ? 'down' : ''}">${c.trend}</td><td class="mono">${c.rsi}</td><td class="mono ${cls(c.change24hPct)}">${pct(c.change24hPct, 1)}</td><td style="white-space:normal">${c.setup ? '<b class="up">SETUP</b>' : esc((c.blockers || [])[0] || '')}</td></tr>`).join('')}</tbody></table></div><p>Signal ${ago(D.sig?.generatedAt)} · ${D.sig?.regime?.riskOff ? 'BTC risk-off' : 'BTC trend OK'}</p>`, 'span3')}
@@ -745,6 +746,20 @@ function dayCard() {
   const live = b.length ? `<div class="scroll"><table><thead><tr><th>Paper strategy</th><th>Trades</th><th>Wins</th><th>P&amp;L ($25 each)</th><th>Avg</th><th>Last trade</th></tr></thead><tbody>${b.map(r => { const t = (S[r.id]?.trades || []).slice(-1)[0];
       return `<tr><td><b>${esc(r.name)}</b></td><td class="mono">${r.trades}</td><td class="mono">${r.wins}</td><td class="mono ${cls(r.pnlUsd)}">${usd(r.pnlUsd)}</td><td class="mono">${r.avgPct == null ? '–' : pct(r.avgPct, 2)}</td><td style="white-space:normal;color:var(--muted)">${t ? esc(`${t.day} ${t.symbol} ${t.retPct > 0 ? '+' : ''}${t.retPct}% (${t.reason})`) : '–'}</td></tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">First paper day is recorded at the 2:44 PM CT check.</div>';
   return card('⚡ Day-trade desk · paper only', `<p style="margin:0 0 10px">The board asked for day trading. Before any real money, four classic day-trade strategies were tested on 5-minute bars from 2023 on (picked on 2023–24, checked on unseen 2025–26, 0.03% cost per side), and every trading day is now replayed on real prices with $25 pretend trades. Going live needs the board's approval and the evidence.</p>${hist}${live}<p>${L?.days?.length || 0} days replayed · updated ${L?.updatedAt ? ago(L.updatedAt) : 'never'}.</p>`, 'span3');
+}
+function paperScoreCard() {
+  const rows = [];
+  const add = (desk, name, tr, open, risk) => {
+    const n = tr.length, w = tr.filter(t => t.pnlUsd > 0).length, pnl = tr.reduce((a, t) => a + t.pnlUsd, 0);
+    let eq = 0, peak = 0, dd = 0; tr.forEach(t => { eq += t.pnlUsd; peak = Math.max(peak, eq); dd = Math.min(dd, eq - peak); });
+    const worst = n ? Math.min(...tr.map(t => t.pnlUsd)) : null;
+    rows.push({ desk, name, n, wp: n ? Math.round(100 * w / n) : null, pnl, worst, dd, open, risk });
+  };
+  if (D.oled && D.oled.mode !== 'live') add('Options', 'Put spreads (our live rules)', D.oled.trades || [], D.oled.open?.label, D.oled.open?.maxLossUsd);
+  for (const [id, st] of Object.entries(D.pled?.strategies || {})) add('Paper Lab', st.name || id, st.trades || [], st.open ? (st.open.label || st.open.symbol) : null, st.open?.maxLossUsd ?? (st.open ? 15 : null));
+  for (const [id, st] of Object.entries(D.dtp?.strategies || {})) add('Day trade', st.name || id, (st.trades || []).map(t => ({ pnlUsd: t.pnlUsd })), null, null);
+  const body = rows.length ? `<div class="scroll"><table><thead><tr><th>Desk</th><th>Strategy</th><th>Trades</th><th>Win %</th><th>P&amp;L</th><th>Worst trade</th><th>Biggest drop</th><th>Open now · could lose</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r.desk}</td><td><b>${esc(r.name)}</b></td><td class="mono">${r.n}</td><td class="mono ${r.wp == null ? '' : r.wp >= 60 ? 'up' : r.wp < 45 ? 'down' : ''}">${r.wp == null ? '–' : r.wp + '%'}</td><td class="mono ${cls(r.pnl)}">${usd(r.pnl)}</td><td class="mono ${r.worst < 0 ? 'down' : ''}">${r.worst == null ? '–' : usd(r.worst)}</td><td class="mono ${r.dd < 0 ? 'down' : ''}">${r.dd < 0 ? usd(r.dd) : '–'}</td><td>${r.open ? `${esc(r.open)} · <span class="down">up to ${usd(-(r.risk ?? 0))}</span>` : 'flat'}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Paper desks start recording with the next run.</div>';
+  return card('📋 Paper scorecard · pretend money, real prices', `<p style="margin:0 0 10px">How each paper strategy would be doing if it were real: how often it's right, what it made, its worst single trade, its biggest drop from a high, and what its open trade could still lose. None of this is real money.</p>${body}`, 'span3');
 }
 function paperCard() {
   const L = D.pled, b = L?.leaderboard || [], S = L?.strategies || {};
