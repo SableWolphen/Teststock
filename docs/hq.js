@@ -205,7 +205,7 @@ for (const id of ROOM_IDS) { const r = ROOMS[id]; hits[id] = poly([iso(r.x0, r.y
 const AG = {
   claude:  { name: 'Claude',  role: 'CEO · reads every report, sets pay', room: 'lobby', home: [3.9, 4.6], color: '#ff8a3d', kind: 'ceo', boss: null, title: 'CEO' },
   atlas:   { name: 'Atlas',   role: 'COO · runs operations', room: 'lobby', home: [1.6, 3.3], color: '#e9edf3', kind: 'chief', boss: 'claude', title: 'COO' },
-  scout:   { name: 'Scout',   role: 'Crypto scanner · 8 coins hourly', room: 'research', home: [6.4, 3.0], color: '#3ddc84', kind: 'robot' , boss: 'analyst', title: 'Crypto scanner' },
+  scout:   { name: 'Scout',   role: 'Dip scout · how close each ETF is to a buy, plus the day\'s top movers', room: 'research', home: [6.4, 3.0], color: '#3ddc84', kind: 'robot' , boss: 'analyst', title: 'Dip scout' },
   analyst: { name: 'Analyst', role: 'Stock research · watchlist & regime', room: 'research', home: [8.7, 3.0], color: '#3ccfcf', kind: 'cat' , boss: 'claude', title: 'Head of Research' },
   medic:   { name: 'Medic',   role: 'Diagnostics · data freshness & runners', room: 'diagnostics', home: [13.6, 4.2], color: '#ff6b7a', kind: 'medic' , boss: 'atlas', title: 'Diagnostics' },
   planner: { name: 'Planner', role: 'Financial-freedom planning', room: 'freedom', home: [16.3, 4.4], color: '#c58b5a', kind: 'bear' , boss: 'atlas', title: 'Planning' },
@@ -311,11 +311,11 @@ async function wander(a, pts) { await waitFree(a); a.busy++; try { const [x, y] 
 /* ============================== data ============================== */
 const D = {};
 async function refresh() {
-  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw] = await Promise.all([
+  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan] = await Promise.all([
     getJSON('docs/data/claudebot-signal.json'), getJSON('docs/data/claudebot-ledger.json'), getJSON('docs/data/claudebot-options-ledger.json'),
     getJSON('docs/data/live-trading-health.json'), getJSON('docs/data/latest-50.json'), getJSON('claudebot/options_config.json'), getJSON('claudebot/config.json'),
-    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json')]);
-  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw });
+    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json')]);
+  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan });
   renderAll();
 }
 function botHealth() {
@@ -471,13 +471,14 @@ const routines = {
     await waitFree(a); await say(a, `ClaudeBot <b>${botHealth().status.toLowerCase()}</b> · trading today: ${tradingToday()[0].toLowerCase()} · market ${esc(D.latest?.regime?.label || '–')}.`, 3200);
   },
   async scout(a) {
-    const s = D.sig, top = s?.coins?.[0];
+    // crypto is switched off, so Scout scouts dips for the live Dip desk instead
+    const dw = D.scan?.dipWatch || [], near = dw.find(r => r.dropNeededPct != null), mv = D.dtw?.today?.topMovers?.[0];
     await wander(a, [[6.4, 2.4], [6.9, 3.2]]);
-    await waitFree(a); await say(a, `Scanned ${s?.coins?.length || 8} coins ${ago(s?.generatedAt)}.`, 2500);
-    if (Math.random() < .6) await visit(a, R.guard, [
-      ['a', s?.regime?.riskOff ? 'Bitcoin is under its 200-hour average. Risk-off.' : s?.bestCandidate ? `${esc(s.bestCandidate)} has a clean setup!` : `Closest: ${esc(top?.symbol)} (${esc((top?.blockers || [])[0] || 'not ready')}).`],
-      ['b', s?.bestCandidate && !s?.regime?.riskOff ? `Approved for at most $15, and the stop goes in first.` : 'With ~1.9% round-trip costs, there\'s no edge. Stay in cash.']]);
-    else await visit(a, R.options, [['a', 'Fresh signal is up on the wall.'], ['b', 'Thanks. I only move if Guard clears it.']]);
+    await waitFree(a); await say(a, dw.length ? `Dip watch on ${dw.length} ETFs, updated ${ago(D.scan.generatedAt)}.` : 'Dip watch starts after tonight\'s scan.', 2500);
+    if (Math.random() < .6) await visit(a, R.quinn, [
+      ['a', near ? `Closest to a dip buy: <b>${esc(near.symbol)}</b>, needs about −${near.dropNeededPct}% (under ${near.rsiTrigger}).` : 'No ETF is close to a dip buy right now.'],
+      ['b', near && near.dropNeededPct <= 1 ? 'Good, I\'ll be ready at the 2:14 and 2:44 checks.' : 'Thanks. I only buy at the close when the rule says so.']]);
+    else await visit(a, R.analyst, [['a', mv ? `Today's top mover in our universe: <b>${esc(mv.symbol)}</b> ${mv.dayPct > 0 ? '+' : ''}${mv.dayPct}%.` : 'Movers list arrives after the close.'], ['b', 'Noted for the research wall.']]);
   },
   async analyst(a) {
     if (Math.random() < .45) return checkin(a);
@@ -568,7 +569,7 @@ function onDuty(a) {
     case 'claude': case 'atlas': case 'planner': return office;
     case 'quinn': case 'options': case 'guard': case 'ledger': case 'analyst': return market;
     case 'sim': case 'echo': return market || recent(D.pled?.strategies && Object.values(D.pled.strategies)[0]?.runs?.slice(-1)[0]?.t);
-    case 'scout': return !!D.ccfg?.enabled && recent(D.sig?.generatedAt);         // crypto desk is switched off
+    case 'scout': return market || recent(D.scan?.generatedAt);                  // dip scout: market hours + right after the nightly scan
   }
   return office;
 }
@@ -649,7 +650,7 @@ function agentStatus(a) {
   switch (a.k) {
     case 'claude': { const st = D.audit?.ceo?.status; return st === 'fail' ? ['bad', 'Audit failing'] : st === 'warn' ? ['warn', 'Reviewing reports'] : ['ok', 'Running the company']; }
     case 'atlas': return botHealth().ok ? ['ok', 'Running the office'] : ['warn', 'Checking an issue'];
-    case 'scout': return D.sig && (Date.now() - new Date(D.sig.generatedAt)) < 75 * 6e4 ? ['work', 'Scanning'] : ['warn', 'Signal stale'];
+    case 'scout': { const n = (D.scan?.dipWatch || []).find(r => r.dropNeededPct != null); return n ? ['work', `Dip watch: ${n.symbol} −${n.dropNeededPct}%`] : ['work', 'Watching for dips']; }
     case 'analyst': return ['work', (D.latest?.regime?.label || 'Researching')];
     case 'medic': return botHealth().ok ? ['ok', 'ClaudeBot healthy'] : ['warn', 'ClaudeBot: check'];
     case 'planner': return ['work', 'Planning'];
@@ -734,7 +735,7 @@ const CONSOLES = {
   research() {
     const cards = D.latest?.cards || [], r = D.latest?.regime, coins = D.sig?.coins || [];
     const dir = d => d === 'BULLISH' ? 'bull' : d === 'BEARISH' ? 'bear' : 'neu';
-    return `<div class="ch"><h2>🔬 Research Lab</h2><span class="who">Analyst (stocks), Scout (crypto), and Sim &amp; Echo (Paper Lab)</span><a class="full" href="research.html">Full research report ↗</a></div>
+    return `<div class="ch"><h2>🔬 Research Lab</h2><span class="who">Analyst (stocks), Scout (dip watch), and Sim &amp; Echo (Paper Lab)</span><a class="full" href="research.html">Full research report ↗</a></div>
     <div class="cgrid">
       ${card('Stock regime', `<div class="big ${/OFF/.test(r?.label || '') ? 'down' : 'up'}">${esc(r?.label || '–')}</div><p>${esc(r?.detail || '')} · bias ${esc(r?.bias || '–')} · gate ${esc(r?.tradeGate || '–')}</p>`)}
       ${card('Stock watchlist', cards.length ? `<div class="picks">${cards.map(c => `<div class="pick"><b>${esc(c.symbol)}</b><span class="tag ${dir(c.direction)}">${esc(c.direction || '')}</span><div class="mono" style="margin-top:4px">score ${c.score} · $${c.price}</div><div style="color:var(--muted);font-size:12px;margin-top:4px">${esc(c.label || '')} · ${esc(c.tag || '')}</div></div>`).join('')}</div>` : '<div class="empty">No stocks on watch right now.</div>', 'span2')}
@@ -742,7 +743,8 @@ const CONSOLES = {
       ${paperCard()}
       ${dayCard()}
       ${wideCard()}
-      ${card('Crypto scanner · 1h bars', `<div class="scroll"><table><thead><tr><th>Coin</th><th>Trend</th><th>RSI</th><th>24h</th><th>Status</th></tr></thead><tbody>${coins.map(c => `<tr><td><b>${c.symbol}</b></td><td class="${c.trend === 'up' ? 'up' : c.trend === 'down' ? 'down' : ''}">${c.trend}</td><td class="mono">${c.rsi}</td><td class="mono ${cls(c.change24hPct)}">${pct(c.change24hPct, 1)}</td><td style="white-space:normal">${c.setup ? '<b class="up">SETUP</b>' : esc((c.blockers || [])[0] || '')}</td></tr>`).join('')}</tbody></table></div><p>Signal ${ago(D.sig?.generatedAt)} · ${D.sig?.regime?.riskOff ? 'BTC risk-off' : 'BTC trend OK'}</p>`, 'span3')}
+      ${card('🔭 Scout\'s dip watch · live Dip desk ETFs', (D.scan?.dipWatch || []).length ? `<div class="scroll"><table><thead><tr><th>ETF</th><th>Last close</th><th>RSI(2)</th><th>Uptrend</th><th>Buy signal if price is under</th><th>Drop needed</th></tr></thead><tbody>${D.scan.dipWatch.map(r => `<tr><td><b>${esc(r.symbol)}</b></td><td class="mono">${r.lastClose}</td><td class="mono">${r.rsi2}</td><td class="${r.uptrend ? 'up' : 'down'}">${r.uptrend ? 'yes' : 'no'}</td><td class="mono">${r.dropNeededPct == null ? '–' : r.rsiTrigger}</td><td class="mono">${r.dropNeededPct == null ? 'not possible' : '−' + r.dropNeededPct + '%'}</td></tr>`).join('')}</tbody></table></div><p>Updated ${ago(D.scan.generatedAt)}. A buy also needs the price to stay above the 200-day average.</p>` : '<div class="empty">First dip watch arrives with tonight\'s scan.</div>', 'span3')}
+      ${card('Crypto scanner · 1h bars (crypto desk off)', `<div class="scroll"><table><thead><tr><th>Coin</th><th>Trend</th><th>RSI</th><th>24h</th><th>Status</th></tr></thead><tbody>${coins.map(c => `<tr><td><b>${c.symbol}</b></td><td class="${c.trend === 'up' ? 'up' : c.trend === 'down' ? 'down' : ''}">${c.trend}</td><td class="mono">${c.rsi}</td><td class="mono ${cls(c.change24hPct)}">${pct(c.change24hPct, 1)}</td><td style="white-space:normal">${c.setup ? '<b class="up">SETUP</b>' : esc((c.blockers || [])[0] || '')}</td></tr>`).join('')}</tbody></table></div><p>Signal ${ago(D.sig?.generatedAt)} · ${D.sig?.regime?.riskOff ? 'BTC risk-off' : 'BTC trend OK'}</p>`, 'span3')}
     </div>`;
   },
   diagnostics() {
@@ -901,7 +903,7 @@ CONSOLES.rest = function () {
   <div class="cgrid">
     ${card('Resting now', off.length ? `<ul class="list">${off.map(a => li(`<b>${esc(a.name)}</b> · ${esc(a.title || '')}`)).join('')}</ul>` : '<p>Everyone is on the clock.</p>')}
     ${card('On duty', on.length ? `<ul class="list">${on.map(a => li(`<b>${esc(a.name)}</b> · ${esc(a.title || '')}`)).join('')}</ul>` : '<p>Nobody right now.</p>')}
-    ${card('Shift rules', `<ul class="list">${li('Trading desks work market hours (8:30 AM–3:00 PM CT, weekdays)')}${li('Managers keep office hours (8 AM–5 PM CT, weekdays)')}${li('Medic works the night shift so systems are always watched')}${li('Scout rests while the crypto desk is switched off')}${li('Resting agents cost nothing: the real trading runs on schedule either way')}</ul>`)}
+    ${card('Shift rules', `<ul class="list">${li('Trading desks work market hours (8:30 AM–3:00 PM CT, weekdays)')}${li('Managers keep office hours (8 AM–5 PM CT, weekdays)')}${li('Medic works the night shift so systems are always watched')}${li('Scout (dip scout) works market hours and right after the nightly scan')}${li('Resting agents cost nothing: the real trading runs on schedule either way')}</ul>`)}
   </div>`;
 };
 CONSOLES.breakroom = function () {
@@ -913,7 +915,7 @@ CONSOLES.breakroom = function () {
     ${card('House rules', `<ul class="list">${li('Breaks are short: trading checks never wait for coffee')}${li('No talking about positions you can\'t back with evidence')}${li('Ping-pong losers refill the coffee 🏓')}</ul>`)}
   </div>`;
 };
-const ROOM_BLURB = { rest: 'Where agents with nothing to do right now sleep until their next shift.', lobby: 'ClaudeBot health, the org chart, management audit and market regime.', research: 'Stock watchlist, crypto scanner and the 🧪 Paper Lab.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The trade ledger, results and the 🎮 agent payroll.', strategy: 'Quinn and the live Dip desk: research, evidence, trades.', breakroom: 'Coffee, ping-pong and team morale.' };
+const ROOM_BLURB = { rest: 'Where agents with nothing to do right now sleep until their next shift.', lobby: 'ClaudeBot health, the org chart, management audit and market regime.', research: 'Stock watchlist, Scout\'s dip watch and the 🧪 Paper Lab.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The trade ledger, results and the 🎮 agent payroll.', strategy: 'Quinn and the live Dip desk: research, evidence, trades.', breakroom: 'Coffee, ping-pong and team morale.' };
 const TITLES = { rest: ['Rest Room', 'Agents with no work right now recharge here'], office: ['Office', "What are ClaudeBot's agents doing right now?"], lobby: ['Lobby · Overview', 'The big picture'], research: ['Research Lab', 'What the agents are watching'], diagnostics: ['Diagnostics', 'Is everything healthy?'], freedom: ['Freedom Room', 'Planning the path to monthly income'], trading: ['Trading Floor', 'Positions and trades'], risk: ['Risk Office', 'The rules every order must pass'], vault: ['Vault · Ledger', 'Every trade on the record, plus the agent payroll game'], strategy: ['Strategy Lab', 'New ways to make money, tested before they trade'], breakroom: ['Break Room', 'Coffee, ping-pong and morale'] };
 let current = 'office';
 function renderConsole() {

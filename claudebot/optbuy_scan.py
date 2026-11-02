@@ -8,6 +8,7 @@ the two prices that decide the Dip signal for TODAY's price P (the live run supp
 A signal is possible only when trendFloor < rsiTrigger. Symbols whose trigger is reachable
 within `scanMaxDropPct` of the last close are listed in `watch`; the hourly run fetches live
 quotes only for those. Places no orders and touches no account data.
+Also publishes `dipWatch`: how far each live Dip desk ETF is from a buy signal (Scout's job).
 Writes docs/data/claudebot-optbuy-scan.json.
 """
 import importlib.util, json, os, sys
@@ -63,10 +64,27 @@ def main():
             rows[sym] = r
         except Exception as e:  # noqa: BLE001
             errors.append(f"{sym}: {e}")
+    # Scout's dip watch: how far each live Dip desk ETF is from a buy signal (no price filter)
+    dip_watch = []
+    for sym in json.load(open(os.path.join(HERE, "dip_config.json")))["symbols"]:
+        try:
+            bars, _ = obt.daily_bars(sym, "2025-06-01")
+            c = [x for d, x in bars if d < cutoff]
+            if len(c) < s["trendSma"] + 10:
+                continue
+            floor, trig = triggers(c, s["trendSma"], s["rsi2Below"])
+            last = c[-1]
+            dip_watch.append({"symbol": sym, "lastClose": round(last, 2), "rsi2": round(dipb.rsi2(c[-(s["trendSma"] + 10):]), 1),
+                              "trendFloor": round(floor, 2), "rsiTrigger": round(trig, 2) if trig else None,
+                              "uptrend": last > floor,
+                              "dropNeededPct": round(100 * (last - trig) / last, 2) if trig and trig > floor else None})
+        except Exception as e:  # noqa: BLE001
+            errors.append(f"dip {sym}: {e}")
+    dip_watch.sort(key=lambda r: (r["dropNeededPct"] is None, r["dropNeededPct"] or 0))
     dates = sorted({r["lastDate"] for r in rows.values()})
     out = {"generatedAt": datetime.now(timezone.utc).isoformat(), "asOf": dates[-1] if dates else None,
            "rule": f"signal when trendFloor < price < rsiTrigger (RSI2 < {s['rsi2Below']}, above {s['trendSma']}-day average)",
-           "watch": watch, "symbols": rows, "errors": errors}
+           "watch": watch, "dipWatch": dip_watch, "symbols": rows, "errors": errors}
     json.dump(out, open(OUT, "w"), indent=1)
     print(f"{len(rows)} scanned, {len(watch)} on watch, {len(errors)} errors")
     return 0 if rows else 1
