@@ -48,6 +48,8 @@ def validate(state, report):
             or model.get("maxOpenPerStrategy") != 3
             or not near(model.get("intradayStopPct"), 5, .00001)):
         raise ValueError("Unknown or loosened friction/risk model")
+    if report.get("frictionModel") != model:
+        raise ValueError("Published friction model does not match the validated state")
     if set(state.get("strategies") or {}) != ROW_IDS:
         raise ValueError("Unexpected strategy in paper state")
     leaderboard = report.get("etfLeaderboard")
@@ -94,6 +96,21 @@ def validate(state, report):
                     t["qty"] > 0 and t["frictionUsd"] > 0 and
                     near(t["entryNotionalUsd"], 25)):
                 raise ValueError("Invalid sizes or friction")
+            rate = (model["halfSpreadBpsPerSide"] + model["slippageBpsPerSide"]) / 10000
+            expect_entry = t["entryOpenRaw"] * (1 + rate)
+            expect_exit = t["exitReference"] * (1 - rate)
+            expect_qty = t["entryNotionalUsd"] / expect_entry
+            expect_gross = t["qty"] * (t["exitReference"] - t["entryOpenRaw"])
+            expect_net = t["qty"] * (t["exitFill"] - t["entryFill"]) - 2 * model["extraFeeUsdPerSide"]
+            expect_friction = t["qty"] * ((t["entryFill"] - t["entryOpenRaw"]) +
+                                            (t["exitReference"] - t["exitFill"])) + 2 * model["extraFeeUsdPerSide"]
+            if (not near(t["entryFill"], expect_entry, .00002) or
+                    not near(t["exitFill"], expect_exit, .00002) or
+                    not near(t["qty"], expect_qty, .00000005) or
+                    not near(t["grossPnlUsd"], expect_gross) or
+                    not near(t["netPnlUsd"], expect_net) or
+                    not near(t["frictionUsd"], expect_friction)):
+                raise ValueError("Modeled opening-price fill/fees fail independent re-calculation")
             if not near(t["grossPnlUsd"] - t["frictionUsd"], t["netPnlUsd"]):
                 raise ValueError("Paper net P&L does not reconcile")
             if not near(t["grossPnlUsd"] - 2 * t["frictionUsd"], t["stressedNetUsd"]):
