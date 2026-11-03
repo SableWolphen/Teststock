@@ -904,7 +904,7 @@ function planOut(p) {
 }
 function histCard() {
   const h = D.hist, b = h?.leaderboard || [];
-  const tag = st => ({ LIVE: 'bull', PAPER: 'neu', OFF: 'neu', REJECTED: 'bear' }[st] || 'neu');
+  const tag = st => ({ LIVE: 'bull', CANDIDATE: 'bull', PAPER: 'neu', OFF: 'neu', REJECTED: 'bear' }[st] || 'neu');
   const body = b.length ? `<div class="scroll"><table><thead><tr><th>Strategy</th><th>Status</th><th>Unseen-data result</th><th>Evidence</th><th>Note</th></tr></thead><tbody>${b.map(r => `<tr><td><b>${esc(r.name)}</b></td><td><span class="tag ${tag(r.status)}">${r.status}</span></td><td class="mono ${r.verdict === 'won' ? 'up' : r.verdict === 'lost' ? 'down' : ''}">${r.outOfSample == null ? '–' : (r.outOfSample > 0 ? '+' : '') + r.outOfSample} ${esc(r.unit)}</td><td style="white-space:normal">${esc(r.sample)}</td><td style="white-space:normal;color:var(--muted)">${esc(r.note || '')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">First leaderboard arrives with the weekly history run.</div>';
   return card('📜 Historian · what has won on past data', `<p style="margin:0 0 10px">Clio re-runs every strategy's backtest on the newest data each week and ranks them only by results on <b>unseen</b> data (picked on older years, checked on newer ones). ${h?.alerts?.length ? `<span class="warn"><b>Alerts:</b> ${h.alerts.map(esc).join(' · ')}</span>` : 'No fading edges right now.'}</p>${body}<p>Updated ${h?.generatedAt ? ago(h.generatedAt) : 'never'}.</p>`, 'span3');
 }

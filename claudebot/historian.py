@@ -86,7 +86,13 @@ def build():
                                       "LIVE" if ocfg.get("enabled") else "OFF", "% per trade", t.get("avgRetPct"),
                                       f"{t.get('trades')} unseen trades, {t.get('winRatePct')}% wins; {m.get('combosPositiveBoth')} variants won both periods",
                                       "claudebot-optbuy-backtest.json", f"same signals bought as the ETF: {t.get('sameSignalsEtfAvgPct')}% per trade", ob.get("generatedAt")))
-    vo = {"won": 0, "untested": 1, "lost": 2}; so = {"LIVE": 0, "PAPER": 1, "OFF": 2, "REJECTED": 3}
+    er = load(D("claudebot-edge-research.json"))
+    for kind, st in ((er or {}).get("strategies") or {}).items():
+        t = st["chosenOnTrain"]["test"]
+        rows.append(entry(f"edge_{kind}", st["name"] + " (ETFs)", "CANDIDATE" if st["verdict"] == "edge" else "REJECTED", "% per trade", t.get("avgTradePct"),
+                          f"{t.get('trades')} unseen trades, {t.get('winRatePct')}% wins, PF {t.get('profitFactor')}; {st['combosPositiveTest']} settings positive",
+                          "claudebot-edge-research.json", f"overlaps the Dip desk on {t.get('overlapWithDipPct')}% of trades", er.get("generatedAt")))
+    vo = {"won": 0, "untested": 1, "lost": 2}; so = {"LIVE": 0, "CANDIDATE": 1, "PAPER": 2, "OFF": 3, "REJECTED": 4}
     rows.sort(key=lambda r: (vo[r["verdict"]], so.get(r["status"], 9)))   # units differ ($ vs %), so no cross-ranking by size
     return rows
 
