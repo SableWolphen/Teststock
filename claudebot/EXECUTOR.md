@@ -21,6 +21,15 @@ If git can't reach the repo, attach `SableWolphen/Teststock` with push access fi
 `git pull --rebase`. If `gh` isn't available or it fails, carry on: the crypto planner
 already refuses new entries on a stale signal.
 
+## Gate first (board order 2026-11-02: everything runs on GitHub until a trade is ready)
+
+Right after cloning, read `docs/data/claudebot-gate.json` (written every 15 min in market hours by
+`.github/workflows/claudebot-gate.yml`, which replays the Dip desk's exact rules on fresh prices).
+- If `needed` is false AND `freshUntil` is later than now: STOP. No Robinhood calls, no other
+  parts, no commit, no message. (GitHub already ran the paper desks, audit inputs and research.)
+- Otherwise (`needed` true, or the file is missing/stale): do the full run below. Robinhood is the
+  authority: re-check everything live; the gate only decides whether to look.
+
 ## Run budget (board order 2026-11-02: keep the company running within the usage limit)
 
 Each run costs usage, and a run that hits the limit trades nothing. Do only the parts that can

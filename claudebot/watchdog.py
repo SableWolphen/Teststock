@@ -16,8 +16,12 @@ runs = [r["t"] for n in ("claudebot-dip-ledger.json", "claudebot-ledger.json", "
 last = max((datetime.fromisoformat(t.replace("Z", "+00:00")) for t in runs), default=None)
 age = (now - last).total_seconds() / 60 if last else 1e9
 problems = []
-if age > 150:
-    problems.append(f"ClaudeBot trader has not run for {age:.0f} minutes during market hours (scheduled runs may be failing, e.g. Claude usage limit).")
+g = load("claudebot-gate.json")
+gage = (now - datetime.fromisoformat(g["generatedAt"].replace("Z", "+00:00"))).total_seconds() / 60 if g.get("generatedAt") else 1e9
+if gage > 60:
+    problems.append(f"Trade gate has not updated for {gage:.0f} minutes during market hours (GitHub schedule may be stuck); Claude runs fall back to full checks.")
+if g.get("needed") and gage < 60 and age > 90:
+    problems.append(f"Gate says a trade is ready ({'; '.join(g.get('reasons', []))[:200]}) but the trader has not acted for {age:.0f} minutes (scheduled Claude runs may be failing, e.g. usage limit).")
 a = load("claudebot-audit.json")
 if a.get("ceo", {}).get("status") == "fail":
     fails = [f"{c['check']}: {c['detail']}" for r in a.get("reports", []) for c in r.get("checks", []) if c.get("status") == "fail"]

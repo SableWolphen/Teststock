@@ -151,8 +151,10 @@ def run(now=None):
     ra = age_min(runs[-1]["t"], now) if runs else float("inf")
     # market-day schedule: runs 9:14-14:44 CT with gaps up to 2h; the first run of a day follows the overnight/weekend gap
     first_today = ct.hour * 60 + ct.minute < 10 * 60 + 30 or not mkt
-    t.check("medic", "Trader is running", bool(runs) and (ra <= 150 or first_today),
-            (f"last run {round(ra)}m ago" + (" (first run of the day)" if first_today and ra > 150 else "")) if runs else "never ran")
+    gate = load(D("docs", "data", "claudebot-gate.json"), {})
+    gage = age_min(gate.get("generatedAt"), now)
+    t.check("medic", "Trader is running", bool(runs) and (ra <= 150 or first_today or gage <= 60),
+            (f"last full run {round(ra)}m ago" + (f"; GitHub gate watching ({round(gage)}m ago)" if gage <= 60 else "") + (" (first run of the day)" if first_today and ra > 150 else "")) if runs else "never ran")
     errs = [r for r in runs if r.get("action") == "error" and age_min(r["t"], now) < 1440]
     t.check("medic", "No errors in 24h", not errs, f"{len(errs)} errors: {errs[-1]['detail'][:80]}" if errs else "clean", level="warn")
     # books: recompute options P&L and crypto index from trades
