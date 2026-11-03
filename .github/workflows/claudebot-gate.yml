@@ -1,12 +1,14 @@
 name: ClaudeBot trade gate
 # Every 15 min in US market hours (free, no Claude usage): replay the live Dip desk rules on fresh
-# prices and publish docs/data/claudebot-gate.json. Claude trader runs only do work when it says so.
+# prices and publish docs/data/claudebot-gate.json. When a trade is ready it calls the Claude trading task
+# right away (secrets ROUTINE_FIRE_URL / ROUTINE_FIRE_TOKEN); scheduled Claude runs remain the backup.
 on:
   workflow_dispatch:
     inputs:
       test_now: { description: 'Test mode: pretend it is this UTC time (nothing is written)', required: false, default: '' }
   schedule:
     - cron: '*/15 13-21 * * 1-5'
+    - cron: '5-55/10 19-21 * * 1-5'   # extra checks around the 2-3 PM CT buying window (every 5 min combined)
 concurrency: { group: claudebot-gate, cancel-in-progress: false }
 permissions:
   contents: write
@@ -31,3 +33,15 @@ jobs:
           git commit -m "ClaudeBot gate $(date -u +%H:%MZ)"
           for i in 1 2 3 4 5; do git pull --rebase -X theirs origin main && git push origin HEAD:main && exit 0; sleep $((i*5)); done
           exit 1
+      - name: Call Claude when a trade is ready
+        if: ${{ github.event.inputs.test_now == '' || github.event.inputs.test_now == null }}
+        env:
+          ROUTINE_FIRE_URL: ${{ secrets.ROUTINE_FIRE_URL }}
+          ROUTINE_FIRE_TOKEN: ${{ secrets.ROUTINE_FIRE_TOKEN }}
+        run: |
+          [ "$(jq -r '.callClaude // false' docs/data/claudebot-gate.json)" = "true" ] || { echo "nothing to buy or sell"; exit 0; }
+          if [ -z "$ROUTINE_FIRE_URL" ] || [ -z "$ROUTINE_FIRE_TOKEN" ]; then echo "::warning::trade ready but call secrets are not set; the next scheduled Claude run will act"; exit 0; fi
+          why=$(jq -c '.reasons' docs/data/claudebot-gate.json)
+          body=$(jq -n --arg t "GitHub trade gate: a trade looks ready. Reasons: $why. Do the full run now (the gate file says needed=true)." '{text:$t}')
+          code=$(curl -sS -o /tmp/fire.json -w '%{http_code}' -X POST "$ROUTINE_FIRE_URL" -H "Authorization: Bearer $ROUTINE_FIRE_TOKEN" -H "anthropic-version: 2026-10-21" -H "Content-Type: application/json" -d "$body")
+          echo "call status $code"; [ "$code" = "200" ] || { echo "::warning::Claude call failed ($code); the next scheduled run will act"; cat /tmp/fire.json | jq -r '.error.type // empty'; }

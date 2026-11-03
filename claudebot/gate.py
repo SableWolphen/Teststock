@@ -92,12 +92,22 @@ def main():
             else:
                 out["note"] = plan.get("reason", "")
             break
+    # Call Claude right away when a trade is ready (board order 2026-11-02). At most once per 40 min
+    # for the same reasons, so one signal never starts a pile of runs. The workflow does the call
+    # AFTER pushing this file, so the called run reads needed=true.
+    prev = load(OUT, {}) or {}
+    last_at, last_why = prev.get("lastCallAt"), prev.get("lastCallReasons")
+    out["lastCallAt"], out["lastCallReasons"] = last_at, last_why
+    stale = not last_at or now - datetime.fromisoformat(last_at.replace("Z", "+00:00")) > timedelta(minutes=40)
+    out["callClaude"] = bool(out["needed"] and market and (stale or last_why != out["reasons"]))
+    if out["callClaude"]:
+        out["lastCallAt"], out["lastCallReasons"] = out["generatedAt"], out["reasons"]
     if os.environ.get("GATE_TEST_NOW"):
         print("TEST", json.dumps(out)); return
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w") as f:
         json.dump(out, f, indent=1); f.write("\n")
-    print(json.dumps({k: out[k] for k in ("marketOpen", "needed", "reasons")}))
+    print(json.dumps({k: out[k] for k in ("marketOpen", "needed", "reasons", "callClaude")}))
 
 
 if __name__ == "__main__":
