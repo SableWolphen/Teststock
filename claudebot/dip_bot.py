@@ -123,9 +123,14 @@ def plan(facts, cfg, led):
             why = "stop"
         elif in_window:
             c = [float(v) for v in s["closes"]] + [px]
-            if px > sma(c, x["smaBounce"]) or rsi2(c) > x["rsi2Above"]:
+            rule = pos.get("rule", "dip"); er = (cfg.get("edges") or {}).get(rule, {})
+            if rule == "double7" and px >= max(c[-er.get("k", 7):]):
+                why = "7-day high"
+            elif rule == "down3" and px > c[-2]:
+                why = "up close"
+            elif rule == "dip" and (px > sma(c, x["smaBounce"]) or rsi2(c) > x["rsi2Above"]):
                 why = "bounce"
-            elif trading_days_between(entered, local.date()) >= x["maxHoldDays"]:
+            elif trading_days_between(entered, local.date()) >= (er.get("maxHoldDays") or x["maxHoldDays"]):
                 why = "time"
         if why:
             return {"actions": [{"do": "sell", "symbol": pos["symbol"], "quantity": f"{qty:.6f}", "reason": why}]}
@@ -160,6 +165,22 @@ def plan(facts, cfg, led):
         looked.append(f"{sym} RSI2 {rv:.0f}{'' if c[-1] > tr else ' (below 200d)'}")
         if c[-1] > tr and rv < e["rsi2Below"]:
             hits.append((sym, rv))
+    hit_rule = {h[0]: "dip" for h in hits}
+    for rule, er in (cfg.get("edges") or {}).items():
+        if not er.get("enabled"):
+            continue                                       # switched on only by edge_promote.py once paper-proven
+        for sym in er.get("symbols", []):
+            if sym in hit_rule or sym in skip or sym in {p["symbol"] for p in held}:
+                continue
+            s = syms.get(sym)
+            if not s:
+                return {"actions": [{"do": "need_symbol", "symbol": sym}]}
+            c = [float(v) for v in s["closes"]][-(e["trendSma"] + 10):] + [float(s["price"])]
+            if len(c) < e["trendSma"] + 1 or c[-1] <= sma(c, e["trendSma"]):
+                continue
+            k = er.get("k", 7)
+            if (rule == "double7" and c[-1] <= min(c[-k:])) or (rule == "down3" and all(c[-1 - j] < c[-2 - j] for j in range(er.get("n", 3)))):
+                hits.append((sym, rsi2(c))); hit_rule[sym] = rule; looked.append(f"{sym} {rule} signal")
     if not hits:
         return none("no dip today: " + ", ".join(looked))
     sym, rv = hits[0]                                   # strongest ETF first (config order)
@@ -172,14 +193,15 @@ def plan(facts, cfg, led):
         size = min(size, round(bp - r["minBuyingPowerAfterUsd"], 2))
         if size < 1:
             return none("not enough free cash")
-    return {"actions": [{"do": "buy", "symbol": sym, "dollarAmount": f"{size:.2f}", "pctOfAccount": round(100 * size / max(float(facts.get("accountValue", 0)), 1), 1),
-                         "why": f"{sym} RSI(2) {rv:.1f} < {e['rsi2Below']} above its 200-day average" + ("; loss brake on (3 losses in a row): small size until a win" if brake else f"; {len(hits)} signals today, free cash split between them" if r.get("deployAllCash") else "")}]}
+    rule = hit_rule.get(sym, "dip")
+    return {"actions": [{"do": "buy", "symbol": sym, "rule": rule, "dollarAmount": f"{size:.2f}", "pctOfAccount": round(100 * size / max(float(facts.get("accountValue", 0)), 1), 1),
+                         "why": (f"{sym} RSI(2) {rv:.1f} < {e['rsi2Below']} above its 200-day average" if rule == "dip" else f"{sym} {rule} signal (paper-proven edge) above its 200-day average") + ("; loss brake on (3 losses in a row): small size until a win" if brake else f"; {len(hits)} signals today, free cash split between them" if r.get("deployAllCash") else "")}]}
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(); sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("plan"); p.add_argument("facts")
-    p = sub.add_parser("open"); p.add_argument("--symbol", required=True); p.add_argument("--price", type=float, required=True); p.add_argument("--usd", type=float, required=True); p.add_argument("--pct", type=float, default=None)
+    p = sub.add_parser("open"); p.add_argument("--symbol", required=True); p.add_argument("--price", type=float, required=True); p.add_argument("--usd", type=float, required=True); p.add_argument("--pct", type=float, default=None); p.add_argument("--rule", default="dip")
     p = sub.add_parser("close"); p.add_argument("--symbol", required=True); p.add_argument("--price", type=float, required=True); p.add_argument("--reason", required=True)
     p = sub.add_parser("log"); p.add_argument("--action", required=True); p.add_argument("--detail", default="")
     p = sub.add_parser("mark"); p.add_argument("facts")
@@ -197,7 +219,7 @@ def main(argv=None):
             print(f"ERROR: already holding {a.symbol}", file=sys.stderr); return 2
         if len(ps) >= cfg["risk"]["maxOpenPositions"]:
             print("ERROR: position limit reached", file=sys.stderr); return 2
-        ps.append({"symbol": a.symbol, "entryPrice": a.price, "usd": round(a.usd, 2), "pctOfAccount": a.pct, "enteredAt": iso(now)})
+        ps.append({"symbol": a.symbol, "entryPrice": a.price, "usd": round(a.usd, 2), "pctOfAccount": a.pct, "rule": a.rule, "enteredAt": iso(now)})
         led["startedAt"] = led.get("startedAt") or iso(now)
         log("buy", f"bought ${a.usd:.2f} of {a.symbol} at {a.price}"); save_led(led, ps); return 0
     if a.cmd == "close":
@@ -206,7 +228,7 @@ def main(argv=None):
             print(f"ERROR: no open {a.symbol} position", file=sys.stderr); return 2
         ret = 100 * (a.price / p_["entryPrice"] - 1)
         led["trades"].append({"label": p_["symbol"], "symbol": p_["symbol"], "enteredAt": p_["enteredAt"], "exitedAt": iso(now), "entryPrice": p_["entryPrice"],
-                              "exitPrice": a.price, "usd": p_["usd"], "returnPct": round(ret, 3), "pnlUsd": round(p_["usd"] * ret / 100, 2), "reason": a.reason})
+                              "exitPrice": a.price, "usd": p_["usd"], "rule": p_.get("rule", "dip"), "returnPct": round(ret, 3), "pnlUsd": round(p_["usd"] * ret / 100, 2), "reason": a.reason})
         ps.remove(p_); log("sell", f"sold {p_['symbol']} at {a.price} ({ret:+.2f}%, {a.reason})"); save_led(led, ps); return 0
     if a.cmd == "mark":
         # record each open position's live price for the dashboard's "made today" (prices only)

@@ -105,6 +105,10 @@ def run(now=None):
     dr = dcfg.get("risk", {})
     g.check("dip", "Dip desk size and count caps", dr.get("positionUsd", 999) <= 30 and dr.get("positionPctOfAccount", 0) <= 25 and dr.get("maxOpenPositions", 9) <= 5 and dr.get("minBuyingPowerAfterUsd", 0) >= 1 and dcfg.get("exit", {}).get("stopPct", 99) <= 8,
             f"{'all free cash split across signals' if dr.get('deployAllCash') else str(dr.get('positionPctOfAccount', 0)) + '% of account'} (min ${dr.get('positionUsd')}) per trade, {dr.get('maxOpenPositions')} at a time, {dcfg.get('exit', {}).get('stopPct')}% stop")
+    bad_edges = [k for k, er in (dcfg.get("edges") or {}).items() if er.get("enabled") and not (er.get("promotion") or {}).get("paperTrades", 0) >= 20]
+    g.check("dip", "Live edges were promoted on paper evidence", not bad_edges,
+            "edges switched on without a 20+ trade paper record: " + ", ".join(bad_edges) if bad_edges else
+            "live edges: " + (", ".join(er.get("name", k) for k, er in (dcfg.get("edges") or {}).items() if er.get("enabled")) or "none yet (still proving themselves on paper)"))
     dps = dled.get("positions") if dled.get("positions") is not None else ([dled["open"]] if dled.get("open") else [])
     syms_ = [p_.get("symbol") for p_ in dps]
     g.check("dip", "Dip positions within limits", len(dps) <= min(5, dr.get("maxOpenPositions", 1)) and len(set(syms_)) == len(syms_)
