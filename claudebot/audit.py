@@ -97,6 +97,16 @@ def run(now=None):
     o = oled.get("open")
     g.check("options", "Open spread within limits", (o is None) or (o.get("maxLossUsd", 999) <= 100 and abs(o.get("shortDelta", 1)) <= LIMITS["options.maxShortDeltaMax"]),
             "no open spread" if o is None else f"{'PAPER' if oled.get('mode', 'paper') != 'live' else 'LIVE'} {o['label']} max loss ${o.get('maxLossUsd')} (modeled)")
+    try:
+        import importlib.util as _iu
+        _sp = _iu.spec_from_file_location("gov", os.path.join(os.path.dirname(os.path.abspath(__file__)), "governor.py")); _gv = _iu.module_from_spec(_sp); _sp.loader.exec_module(_gv)
+        H = _gv.HARD
+        gov_ok = (H["account"] == "MCP" and H["dip.maxPctOfAccount"] <= 25 and H["dip.maxOpen"] <= 5 and H["optbuy.maxPremiumUsd"] <= 50
+                  and H["optbuy.maxPctOfAccount"] <= 43 and H["optbuy.maxOpen"] <= 1 and "KO" in H["neverSell"] and H["maxQuoteAgeSec"] <= 180)
+        gdet = f"hard ceilings intact: {H['dip.maxPctOfAccount']}% per ETF, ${H['optbuy.maxPremiumUsd']} per option, MCP only, KO never sold"
+    except Exception as e:  # noqa: BLE001
+        gov_ok, gdet = False, f"governor missing or broken: {e}"
+    g.check("options", "Risk governor in place and not loosened", gov_ok, gdet)
     g.check("options", "Spreads stay paper-only (broker blocks agent multi-leg orders)", oled.get("mode", "paper") != "live",
             "paper only: no real multi-leg orders are ever sent" if oled.get("mode", "paper") != "live" else "options ledger says LIVE but Robinhood blocks agent spreads")
     today = now.astimezone(timezone(timedelta(hours=-6))).date().isoformat()

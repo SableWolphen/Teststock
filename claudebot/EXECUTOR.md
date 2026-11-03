@@ -30,6 +30,17 @@ Right after cloning, read `docs/data/claudebot-gate.json` (written every 15 min 
 - Otherwise (`needed` true, or the file is missing/stale): do the full run below. Robinhood is the
   authority: re-check everything live; the gate only decides whether to look.
 
+## RISK GOVERNOR (board order 2026-11-03): no live order without an ALLOW
+
+Right before EVERY live `review_*_order`/`place_*_order` that opens or closes a position (Dip buy/sell,
+option buy/sell/take-profit, crypto sell), run:
+`python3 claudebot/governor.py check '{"desk": "dip|optbuy|crypto|spread", "side": "buy|sell", "symbol": "...", "usd": <dollars or premium x 100 for buys>, "quantity": "<sells>", "accountNickname": "MCP", "accountValue": <get_portfolio total>, "buyingPower": <buying power>, "quoteAgeSec": <seconds since the quote you used>}'`
+Exit code 0 = ALLOW: proceed. Exit code 1 = DENY: place NOTHING for that action, log it with the desk's
+`log --action governor-deny --detail "<reasons>"`, and move on (exits of other positions still run).
+The governor reads the configs and ledgers itself and has hard ceilings of its own; never edit it,
+never skip it, never retry a denied order with different numbers to get around it. Cancelling the
+bot's own resting orders does not need it.
+
 ## Run budget (board order 2026-11-02: keep the company running within the usage limit)
 
 Each run costs usage, and a run that hits the limit trades nothing. Do only the parts that can
@@ -246,11 +257,11 @@ all free cash (minus $1) across the day's signals; always buy exactly the `dolla
    `optbuy_bot.py log ...`), add the symbol to a `"skip": [...]` list in the facts file, and re-plan
    (the planners ignore skipped symbols for new buys this run; exits are never skipped). Never change
    size because of news. If search fails, proceed (the tested rule stands on its own).
-3. `buy`: review_equity_order(side buy, type market, dollar_amount = dollarAmount,
+3. `buy`: governor check (desk dip, side buy, usd dollarAmount) must ALLOW; then review_equity_order(side buy, type market, dollar_amount = dollarAmount,
    market_hours regular_hours) then place_equity_order with the same params and a fresh UUID
    ref_id. Poll get_equity_orders(order_id) until filled (~1 min). Then
    `dip_bot.py open --symbol S --price <average fill price> --usd <filled notional> --pct <pctOfAccount from the buy action> --rule <rule from the buy action>`.
-4. `sell`: review_equity_order(side sell, type market, quantity = quantity) then place it.
+4. `sell`: governor check (desk dip, side sell, quantity) must ALLOW; then review_equity_order(side sell, type market, quantity = quantity) then place it.
    Poll until filled, then `dip_bot.py close --symbol S --price <average fill price> --reason <reason>`.
    Never sell more than the quantity given (the account holds other shares, e.g. KO).
 5. `record_broker_close`: find the filled sell of that symbol in get_equity_orders and record it with `close --symbol S`.
@@ -273,10 +284,10 @@ Rules: `claudebot/optbuy_bot.py` + `claudebot/optbuy_config.json`. Ledger:
 | `need_expirations` | `expirations[SYM]` = get_option_chains(SYM).expiration_dates; re-plan |
 | `need_calls` | get_option_instruments(chain_symbol SYM, expiration_dates, type call), keep strikes between strikeMin and strikeMax, one get_option_quotes for those ids; append `{symbol, id, strike, expiration, bid, ask, delta}` to `calls` and add `"SYM|expiration"` to `callsFetched` (even if nothing was in range); re-plan |
 | `need_position` | `optHeld` = quantity of that option id in get_option_positions(nonzero=true) (0 if absent); `optQuote` = {bid, ask} from get_option_quotes; `tpOrder` = {id, price} of the open sell-to-close order on that id (get_option_orders state queued/confirmed), else null; re-plan |
-| `buy` | review_option_order (one leg: option_id id, side buy, position_effect open; type limit, price limitPrice, quantity "1", gfd), then place_option_order with a fresh UUID ref_id. Poll ~every 30s up to 3 min; if unfilled, cancel and place once more at maxPrice, wait 3 min; still unfilled: cancel and log "no fill". Filled: `optbuy_bot.py open --json '<action JSON>' --price <average fill price>`, then re-plan (it will ask to place the take-profit). |
+| `buy` | governor check (desk optbuy, side buy, usd = limitPrice x 100) must ALLOW; then review_option_order (one leg: option_id id, side buy, position_effect open; type limit, price limitPrice, quantity "1", gfd), then place_option_order with a fresh UUID ref_id. Poll ~every 30s up to 3 min; if unfilled, cancel and place once more at maxPrice, wait 3 min; still unfilled: cancel and log "no fill". Filled: `optbuy_bot.py open --json '<action JSON>' --price <average fill price>`, then re-plan (it will ask to place the take-profit). |
 | `place_tp` | review then place_option_order: one leg (id, side sell, position_effect close), type limit, price limitPrice, quantity "1", **time_in_force gtc**. Log it. |
 | `cancel_order` | cancel_option_order(orderId) (the bot's own take-profit; pre-authorized); confirm cancelled |
-| `sell` | one leg (id, side sell, position_effect close), type limit, price limitPrice, quantity "1", gfd. Poll up to 2 min; if unfilled, cancel and re-place $0.01 lower, up to 3 times (never below $0.01). Filled: `optbuy_bot.py close --price <fill> --reason "<reason>"`. |
+| `sell` | governor check (desk optbuy, side sell) must ALLOW; then one leg (id, side sell, position_effect close), type limit, price limitPrice, quantity "1", gfd. Poll up to 2 min; if unfilled, cancel and re-place $0.01 lower, up to 3 times (never below $0.01). Filled: `optbuy_bot.py close --price <fill> --reason "<reason>"`. |
 | `record_broker_close` | find the filled sell-to-close for that id in get_option_orders(state filled) and run `close --price <its price> --reason "take profit (resting order)"` |
 | `none` | `optbuy_bot.py log --action hold --detail "<reason>"` (skip when "market closed") |
 Never hold more than one option, never buy more than quantity 1, never sell options you didn't buy. Universe = optbuy_config.json `symbols` (tested ETFs, tried first) plus `scanUniverse` (stocks and extra ETFs, via the nightly scan); never buy an option on a ticker outside those lists.
