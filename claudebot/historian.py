@@ -98,6 +98,40 @@ def build():
     return rows
 
 
+def cio_memo(rows, paper):
+    """Chief Investment Officer memo: which strategy deserves the capital and why. Advisory only: it can
+    rank and explain, but it has no authority over orders or limits (the risk governor decides those)."""
+    live = [r for r in rows if r["status"] == "LIVE" and r["verdict"] == "won"]
+    cands = [r for r in rows if r["status"] == "CANDIDATE" and r["verdict"] == "won"]
+    lost = [r for r in rows if r["verdict"] == "lost"]
+    osp = load(D("claudebot-optscalp-paper.json")) or {}
+    lb = [r for r in osp.get("leaderboard", []) if r.get("id") != "notrade"]
+    best_opt = max(lb, key=lambda r: r.get("pnlUsd") or 0) if lb else None
+    traded = sum(r.get("trades") or 0 for r in lb)
+    fc = (osp.get("forecast") or {})
+    lines = []
+    if live:
+        b = max(live, key=lambda r: r["outOfSample"] or 0)
+        lines.append(f"Capital goes to: {b['name']} ({b['outOfSample']:+} {b['unit']} on unseen data; {b['sample']}). The Dip desk is the only strategy with a proven edge.")
+    if cands:
+        lines.append("Next in line (paper, switch on automatically if proven): " + "; ".join(f"{r['name']} {r['outOfSample']:+} {r['unit']}" for r in cands) + ".")
+    if traded:
+        lines.append(f"Options paper race: {traded} paper trades so far; best variant {best_opt['name']} at ${best_opt['pnlUsd']:+.2f}. "
+                     + ("A variant has passed every gate: proposal for the board." if osp.get("proposals") else "No variant has passed the gates; 'no trade' remains the better choice for real money."))
+    else:
+        lines.append("Options paper race: no completed paper trades yet; 'no trade' remains the better choice for real money.")
+    if fc.get("samples"):
+        lines.append(f"Learned forecast: {fc['samples']} observed moves; on average {round(100 * fc.get('carry', 0))}% of a 30-minute move carries on"
+                     + (" (moves tend to snap back)" if fc.get("carry", 0) < 0 else "") + ".")
+    if lost:
+        lines.append("Not funded (lost on unseen data): " + ", ".join(r["name"] for r in lost[:4]) + (" and others." if len(lost) > 4 else "."))
+    top_paper = [p for p in paper if (p.get("trades") or 0) > 0][:3]
+    if top_paper:
+        lines.append("Paper desks ranked by risk-adjusted growth (all still unproven): " + "; ".join(f"{p['desk']} {p['name']} {p.get('netGrowthPct', 0):+}%" for p in top_paper) + ".")
+    return {"title": "CIO memo", "decision": lines[0] if lines else "Hold cash: nothing has a proven edge.", "lines": lines,
+            "authority": "Advisory only. Orders and limits are decided by the planners and the independent risk governor."}
+
+
 def main():
     now = datetime.now(timezone.utc).isoformat()
     prev = load(OUT) or {}
@@ -136,8 +170,9 @@ def main():
         r["maxDrawdownPct"] = round(100 * dd / ACCOUNT, 2)
         r["northStar"] = round(r["netGrowthPct"] / (1 + abs(r["maxDrawdownPct"])), 3)
     paper.sort(key=lambda r: -r["northStar"])
+    cio = cio_memo(rows, paper)
     out = {"generatedAt": now, "leaderboard": rows, "paperLeaderboard": paper, "winners": [r["name"] for r in rows if r["verdict"] == "won"],
-           "losers": [r["name"] for r in rows if r["verdict"] == "lost"], "alerts": alerts, "history": hist,
+           "losers": [r["name"] for r in rows if r["verdict"] == "lost"], "alerts": alerts, "history": hist, "cio": cio,
            "northStar": "Paper desks are ranked by risk-adjusted net account growth: net P&L after costs as % of a $117 account, divided by (1 + worst drawdown %). Win rate alone never ranks a strategy.",
            "rule": "Ranked by out-of-sample (unseen-data) results only. Picking on old data and checking on new data is the only test that counts."}
     with open(OUT, "w") as f:
