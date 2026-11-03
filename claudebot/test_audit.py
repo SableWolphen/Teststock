@@ -19,4 +19,29 @@ o = with_patch(lambda p, d: ({**d, "trades": [{"credit": .2, "debit": .1, "pnlUs
 assert status(o, "atlas") == "fail"
 o = with_patch(lambda p, d: ({**d, "account_number": "123"} if p.endswith("claudebot-ledger.json") else d))
 assert status(o, "atlas") == "fail"
+# A retired agent's archived output must never count as fresh work or a pass.
+o = with_patch(lambda p, d: (
+    {"fired": [{"agent": "sim"}, {"agent": "echo"}]}
+    if p.endswith("claudebot-hr.json") else d))
+checks = next(r for r in o["reports"] if r["manager"] == "analyst")["checks"]
+assert next(x for x in checks if x["agent"] == "sim")["status"] == "inactive"
+assert next(x for x in checks if x["agent"] == "echo")["status"] == "inactive"
+assert all(x["status"] != "pass" for x in checks if x["agent"] in ("sim", "echo"))
+assert "vega" in {x["agent"] for x in checks}
+assert "clio" in {x["agent"] for x in checks}
+assert "moxie" in {x["agent"] for x in checks}
+assert "scout" in {x["agent"] for x in checks}
+assert next(x for x in checks if x["agent"] == "scout")["check"] == "ETF Dip watch covers approved symbols"
+# Scout should fail for missing ETF watch even if the crypto feed is fresh.
+o = with_patch(lambda p, d: (
+    {**d, "dipWatch": []}
+    if p.endswith("claudebot-optbuy-scan.json") else d))
+checks = next(r for r in o["reports"] if r["manager"] == "analyst")["checks"]
+assert any(x["agent"] == "scout" and x["status"] == "fail" for x in checks), checks
+# New live ETF strategies must have separately recorded approval, not just paper wins.
+o = with_patch(lambda p, d: (
+    {**d, "edges": {"double7": {"enabled": True, "promotion": {"paperTrades": 99}}}}
+    if p.endswith("claudebot/dip_config.json") else d))
+checks = next(r for r in o["reports"] if r["manager"] == "guard")["checks"]
+assert any(x["check"] == "Live edge requires separate recorded board approval" and x["status"] == "fail" for x in checks)
 print("all audit scenarios pass")
