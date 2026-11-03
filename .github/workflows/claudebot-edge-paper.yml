@@ -1,4 +1,4 @@
-name: ClaudeBot second-edge paper desk
+name: ClaudeBot paper desks (after the close)
 # After each US close (free, no Claude usage): paper-trade the research candidates on real daily closes.
 on:
   workflow_dispatch:
@@ -17,12 +17,20 @@ jobs:
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+      - name: Day-trade paper desk (replays today on 5-min bars)
+        run: python claudebot/daytrade_paper_gh.py
+        continue-on-error: true
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
       - name: Auto-promote paper-proven edges (board standing order)
         run: python claudebot/edge_promote.py
+      - name: Historian (daily paper + weekly backtest leaderboard)
+        run: python claudebot/historian.py
       - run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add docs/data/claudebot-edge-paper.json claudebot/dip_config.json
+          git add docs/data/claudebot-edge-paper.json docs/data/claudebot-daytrade-paper.json docs/data/claudebot-historian.json claudebot/dip_config.json
           git diff --cached --quiet && exit 0
           git commit -m "Second-edge paper desk: daily update"
           for i in 1 2 3 4 5; do git pull --rebase -X theirs origin main && git push origin HEAD:main && exit 0; sleep $((i*5)); done

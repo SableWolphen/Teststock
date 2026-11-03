@@ -113,7 +113,17 @@ def main():
                 alerts.append(f"{r['name']}: unseen-data result fell from {a} to {b} {r['unit']}. Review before trusting it.")
             if r["status"] == "LIVE" and b is not None and b <= 0:
                 alerts.append(f"{r['name']} is LIVE but no longer wins on unseen data. Consider switching it off.")
-    out = {"generatedAt": now, "leaderboard": rows, "winners": [r["name"] for r in rows if r["verdict"] == "won"],
+    # forward evidence: every paper desk, ranked by real-time results (not backtests)
+    paper = []
+    for fn, desk in (("claudebot-edge-paper.json", "2nd edge"), ("claudebot-crypto-paper.json", "Crypto 24/7"), ("claudebot-daytrade-paper.json", "Day trade"), ("claudebot-paper-ledger.json", "Paper Lab")):
+        for r in (load(D(fn)) or {}).get("leaderboard", []) or []:
+            n = r.get("trades") or 0
+            if n == 0 and not r.get("open"):
+                pass
+            paper.append({"desk": desk, "name": r.get("name"), "trades": n, "winRatePct": r.get("winRatePct") if r.get("winRatePct") is not None else (round(100 * r["wins"] / n, 1) if n and r.get("wins") is not None else None),
+                          "pnlUsd": r.get("pnlUsd"), "profitFactor": r.get("profitFactor")})
+    paper.sort(key=lambda r: -(r["pnlUsd"] or 0))
+    out = {"generatedAt": now, "leaderboard": rows, "paperLeaderboard": paper, "winners": [r["name"] for r in rows if r["verdict"] == "won"],
            "losers": [r["name"] for r in rows if r["verdict"] == "lost"], "alerts": alerts, "history": hist,
            "rule": "Ranked by out-of-sample (unseen-data) results only. Picking on old data and checking on new data is the only test that counts."}
     with open(OUT, "w") as f:

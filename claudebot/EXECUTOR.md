@@ -32,7 +32,7 @@ matter on THIS run (Chicago time), then commit and stop. Exits are never skipped
 | E Dip desk | every run (stops any time; entries in the 2:00-2:59 window) |
 | E7 options-buying | only if `claudebot/optbuy_config.json` has `"enabled": true` or its ledger has an `open` option |
 | C Paper Lab | only on the 11:14 and 1:14 runs |
-| C3 day-trade paper | only on the 2:44 run |
+| C3 day-trade paper | never: GitHub Actions replays each day for free after the close |
 | C2 promote + D audit | every run (local scripts, cheap) |
 Skipped parts need no facts, no tool calls and no log line. Load only the tools the run needs
 in one ToolSearch call, make independent calls in parallel, and keep notes short.
