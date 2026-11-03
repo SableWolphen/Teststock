@@ -677,6 +677,10 @@ function renderWalls() {
     tickT.textContent = `${c.symbol} ${c.change24hPct > 0 ? '+' : ''}${c.change24hPct}% 24h`; }
 }
 function agentStatus(a) {
+  if ((D.hr?.fired || []).some(f => f.agent === a.k)) return ['', 'Retired · no active assignment'];
+  const checks = (D.audit?.reports || []).flatMap(r => r.checks || []).filter(c => c.agent === a.k);
+  if (checks.some(c => c.status === 'fail')) return ['bad', 'Assigned check failed'];
+  if (checks.some(c => c.status === 'warn')) return ['warn', 'Assigned check needs review'];
   if (a.state === 'talk') return ['talk', 'Talking'];
   if (a.state === 'walk') return ['walk', a.doing];
   if (a.resting) return ['rest', `Resting 😴 · ${Math.round(a.energy)}%`];
@@ -694,8 +698,8 @@ function agentStatus(a) {
     case 'ledger': return ['ok', 'Books balanced'];
     case 'vega': { const n = (D.osp?.leaderboard || []).filter(r => r.open).length; return n ? ['hold', `${n} paper options open`] : ['work', 'Options race (paper)']; }
     case 'moxie': { const n = (D.msp?.strategies?.moonshot?.open || []).length; return n ? ['hold', `${n} paper moonshot${n > 1 ? 's' : ''}`] : ['work', `${(D.msp?.candidates || []).length} turnarounds on watch`]; }
-    case 'clio': return D.hist?.alerts?.length ? ['warn', 'Edge fading!'] : ['work', `${(D.hist?.winners || []).length} winners on file`];
-    case 'quinn': return D.dled?.open ? ['hold', 'Holding ' + D.dled.open.symbol] : ['work', 'Watching for dips'];
+    case 'clio': return D.hist?.alerts?.length ? ['warn', 'Edge fading!'] : ['work', `${(D.hist?.winners || []).length} historical candidate(s)`];
+    case 'quinn': return D.dled?.open ? ['hold', 'Ledger reports ' + D.dled.open.symbol] : ['work', 'Watching for dips'];
     case 'sim': { const o = Object.values(D.pled?.strategies || {}).filter(x => x.desk === 'options' && x.open).length; return o ? ['hold', o + ' paper spreads'] : ['work', 'Paper testing']; }
     case 'echo': return D.pled?.strategies?.cryraw?.open ? ['hold', 'Paper ' + D.pled.strategies.cryraw.open.symbol] : ['work', 'Paper testing'];
   }
@@ -719,12 +723,12 @@ function renderKpis() {
   const runs = [...(D.led?.runs || []), ...(D.oled?.runs || [])].sort((a, b) => new Date(b.t) - new Date(a.t));
   const mt = madeToday(), ma = madeAllTime();
   const k = [
-    ['Money made (real $)', `Today ${usd(mt.total)} · All time ${usd(ma.total)}`, `today: ${mt.n} closed ${usd(mt.realized)}, open ${mt.marked.length ? mt.marked.join(', ') + ' ' + usd(mt.open) : 'none'} · all time: closed ${usd(ma.closed)}, open ${usd(ma.open)}`, cls(ma.total)],
+    ['Ledger P&L (unverified)', `Today ${usd(mt.total)} · All time ${usd(ma.total)}`, `today: ${mt.n} closed ${usd(mt.realized)}, open ${mt.marked.length ? mt.marked.join(', ') + ' ' + usd(mt.open) : 'none'} · all time: closed ${usd(ma.closed)}, open ${usd(ma.open)}`, cls(ma.total)],
     ['ClaudeBot health', botHealth().status, botHealth().ok ? 'scan ' + Math.round(botHealth().sigAge) + 'm · trader ' + Math.round(botHealth().runAge) + 'm ago' : botHealth().issues[0], botHealth().ok ? 'up' : 'warn'],
     ['Trading today', tradingToday()[0], tradingToday()[1] + (D.sig?.regime?.riskOff ? ' · crypto risk-off' : ''), tradingToday()[2]],
     ['Market', D.latest?.regime?.label || '–', 'call: ' + (D.latest?.action || '–'), /OFF/.test(D.latest?.regime?.label || '') ? 'down' : ''],
     ['Real positions', String(open), (lp.join(' · ') || 'all cash') + (paperSpread() ? ` · paper: ${paperSpread()}` : ''), open ? 'org' : ''],
-    ['Closed trades P&L', usd(optPnl() + dipPnl()), `real $ since start · crypto ${pct(cryptoIdx() - 100)}`, cls(cryptoIdx() - 100 + optPnl() + dipPnl())],
+    ['Ledger-reported closed P&L', usd(optPnl() + dipPnl()), `not broker-verified · crypto index ${pct(cryptoIdx() - 100)}`, cls(cryptoIdx() - 100 + optPnl() + dipPnl())],
     ['Paper P&L (pretend $)', usd(paperTotals().pnl), `${paperTotals().n} closed paper trades · options race counted once · not real money`, cls(paperTotals().pnl)],
     ['Paper win rate', paperTotals().wp == null ? '–' : paperTotals().wp + '%', `${paperTotals().open} paper trades open · could lose up to $${Math.round(paperTotals().risk)}`, paperTotals().wp == null ? '' : paperTotals().wp >= 60 ? 'up' : paperTotals().wp < 45 ? 'down' : 'warn'],
     ['Management audit', D.audit ? `${D.audit.reports.reduce((a, r) => a + r.passed, 0)}/${D.audit.reports.reduce((a, r) => a + r.total, 0)} ✓` : '–', D.audit ? `${D.audit.ceo.status.toUpperCase()} · ${ago(D.audit.generatedAt)}` : 'first audit at :14', D.audit?.ceo?.status === 'pass' ? 'up' : D.audit?.ceo?.status === 'fail' ? 'down' : 'warn'],
@@ -755,7 +759,7 @@ const CONSOLES = {
   office() {
     return `<div class="ch"><h2>🏢 Whole office</h2><span class="who">Thirteen agents in nine rooms, led by Claude (CEO) · click a room to open it</span></div>
     <div class="cgrid">${ROOM_IDS.map(id => card(`${ROOMS[id].icon} ${ROOMS[id].name}`, `<p>${esc(ROOM_BLURB[id])}</p><p><a href="#${id}" style="color:var(--accent);font-weight:600;text-decoration:none">Open room →</a></p>`)).join('')}
-    ${card('How it works', '<p>GitHub scans prices and research every hour. The hourly ClaudeBot task checks Robinhood, follows the rules in its planners, places or skips trades, and publishes what it did. These agents act out that published state.</p>', 'span2')}</div>`;
+    ${card('How it works', '<p>GitHub scans prices and research every hour. The hourly ClaudeBot task checks Robinhood, follows the rules in its planners, places or skips trades, and publishes what it did. The office characters illustrate reported activity; their conversations are not proof that an autonomous agent ran. Use the audit and broker records for verification.</p>', 'span2')}</div>`;
   },
   lobby() {
     const h = D.health, r = D.latest?.regime;
@@ -923,9 +927,9 @@ function orgCard() {
   const mgrs = ['atlas', 'analyst', 'guard'];
   const team = m => [...new Set([...Object.keys(agents).filter(k => agents[k].boss === m), ...((by[m]?.checks || []).map(c => c.agent).filter(k => agents[k]))])];
   const col = m => { const r = by[m]; return `<div class="box" style="background:#1a1f29"><h3>${agents[m].name} · ${esc(agents[m].title)} ${chip(r?.status)}</h3>
-      <ul class="list">${team(m).map(k => { const cs = (r?.checks || []).filter(c => c.agent === k); const worst = cs.some(c => c.status === 'fail') ? 'r' : cs.some(c => c.status === 'warn') ? 'y' : cs.length ? 'g' : '';
-        return li(`<b>${agents[k].name}</b> <span style="color:var(--muted)">${esc(agents[k].title)}</span><br>${cs.map(c => `<span style="color:${c.status === 'pass' ? 'var(--up)' : c.status === 'warn' ? 'var(--warn)' : 'var(--down)'}">${c.status === 'pass' ? '✓' : c.status === 'warn' ? '!' : '✗'}</span> ${esc(c.check)}: <span style="color:var(--muted)">${esc(c.detail)}</span>`).join('<br>') || '<span style="color:var(--muted)">no checks yet</span>'}`, worst); }).join('')}</ul></div>`; };
-  return card(`🏛️ Org chart & management audit ${chip(au?.ceo?.status)}`, `<p style="margin:0 0 10px"><b>Claude (CEO)</b> ← three managers check their teams' real work every hour and report up. ${au ? `Latest audit ${ago(au.generatedAt)}: ${esc(au.ceo.summary)}.` : 'The first audit runs with the next hourly task.'}</p><div class="cgrid" style="margin-top:0">${mgrs.map(col).join('')}</div>`, 'span3');
+      <ul class="list">${team(m).map(k => { const cs = (r?.checks || []).filter(c => c.agent === k); const worst = cs.some(c => c.status === 'fail') ? 'r' : cs.some(c => c.status === 'warn') ? 'y' : cs.some(c => c.status === 'pass') ? 'g' : '';
+        return li(`<b>${agents[k].name}</b> <span style="color:var(--muted)">${esc(agents[k].title)}</span><br>${cs.map(c => `<span style="color:${c.status === 'pass' ? 'var(--up)' : c.status === 'warn' ? 'var(--warn)' : c.status === 'inactive' ? 'var(--muted)' : 'var(--down)'}">${c.status === 'pass' ? '✓' : c.status === 'warn' ? '!' : c.status === 'inactive' ? '–' : '✗'}</span> ${esc(c.check)}: <span style="color:var(--muted)">${esc(c.detail)}</span>`).join('<br>') || '<span style="color:var(--muted)">no checks yet</span>'}`, worst); }).join('')}</ul></div>`; };
+  return card(`🏛️ Org chart & management audit ${chip(au?.ceo?.status)}`, `<p style="margin:0 0 10px"><b>Claude (CEO)</b> ← three managers check published task outputs and report up. A separate after-close GitHub job also refreshes the audit. Retired roles are inactive, not passing. Animated scenes are illustrative, not real-time agent execution. ${au ? `Latest audit ${ago(au.generatedAt)}: ${esc(au.ceo.summary)}.` : 'The first audit runs with the next hourly task.'}</p><div class="cgrid" style="margin-top:0">${mgrs.map(col).join('')}</div>`, 'span3');
 }
 function planOut(p) {
   const mx = Math.max(...p.scenarios.map(s => s.value), 1);

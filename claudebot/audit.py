@@ -55,10 +55,16 @@ class Report:
         status = "pass" if ok else level
         self.r["checks"].append({"agent": agent, "check": name, "status": status, "detail": detail})
 
+    def skip(self, agent, name, detail):
+        # A retired agent is inactive, not passing its old work by default.
+        self.r["checks"].append({"agent": agent, "check": name, "status": "inactive", "detail": detail})
+
     def done(self):
         st = [c["status"] for c in self.r["checks"]]
         self.r["status"] = "fail" if "fail" in st else "warn" if "warn" in st else "pass"
-        self.r["passed"] = st.count("pass"); self.r["total"] = len(st)
+        self.r["passed"] = st.count("pass")
+        self.r["total"] = sum(x in ("pass", "warn", "fail") for x in st)
+        self.r["inactive"] = st.count("inactive")
         return self.r
 
 
@@ -116,11 +122,12 @@ def run(now=None):
     dcfg = load(D("claudebot", "dip_config.json"), {})
     dr = dcfg.get("risk", {})
     g.check("dip", "Dip desk size and count caps", dr.get("positionUsd", 999) <= 30 and dr.get("positionPctOfAccount", 0) <= 25 and dr.get("maxOpenPositions", 9) <= 5 and dr.get("minBuyingPowerAfterUsd", 0) >= 1 and dcfg.get("exit", {}).get("stopPct", 99) <= 8,
-            f"{'all free cash split across signals' if dr.get('deployAllCash') else str(dr.get('positionPctOfAccount', 0)) + '% of account'} (min ${dr.get('positionUsd')}) per trade, {dr.get('maxOpenPositions')} at a time, {dcfg.get('exit', {}).get('stopPct')}% stop")
-    bad_edges = [k for k, er in (dcfg.get("edges") or {}).items() if er.get("enabled") and not (er.get("promotion") or {}).get("paperTrades", 0) >= 20]
-    g.check("dip", "Live edges were promoted on paper evidence", not bad_edges,
-            "edges switched on without a 20+ trade paper record: " + ", ".join(bad_edges) if bad_edges else
-            "live edges: " + (", ".join(er.get("name", k) for k, er in (dcfg.get("edges") or {}).items() if er.get("enabled")) or "none yet (still proving themselves on paper)"))
+            f"proposals capped by independent governor at max 25% per ETF, approved sizing {dr.get('positionPctOfAccount')}%, min ${dr.get('positionUsd')}, {dr.get('maxOpenPositions')} positions, {dcfg.get('exit', {}).get('stopPct')}% stop")
+    bad_edges = [k for k, er in (dcfg.get("edges") or {}).items()
+                 if er.get("enabled") and not (er.get("boardApproval") or {}).get("approvalId")]
+    g.check("dip", "Live edge requires separate recorded board approval", not bad_edges,
+            "enabled edges without recorded approval: " + ", ".join(bad_edges) if bad_edges else
+            "no unapproved new edges; paper results alone never authorize live changes")
     dps = dled.get("positions") if dled.get("positions") is not None else ([dled["open"]] if dled.get("open") else [])
     syms_ = [p_.get("symbol") for p_ in dps]
     g.check("dip", "Dip positions within limits", len(dps) <= min(5, dr.get("maxOpenPositions", 1)) and len(set(syms_)) == len(syms_)
@@ -135,26 +142,80 @@ def run(now=None):
             "no option held" if bo is None else f"{bo.get('label')} at {bo.get('entryPrice')}")
     reports.append(g.done())
 
-    # ---------------- Analyst: research + Paper Lab are producing
-    a = Report("analyst", "Head of Research", ["scout", "sim", "echo"])
-    sa = age_min(sig.get("generatedAt"), now)
-    crypto_live = ccfg.get("enabled", True) or bool(led.get("open"))
-    a.check("scout", "Price scan is fresh", sa <= 150, f"{round(sa)}m old (limit 150m)" + ("" if crypto_live else "; crypto desk is off") if sa != float("inf") else "missing",
-            level="fail" if crypto_live else "warn")
-    a.check("scout", "Scan covers all coins", len(sig.get("coins", [])) >= len(ccfg.get("universe", [])) - 1, f"{len(sig.get('coins', []))}/{len(ccfg.get('universe', []))} coins")
-    pa = age_min(pled.get("updatedAt"), now)
-    # the Paper Lab runs with the trader's market-hours checks, so outside market hours (evenings, weekends) older is normal
+    # ---------------- Analyst: check each active research agent's OWN output
     from zoneinfo import ZoneInfo
-    ct = now.astimezone(ZoneInfo("America/Chicago")); mkt = ct.weekday() < 5 and 9 * 60 + 30 <= ct.hour * 60 + ct.minute <= 15 * 60 + 30
-    plim = 420 if mkt else 4 * 24 * 60   # lean schedule: Paper Lab runs once a day (9:44 CT)
-    _fired = {f["agent"] for f in (load(D("docs", "data", "claudebot-hr.json"), {}) or {}).get("fired", [])}
-    a.check("sim", "Paper Lab ran recently", pa <= plim or "sim" in _fired, (f"updated {round(pa)}m ago" + ("" if mkt else " (market closed)")) if pa != float("inf") else "has not run yet", level="warn")
-    a.check("sim", "Paper Lab never trades real money", pled.get("mode", "paper") == "paper", f"mode {pled.get('mode', 'paper')}")
-    a.check("echo", "Crypto paper test running", "cryraw" in (pled.get("strategies") or {}) or "echo" in _fired, "running" if "cryraw" in (pled.get("strategies") or {}) else "not started", level="warn")
-    dtp = load(D("docs", "data", "claudebot-daytrade-paper.json"), {})
-    a.check("sim", "Day-trade desk is paper only", dtp.get("mode", "paper") == "paper", f"mode {dtp.get('mode', 'paper')} · {len(dtp.get('days', []))} days replayed")
-    dtw = load(D("docs", "data", "claudebot-daytrade-wide.json"), {})
-    a.check("sim", "Market-wide lab is paper only", dtw.get("mode", "paper") == "paper", f"mode {dtw.get('mode', 'paper')} · {len(dtw.get('days', []))} days replayed")
+    ct = now.astimezone(ZoneInfo("America/Chicago"))
+    mkt = ct.weekday() < 5 and 8 * 60 + 30 <= ct.hour * 60 + ct.minute < 15 * 60
+    fired = {f["agent"] for f in (load(D("docs", "data", "claudebot-hr.json"), {}) or {}).get("fired", [])}
+    a = Report("analyst", "Head of Research", ["scout", "vega", "clio", "moxie", "sim", "echo"])
+
+    scan = load(D("docs", "data", "claudebot-optbuy-scan.json"), {})
+    scan_age = age_min(scan.get("generatedAt"), now)
+    watch_symbols = {r.get("symbol") for r in scan.get("dipWatch", [])}
+    configured_symbols = set(dcfg.get("symbols") or [])
+    a.check("scout", "ETF Dip watch covers approved symbols",
+            bool(configured_symbols) and configured_symbols.issubset(watch_symbols),
+            f"{len(watch_symbols & configured_symbols)}/{len(configured_symbols)} approved ETF symbols present")
+    a.check("scout", "ETF Dip watch refreshed recently",
+            0 <= scan_age <= 36 * 60,
+            f"ETF watch {round(scan_age)}m old (36h limit)" if scan_age != float("inf") else "ETF watch missing",
+            level="warn")
+
+    race = load(D("docs", "data", "claudebot-optscalp-paper.json"), {})
+    race_age = age_min(race.get("updatedAt"), now)
+    if "vega" in fired:
+        a.skip("vega", "Options paper race", "retired by HR: no work credited")
+    else:
+        a.check("vega", "Options race remains paper only",
+                race.get("mode") == "paper" and not bcfg.get("enabled", False),
+                f"race mode {race.get('mode')}; live long-option enabled={bcfg.get('enabled')}")
+        a.check("vega", "Options paper race produced recent evidence",
+                bool(race.get("strategies")) and 0 <= race_age <= 3 * 24 * 60,
+                f"{len(race.get('strategies') or {})} variants, updated {round(race_age)}m ago" if race_age != float("inf") else "no paper output",
+                level="warn")
+
+    hist = load(D("docs", "data", "claudebot-historian.json"), {})
+    hist_age = age_min(hist.get("generatedAt"), now)
+    a.check("clio", "CIO historian produced weekly research",
+            bool(hist.get("leaderboard")) and 0 <= hist_age <= 9 * 24 * 60,
+            f"historian updated {round(hist_age)}m ago" if hist_age != float("inf") else "historian missing",
+            level="warn")
+
+    moon = load(D("docs", "data", "claudebot-moonshot-paper.json"), {})
+    moon_age = age_min(moon.get("updatedAt"), now)
+    if "moxie" in fired:
+        a.skip("moxie", "Moonshot research", "retired by HR: no work credited")
+    else:
+        a.check("moxie", "Moonshot research remains paper only", moon.get("mode") == "paper",
+                f"mode {moon.get('mode', 'missing')}")
+        a.check("moxie", "Moonshot paper evidence refreshed",
+                0 <= moon_age <= 4 * 24 * 60,
+                f"updated {round(moon_age)}m ago" if moon_age != float("inf") else "no moonshot paper output",
+                level="warn")
+
+    pa = age_min(pled.get("updatedAt"), now)
+    if "sim" in fired:
+        a.skip("sim", "Retired spread Paper Lab", "retired by HR: archived paper files are not evidence of current work")
+    else:
+        a.check("sim", "Spread Paper Lab stays paper only", pled.get("mode") == "paper",
+                f"mode {pled.get('mode', 'missing')}")
+        a.check("sim", "Spread Paper Lab refreshed",
+                0 <= pa <= (420 if mkt else 4 * 24 * 60),
+                f"updated {round(pa)}m ago" if pa != float("inf") else "paper lab missing", level="warn")
+    if "echo" in fired:
+        a.skip("echo", "Retired crypto Paper Lab", "retired by HR: old results are not new work")
+    else:
+        a.check("echo", "Crypto paper test present",
+                "cryraw" in (pled.get("strategies") or {}),
+                "crypto raw paper strategy present" if "cryraw" in (pled.get("strategies") or {}) else "no crypto paper stream",
+                level="warn")
+
+    # Paper jobs belong to the research organization, not to retired staff.
+    for filename, label in (("claudebot-daytrade-paper.json", "Intraday equity paper desk"),
+                            ("claudebot-daytrade-wide.json", "Market-wide paper desk")):
+        desk = load(D("docs", "data", filename), {})
+        a.check("analyst", f"{label} is paper-only",
+                desk.get("mode") == "paper", f"mode {desk.get('mode', 'missing')}")
     reports.append(a.done())
 
     # ---------------- Atlas: operations (health, books, planning)
