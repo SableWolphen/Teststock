@@ -310,11 +310,11 @@ async function wander(a, pts) { await waitFree(a); a.busy++; try { const [x, y] 
 /* ============================== data ============================== */
 const D = {};
 async function refresh() {
-  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan] = await Promise.all([
+  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped] = await Promise.all([
     getJSON('docs/data/claudebot-signal.json'), getJSON('docs/data/claudebot-ledger.json'), getJSON('docs/data/claudebot-options-ledger.json'),
     getJSON('docs/data/live-trading-health.json'), getJSON('docs/data/latest-50.json'), getJSON('claudebot/options_config.json'), getJSON('claudebot/config.json'),
-    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json')]);
-  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan });
+    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json')]);
+  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped });
   renderAll();
 }
 function botHealth() {
