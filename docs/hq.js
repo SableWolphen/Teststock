@@ -725,7 +725,7 @@ function renderKpis() {
     ['Market', D.latest?.regime?.label || '–', 'call: ' + (D.latest?.action || '–'), /OFF/.test(D.latest?.regime?.label || '') ? 'down' : ''],
     ['Real positions', String(open), (lp.join(' · ') || 'all cash') + (paperSpread() ? ` · paper: ${paperSpread()}` : ''), open ? 'org' : ''],
     ['Closed trades P&L', usd(optPnl() + dipPnl()), `real $ since start · crypto ${pct(cryptoIdx() - 100)}`, cls(cryptoIdx() - 100 + optPnl() + dipPnl())],
-    ['Paper P&L (pretend $)', usd(paperTotals().pnl), `${paperTotals().n} closed paper trades · not real money`, cls(paperTotals().pnl)],
+    ['Paper P&L (pretend $)', usd(paperTotals().pnl), `${paperTotals().n} closed paper trades · options race counted once · not real money`, cls(paperTotals().pnl)],
     ['Paper win rate', paperTotals().wp == null ? '–' : paperTotals().wp + '%', `${paperTotals().open} paper trades open · could lose up to $${Math.round(paperTotals().risk)}`, paperTotals().wp == null ? '' : paperTotals().wp >= 60 ? 'up' : paperTotals().wp < 45 ? 'down' : 'warn'],
     ['Management audit', D.audit ? `${D.audit.reports.reduce((a, r) => a + r.passed, 0)}/${D.audit.reports.reduce((a, r) => a + r.total, 0)} ✓` : '–', D.audit ? `${D.audit.ceo.status.toUpperCase()} · ${ago(D.audit.generatedAt)}` : 'first audit at :14', D.audit?.ceo?.status === 'pass' ? 'up' : D.audit?.ceo?.status === 'fail' ? 'down' : 'warn'],
   ];
@@ -882,7 +882,11 @@ function paperRows() {
   return rows;
 }
 function paperTotals() {
-  const r = paperRows(), n = r.reduce((a, x) => a + x.n, 0), w = r.reduce((a, x) => a + (x.wp == null ? 0 : Math.round(x.wp * x.n / 100)), 0);
+  // The options race runs many versions of the SAME bet side by side; counting each copy would multiply
+  // one bad pick 15 times. In the totals the race counts once: its average version.
+  const all = paperRows(), race = all.filter(x => x.desk === 'Options quick-profit' && x.n > 0), rest = all.filter(x => x.desk !== 'Options quick-profit');
+  const avg = f => race.reduce((a, x) => a + f(x), 0) / (race.length || 1);
+  const r = race.length ? rest.concat([{ desk: 'Options quick-profit', n: Math.round(avg(x => x.n)), wp: Math.round(avg(x => x.wp || 0)), pnl: avg(x => x.pnl), open: all.some(x => x.desk === 'Options quick-profit' && x.open) ? 'race' : null, risk: Math.max(0, ...all.filter(x => x.desk === 'Options quick-profit' && x.open).map(x => x.risk || 0)) }]) : rest.concat(all.filter(x => x.desk === 'Options quick-profit').slice(0, 1)), n = r.reduce((a, x) => a + x.n, 0), w = r.reduce((a, x) => a + (x.wp == null ? 0 : Math.round(x.wp * x.n / 100)), 0);
   return { n, wp: n ? Math.round(100 * w / n) : null, pnl: r.reduce((a, x) => a + x.pnl, 0), risk: r.reduce((a, x) => a + (x.open ? (x.risk || 0) : 0), 0), open: r.filter(x => x.open).length, strategies: r.length };
 }
 function paperScoreCard() {
