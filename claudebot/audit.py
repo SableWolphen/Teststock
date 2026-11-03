@@ -96,7 +96,9 @@ def run(now=None):
             f"max loss ≤{rk.get('maxLossPctOfAccount')}% of account, delta ≤{e.get('maxShortDelta')}, floor ${rk.get('pauseBelowAccountValueUsd')}")
     o = oled.get("open")
     g.check("options", "Open spread within limits", (o is None) or (o.get("maxLossUsd", 999) <= 100 and abs(o.get("shortDelta", 1)) <= LIMITS["options.maxShortDeltaMax"]),
-            "no open spread" if o is None else f"{o['label']} max loss ${o.get('maxLossUsd')}")
+            "no open spread" if o is None else f"{'PAPER' if oled.get('mode', 'paper') != 'live' else 'LIVE'} {o['label']} max loss ${o.get('maxLossUsd')} (modeled)")
+    g.check("options", "Spreads stay paper-only (broker blocks agent multi-leg orders)", oled.get("mode", "paper") != "live",
+            "paper only: no real multi-leg orders are ever sent" if oled.get("mode", "paper") != "live" else "options ledger says LIVE but Robinhood blocks agent spreads")
     today = now.astimezone(timezone(timedelta(hours=-6))).date().isoformat()
     opened_on_blackout = [t for t in oled.get("trades", []) + ([o] if o else []) if t and t.get("enteredAt", "")[:10] in (ocfg.get("risk", {}).get("noNewEntryDates") or {})]
     g.check("options", "No spreads opened on event-pause days", not opened_on_blackout, f"{len(opened_on_blackout)} found" if opened_on_blackout else "event pauses respected")

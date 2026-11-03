@@ -97,7 +97,10 @@ spread opened or closed, or an error). One or two lines: what, price, why, and r
 
 ---
 
-# Part B: options (put credit spreads), LIVE
+# Part B: options (put credit spreads), PAPER ONLY
+
+> Robinhood rejects multi-leg orders from agents (verified 2026-11-02), so spreads are paper-only.
+> Never submit a real multi-leg order. The audit FAILS if the options ledger mode is ever "live".
 
 `docs/data/claudebot-options-ledger.json` `"mode"` decides: `"live"` = real orders in
 account MCP (user-approved 2026-11-02, including holding a defined-risk spread for
