@@ -310,11 +310,11 @@ async function wander(a, pts) { await waitFree(a); a.busy++; try { const [x, y] 
 /* ============================== data ============================== */
 const D = {};
 async function refresh() {
-  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp] = await Promise.all([
+  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp] = await Promise.all([
     getJSON('docs/data/claudebot-signal.json'), getJSON('docs/data/claudebot-ledger.json'), getJSON('docs/data/claudebot-options-ledger.json'),
     getJSON('docs/data/live-trading-health.json'), getJSON('docs/data/latest-50.json'), getJSON('claudebot/options_config.json'), getJSON('claudebot/config.json'),
-    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json'), getJSON('docs/data/claudebot-crypto-paper.json')]);
-  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp });
+    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json'), getJSON('docs/data/claudebot-crypto-paper.json'), getJSON('docs/data/claudebot-optscalp-paper.json')]);
+  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp });
   renderAll();
 }
 function botHealth() {
@@ -853,6 +853,7 @@ function paperRows() {
   };
   if (D.oled && D.oled.mode !== 'live') add('Options', 'Put spreads (our live rules)', D.oled.trades || [], D.oled.open?.label, D.oled.open?.maxLossUsd);
   for (const [id, st] of Object.entries(D.pled?.strategies || {})) add('Paper Lab', st.name || id, st.trades || [], st.open ? (st.open.label || st.open.symbol) : null, st.open?.maxLossUsd ?? (st.open ? 15 : null));
+  for (const [id, st] of Object.entries(D.osp?.strategies || {})) add('Options quick-profit', st.name || id, st.trades || [], st.open ? st.open.symbol : null, st.open ? Math.round(st.open.ask * 100) : null);
   for (const [id, st] of Object.entries(D.cpp?.strategies || {})) add('Crypto 24/7', st.name || id, st.trades || [], st.open ? st.open.symbol : null, st.open ? 15 : null);
   for (const [id, st] of Object.entries(D.eped?.strategies || {})) { const n = Object.keys(st.open || {}).length; add('2nd edge', st.name || id, st.trades || [], n ? `${n} fund${n > 1 ? 's' : ''} (${Object.keys(st.open).join(', ')})` : null, n * 25); }
   for (const [id, st] of Object.entries(D.dtp?.strategies || {})) add('Day trade', st.name || id, (st.trades || []).map(t => ({ pnlUsd: t.pnlUsd })), null, null);

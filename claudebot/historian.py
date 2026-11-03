@@ -115,7 +115,7 @@ def main():
                 alerts.append(f"{r['name']} is LIVE but no longer wins on unseen data. Consider switching it off.")
     # forward evidence: every paper desk, ranked by real-time results (not backtests)
     paper = []
-    for fn, desk in (("claudebot-edge-paper.json", "2nd edge"), ("claudebot-crypto-paper.json", "Crypto 24/7"), ("claudebot-daytrade-paper.json", "Day trade"), ("claudebot-paper-ledger.json", "Paper Lab")):
+    for fn, desk in (("claudebot-edge-paper.json", "2nd edge"), ("claudebot-crypto-paper.json", "Crypto 24/7"), ("claudebot-optscalp-paper.json", "Options quick-profit"), ("claudebot-daytrade-paper.json", "Day trade"), ("claudebot-paper-ledger.json", "Paper Lab")):
         for r in (load(D(fn)) or {}).get("leaderboard", []) or []:
             n = r.get("trades") or 0
             if n == 0 and not r.get("open"):

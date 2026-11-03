@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       test_now: { description: 'Test mode: pretend it is this UTC time (nothing is written)', required: false, default: '' }
+      optscalp_test: { description: 'Options paper desk test: hours back to scan (nothing written)', required: false, default: '' }
   schedule:
     - cron: '*/5 13-21 * * 1-5'   # every 5 min (GitHub's fastest) through US market hours
 concurrency: { group: claudebot-gate, cancel-in-progress: false }
@@ -24,10 +25,18 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
           GATE_TEST_NOW: ${{ github.event.inputs.test_now }}
+      - name: Options quick-profit paper desk (paper only)
+        if: ${{ github.event.inputs.test_now == '' || github.event.inputs.test_now == null }}
+        run: python claudebot/optscalp_paper.py
+        continue-on-error: true
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          OPTSCALP_TEST: ${{ github.event.inputs.optscalp_test }}
       - run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add docs/data/claudebot-gate.json
+          git add docs/data/claudebot-gate.json docs/data/claudebot-optscalp-paper.json 2>/dev/null || git add docs/data/claudebot-gate.json
           git diff --cached --quiet && exit 0
           git commit -m "ClaudeBot gate $(date -u +%H:%MZ)"
           for i in 1 2 3 4 5; do git pull --rebase -X theirs origin main && git push origin HEAD:main && exit 0; sleep $((i*5)); done
