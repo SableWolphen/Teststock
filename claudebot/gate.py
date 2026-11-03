@@ -66,6 +66,11 @@ def main():
     sp = importlib.util.spec_from_file_location("db", os.path.join(HERE, "dip_bot.py")); db = importlib.util.module_from_spec(sp); sp.loader.exec_module(db)
     cfg, led = db.load(db.CONFIG), db.load(db.LEDGER)
     held = db.positions(led)
+    # Broker positions can require a defensive exit even when a paper-price
+    # gate has no new entry signal. Schedule a full read-only reconciliation.
+    if market and held:
+        out["needed"] = True
+        out["reasons"].append("Dip holding: verify broker position, open orders and protective exits")
     # other live desks that need Robinhood attention whenever they hold something
     if (load(os.path.join(ROOT, "docs", "data", "claudebot-optbuy-ledger.json"), {}) or {}).get("open"):
         out["needed"] = True; out["reasons"].append("options-buying desk holds an option (manage its exit)")
