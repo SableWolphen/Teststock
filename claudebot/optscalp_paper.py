@@ -68,7 +68,7 @@ def pick(now, mv):
         typ = "call" if m["move"] > 0 else "put"
         url = (f"https://data.alpaca.markets/v1beta1/options/snapshots/{sym}?feed=indicative&type={typ}&limit=1000"
                f"&expiration_date_gte={today + timedelta(days=5)}&expiration_date_lte={today + timedelta(days=21)}"
-               (f"&strike_price_gte={m['px']:.2f}&strike_price_lte={m['px'] * 1.10:.2f}" if typ == "call" else f"&strike_price_gte={m['px'] * 0.90:.2f}&strike_price_lte={m['px']:.2f}"))
+               + (f"&strike_price_gte={m['px']:.2f}&strike_price_lte={m['px'] * 1.10:.2f}" if typ == "call" else f"&strike_price_gte={m['px'] * 0.90:.2f}&strike_price_lte={m['px']:.2f}"))
         snaps = get(url).get("snapshots") or {}
         best = None; why = {"found": len(snaps), "noQuote": 0, "tooExpensive": 0, "wideSpread": 0}
         for occ, sn in snaps.items():
