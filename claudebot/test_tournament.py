@@ -26,7 +26,7 @@ def business_dates(count, first=date(2025, 1, 2)):
 
 
 def raw_bar(day, o, c, low=None):
-    return {"t": day + "T05:00:00Z", "o": o,
+    return {"day": day, "t": day + "T05:00:00Z", "o": o,
             "h": max(o, c) * 1.01,
             "l": min(o, c) * .99 if low is None else low,
             "c": c, "v": 150000}
