@@ -326,12 +326,12 @@ async function renderOptions(){
   const T = L.trades||[], wins = T.filter(t=>t.pnlUsd>0), net = T.reduce((a,t)=>a+t.pnlUsd,0);
   $('opt-mode').textContent = (L.mode||'paper').toUpperCase();
   $('o-pnl').innerHTML = `<span class="${cls(net)}">${usd(net)}</span>`;
-  $('o-pnl-s').textContent = `realized, 1 spread at a time${L.startedAt?' · since '+when(L.startedAt):''}`;
+  $('o-pnl-s').textContent = `paper bookkeeping only: one test spread closed out on Nov 2 when the desk was switched${L.startedAt?' · since '+when(L.startedAt):''}`;
   $('o-win').textContent = T.length ? Math.round(100*wins.length/T.length)+'%' : '–';
   $('o-win-s').textContent = T.length ? `${wins.length}/${T.length} · avg win ${usd(wins.length?wins.reduce((a,t)=>a+t.pnlUsd,0)/wins.length:null)}` : 'no closed spreads yet';
   const p = L.open;
   $('o-pos').innerHTML = p ? `<span class="acc">${esc(p.label)}</span>` : '<span style="color:var(--muted)">NONE</span>';
-  $('o-pos-s').textContent = p ? `credit ${p.credit} · max loss $${p.maxLossUsd} · delta ${p.shortDelta}` : 'scans 9:00–1:30 CT on weekdays';
+  $('o-pos-s').textContent = p ? `credit ${p.credit} · max loss $${p.maxLossUsd} · delta ${p.shortDelta}` : 'stopped Nov 3: Robinhood blocks bot spreads, so this desk can\'t trade (research continues in the weekly backtests)';
   const live = ['SPY','DIA','IWM','KRE','XLF']; const ps = (B?.perSymbol||[]).filter(p=>live.includes(p.symbol));
   if(ps.length){ const n=ps.reduce((a,p)=>a+p.edge.trades,0), w=ps.reduce((a,p)=>a+p.edge.trades*p.edge.winRatePct/100,0), pnl=ps.reduce((a,p)=>a+p.edge.trades*p.edge.avgPnlPerTradeUsd,0); $('o-bt').textContent = `${Math.round(100*w/n)}% wins`; $('o-bt-s').textContent = ps.map(p=>`${p.symbol} ${usd(p.edge.avgPnlPerTradeUsd)}`).join(' · ')+' per trade'; }
   $('o-trades').innerHTML = T.slice().reverse().map(t=>`<tr><td>${esc(t.label)}</td><td>${when(t.enteredAt)}</td><td>${when(t.exitedAt)}</td><td>${t.credit}</td><td>${t.debit}</td><td class="${cls(t.pnlUsd)}">${usd(t.pnlUsd)}</td><td>${esc(t.reason)}</td></tr>`).join('') || `<tr><td colspan="7" class="empty">No closed spreads yet.</td></tr>`;

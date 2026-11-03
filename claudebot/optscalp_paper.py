@@ -58,6 +58,11 @@ VARIANTS += [{"id": "ens_trail", "mode": "ens", "tp": 15, "sl": 20, "maxMin": 60
              {"id": "ens_gated", "mode": "ens", "tp": 15, "sl": 20, "maxMin": 60, "trail": (4, 3), "gated": True,
               "name": "Gatekeeper-approved only (net profit, beats ETF/cash, survivable), trailing sell"}]
 PAPER_ACCOUNT = 117.0
+# CEO decision 2026-11-03 (board: "no negative"): every version that buys WITHOUT a positive after-cost
+# forecast is retired now. Evidence: 0/96 such versions won on real historical option prices, and on
+# 2026-11-03 live prices they averaged -12% per trade (8% bid/ask cost, and 30-min moves reversed 14%).
+# Only the ensemble versions (forecast must be positive) and the Gatekeeper-approved version keep trading.
+CEO_RETIRED = {v["id"] for v in VARIANTS if v["mode"] != "ens"}
 HOLIDAYS = {"2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"}
 H = None
 DEBUG = []
@@ -222,6 +227,8 @@ def board(st):
         stress = round(sum(x.get("stressPnlUsd", x["pnlUsd"]) for x in t), 2)
         ready = n >= 50 and days >= 30 and sum(w + l) > 0 and (pf or 0) > 1.2 and (lo or 0) > 0 and stress > 0
         avg_ret = sum(x.get("retPct", 0) for x in t) / n if n else 0
+        if v["id"] in CEO_RETIRED:
+            s["retired"] = True
         if (n >= 30 and (pf or 0) < 0.8 and sum(w + l) < 0) or (n >= 10 and sum(w + l) < 0 and avg_ret <= -5 and (pf or 0) < 0.5):
             s["retired"] = True       # costs-dominated losers retire early (2026-11-03: -12%/trade on live prices)
         rows.append({"id": v["id"], "name": v["name"], "group": group_of(v), "trades": n, "wins": len(w),
