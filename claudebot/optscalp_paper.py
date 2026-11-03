@@ -34,6 +34,7 @@ FEE, BUDGET, MAX_SPREAD, MIN_MOVE = 0.05, 50.0, 0.06, 0.25
 VARIANTS = [{"id": f"tp{t}_sl{s}", "tp": t, "sl": s, "name": f"Sell at +{t}% (stop -{s}%)"} for t in (3, 5, 10) for s in (15, 30)]
 HOLIDAYS = {"2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"}
 H = None
+DEBUG = []
 OCC = re.compile(r"^([A-Z]+)(\d{6})([CP])(\d{8})$")
 
 
@@ -68,20 +69,23 @@ def pick(now, mv):
                f"&expiration_date_gte={today + timedelta(days=5)}&expiration_date_lte={today + timedelta(days=21)}"
                f"&strike_price_gte={m['px'] * 0.97:.2f}&strike_price_lte={m['px'] * 1.03:.2f}")
         snaps = get(url).get("snapshots") or {}
-        best = None
+        best = None; why = {"found": len(snaps), "noQuote": 0, "tooExpensive": 0, "wideSpread": 0}
         for occ, sn in snaps.items():
             q = sn.get("latestQuote") or {}; a, b = float(q.get("ap") or 0), float(q.get("bp") or 0)
             mo = OCC.match(occ)
-            if not mo or a <= 0 or b <= 0 or a * 100 + FEE > BUDGET:
-                continue
+            if not mo or a <= 0 or b <= 0:
+                why["noQuote"] += 1; continue
+            if a * 100 + FEE > BUDGET:
+                why["tooExpensive"] += 1; continue
             mid = (a + b) / 2; spr = (a - b) / mid
             if spr > MAX_SPREAD:
-                continue
+                why["wideSpread"] += 1; continue
             strike = int(mo.group(4)) / 1000; dist = abs(strike - m["px"]) / m["px"]
             score = (dist, spr)
             if best is None or score < best[0]:
                 best = (score, {"symbol": occ, "underlying": sym, "type": typ, "ask": a, "bid": b, "spreadPct": round(100 * spr, 1),
                                 "move30mPct": round(m["move"], 2)})
+        DEBUG.append({sym: why})
         if best:
             return best[1]
     return None
@@ -117,7 +121,7 @@ def main():
         last = now - timedelta(hours=int(os.environ["OPTSCALP_TEST"]))
         mv = moves(last); print("moves", {k: round(v["move"], 2) for k, v in mv.items()})
         global MIN_MOVE
-        MIN_MOVE = 0.0; print("pick", pick(now, mv)); return
+        MIN_MOVE = 0.0; print("pick", pick(now, mv)); print("why", DEBUG); return
     if local.weekday() >= 5 or day in HOLIDAYS or not (8 * 60 + 35 <= mins <= 15 * 60):
         print("market closed"); return
     st = load() or {}
