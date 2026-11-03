@@ -49,12 +49,9 @@ def load(p, d=None):
 
 
 def universe():
+    # operating companies only: the daily most-actives list is full of leveraged/inverse funds (NVD, TSLG...)
+    # that always look "down 50%" because they decay, so it is not used.
     syms = set((load(SCAN, {}) or {}).get("symbols") or {}) | set(EXTRA)
-    try:
-        for r in get("https://data.alpaca.markets/v1beta1/screener/stocks/most-actives?by=volume&top=60").get("most_actives", []):
-            syms.add(r["symbol"])
-    except Exception:  # noqa: BLE001
-        pass
     return sorted(s for s in syms if s not in ETFS and s.isalpha() and len(s) <= 5)
 
 
