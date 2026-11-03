@@ -16,6 +16,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 D = lambda n: os.path.join(ROOT, "docs", "data", n)
 C = lambda n: os.path.join(ROOT, "claudebot", n)
 OUT = D("claudebot-historian.json")
+ACCOUNT = 117.0   # model account size for the North Star metric
 
 
 def load(p):
@@ -114,17 +115,30 @@ def main():
             if r["status"] == "LIVE" and b is not None and b <= 0:
                 alerts.append(f"{r['name']} is LIVE but no longer wins on unseen data. Consider switching it off.")
     # forward evidence: every paper desk, ranked by real-time results (not backtests)
-    paper = []
+    paper, trade_lists = [], []
     for fn, desk in (("claudebot-edge-paper.json", "2nd edge"), ("claudebot-crypto-paper.json", "Crypto 24/7"), ("claudebot-optscalp-paper.json", "Options quick-profit"), ("claudebot-daytrade-paper.json", "Day trade"), ("claudebot-paper-ledger.json", "Paper Lab")):
-        for r in (load(D(fn)) or {}).get("leaderboard", []) or []:
+        dsk = load(D(fn)) or {}
+        for r in dsk.get("leaderboard", []) or []:
             n = r.get("trades") or 0
             if n == 0 and not r.get("open"):
                 pass
             paper.append({"desk": desk, "name": r.get("name"), "trades": n, "winRatePct": r.get("winRatePct") if r.get("winRatePct") is not None else (round(100 * r["wins"] / n, 1) if n and r.get("wins") is not None else None),
                           "pnlUsd": r.get("pnlUsd"), "profitFactor": r.get("profitFactor")})
-    paper.sort(key=lambda r: -(r["pnlUsd"] or 0))
+            st = (dsk.get("strategies") or {}).get(r.get("id")) or {}
+            trade_lists.append([x.get("pnlUsd", 0) or 0 for x in st.get("trades", []) or [] if isinstance(x, dict)])
+    # North Star (board, 2026-11-03): risk-adjusted net account growth on a ~$117 account, not win rate.
+    # growth = net P&L after costs as % of the account; ranked by growth per unit of worst drawdown.
+    for r, trades in zip(paper, trade_lists):
+        eq = peak = dd = 0.0
+        for t in trades:
+            eq += t; peak = max(peak, eq); dd = min(dd, eq - peak)
+        r["netGrowthPct"] = round(100 * (r["pnlUsd"] or 0) / ACCOUNT, 2)
+        r["maxDrawdownPct"] = round(100 * dd / ACCOUNT, 2)
+        r["northStar"] = round(r["netGrowthPct"] / (1 + abs(r["maxDrawdownPct"])), 3)
+    paper.sort(key=lambda r: -r["northStar"])
     out = {"generatedAt": now, "leaderboard": rows, "paperLeaderboard": paper, "winners": [r["name"] for r in rows if r["verdict"] == "won"],
            "losers": [r["name"] for r in rows if r["verdict"] == "lost"], "alerts": alerts, "history": hist,
+           "northStar": "Paper desks are ranked by risk-adjusted net account growth: net P&L after costs as % of a $117 account, divided by (1 + worst drawdown %). Win rate alone never ranks a strategy.",
            "rule": "Ranked by out-of-sample (unseen-data) results only. Picking on old data and checking on new data is the only test that counts."}
     with open(OUT, "w") as f:
         json.dump(out, f, indent=1); f.write("\n")
