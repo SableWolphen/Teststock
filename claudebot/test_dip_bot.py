@@ -44,12 +44,19 @@ db.options_open = lambda: False
 assert act({**F, "accountValue": 500, "buyingPower": 150})["do"] == "none"     # 150-100 < 86 reserve
 # board order: deploy all free cash across today's signals
 cfg["risk"]["deployAllCash"] = True; cfg["risk"]["reserveForOptionsUsd"] = 0; db.options_open = lambda: True
-a = act(); assert a["do"] == "buy" and a["symbol"] == "SPY" and a["dollarAmount"] == "111.00", a                  # one signal: all cash minus $1
+a = act(); assert a["do"] == "buy" and a["symbol"] == "SPY" and a["dollarAmount"] == "25.00", a                  # one signal: all cash minus $1
 both = {**F, "symbols": {"SPY": F["symbols"]["SPY"], "QQQ": {"price": dip[-1] - 2, "closes": dip, "heldQty": 0}}}
-a = act(both); assert a["dollarAmount"] == "55.50" and a["symbol"] == "SPY", a                                       # two signals: split
+a = act(both); assert a["dollarAmount"] == "25.00" and a["symbol"] == "SPY", a                                       # two signals: split
 assert act({**F, "buyingPower": 1.5})["do"] == "none"                                                               # nothing left to spend
 lost = {**LED, "trades": [{"pnlUsd": -1.0}] * 3}
 a = act(F, lost); assert a["dollarAmount"] == "25.00" and "loss brake" in a["why"], a                                # 3 losses in a row: small size
+# all-cash policy cannot override the hard 20-25% position ceiling
+assert float(act(F)["dollarAmount"]) <= 25.0
+assert act({**F, "buyingPower": 24})["do"] == "none"
+assert act({**F, "buyingPower": 0})["do"] == "none"
+assert act({**F, "accountValue": 500, "buyingPower": 480})["dollarAmount"] == "100.00"
+assert act({**F, "accountValue": 0, "buyingPower": 100})["do"] == "none"
+assert act({**F, "accountValue": 117, "buyingPower": float("nan")})["do"] == "none"
 # news veto: a skipped symbol is never bought this run
 db.options_open = lambda: True
 a = act({**F, "skip": ["SPY"]}); assert a["do"] != "buy" or a["symbol"] != "SPY", a
