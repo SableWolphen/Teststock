@@ -193,6 +193,16 @@ def plan(facts, cfg, led):
         size = min(size, round(bp - r["minBuyingPowerAfterUsd"], 2))
         if size < 1:
             return none("not enough free cash")
+    # Never propose more than the independent governor can authorize.
+    # Keep the original $25 minimum and 20% position sizing policy; excess
+    # buying power remains cash if too few qualifying symbols are available.
+    account_value = float(facts.get("accountValue", 0))
+    approved_cap = min(5000.0, max(float(r["positionUsd"]), account_value * min(float(r.get("positionPctOfAccount", 0)), 25) / 100))
+    size = round(min(size, approved_cap, bp - reserve), 2)
+    if not all(__import__("math").isfinite(v) for v in (account_value, bp, size, approved_cap)):
+        return none("invalid account values or proposed size")
+    if size < float(r["positionUsd"]):
+        return none("insufficient eligible buying power for the approved minimum")
     rule = hit_rule.get(sym, "dip")
     return {"actions": [{"do": "buy", "symbol": sym, "rule": rule, "dollarAmount": f"{size:.2f}", "pctOfAccount": round(100 * size / max(float(facts.get("accountValue", 0)), 1), 1),
                          "why": (f"{sym} RSI(2) {rv:.1f} < {e['rsi2Below']} above its 200-day average" if rule == "dip" else f"{sym} {rule} signal (paper-proven edge) above its 200-day average") + ("; loss brake on (3 losses in a row): small size until a win" if brake else f"; {len(hits)} signals today, free cash split between them" if r.get("deployAllCash") else "")}]}
