@@ -227,6 +227,17 @@ export async function scan(reader,{now=Date.now(),scope='BROAD',inputs={universe
   return report;
 }
 
+// An exchange-confirmed CLOSED stock session does not require a live SPY quote
+// to report a successful NO-TRADE research observation. Unknown session status,
+// missing crypto data, and unavailable live macro while OPEN still fail closed.
+export function researchScanExitCode(report) {
+  const lane = report?.lanes || {};
+  const unavailable = Object.values(lane).some(v =>
+    ['UNVERIFIED', 'DATA_UNAVAILABLE_OR_INCOMPLETE'].includes(v));
+  const liveMacroMissing = lane.session === 'OPEN' && report?.macro?.status === 'UNVERIFIED';
+  return unavailable || liveMacroMissing ? 2 : 0;
+}
+
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   try {
     const output=path.resolve('work/trading-bot-report.json');await fs.mkdir(path.dirname(output),{recursive:true});
@@ -236,6 +247,6 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
     await fs.writeFile(output,JSON.stringify(report,null,2)+'\n',{mode:0o600});
     await fs.writeFile(path.resolve('work/trading-bot-payload.json'),JSON.stringify(researchPacket(report),null,2)+'\n',{mode:0o600});
     console.log(JSON.stringify({mode:report.mode,lanes:report.lanes,candidateCount:report.candidates.length}));
-    if(report.macro?.status==='UNVERIFIED'||Object.values(report.lanes).some(s=>['UNVERIFIED','DATA_UNAVAILABLE_OR_INCOMPLETE'].includes(s)))process.exitCode=2;
+    process.exitCode = researchScanExitCode(report);
   } catch {console.error('SAFE_SCANNER_FAILED');process.exitCode=1;}
 }
