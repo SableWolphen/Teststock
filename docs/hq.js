@@ -759,7 +759,7 @@ const CONSOLES = {
   },
   lobby() {
     const h = D.health, r = D.latest?.regime;
-    return `<div class="ch"><h2>🛋️ Lobby · Overview</h2><span class="who">Claude (CEO) and Atlas (COO)</span><a class="full" href="overview.html">Classic overview ↗</a></div>
+    return `<div class="ch"><h2>🛋️ Lobby · Overview</h2><span class="who">Claude (CEO) and Atlas (COO)</span></div>
     <div class="cgrid">
       ${card('ClaudeBot health', `<div class="big ${botHealth().ok ? 'up' : 'warn'}">${botHealth().status}</div><p>${botHealth().ok ? 'Price scan and hourly trader are running on schedule.' : esc(botHealth().issues.join(' · '))}</p><p>Trading today: <b>${tradingToday()[0]}</b> · ${esc(tradingToday()[1])}</p>`)}
       ${card('Market regime', `<div class="big ${/OFF/.test(r?.label || '') ? 'down' : 'up'}">${esc(r?.label || '–')}</div><p>${esc(r?.detail || '')}</p><p>Today's call: <b>${esc(D.latest?.action || '–')}</b></p>`)}
@@ -772,7 +772,7 @@ const CONSOLES = {
   research() {
     const cards = D.latest?.cards || [], r = D.latest?.regime, coins = D.sig?.coins || [];
     const dir = d => d === 'BULLISH' ? 'bull' : d === 'BEARISH' ? 'bear' : 'neu';
-    return `<div class="ch"><h2>🔬 Research Lab</h2><span class="who">Analyst (stocks), Scout (dip watch), and Sim &amp; Echo (Paper Lab)</span><a class="full" href="research.html">Full research report ↗</a></div>
+    return `<div class="ch"><h2>🔬 Research Lab</h2><span class="who">Analyst (stocks), Scout (dip watch), and Sim &amp; Echo (Paper Lab)</span></div>
     <div class="cgrid">
       ${card('Stock regime', `<div class="big ${/OFF/.test(r?.label || '') ? 'down' : 'up'}">${esc(r?.label || '–')}</div><p>${esc(r?.detail || '')} · bias ${esc(r?.bias || '–')} · gate ${esc(r?.tradeGate || '–')}</p>`)}
       ${card('Stock watchlist', cards.length ? `<div class="picks">${cards.map(c => `<div class="pick"><b>${esc(c.symbol)}</b><span class="tag ${dir(c.direction)}">${esc(c.direction || '')}</span><div class="mono" style="margin-top:4px">score ${c.score} · $${c.price}</div><div style="color:var(--muted);font-size:12px;margin-top:4px">${esc(c.label || '')} · ${esc(c.tag || '')}</div></div>`).join('')}</div>` : '<div class="empty">No stocks on watch right now.</div>', 'span2')}
@@ -789,7 +789,7 @@ const CONSOLES = {
     const rows = Object.keys(f).map(k => { const v = f[k], m = mx[k] || 1, ok = v <= m; const fmt = x => x > 1440 ? (x / 1440).toFixed(1) + 'd' : x > 90 ? (x / 60).toFixed(1) + 'h' : Math.round(x) + 'm';
       return `<div class="fr"><span>${k.replace('AgeMinutes', '')}</span><div class="bar"><i style="width:${Math.min(100, v / m * 100)}%;background:${ok ? 'var(--up)' : 'var(--down)'}"></i></div><span class="mono ${ok ? 'up' : 'down'}">${fmt(v)}</span></div>`; }).join('');
     const sigAge = D.sig ? (Date.now() - new Date(D.sig.generatedAt)) / 6e4 : null; const runs = [...(D.led?.runs || []), ...(D.oled?.runs || [])].sort((a, b) => new Date(b.t) - new Date(a.t));
-    return `<div class="ch"><h2>🩺 Diagnostics</h2><span class="who">Medic watches data, runners and breakers</span><a class="full" href="trading-health.html">Full health report ↗</a></div>
+    return `<div class="ch"><h2>🩺 Diagnostics</h2><span class="who">Medic watches data, runners and breakers</span></div>
     <div class="cgrid">
       ${card('Legacy engine data freshness (age vs limit)', rows || '<div class="empty">No freshness data.</div>', 'span2')}
       ${card('Breakers & watchdogs', `<ul class="list">${li('Circuit breaker: <b>' + esc(h?.circuitBreaker || '–') + '</b>', h?.circuitBreaker === 'OK' ? 'g' : 'y')}${li('Data watchdog: <b>' + esc(h?.dataWatchdog || '–') + '</b>', h?.dataWatchdog === 'OK' ? 'g' : 'y')}${li('Drawdown risk: <b>' + esc(h?.drawdownRisk || '–') + '</b>', h?.drawdownRisk === 'NORMAL' ? 'g' : 'y')}${li('Broker link: <b>' + esc(h?.brokerMcp?.state || '–') + '</b>', 'y')}</ul>`)}
@@ -808,7 +808,7 @@ const CONSOLES = {
   trading() {
     const s = D.sig, lo = D.oled, cr = D.led;
     const t = [...(cr?.trades || []).map(x => ({ w: x.symbol, e: x.enteredAt, x: x.exitedAt, r: pct(x.returnPct), why: x.exitReason, c: x.returnPct })), ...(lo?.trades || []).map(x => ({ w: x.label, e: x.enteredAt, x: x.exitedAt, r: usd(x.pnlUsd), why: x.reason, c: x.pnlUsd }))].sort((a, b) => new Date(b.x) - new Date(a.x));
-    return `<div class="ch"><h2>📈 Trading Floor</h2><span class="who">Crypto and Options trade the agent-enabled Robinhood account</span><a class="full" href="claudebot.html">ClaudeBot desk ↗</a></div>
+    return `<div class="ch"><h2>📈 Trading Floor</h2><span class="who">Crypto and Options trade the agent-enabled Robinhood account</span></div>
     <div class="cgrid">
       ${card('Crypto desk', cr?.open ? `<div class="big org">${esc(cr.open.symbol)}</div><p>Entry ${cr.open.entryPrice} · stop ${cr.open.stop} · target ${cr.open.target} · ${cr.open.allocationPct}% of account</p>` : `<div class="big">CASH</div><p>${s?.regime?.riskOff ? 'Bitcoin risk-off.' : s?.bestCandidate ? 'Setup: ' + esc(s.bestCandidate) : 'No coin passes every check.'} Max $15 per buy; stop placed at fill.</p>`)}
       ${card('Options desk', lo?.open ? `<div class="big org">${esc(lo.open.label)}</div><p>Credit ${lo.open.credit} · max loss $${lo.open.maxLossUsd} · delta ${lo.open.shortDelta}</p>` : `<div class="big">NO SPREAD</div><p>${blackoutToday() ? 'Event pause: ' + esc(blackoutToday()) : 'Scans SPY, DIA, KRE, IWM, XLF 9:00–1:30 CT.'} Mode: <b>${esc((lo?.mode || '').toUpperCase())}</b></p>`)}
@@ -831,7 +831,7 @@ const CONSOLES = {
     const ct = D.led?.trades || [], ot = D.oled?.trades || [];
     const all = [...ct.map(t => ({ k: 'Crypto', w: t.symbol, x: t.exitedAt, r: pct(t.returnPct), a: pct(t.accountImpactPct), c: t.returnPct })), ...ot.map(t => ({ k: 'Options', w: t.label, x: t.exitedAt, r: usd(t.pnlUsd), a: `credit ${t.credit} → ${t.debit}`, c: t.pnlUsd }))].sort((a, b) => new Date(b.x) - new Date(a.x));
     const wins = all.filter(t => t.c > 0).length;
-    return `<div class="ch"><h2>📒 Vault · Ledger</h2><span class="who">Every fill, from Robinhood-confirmed prices</span><a class="full" href="claudebot.html">Full trade log ↗</a></div>
+    return `<div class="ch"><h2>📒 Vault · Ledger</h2><span class="who">Every fill, from Robinhood-confirmed prices</span></div>
     <div class="cgrid">
       ${card('Closed trades', `<div class="big">${all.length}</div><p>${wins} won · ${all.length - wins} lost</p>`)}
       ${card('Crypto since start', `<div class="big ${cls(cryptoIdx() - 100)}">${pct(cryptoIdx() - 100)}</div><p>equity index (start = 100)</p>`)}
