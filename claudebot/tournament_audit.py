@@ -133,6 +133,12 @@ def validate(state, report):
         if row.get("paperReviewCandidate") and not all(v for k, v in checks.items() if k not in
                 ("broker_executable_fill_evidence", "separately_approved_live_strategy")):
             raise ValueError("Research review criterion bypassed")
+    overlap = report.get("crossStrategyIndependence") or {}
+    expected_count = sum(len(st.get("trades", [])) for st in state["strategies"].values())
+    if (overlap.get("closedVariantTrades") != expected_count or
+            overlap.get("distinctUnderlyingSignals") != len(all_opportunities) or
+            overlap.get("repeatedAcrossVariants") != expected_count - len(all_opportunities)):
+        raise ValueError("Cross-strategy evidence was double-counted")
     if report.get("benchmark") != {"id": "cash", "netUsd": 0, "maxDrawdownUsd": 0}:
         raise ValueError("Missing zero-risk cash comparator")
     opts = report.get("optionsCohort") or {}
