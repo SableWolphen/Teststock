@@ -40,11 +40,10 @@ const ROOMS = {
   trading:     { name: 'Trading Floor', short: 'Trading', x0: 0, x1: 10, y0: 8, y1: 14, c: ['#3c4a72', '#364368'], icon: '📈' },
   risk:        { name: 'Risk Office', short: 'Risk', x0: 10, x1: 15, y0: 8, y1: 14, c: ['#5a3a44', '#53363f'], icon: '🛡️' },
   vault:       { name: 'Vault · Ledger', short: 'Vault', x0: 15, x1: 20, y0: 8, y1: 14, c: ['#5e5640', '#57503b'], icon: '📒' },
-  strategy:    { name: 'Strategy Lab', short: 'Strategy', x0: 20, x1: 25, y0: 0, y1: 6, c: ['#4a3d66', '#44385e'], icon: '🧠' },
+  strategy:    { name: 'Strategy Lab', short: 'Strategy', x0: 20, x1: 30, y0: 0, y1: 6, c: ['#4a3d66', '#44385e'], icon: '🧠' },
   breakroom:   { name: 'Break Room', short: 'Break', x0: 20, x1: 30, y0: 8, y1: 14, c: ['#6b4f3a', '#634935'], icon: '☕' },
-  rest:        { name: 'Rest Room', short: 'Rest', x0: 25, x1: 30, y0: 0, y1: 6, c: ['#2f3550', '#2b3049'], icon: '😴' },
 };
-const ROOM_IDS = ['lobby', 'research', 'diagnostics', 'freedom', 'strategy', 'rest', 'trading', 'risk', 'vault', 'breakroom'];
+const ROOM_IDS = ['lobby', 'research', 'diagnostics', 'freedom', 'strategy', 'trading', 'risk', 'vault', 'breakroom'];
 const roomOf = (x, y) => Object.entries(ROOMS).find(([k, r]) => k !== 'hall' && x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1)?.[0] || 'hall';
 const doorX = id => id === 'trading' ? 5 : id === 'breakroom' ? 22.5 : (ROOMS[id].x0 + ROOMS[id].x1) / 2;
 const isBack = id => ROOMS[id].y1 <= 6;
@@ -127,12 +126,12 @@ function glass(x0, y0, x1, y1, h) {
   }
 }
 // partitions between back rooms and along the hall, with door gaps
-for (const x of [5, 10, 15, 20, 25]) glass(x, 0, x, 6, 66);
+for (const x of [5, 10, 15, 20]) glass(x, 0, x, 6, 66);
 for (const x of [10, 15, 20]) glass(x, 8, x, 14, 30);
 function wallWithDoors(y, h, doors) {
   let x = 0; for (const dx of [...doors, 99].sort((a, b) => a - b)) { const e = Math.min(dx - .8, W); if (e > x + .05) glass(x, y, e, y, h); x = dx + .8; if (x >= W) break; }
 }
-wallWithDoors(6, 66, ['lobby', 'research', 'diagnostics', 'freedom', 'strategy', 'rest'].map(doorX));
+wallWithDoors(6, 66, ['lobby', 'research', 'diagnostics', 'freedom', 'strategy'].map(doorX));
 wallWithDoors(8, 26, ['trading', 'risk', 'vault', 'breakroom'].map(doorX));
 
 // furniture
@@ -190,7 +189,6 @@ plant(24.4, 13.3, .9); lamp(20.4, 11.0);
 // every agent has their own bed (drawn after the team is defined, see BEDS below)
 function bed(x, y, col, name) { const g = obj(x + y + 2.0); box(g, x, y, .95, 1.6, 9, '#3a3f55'); box(g, x + .05, y + .45, .85, 1.1, 5, col, 9); box(g, x + .1, y + .07, .75, .34, 6, '#e8ecf4', 9); box(g, x, y, .95, .09, 24, '#4a5070');
   if (name) { const p = iso(x + .48, y, 27); const t = el('text', { x: p[0], y: p[1], fill: '#dfe5ff', 'font-size': 7.5, 'font-weight': 800, 'text-anchor': 'middle' }, g); t.textContent = name; } }
-{ const p = iso(27.5, 0, 112); const t = el('text', { x: p[0], y: p[1], fill: '#c9d2ff', 'font-size': 11, 'font-weight': 800, 'text-anchor': 'middle', 'letter-spacing': 2 }, L.walls); t.textContent = 'QUIET · AGENTS RESTING'; }
 // break room annex
 couch(25.6, 12.6, '#5a6e8a'); rtable(27.6, 10.4); stool(26.8, 10.0); stool(28.4, 10.8); plant(29.4, 8.6, .9);
 // vault
@@ -217,7 +215,6 @@ const AG = {
   echo:    { name: 'Echo',    role: 'Paper Lab · crypto with no filters, no real money', room: 'research', home: [8.6, 4.8], color: '#f472b6', kind: 'cat' , boss: 'analyst', title: 'Paper Lab' },
 };
 const BEDS = Object.keys(AG).map((k, i) => [25.25 + (i % 4) * 1.15, .3 + Math.floor(i / 4) * 1.9]);
-Object.keys(AG).forEach((k, i) => bed(BEDS[i][0], BEDS[i][1], AG[k].color, AG[k].name));
 function charSVG(kind, c) {
   const leg = shade(c, -34);
   const legs = `<rect x="-9" y="-12" width="7" height="11" rx="3.5" fill="${leg}"/><rect x="2" y="-12" width="7" height="11" rx="3.5" fill="${leg}"/>`;
@@ -602,7 +599,7 @@ async function rest(a) {
     a.resting = false; await say(a, a.energy >= 75 ? 'Well rested. Back to work! 😄' : 'Back to work! ☕', 1800); await goHome(a);
   } finally { a.resting = false; a.busy--; }
 }
-async function runAgent(k) { const a = agents[k]; await sleep(rnd(500, 4000)); for (;;) { try { if (!onDuty(a)) await rest(a); else if (Math.random() < (a.energy < 50 ? .4 : .1)) await coffeeBreak(a); else await routines[k](a); } catch (e) { console.error(k, e); } await sleep(rnd(1500, 4500)); } }
+async function runAgent(k) { const a = agents[k]; await sleep(rnd(500, 4000)); for (;;) { try { if (Math.random() < (a.energy < 50 ? .4 : .1)) await coffeeBreak(a); else await routines[k](a); } catch (e) { console.error(k, e); } await sleep(rnd(1500, 4500)); } }
 
 /* ============================== camera ============================== */
 const BW = 1560; const CX = 256, CY = 270;
@@ -923,16 +920,6 @@ CONSOLES.strategy = function () {
     ${card('Dip trades', tr.length ? `<div class="scroll"><table><thead><tr><th>ETF</th><th>Bought</th><th>Sold</th><th>Entry</th><th>Exit</th><th>Result</th><th>Why</th></tr></thead><tbody>${tr.slice().reverse().map(t => `<tr><td><b>${t.symbol}</b></td><td>${when(t.enteredAt)}</td><td>${when(t.exitedAt)}</td><td class="mono">${t.entryPrice}</td><td class="mono">${t.exitPrice}</td><td class="mono ${cls(t.pnlUsd)}">${usd(t.pnlUsd)} (${pct(t.returnPct)})</td><td>${esc(t.reason)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No dip trades yet. Dips like this come a couple of times a month.</div>', 'span3')}
   </div>`;
 };
-CONSOLES.rest = function () {
-  const all = Object.values(agents), off = all.filter(a => !onDuty(a)), on = all.filter(a => onDuty(a));
-  return `<div class="ch"><h2>😴 Rest Room</h2><span class="who">Agents with nothing to do right now</span></div>
-  <div class="cgrid">
-    ${card('Team happiness', `<ul class="list">${all.map(a => li(`${mood(a)[0]} <b>${esc(a.name)}</b> · ${mood(a)[1]} · energy ${Math.round(a.energy)}%${a.resting ? ' · in bed' : ''}`)).join('')}</ul><p>Agents refill energy in their own bed and on coffee breaks; tired agents take extra breaks.</p>`)}
-    ${card('Resting now', off.length ? `<ul class="list">${off.map(a => li(`<b>${esc(a.name)}</b> · ${esc(a.title || '')}`)).join('')}</ul>` : '<p>Everyone is on the clock.</p>')}
-    ${card('On duty', on.length ? `<ul class="list">${on.map(a => li(`<b>${esc(a.name)}</b> · ${esc(a.title || '')}`)).join('')}</ul>` : '<p>Nobody right now.</p>')}
-    ${card('Shift rules', `<ul class="list">${li('Trading desks work market hours (8:30 AM–3:00 PM CT, weekdays)')}${li('Managers keep office hours (8 AM–5 PM CT, weekdays)')}${li('Medic works the night shift so systems are always watched')}${li('Scout (dip scout) works market hours and right after the nightly scan')}${li('Resting agents cost nothing: the real trading runs on schedule either way')}</ul>`)}
-  </div>`;
-};
 CONSOLES.breakroom = function () {
   const p = payroll(); const mood = p.wk.verdict === 'profit' ? ['😄', 'Great: profitable week, full pay plus bonus'] : p.wk.verdict === 'flat' ? ['🙂', 'Okay: flat week, half pay'] : ['😟', 'Low: losing week, no paychecks'];
   return `<div class="ch"><h2>☕ Break Room</h2><span class="who">Where the team recharges</span></div>
@@ -942,8 +929,8 @@ CONSOLES.breakroom = function () {
     ${card('House rules', `<ul class="list">${li('Breaks are short: trading checks never wait for coffee')}${li('No talking about positions you can\'t back with evidence')}${li('Ping-pong losers refill the coffee 🏓')}</ul>`)}
   </div>`;
 };
-const ROOM_BLURB = { rest: 'Closed by board order: no one rests. Agents still grab coffee in the Break Room.', lobby: 'ClaudeBot health, the org chart, management audit and market regime.', research: 'Stock watchlist, Scout\'s dip watch and the 🧪 Paper Lab.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The trade ledger, results and the 🎮 agent payroll.', strategy: 'Quinn and the live Dip desk: research, evidence, trades.', breakroom: 'Coffee, ping-pong and team morale.' };
-const TITLES = { rest: ['Rest Room', 'Agents with no work right now recharge here'], office: ['Office', "What are ClaudeBot's agents doing right now?"], lobby: ['Lobby · Overview', 'The big picture'], research: ['Research Lab', 'What the agents are watching'], diagnostics: ['Diagnostics', 'Is everything healthy?'], freedom: ['Freedom Room', 'Planning the path to monthly income'], trading: ['Trading Floor', 'Positions and trades'], risk: ['Risk Office', 'The rules every order must pass'], vault: ['Vault · Ledger', 'Every trade on the record, plus the agent payroll game'], strategy: ['Strategy Lab', 'New ways to make money, tested before they trade'], breakroom: ['Break Room', 'Coffee, ping-pong and morale'] };
+const ROOM_BLURB = { lobby: 'ClaudeBot health, the org chart, management audit and market regime.', research: 'Stock watchlist, Scout\'s dip watch and the 🧪 Paper Lab.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The trade ledger, results and the 🎮 agent payroll.', strategy: 'Quinn, Clio the Historian and the live Dip desk: research, evidence, trades.', breakroom: 'Coffee, ping-pong and team morale.' };
+const TITLES = { office: ['Office', "What are ClaudeBot's agents doing right now?"], lobby: ['Lobby · Overview', 'The big picture'], research: ['Research Lab', 'What the agents are watching'], diagnostics: ['Diagnostics', 'Is everything healthy?'], freedom: ['Freedom Room', 'Planning the path to monthly income'], trading: ['Trading Floor', 'Positions and trades'], risk: ['Risk Office', 'The rules every order must pass'], vault: ['Vault · Ledger', 'Every trade on the record, plus the agent payroll game'], strategy: ['Strategy Lab', 'New ways to make money, tested before they trade'], breakroom: ['Break Room', 'Coffee, ping-pong and morale'] };
 let current = 'office';
 function renderConsole() {
   $('console').innerHTML = CONSOLES[current]();
