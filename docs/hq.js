@@ -310,11 +310,11 @@ async function wander(a, pts) { await waitFree(a); a.busy++; try { const [x, y] 
 /* ============================== data ============================== */
 const D = {};
 async function refresh() {
-  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady] = await Promise.all([
+  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament] = await Promise.all([
     getJSON('docs/data/claudebot-signal.json'), getJSON('docs/data/claudebot-ledger.json'), getJSON('docs/data/claudebot-options-ledger.json'),
     getJSON('docs/data/live-trading-health.json'), getJSON('docs/data/latest-50.json'), getJSON('claudebot/options_config.json'), getJSON('claudebot/config.json'),
-    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json'), getJSON('docs/data/claudebot-crypto-paper.json'), getJSON('docs/data/claudebot-optscalp-paper.json'), getJSON('docs/data/claudebot-moonshot-paper.json'), getJSON('docs/data/claudebot-hr.json'), getJSON('docs/data/claudebot-decision-scorecard.json'), getJSON('docs/data/claudebot-edge-readiness.json')]);
-  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady });
+    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json'), getJSON('docs/data/claudebot-crypto-paper.json'), getJSON('docs/data/claudebot-optscalp-paper.json'), getJSON('docs/data/claudebot-moonshot-paper.json'), getJSON('docs/data/claudebot-hr.json'), getJSON('docs/data/claudebot-decision-scorecard.json'), getJSON('docs/data/claudebot-edge-readiness.json'), getJSON('docs/data/claudebot-tournament-scorecard.json')]);
+  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament });
   renderAll();
 }
 function botHealth() {
@@ -755,6 +755,53 @@ document.querySelectorAll('#jseg button').forEach(b => b.onclick = () => { jmode
 /* ---------- room consoles ---------- */
 const card = (title, body, cls = '') => `<div class="box ${cls}"><h3>${title}</h3>${body}</div>`;
 const li = (txt, c = '') => `<li><span class="dot ${c}"></span><span>${txt}</span></li>`;
+
+function tournamentCard() {
+  const t = D.tournament;
+  if (!t || t.mode !== 'PAPER_ONLY') {
+    return card('🏁 Forward-only paper tournament',
+      '<p>Awaiting the first independently validated after-close paper run. No live strategy is authorized.</p>', 'span3');
+  }
+  const rows = (t.etfLeaderboard || []).map(r =>
+    '<tr><td><b>' + esc(r.name) + '</b></td><td class="mono">' +
+    Number(r.closedTrades || 0) + '</td><td class="mono">' +
+    Number(r.entrySessions || 0) + '</td><td class="mono ' + cls(r.netPaperUsd) + '">' +
+    usd(r.netPaperUsd) + '</td><td class="mono ' + cls(r.netDoubleCostUsd) + '">' +
+    usd(r.netDoubleCostUsd) + '</td><td class="mono">' +
+    (r.profitFactor == null ? '–' : Number(r.profitFactor).toFixed(2)) +
+    '</td><td>' + esc(r.decision || 'WAIT') + '</td></tr>'
+  ).join('');
+  const table = '<div class="scroll"><table><thead><tr>' +
+    '<th>ETF strategy</th><th>Closed</th><th>Entry sessions</th><th>Net paper</th>' +
+    '<th>Double-cost net</th><th>Profit factor</th><th>Evidence</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+  const opts = t.optionsCohort || {};
+  const totalOpt = (opts.variants || []).reduce((n, v) => n + (v.closedVariantTrades || 0), 0);
+  return card('🏁 Forward-only strategy tournament · NO LIVE ORDERS',
+    '<p><b>Winner:</b> ' + esc(t.researchLeader || 'Not established') +
+    ' · <b>Cash baseline:</b> $0 P&L / $0 drawdown. Entries only after a prior close signal, ' +
+    'at the next observed open with modeled spread, slippage and fees. A 5% stop can lose more after a gap.</p>' +
+    table + '<p><b>Options research separate:</b> ' + Number(opts.distinctUnderlyingOpportunities || 0) +
+    ' distinct opportunities / ' + totalOpt +
+    ' variant trades, based on indicative quotes and not comparable to ETF fills.</p>' +
+    '<p>All modeled results require independent executable-price validation and separate approval before any ' +
+    'new live risk. No strategy can guarantee a profit. Data through ' + esc(t.lastProcessedDay || 'none') +
+    ' · updated ' + ago(t.generatedAt) + '.</p>', 'span3');
+}
+function tournamentHealthCard() {
+  const t = D.tournament;
+  const h = t?.agentHealth || {};
+  const rows = Object.entries(h).map(([name, info]) => li(
+    '<b>' + esc(name.replaceAll('_', ' ')) + '</b> · ' + esc(info.status || 'UNVERIFIED') +
+    (info.ageHours == null ? '' : ' · ' + Number(info.ageHours).toFixed(1) + 'h old'),
+    info.status === 'HEALTHY' ? 'g' : info.status === 'INACTIVE' ? '' : 'y'
+  )).join('');
+  return card('🧪 Independent research-agent health',
+    '<p>Read-only snapshot from published agent files, not proof of live broker execution.</p><ul class="list">' +
+    (rows || li('Awaiting first tournament health snapshot', 'y')) + '</ul>' +
+    '<p>Research failures never grant permission to place live trades.</p>', 'span2');
+}
+
 const CONSOLES = {
   office() {
     return `<div class="ch"><h2>🏢 Whole office</h2><span class="who">Thirteen agents in nine rooms, led by Claude (CEO) · click a room to open it</span></div>
@@ -784,6 +831,7 @@ const CONSOLES = {
       ${card('ETF challengers · paper before live', D.edgeReady
         ? '<p>No new paper strategy is activated live automatically. Current evidence:</p><ul class="list">' + Object.entries(D.edgeReady.strategies || {}).map(([id, data]) => li(esc(id) + ': ' + (data.evidence?.independentEntries ?? '–') + ' independent entries · ' + (data.evidence?.sessions ?? '–') + ' sessions · ' + esc(data.status.replaceAll('_', ' ')), data.status === 'review_only' ? 'g' : 'y')).join('') + '</ul><p>Close marks after the close are not executable fills. Updated ' + ago(D.edgeReady.generatedAt) + '</p>'
         : '<p>Research readiness will appear after the next paper run. New live strategies require independent evidence and separate approval.</p>', 'span2')}
+      ${tournamentCard()}
       ${paperScoreCard()}
       ${paperCard()}
       ${dayCard()}
@@ -803,6 +851,7 @@ const CONSOLES = {
       ${card('Breakers & watchdogs', `<ul class="list">${li('Circuit breaker: <b>' + esc(h?.circuitBreaker || '–') + '</b>', h?.circuitBreaker === 'OK' ? 'g' : 'y')}${li('Data watchdog: <b>' + esc(h?.dataWatchdog || '–') + '</b>', h?.dataWatchdog === 'OK' ? 'g' : 'y')}${li('Drawdown risk: <b>' + esc(h?.drawdownRisk || '–') + '</b>', h?.drawdownRisk === 'NORMAL' ? 'g' : 'y')}${li('Broker link: <b>' + esc(h?.brokerMcp?.state || '–') + '</b>', 'y')}</ul>`)}
       ${card('Legacy engine runner', `<div class="big ${h?.runner?.healthy ? 'up' : 'warn'}">${h?.runner?.healthy ? 'HEALTHY' : esc(h?.runner?.state || '–')}</div><p>${esc(h?.runner?.schedule || '')} · last seen ${h?.runner ? Math.round(h.runner.ageMinutes) + 'm ago' : '–'}</p>${h?.runner?.runUrl ? `<p><a href="${esc(h.runner.runUrl)}" style="color:var(--accent)">Latest run ↗</a></p>` : ''}`)}
       ${card('ClaudeBot pipelines', `<ul class="list">${li('Price scan: ' + (sigAge == null ? '–' : Math.round(sigAge) + 'm old'), sigAge != null && sigAge < 75 ? 'g' : 'y')}${li('Trader: last run ' + (runs[0] ? ago(runs[0].t) : '–'), runs[0] && (Date.now() - new Date(runs[0].t)) < 2 * 36e5 ? 'g' : 'y')}${li('Options mode: <b>' + esc((D.oled?.mode || '–').toUpperCase()) + '</b>')}</ul>`)}
+      ${tournamentHealthCard()}
       ${card('Legacy engine blocking reasons', `<ul class="list">${(h?.reasons || []).map(x => li(esc(x), 'r')).join('') || li('None', 'g')}</ul>`)}
     </div>`;
   },
@@ -907,7 +956,7 @@ function paperCard() {
   const body = b.length ? `<div class="scroll"><table><thead><tr><th>Paper strategy</th><th>Desk</th><th>Trades</th><th>Win %</th><th>P&amp;L</th><th>Profit factor</th><th>Now</th><th>What it tests</th></tr></thead><tbody>${b.map(r => { const st = S[r.id] || {};
       return `<tr><td><b>${esc(r.name)}</b>${r.promotionCandidate ? ' <span class="tag bull">PROMOTE?</span>' : ''}</td><td>${r.desk}</td><td class="mono">${r.trades}</td><td class="mono">${r.winRatePct ?? '–'}</td><td class="mono ${cls(r.pnlUsd)}">${usd(r.pnlUsd)}</td><td class="mono">${r.profitFactor ?? '–'}</td><td>${st.open ? '<span class="org">' + esc(st.open.label || st.open.symbol) + '</span>' : 'flat'}</td><td style="white-space:normal;color:var(--muted)">${esc(st.about || '')}</td></tr>`; }).join('')}</tbody></table></div>`
     : '<div class="empty">The Paper Lab starts with the next hourly run.</div>';
-  return card('🧪 Paper Lab · runs alongside live trading, no real money', `<p style="margin:0 0 10px">Sim and Echo paper-trade different versions of the rules on the same live Robinhood quotes. Options P&amp;L is per spread; crypto uses $15 paper positions. <b>CEO auto-approval:</b> a variant that reaches 20+ paper trades with profit factor ≥ 1.3 and beats the live rules is promoted to live automatically, within hard limits, and rolled back automatically if it loses live. Variants that remove a safety rule still need the board.</p>${body}<p>Updated ${L?.updatedAt ? ago(L.updatedAt) : 'never'}.</p>`, 'span3');
+  return card('🧪 Paper Lab · runs alongside live trading, no real money', `<p style="margin:0 0 10px">This archived Paper Lab contains historical research marks from retired Sim and Echo roles. Figures are simulated and not broker-verified. <b>No new strategy promotes to live automatically.</b> The active forward-only tournament requires independent observations, realistic cost modeling, and a separate approval before live consideration.</p>${body}<p>Updated ${L?.updatedAt ? ago(L.updatedAt) : 'never'}.</p>`, 'span3');
 }
 function payrollCard() {
   const p = payroll(); const order = ['claude', 'atlas', 'analyst', 'guard', 'quinn', 'clio', 'moxie', 'vega', 'scout', 'medic', 'ledger', 'planner', 'options'];

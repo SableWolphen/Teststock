@@ -1,0 +1,67 @@
+name: ClaudeBot forward-only paper tournament
+# Independent paper research only. NO Robinhood secrets, orders, positions, or
+# live promotion. A verified close is required before using daily bars.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'claudebot/tournament.py'
+      - 'claudebot/tournament_audit.py'
+      - '.github/workflows/claudebot-tournament.yml'
+  schedule:
+    - cron: '15 23 * * 1-5'   # after US equities close year round
+permissions:
+  contents: write
+concurrency:
+  group: claudebot-forward-only-tournament
+  cancel-in-progress: false
+jobs:
+  tournament:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Verify forward-only fill and risk-gate regression tests
+        run: python claudebot/test_tournament.py
+      - name: Observe ETF daily opens and evaluate paper-only competition
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+        run: python claudebot/tournament.py
+      - name: Independently verify no-lookahead evidence and costs
+        run: python claudebot/tournament_audit.py
+      - name: Publish research evidence only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add docs/data/claudebot-tournament.json docs/data/claudebot-tournament-scorecard.json
+          if git diff --cached --quiet; then
+            echo "Paper tournament already current"
+            exit 0
+          fi
+          git commit -m "ClaudeBot paper tournament: independently validated forward observations"
+          for attempt in 1 2 3 4 5 6; do
+            if ! git pull --rebase -X theirs origin main; then
+              git rebase --abort || true
+              echo "::error::Cannot reconcile paper evidence with upstream"
+              exit 1
+            fi
+            # A concurrent writer must not bypass the independent validator.
+            python claudebot/tournament_audit.py
+            if git push origin HEAD:main; then
+              echo "Published PAPER_ONLY evidence"
+              exit 0
+            fi
+            echo "::warning::Concurrent researcher updated main; retrying paper-only publication"
+            sleep $((attempt * 4))
+          done
+          echo "::error::Paper tournament could not publish; previous evidence remains unchanged"
+          exit 1
