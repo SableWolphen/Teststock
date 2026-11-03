@@ -1,0 +1,27 @@
+name: ClaudeBot second-edge paper desk
+# After each US close (free, no Claude usage): paper-trade the research candidates on real daily closes.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '20 22 * * 1-5'   # ~4:20 PM CT (CST) / 5:20 PM CT (CDT), after the close
+permissions:
+  contents: write
+jobs:
+  paper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: python claudebot/edge_paper.py
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add docs/data/claudebot-edge-paper.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Second-edge paper desk: daily update"
+          for i in 1 2 3 4 5; do git pull --rebase -X theirs origin main && git push origin HEAD:main && exit 0; sleep $((i*5)); done
+          exit 1

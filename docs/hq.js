@@ -853,6 +853,7 @@ function paperRows() {
   };
   if (D.oled && D.oled.mode !== 'live') add('Options', 'Put spreads (our live rules)', D.oled.trades || [], D.oled.open?.label, D.oled.open?.maxLossUsd);
   for (const [id, st] of Object.entries(D.pled?.strategies || {})) add('Paper Lab', st.name || id, st.trades || [], st.open ? (st.open.label || st.open.symbol) : null, st.open?.maxLossUsd ?? (st.open ? 15 : null));
+  for (const [id, st] of Object.entries(D.eped?.strategies || {})) { const n = Object.keys(st.open || {}).length; add('2nd edge', st.name || id, st.trades || [], n ? `${n} fund${n > 1 ? 's' : ''} (${Object.keys(st.open).join(', ')})` : null, n * 25); }
   for (const [id, st] of Object.entries(D.dtp?.strategies || {})) add('Day trade', st.name || id, (st.trades || []).map(t => ({ pnlUsd: t.pnlUsd })), null, null);
   return rows;
 }
