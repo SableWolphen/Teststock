@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {ResearchReader,inspectCandidate,planSettledCash,scan as rawScan,UNIVERSE} from './safe-trading-bot.mjs';
+import {ResearchReader,inspectCandidate,planSettledCash,scan as rawScan,researchScanExitCode,UNIVERSE} from './safe-trading-bot.mjs';
 import {DEFAULT_STRATEGY} from './trading-research-policy.mjs';
 const scan=(reader,options={})=>rawScan(reader,{...options,inputs:options.inputs??{universe:UNIVERSE,config:{...DEFAULT_STRATEGY,discoverAssets:false},triggers:new Map(),events:null,sources:[]}});
 const now=Date.parse('2026-10-16T16:00:00Z'),t=new Date(now).toISOString();
@@ -42,6 +42,14 @@ test('HTTP errors redact provider bodies',async()=>{
 test('closed session blocks securities, crypto still scans',async()=>{
  const calls=[];const r=await scan({get:async lane=>{calls.push(lane);return lane==='clock'?{is_open:false,timestamp:t}:{snapshots:Object.fromEntries(UNIVERSE.crypto.map(s=>[s,snap()]))};}},{now});
  assert.deepEqual(calls,['clock','crypto','cryptoBars']);assert.equal(r.lanes.stock,'SESSION_BLOCKED');assert.equal(r.lanes.crypto,'DATA_UNAVAILABLE_OR_INCOMPLETE');assert.equal(r.dailyLossLimitCents,8000);
+});
+test('verified exchange close reports no-trade success while unknown or incomplete coverage still fails',()=>{
+ const closed={lanes:{session:'CLOSED',stock:'SESSION_BLOCKED',crypto:'COMPLETE',option:'EXCLUDED_CURRENT_ACCESS'},macro:{status:'UNVERIFIED'}};
+ assert.equal(researchScanExitCode(closed),0);
+ assert.equal(researchScanExitCode({...closed,lanes:{...closed.lanes,session:'UNVERIFIED'}}),2);
+ assert.equal(researchScanExitCode({...closed,lanes:{...closed.lanes,crypto:'DATA_UNAVAILABLE_OR_INCOMPLETE'}}),2);
+ assert.equal(researchScanExitCode({...closed,lanes:{...closed.lanes,session:'OPEN',stock:'COMPLETE'}}),2);
+ assert.equal(researchScanExitCode({...closed,lanes:{...closed.lanes,session:'OPEN',stock:'COMPLETE'},macro:{status:'CLEAR'}}),0);
 });
 test('unknown session fails closed',async()=>{const r=await scan({get:async()=>{throw Error('private');}},{now});assert.equal(r.lanes.session,'UNVERIFIED');assert.equal(r.candidates.length,0);assert.ok(!JSON.stringify(r).includes('private'));});
 test('incomplete and repeated pagination discards option lane',async()=>{

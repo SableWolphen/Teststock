@@ -1,6 +1,13 @@
 name: Windows read-only monitor
 on:
+  # PRs always receive Windows tests. Main-branch code and workflow changes do
+  # too, but data-only commits from the market scanners do not need to rerun
+  # 350+ Windows tests several times every minute.
   push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/data/**'
+      - 'docs/signal.json'
   pull_request:
   workflow_dispatch:
 permissions:

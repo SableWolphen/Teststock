@@ -285,8 +285,24 @@ jobs:
             git commit -m "Refresh static Teststock picks"
             # During rebase Git reverses ours/theirs. Keep this just-validated refresh
             # for generated-file conflicts while retaining unrelated upstream commits.
-            git pull --rebase -X theirs origin main
-            git push
+            # Multiple research jobs publish to main. A concurrent successful
+            # writer may move the remote ref between pull and push. Retry with
+            # a fresh rebase instead of marking a valid scan as failed.
+            for attempt in 1 2 3 4 5 6 7 8; do
+              if ! git pull --rebase -X theirs origin main; then
+                git rebase --abort || true
+                echo "::error::Failed to rebase a validated scan; refusing to publish stale data."
+                exit 1
+              fi
+              if git push origin HEAD:main; then
+                echo "Published validated scan on attempt $attempt"
+                exit 0
+              fi
+              echo "::warning::Concurrent main update while publishing (attempt $attempt/8); retrying."
+              sleep $((attempt * 3))
+            done
+            echo "::error::Unable to publish validated scan after 8 attempts."
+            exit 1
           fi
 
       - name: Upload authoritative session diagnostic
