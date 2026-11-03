@@ -27,3 +27,10 @@ trades and profit factor >= 1.3, confirmed on unseen backtest data), add a propo
 ## Reporting
 Notify the board only when something shipped or a proposal is waiting: one or two plain lines.
 Never promise returns.
+
+## Backlog (board-agreed, do these first, in order)
+1. Recovery test suite (OpenAI #108): automated tests that a duplicate scheduled run, a restart
+   mid-order, a partial fill and a rejected order never create a second order or a book/broker
+   mismatch (planners + EXECUTOR reconciliation rules). Tests only; no live behaviour change.
+2. Trade autopsy (OpenAI #108), only once the options race has 20+ closed paper trades: per trade,
+   forecast vs what happened, and the loss split into signal / spread / time decay / exit timing.
