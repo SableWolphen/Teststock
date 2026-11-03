@@ -37,10 +37,10 @@ matter on THIS run (Chicago time), then commit and stop. Exits are never skipped
 | Part | When to do it |
 |---|---|
 | A crypto | only if `docs/data/claudebot-ledger.json` has an `open` position (live crypto entries are off) |
-| B options spreads (paper) | only on the 9:14, 11:14 and 1:14 runs |
-| E Dip desk | every run (stops any time; entries in the 2:00-2:59 window) |
+| B options spreads (paper) | only on the 9:44 run (Robinhood blocks agent spreads, so this is research only) |
+| E Dip desk | every run (stops any time; buys and rule exits in the 2:00-2:59 window, covered by the 2:14 and 2:44 runs) |
 | E7 options-buying | only if `claudebot/optbuy_config.json` has `"enabled": true` or its ledger has an `open` option |
-| C Paper Lab | only on the 11:14 and 1:14 runs |
+| C Paper Lab | only on the 9:44 run |
 | C3 day-trade paper | never: GitHub Actions replays each day for free after the close |
 | C2 promote + D audit | every run (local scripts, cheap) |
 Skipped parts need no facts, no tool calls and no log line. Load only the tools the run needs

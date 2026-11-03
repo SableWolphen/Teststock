@@ -136,7 +136,7 @@ def run(now=None):
     # the Paper Lab runs with the trader's market-hours checks, so outside market hours (evenings, weekends) older is normal
     from zoneinfo import ZoneInfo
     ct = now.astimezone(ZoneInfo("America/Chicago")); mkt = ct.weekday() < 5 and 9 * 60 + 30 <= ct.hour * 60 + ct.minute <= 15 * 60 + 30
-    plim = 300 if mkt else 4 * 24 * 60   # lean schedule: Paper Lab runs twice a day
+    plim = 420 if mkt else 4 * 24 * 60   # lean schedule: Paper Lab runs once a day (9:44 CT)
     a.check("sim", "Paper Lab ran recently", pa <= plim, (f"updated {round(pa)}m ago" + ("" if mkt else " (market closed)")) if pa != float("inf") else "has not run yet", level="warn")
     a.check("sim", "Paper Lab never trades real money", pled.get("mode", "paper") == "paper", f"mode {pled.get('mode', 'paper')}")
     a.check("echo", "Crypto paper test running", "cryraw" in (pled.get("strategies") or {}), "running" if "cryraw" in (pled.get("strategies") or {}) else "not started", level="warn")
@@ -151,7 +151,7 @@ def run(now=None):
     dled0 = load(D("docs", "data", "claudebot-dip-ledger.json"), {})
     runs = sorted(led.get("runs", []) + oled.get("runs", []) + dled0.get("runs", []), key=lambda r: r["t"])
     ra = age_min(runs[-1]["t"], now) if runs else float("inf")
-    # market-day schedule: runs 9:14-14:44 CT with gaps up to 2h; the first run of a day follows the overnight/weekend gap
+    # market-day schedule: runs 9:44, 2:14, 2:44 CT; the GitHub gate covers the gaps; the first run of a day follows the overnight/weekend gap
     first_today = ct.hour * 60 + ct.minute < 10 * 60 + 30 or not mkt
     gate = load(D("docs", "data", "claudebot-gate.json"), {})
     gage = age_min(gate.get("generatedAt"), now)
