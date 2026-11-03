@@ -221,8 +221,9 @@ def board(st):
         lo = boot_low([x["pnlUsd"] for x in t]) if n >= 10 else None
         stress = round(sum(x.get("stressPnlUsd", x["pnlUsd"]) for x in t), 2)
         ready = n >= 50 and days >= 30 and sum(w + l) > 0 and (pf or 0) > 1.2 and (lo or 0) > 0 and stress > 0
-        if n >= 30 and (pf or 0) < 0.8 and sum(w + l) < 0:
-            s["retired"] = True
+        avg_ret = sum(x.get("retPct", 0) for x in t) / n if n else 0
+        if (n >= 30 and (pf or 0) < 0.8 and sum(w + l) < 0) or (n >= 10 and sum(w + l) < 0 and avg_ret <= -5 and (pf or 0) < 0.5):
+            s["retired"] = True       # costs-dominated losers retire early (2026-11-03: -12%/trade on live prices)
         rows.append({"id": v["id"], "name": v["name"], "group": group_of(v), "trades": n, "wins": len(w),
                      "winRatePct": round(100 * len(w) / n, 1) if n else None, "pnlUsd": round(sum(w + l), 2), "profitFactor": pf,
                      "worstUsd": min(l) if l else None, "days": days, "open": 1 if s.get("open") else 0, "avgLow95Usd": lo,

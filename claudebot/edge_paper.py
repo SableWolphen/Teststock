@@ -19,7 +19,17 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(os.path.dirname(HERE), "docs", "data", "claudebot-edge-paper.json")
 SYMS = ["SPY", "QQQ", "DIA", "IWM", "SMH", "XLK", "KRE", "XLF", "XLE", "XLV", "XLI", "XLY", "XLP", "XLU"]
 COST, USD = 0.0003, 25.0
-NAMES = {"double7": "Double 7s (new 7-day low in an uptrend)", "down3": "3 down days in an uptrend"}
+NAMES = {"double7": "Double 7s (new 7-day low in an uptrend)", "down3": "3 down days in an uptrend",
+         "dipwide": "Dip rule on 14 funds (the live desk's proven rule, wider)"}
+
+
+def rsi2(c):
+    g = l = 0.0
+    for i in range(1, len(c)):
+        d = c[i] - c[i - 1]; up, dn = max(d, 0), max(-d, 0)
+        if i <= 2: g += up / 2; l += dn / 2
+        else: g = (g + up) / 2; l = (l + dn) / 2
+    return 100.0 if l == 0 else 100 - 100 / (1 + g / l)
 
 
 def entry_sig(kind, c, i):
@@ -28,10 +38,18 @@ def entry_sig(kind, c, i):
         return False
     if kind == "double7":
         return c[i] <= min(c[i - 6:i + 1])
+    if kind == "dipwide":
+        return rsi2(c[:i + 1]) < 5
     return all(c[i - k] < c[i - k - 1] for k in range(3))
 
 
-def exit_sig(kind, c, i, held):
+def exit_sig(kind, c, i, held, entry=None):
+    if kind == "dipwide":
+        if entry and c[i] <= entry * 0.95:
+            return "5% stop"
+        if c[i] > sum(c[i - 4:i + 1]) / 5 or rsi2(c[:i + 1]) > 70:
+            return "bounce"
+        return "time" if held >= 10 else None
     if held >= 10:
         return "time"
     if kind == "double7" and c[i] >= max(c[i - 6:i + 1]):
@@ -48,6 +66,8 @@ def main():
     except Exception:  # noqa: BLE001
         led = {"schemaVersion": 1, "mode": "paper", "note": "PAPER ONLY second-edge desk: $25 pretend trades on real daily closes. Runs free in GitHub Actions. Live needs 20+ winning paper trades and board approval.",
                "lastDay": None, "strategies": {k: {"name": v, "open": {}, "trades": []} for k, v in NAMES.items()}, "runs": []}
+    for k, v in NAMES.items():
+        led["strategies"].setdefault(k, {"name": v, "open": {}, "trades": []})
     made = []
     for s in SYMS:
         try:
@@ -64,7 +84,7 @@ def main():
             pos = st["open"].get(s)
             if pos:
                 held = sum(1 for x in d if pos["in"] < x <= day)
-                why = exit_sig(kind, c, i, held)
+                why = exit_sig(kind, c, i, held, pos["px"])
                 if why:
                     ret = c[i] / pos["px"] * (1 - COST) / (1 + COST) - 1
                     st["trades"].append({"symbol": s, "in": pos["in"], "out": day, "entry": pos["px"], "exit": c[i], "retPct": round(100 * ret, 3),
