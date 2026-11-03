@@ -142,7 +142,7 @@ def empty_strategy(kind):
 def new_state():
     return {"schemaVersion": 1, "mode": "PAPER_ONLY", "liveOrdersEnabled": False,
             "automaticLivePromotion": False, "brokerVerified": False,
-            "executionModel": "NEXT_DAY_OPEN_IES_OHLC_MODELED_NOT_NBBO",
+            "executionModel": "NEXT_DAY_OPEN_IEX_OHLC_MODELED_NOT_NBBO",
             "model": {"notionalUsd": PAPER_NOTIONAL_USD, "maxOpenPerStrategy": MAX_SIMULTANEOUS,
                       "halfSpreadBpsPerSide": HALF_SPREAD_BPS, "slippageBpsPerSide": SLIPPAGE_BPS,
                       "extraFeeUsdPerSide": FEE_USD_PER_SIDE,
@@ -376,6 +376,8 @@ def build_report(state, data_dir, now):
     qualified = [r for r in rows if r["paperReviewCandidate"]]
     qualified.sort(key=lambda r: (-r["netDoubleCostUsd"], -r["avgNetTradePct"], r["id"]))
     leader = qualified[0]["id"] if qualified else None
+    entry_keys = [(t["symbol"], t["entrySignalDay"], t["entryDay"])
+                  for kind in STRATEGIES for t in state["strategies"][kind]["trades"]]
     return {
         "schemaVersion": 1, "generatedAt": now.isoformat().replace("+00:00", "Z"),
         "lastProcessedDay": state["lastProcessedDay"],
@@ -387,6 +389,12 @@ def build_report(state, data_dir, now):
         "frictionModel": state["model"],
         "researchLeader": leader,
         "etfLeaderboard": rows,
+        "crossStrategyIndependence": {
+            "closedVariantTrades": len(entry_keys),
+            "distinctUnderlyingSignals": len(set(entry_keys)),
+            "repeatedAcrossVariants": len(entry_keys) - len(set(entry_keys)),
+            "note": "Overlapping ETF strategies can reuse the same entry; their outcomes are correlated."
+        },
         "optionsCohort": options_challengers(data_dir),
         "agentHealth": agent_health(data_dir, now),
         "validation": {"forwardOnly": True, "noLookahead": True,
