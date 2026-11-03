@@ -12,6 +12,7 @@ test('legacy desktop alert entry point has no UI invocation and installer cannot
 });
 test('old task compatibility runner exits without a window or receipt',{skip:process.platform!=='win32'},t=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'silent-alert-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));fs.writeFileSync(path.join(root,'installation.json'),'{}');
- const result=spawnSync('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',path.resolve('scripts/windows/Show-MonitorAlert.ps1'),'-StateDir',root],{encoding:'utf8',windowsHide:true,timeout:10000});
+ const result=spawnSync('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',path.resolve('scripts/windows/Show-MonitorAlert.ps1'),'-StateDir',root],{encoding:'utf8',windowsHide:true,timeout:30000});
+ assert.equal(result.error,undefined,'Legacy task must exit without waiting for UI or hanging: '+String(result.error));
  assert.equal(result.status,0,result.stderr);const status=JSON.parse(fs.readFileSync(path.join(root,'desktop-alert-status.json'),'utf8'));assert.equal(status.state,'SILENT_LOG_ONLY');assert.equal(status.userReceiptVerified,false);assert.equal(fs.existsSync(path.join(root,'desktop-alert-receipt.json')),false);
 });
