@@ -37,10 +37,13 @@ assert chk(desk="dip", side="sell", symbol="KO", quantity="1")["allow"] is False
 assert chk(desk="dip", side="sell", symbol="SPY", quantity="0.1")["allow"] is False       # not held
 assert chk(desk="optbuy", side="buy", symbol="SPY", usd=40)["allow"] is False             # desk disabled
 DATA["claudebot/optbuy_config.json"]["enabled"] = True
-assert chk(desk="optbuy", side="buy", symbol="SPY", usd=40)["allow"]
-assert chk(desk="optbuy", side="buy", symbol="SPY", usd=60)["allow"] is False             # hard $50
+assert chk(desk="optbuy", side="buy", symbol="SPY", usd=40)["allow"] is False            # no gatekeeper verdict
+GK = {"pass": True, "live": True}
+assert chk(desk="optbuy", side="buy", symbol="SPY", usd=40, gatekeeper=GK)["allow"]
+assert chk(desk="optbuy", side="buy", symbol="SPY", usd=40, gatekeeper={"pass": True, "live": False})["allow"] is False   # paper verdict
+assert chk(desk="optbuy", side="buy", symbol="SPY", usd=60, gatekeeper=GK)["allow"] is False   # hard $50
 DATA["claudebot/optbuy_config.json"]["risk"]["maxPremiumUsd"] = 500                        # loosened config...
-assert chk(desk="optbuy", side="buy", symbol="SPY", usd=60)["allow"] is False             # ...governor still says no
+assert chk(desk="optbuy", side="buy", symbol="SPY", usd=60, gatekeeper=GK)["allow"] is False   # ...governor still says no
 assert chk(desk="spread", side="buy", symbol="SPY", usd=10)["allow"] is False
 assert chk(desk="crypto", side="buy", symbol="BTC", usd=10)["allow"] is False
 DATA["docs/data/claudebot-dip-ledger.json"]["positions"].append({"symbol": "SPY", "usd": 25, "entryPrice": 600})

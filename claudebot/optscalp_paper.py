@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 import os
 import random
 import re
@@ -44,6 +45,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
 OUT = os.path.join(os.path.dirname(HERE), "docs", "data", "claudebot-optscalp-paper.json")
 CT = ZoneInfo("America/Chicago")
 UNDER = ["SPY", "QQQ", "IWM", "NVDA", "TSLA", "AAPL", "AMD", "META", "AMZN", "PLTR", "SOFI", "F", "INTC", "HOOD", "BAC", "NIO", "RIVN", "AAL", "SNAP"]
@@ -52,7 +54,10 @@ VARIANTS = [{"id": f"tp{t}_sl{s}", "mode": "mom", "tp": t, "sl": s, "name": f"Se
 VARIANTS += [{"id": f"fade_tp{t}_sl30", "mode": "fade", "tp": t, "sl": 30, "name": f"Fade the move: bet on a snap-back, sell at +{t}% (stop -30%)"} for t in (5, 10)]
 VARIANTS += [{"id": f"tp5_sl30_t{m}", "mode": "mom", "tp": 5, "sl": 30, "maxMin": m, "name": f"Sell at +5% or after {m} min (stop -30%)"} for m in (30, 60)]
 VARIANTS += [{"id": "ens_trail", "mode": "ens", "tp": 15, "sl": 20, "maxMin": 60, "trail": (4, 3), "name": "Ensemble + forecast, trailing sell (locks in after +4%)"},
-             {"id": "ens_tp5", "mode": "ens", "tp": 5, "sl": 30, "maxMin": 60, "name": "Ensemble + forecast, sell at +5% (stop -30%, 60 min)"}]
+             {"id": "ens_tp5", "mode": "ens", "tp": 5, "sl": 30, "maxMin": 60, "name": "Ensemble + forecast, sell at +5% (stop -30%, 60 min)"},
+             {"id": "ens_gated", "mode": "ens", "tp": 15, "sl": 20, "maxMin": 60, "trail": (4, 3), "gated": True,
+              "name": "Gatekeeper-approved only (net profit, beats ETF/cash, survivable), trailing sell"}]
+PAPER_ACCOUNT = 117.0
 HOLIDAYS = {"2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"}
 H = None
 DEBUG = []
@@ -297,7 +302,16 @@ def main():
                 if mode == "ens":
                     events.append("ensemble: NO TRADE (specialists disagree or the forecast is not positive)")
                 continue
+            import gatekeeper
+            gk = gatekeeper.evaluate(choice, PAPER_ACCOUNT, hold_minutes=30)
+            choice["gatekeeper"] = {"pass": gk["pass"], "failed": gk["failed"], "pctPerHour": gk["pctPerHour"]}
+            st.setdefault("gatekeeperLog", {"checked": 0, "passed": 0, "failedBy": {}})
+            gl = st["gatekeeperLog"]; gl["checked"] += 1; gl["passed"] += 1 if gk["pass"] else 0
+            for k in gk["failed"]:
+                gl["failedBy"][k] = gl["failedBy"].get(k, 0) + 1
             for v in group:
+                if v.get("gated") and not gk["pass"]:
+                    continue
                 s = st["strategies"][v["id"]]
                 if sum(1 for t in s["trades"] if t["day"] == day) < 6:
                     s["open"] = {**choice, "day": day, "boughtAt": nowz}

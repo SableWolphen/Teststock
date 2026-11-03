@@ -10,7 +10,8 @@ Input JSON:
   {"desk": "dip"|"optbuy"|"spread"|"crypto", "side": "buy"|"sell", "symbol": "XLK",
    "usd": 25.0 (buys: dollars to spend; option buys: premium x 100), "quantity": "0.14" (sells),
    "accountNickname": "MCP", "accountValue": 117.2, "buyingPower": 92.1,
-   "quoteAgeSec": 12, "now": "2026-11-03T20:14:00Z"}
+   "quoteAgeSec": 12, "now": "2026-11-03T20:14:00Z",
+   "gatekeeper": {"pass": true, "live": true}   (option buys: the Profitability Gatekeeper's live verdict)}
 Sells that reduce the bot's own positions are allowed even on stale data (exits come first), but only
 for shares/contracts the bot's ledger says it bought.
 """
@@ -113,6 +114,9 @@ def check(o, root_loader=load):
                 deny.append(f"premium ${usd:.2f} is above the cap ${cap:.2f}")
             if led.get("open"):
                 deny.append("already holding an option (one at a time)")
+            gk = o.get("gatekeeper") or {}
+            if not (gk.get("pass") and gk.get("live")):
+                deny.append("no passing live Profitability Gatekeeper verdict (claudebot/gatekeeper.py, all four questions YES)")
         elif not (led.get("open") and (led["open"].get("symbol") == sym or led["open"].get("underlying") == sym or led["open"].get("id") == o.get("optionId"))):
             deny.append("the options ledger holds no such option")
     elif desk == "spread":
