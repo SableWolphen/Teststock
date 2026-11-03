@@ -1,0 +1,54 @@
+name: ClaudeBot market loop (5-minute checks all day)
+# GitHub often skips short scheduled runs on busy repos (2026-11-03: the */5 gate never fired).
+# So ONE job stays alive through the market day and loops every 5 minutes itself: trade gate, options
+# paper race, and the "call Claude when a trade is ready" step. Several start times are scheduled so
+# that if GitHub skips some, any one that fires keeps the loop alive; the concurrency group means
+# only one loop runs at a time. Free on a public repo. Never places orders.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '25 14 * * 1-5'
+    - cron: '40 14 * * 1-5'
+    - cron: '10 15 * * 1-5'
+    - cron: '10 16 * * 1-5'
+    - cron: '10 17 * * 1-5'
+    - cron: '10 18 * * 1-5'
+    - cron: '10 19 * * 1-5'
+concurrency: { group: claudebot-market-loop, cancel-in-progress: false }
+permissions:
+  contents: write
+jobs:
+  loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+      ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+      ROUTINE_FIRE_URL: ${{ secrets.ROUTINE_FIRE_URL }}
+      ROUTINE_FIRE_TOKEN: ${{ secrets.ROUTINE_FIRE_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Loop every 5 minutes until the close
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          end=$(( $(date -u +%s) + 340*60 ))
+          while [ "$(date -u +%s)" -lt "$end" ]; do
+            hm=$(TZ=America/Chicago date +%H%M); dow=$(TZ=America/Chicago date +%u)
+            if [ "$dow" -gt 5 ] || [ "$hm" -gt 1505 ]; then echo "market closed ($hm CT): loop done"; break; fi
+            git pull -q --rebase -X theirs origin main || true
+            python claudebot/gate.py || echo "gate failed"
+            python claudebot/hr.py active vega && python claudebot/optscalp_paper.py || echo "options race skipped/failed"
+            git add docs/data/claudebot-gate.json docs/data/claudebot-optscalp-paper.json 2>/dev/null || git add docs/data/claudebot-gate.json
+            if ! git diff --cached --quiet; then
+              git commit -q -m "ClaudeBot loop $(date -u +%H:%MZ)"
+              for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push -q origin HEAD:main && break; sleep $((i*5)); done
+            fi
+            if [ "$(jq -r '.callClaude // false' docs/data/claudebot-gate.json)" = "true" ] && [ -n "$ROUTINE_FIRE_URL" ] && [ -n "$ROUTINE_FIRE_TOKEN" ]; then
+              body=$(jq -n --arg t "GitHub trade gate: a trade looks ready. Reasons: $(jq -c '.reasons' docs/data/claudebot-gate.json). Do the full run now." '{text:$t}')
+              curl -sS -o /dev/null -w 'call status %{http_code}\n' -X POST "$ROUTINE_FIRE_URL" -H "Authorization: Bearer $ROUTINE_FIRE_TOKEN" -H "anthropic-version: 2026-10-21" -H "Content-Type: application/json" -d "$body" || true
+            fi
+            sleep 300
+          done
