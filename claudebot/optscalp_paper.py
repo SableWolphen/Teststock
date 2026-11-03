@@ -4,7 +4,8 @@ it makes money"). Runs every 5 minutes in GitHub Actions during market hours. Fr
 NEVER places a real order.
 
 Every run:
-  1. Picks the "best" option right now: among liquid underlyings, the one moving most in the last 30
+  1. Picks the "best" AFFORDABLE option right now (with ~$117 most at-the-money options on big names cost more
+     than $50, so it searches up to 10% out of the money and cheaper liquid stocks too): among liquid underlyings, the one moving most in the last 30
      minutes (|move| >= 0.25%); a CALL if it is rising, a PUT if it is falling; expiry 5-21 days out,
      closest to at-the-money, bid/ask gap <= 6% of the mid, costs <= $50 for one contract.
   2. Each variant (profit target x stop) that is flat "buys" it at the ASK. Positions are marked at
@@ -29,7 +30,7 @@ from zoneinfo import ZoneInfo
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(os.path.dirname(HERE), "docs", "data", "claudebot-optscalp-paper.json")
 CT = ZoneInfo("America/Chicago")
-UNDER = ["SPY", "QQQ", "IWM", "NVDA", "TSLA", "AAPL", "AMD", "META", "AMZN"]
+UNDER = ["SPY", "QQQ", "IWM", "NVDA", "TSLA", "AAPL", "AMD", "META", "AMZN", "PLTR", "SOFI", "F", "INTC", "HOOD", "BAC", "NIO", "RIVN", "AAL", "SNAP"]
 FEE, BUDGET, MAX_SPREAD, MIN_MOVE = 0.05, 50.0, 0.06, 0.25
 VARIANTS = [{"id": f"tp{t}_sl{s}", "tp": t, "sl": s, "name": f"Sell at +{t}% (stop -{s}%)"} for t in (3, 5, 10) for s in (15, 30)]
 HOLIDAYS = {"2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"}
@@ -63,11 +64,11 @@ def moves(now):
 def pick(now, mv):
     cands = sorted((m for m in mv.items() if abs(m[1]["move"]) >= MIN_MOVE), key=lambda m: -abs(m[1]["move"]))
     today = now.astimezone(CT).date()
-    for sym, m in cands[:3]:
+    for sym, m in cands[:8]:
         typ = "call" if m["move"] > 0 else "put"
         url = (f"https://data.alpaca.markets/v1beta1/options/snapshots/{sym}?feed=indicative&type={typ}&limit=1000"
                f"&expiration_date_gte={today + timedelta(days=5)}&expiration_date_lte={today + timedelta(days=21)}"
-               f"&strike_price_gte={m['px'] * 0.97:.2f}&strike_price_lte={m['px'] * 1.03:.2f}")
+               (f"&strike_price_gte={m['px']:.2f}&strike_price_lte={m['px'] * 1.10:.2f}" if typ == "call" else f"&strike_price_gte={m['px'] * 0.90:.2f}&strike_price_lte={m['px']:.2f}"))
         snaps = get(url).get("snapshots") or {}
         best = None; why = {"found": len(snaps), "noQuote": 0, "tooExpensive": 0, "wideSpread": 0}
         for occ, sn in snaps.items():
