@@ -40,6 +40,6 @@ st["strategies"]["tp3_sl15"]["trades"] = [{"pnlUsd": -2.0, "day": f"d{i}"} for i
 rows = {r["id"]: r for r in m.board(st)}
 assert rows["tp3_sl15"]["retired"] and st["strategies"]["tp3_sl15"]["retired"]
 assert "notrade" in rows and rows["notrade"]["pnlUsd"] == 0
-assert not rows["tp5_sl30"]["retired"]
+assert rows["tp5_sl30"]["retired"] and not rows["ens_gated"]["retired"]   # CEO retired all no-forecast versions
 assert len([v for v in m.VARIANTS if v["mode"] == "ens"]) == 3 and any(v.get("gated") for v in m.VARIANTS)
 print("optscalp paper tests passed")
