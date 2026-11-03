@@ -14,8 +14,9 @@ Every run:
 Prices: Alpaca option snapshots (free "indicative" feed: close to, but not exactly, real quotes) and
 IEX 5-minute stock bars. Writes docs/data/claudebot-optscalp-paper.json (Paper scorecard format).
 
-Going live is NOT automatic: a variant becomes a board proposal only after 40+ paper trades over
-15+ trading days with net profit, profit factor >= 1.3 and wins that beat costs. Real money still
+Going live is NOT automatic. Gates (OpenAI advisor #107): a variant becomes a board proposal only after
+50+ paper trades over 30+ sessions with net profit, profit factor > 1.2, a 95% bootstrap lower bound on
+the average trade above $0, and still profitable when the bid/ask cost is doubled. Real money still
 needs the board's explicit approval (board rule for options scalping, 2026-11-02).
 """
 from __future__ import annotations
@@ -32,7 +33,8 @@ OUT = os.path.join(os.path.dirname(HERE), "docs", "data", "claudebot-optscalp-pa
 CT = ZoneInfo("America/Chicago")
 UNDER = ["SPY", "QQQ", "IWM", "NVDA", "TSLA", "AAPL", "AMD", "META", "AMZN", "PLTR", "SOFI", "F", "INTC", "HOOD", "BAC", "NIO", "RIVN", "AAL", "SNAP"]
 FEE, BUDGET, MAX_SPREAD, MIN_MOVE = 0.05, 50.0, 0.06, 0.25
-VARIANTS = [{"id": f"tp{t}_sl{s}", "tp": t, "sl": s, "name": f"Sell at +{t}% (stop -{s}%)"} for t in (3, 5, 10) for s in (15, 30)]
+VARIANTS = [{"id": f"tp{t}_sl{s}", "tp": t, "sl": s, "name": f"Sell at +{t}% (stop -{s}%)"} for t in (3, 5, 8, 10) for s in (15, 30)]
+VARIANTS += [{"id": f"tp5_sl30_t{m}", "tp": 5, "sl": 30, "maxMin": m, "name": f"Sell at +5% or after {m} min (stop -30%)"} for m in (30, 60)]   # OpenAI #107: timed exits
 HOLIDAYS = {"2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"}
 H = None
 DEBUG = []
@@ -99,6 +101,13 @@ def quotes(symbols):
     return {s: float((v.get("latestQuote") or {}).get("bp") or 0) for s, v in (d.get("snapshots") or {}).items()}
 
 
+def boot_low(x, n=2000):
+    """95% lower bound of the average trade P&L (bootstrap, fixed seed so it is reproducible)."""
+    import random
+    r = random.Random(7); means = sorted(sum(r.choice(x) for _ in x) / len(x) for _ in range(n))
+    return round(means[int(0.025 * n)], 2)
+
+
 def board(st):
     rows = []
     for v in VARIANTS:
@@ -106,10 +115,12 @@ def board(st):
         w = [x["pnlUsd"] for x in t if x["pnlUsd"] > 0]; l = [x["pnlUsd"] for x in t if x["pnlUsd"] <= 0]
         days = len({x["day"] for x in t})
         pf = round(sum(w) / -sum(l), 2) if l and sum(l) < 0 else None
-        ready = n >= 40 and days >= 15 and sum(w + l) > 0 and (pf or 0) >= 1.3
+        lo = boot_low([x["pnlUsd"] for x in t]) if n >= 10 else None
+        stress = round(sum(x.get("stressPnlUsd", x["pnlUsd"]) for x in t), 2)
+        ready = n >= 50 and days >= 30 and sum(w + l) > 0 and (pf or 0) > 1.2 and (lo or 0) > 0 and stress > 0
         rows.append({"id": v["id"], "name": v["name"], "trades": n, "wins": len(w), "winRatePct": round(100 * len(w) / n, 1) if n else None,
                      "pnlUsd": round(sum(w + l), 2), "profitFactor": pf, "worstUsd": min(l) if l else None, "days": days,
-                     "open": 1 if s.get("open") else 0, "boardProposal": ready})
+                     "open": 1 if s.get("open") else 0, "avgLow95Usd": lo, "pnlDoubleCostUsd": stress, "boardProposal": ready})
     return sorted(rows, key=lambda r: -r["pnlUsd"])
 
 
@@ -147,10 +158,12 @@ def main():
             why = "stop"
         elif mins >= 14 * 60 + 45 or p["day"] != day:
             why = "end of day"
+        elif v.get("maxMin") and now - datetime.fromisoformat(p["boughtAt"].replace("Z", "+00:00")) >= timedelta(minutes=v["maxMin"]):
+            why = "time limit"
         if why:
             px = bid if bid > 0 else p["ask"] * 0.5          # no quote at the close: assume a bad fill
             pnl = round((px - p["ask"]) * 100 - 2 * FEE, 2)
-            s["trades"].append({**p, "exitBid": px, "exitAt": nowz, "why": why, "pnlUsd": pnl, "retPct": round(100 * (px / p["ask"] - 1), 1)})
+            s["trades"].append({**p, "stressPnlUsd": round(pnl - (p["ask"] - p["bid"]) * 100, 2), "exitBid": px, "exitAt": nowz, "why": why, "pnlUsd": pnl, "retPct": round(100 * (px / p["ask"] - 1), 1)})
             s["open"] = None; events.append(f"{v['id']} sold {p['symbol']} {why} {pnl:+.2f}")
     if 8 * 60 + 45 <= mins <= 13 * 60 + 30 and any(not st["strategies"][v["id"]].get("open") for v in VARIANTS):
         try:
