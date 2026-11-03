@@ -122,13 +122,15 @@ def run(now=None):
     # ---------------- Analyst: research + Paper Lab are producing
     a = Report("analyst", "Head of Research", ["scout", "sim", "echo"])
     sa = age_min(sig.get("generatedAt"), now)
-    a.check("scout", "Price scan is fresh", sa <= 150, f"{round(sa)}m old (limit 150m)" if sa != float("inf") else "missing")
+    crypto_live = ccfg.get("enabled", True) or bool(led.get("open"))
+    a.check("scout", "Price scan is fresh", sa <= 150, f"{round(sa)}m old (limit 150m)" + ("" if crypto_live else "; crypto desk is off") if sa != float("inf") else "missing",
+            level="fail" if crypto_live else "warn")
     a.check("scout", "Scan covers all coins", len(sig.get("coins", [])) >= len(ccfg.get("universe", [])) - 1, f"{len(sig.get('coins', []))}/{len(ccfg.get('universe', []))} coins")
     pa = age_min(pled.get("updatedAt"), now)
     # the Paper Lab runs with the trader's market-hours checks, so outside market hours (evenings, weekends) older is normal
     from zoneinfo import ZoneInfo
     ct = now.astimezone(ZoneInfo("America/Chicago")); mkt = ct.weekday() < 5 and 9 * 60 + 30 <= ct.hour * 60 + ct.minute <= 15 * 60 + 30
-    plim = 130 if mkt else 4 * 24 * 60
+    plim = 300 if mkt else 4 * 24 * 60   # lean schedule: Paper Lab runs twice a day
     a.check("sim", "Paper Lab ran recently", pa <= plim, (f"updated {round(pa)}m ago" + ("" if mkt else " (market closed)")) if pa != float("inf") else "has not run yet", level="warn")
     a.check("sim", "Paper Lab never trades real money", pled.get("mode", "paper") == "paper", f"mode {pled.get('mode', 'paper')}")
     a.check("echo", "Crypto paper test running", "cryraw" in (pled.get("strategies") or {}), "running" if "cryraw" in (pled.get("strategies") or {}) else "not started", level="warn")
@@ -140,9 +142,13 @@ def run(now=None):
 
     # ---------------- Atlas: operations (health, books, planning)
     t = Report("atlas", "Chief Operating Officer", ["medic", "ledger", "planner"])
-    runs = sorted(led.get("runs", []) + oled.get("runs", []), key=lambda r: r["t"])
+    dled0 = load(D("docs", "data", "claudebot-dip-ledger.json"), {})
+    runs = sorted(led.get("runs", []) + oled.get("runs", []) + dled0.get("runs", []), key=lambda r: r["t"])
     ra = age_min(runs[-1]["t"], now) if runs else float("inf")
-    t.check("medic", "Hourly trader is running", ra <= 130, f"last run {round(ra)}m ago" if runs else "never ran")
+    # market-day schedule: runs 9:14-14:44 CT with gaps up to 2h; the first run of a day follows the overnight/weekend gap
+    first_today = ct.hour * 60 + ct.minute < 10 * 60 + 30 or not mkt
+    t.check("medic", "Trader is running", bool(runs) and (ra <= 150 or first_today),
+            (f"last run {round(ra)}m ago" + (" (first run of the day)" if first_today and ra > 150 else "")) if runs else "never ran")
     errs = [r for r in runs if r.get("action") == "error" and age_min(r["t"], now) < 1440]
     t.check("medic", "No errors in 24h", not errs, f"{len(errs)} errors: {errs[-1]['detail'][:80]}" if errs else "clean", level="warn")
     # books: recompute options P&L and crypto index from trades

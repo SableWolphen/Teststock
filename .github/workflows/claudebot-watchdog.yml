@@ -1,0 +1,13 @@
+name: ClaudeBot watchdog
+# Market-hours health check. Free (no Claude usage). A failed run makes GitHub email the repo owner.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '35 16,18,20 * * 1-5'   # ~10:35, 12:35, 14:35 CT in winter (CST)
+    - cron: '35 15,17,19 * * 1-5'   # same local times during daylight time (CDT); off-hours runs exit quietly
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 claudebot/watchdog.py

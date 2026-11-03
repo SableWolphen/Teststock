@@ -21,6 +21,22 @@ If git can't reach the repo, attach `SableWolphen/Teststock` with push access fi
 `git pull --rebase`. If `gh` isn't available or it fails, carry on: the crypto planner
 already refuses new entries on a stale signal.
 
+## Run budget (board order 2026-11-02: keep the company running within the usage limit)
+
+Each run costs usage, and a run that hits the limit trades nothing. Do only the parts that can
+matter on THIS run (Chicago time), then commit and stop. Exits are never skipped.
+| Part | When to do it |
+|---|---|
+| A crypto | only if `docs/data/claudebot-ledger.json` has an `open` position (live crypto entries are off) |
+| B options spreads (paper) | only on the 9:14, 11:14 and 1:14 runs |
+| E Dip desk | every run (stops any time; entries in the 2:00-2:59 window) |
+| E7 options-buying | only if `claudebot/optbuy_config.json` has `"enabled": true` or its ledger has an `open` option |
+| C Paper Lab | only on the 11:14 and 1:14 runs |
+| C3 day-trade paper | only on the 2:44 run |
+| C2 promote + D audit | every run (local scripts, cheap) |
+Skipped parts need no facts, no tool calls and no log line. Load only the tools the run needs
+in one ToolSearch call, make independent calls in parallel, and keep notes short.
+
 ## 1. Gather live facts from Robinhood
 Use the agent-enabled account from `get_accounts` (nickname MCP). Then:
 - `get_portfolio` -> `accountValue` = total_value, `cryptoBuyingPower` = crypto_buying_power.buying_power
