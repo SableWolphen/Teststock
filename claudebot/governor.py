@@ -107,7 +107,10 @@ def check(o, root_loader=load):
                 deny.append(f"the Dip ledger holds no {sym}: the bot only sells what it bought")
             else:
                 own = sum(float(p.get("usd", 0)) / float(p.get("entryPrice", 1)) for p in mine)
-                if float(o.get("quantity") or 0) > own * 1.001 + 1e-6:
+                qty = float(o.get("quantity") or 0)
+                if not math.isfinite(qty) or qty <= 0:
+                    deny.append("sell quantity must be finite and positive")
+                if qty > own * 1.001 + 1e-6:
                     deny.append(f"quantity {o.get('quantity')} is more than the bot bought ({own:.6f})")
     elif desk == "optbuy":
         cfg = L("claudebot/optbuy_config.json", {}) or {}; r = cfg.get("risk", {})
