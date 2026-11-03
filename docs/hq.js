@@ -571,7 +571,9 @@ async function coffeeBreak(a) {
     await sleep(rnd(1500, 3500)); await goHome(a); } finally { a.busy--; }
 }
 // Who is on the clock? Agents with no work right now go rest in the Rest Room.
+const NO_REST = true;   // board order 2026-11-02: "No one rests." Everyone stays on the floor around the clock.
 function onDuty(a) {
+  if (NO_REST) return true;
   const ct = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }));
   const wk = ct.getDay() > 0 && ct.getDay() < 6, m = ct.getHours() * 60 + ct.getMinutes();
   const market = wk && m >= 510 && m <= 900, office = wk && m >= 480 && m <= 1020;
@@ -940,7 +942,7 @@ CONSOLES.breakroom = function () {
     ${card('House rules', `<ul class="list">${li('Breaks are short: trading checks never wait for coffee')}${li('No talking about positions you can\'t back with evidence')}${li('Ping-pong losers refill the coffee 🏓')}</ul>`)}
   </div>`;
 };
-const ROOM_BLURB = { rest: 'Where agents with nothing to do right now sleep until their next shift.', lobby: 'ClaudeBot health, the org chart, management audit and market regime.', research: 'Stock watchlist, Scout\'s dip watch and the 🧪 Paper Lab.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The trade ledger, results and the 🎮 agent payroll.', strategy: 'Quinn and the live Dip desk: research, evidence, trades.', breakroom: 'Coffee, ping-pong and team morale.' };
+const ROOM_BLURB = { rest: 'Closed by board order: no one rests. Agents still grab coffee in the Break Room.', lobby: 'ClaudeBot health, the org chart, management audit and market regime.', research: 'Stock watchlist, Scout\'s dip watch and the 🧪 Paper Lab.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The trade ledger, results and the 🎮 agent payroll.', strategy: 'Quinn and the live Dip desk: research, evidence, trades.', breakroom: 'Coffee, ping-pong and team morale.' };
 const TITLES = { rest: ['Rest Room', 'Agents with no work right now recharge here'], office: ['Office', "What are ClaudeBot's agents doing right now?"], lobby: ['Lobby · Overview', 'The big picture'], research: ['Research Lab', 'What the agents are watching'], diagnostics: ['Diagnostics', 'Is everything healthy?'], freedom: ['Freedom Room', 'Planning the path to monthly income'], trading: ['Trading Floor', 'Positions and trades'], risk: ['Risk Office', 'The rules every order must pass'], vault: ['Vault · Ledger', 'Every trade on the record, plus the agent payroll game'], strategy: ['Strategy Lab', 'New ways to make money, tested before they trade'], breakroom: ['Break Room', 'Coffee, ping-pong and morale'] };
 let current = 'office';
 function renderConsole() {
