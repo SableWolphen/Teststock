@@ -41,7 +41,8 @@ jobs:
             git pull -q --rebase -X theirs origin main || true
             python claudebot/gate.py || echo "gate failed"
             python claudebot/hr.py active vega && python claudebot/optscalp_paper.py || echo "options race skipped/failed"
-            git add docs/data/claudebot-gate.json docs/data/claudebot-optscalp-paper.json 2>/dev/null || git add docs/data/claudebot-gate.json
+            python claudebot/decision_scorecard.py || echo "scorecard refresh failed"
+            git add docs/data/claudebot-gate.json docs/data/claudebot-optscalp-paper.json docs/data/claudebot-decision-scorecard.json 2>/dev/null || git add docs/data/claudebot-gate.json
             if ! git diff --cached --quiet; then
               git commit -q -m "ClaudeBot loop $(date -u +%H:%MZ)"
               for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push -q origin HEAD:main && break; sleep $((i*5)); done
