@@ -6,7 +6,8 @@ per fund per strategy:
   double7  close at a 7-day low while above the 200-day average; sell at a 7-day high or after 10 days
   down3    3 down closes in a row while above the 200-day average; sell on the first up close or after 10 days
 Writes docs/data/claudebot-edge-paper.json (same shape the office's Paper scorecard reads).
-Going live needs 20+ paper trades that beat costs AND the board's approval.
+These are AFTER-CLOSE paper marks, not executable fills; never auto-promote live.
+Forward testing needs executable next-session prices and independent review.
 """
 from __future__ import annotations
 
@@ -66,6 +67,11 @@ def main():
     except Exception:  # noqa: BLE001
         led = {"schemaVersion": 1, "mode": "paper", "note": "PAPER ONLY second-edge desk: $25 pretend trades on real daily closes. Runs free in GitHub Actions. Live needs 20+ winning paper trades and board approval.",
                "lastDay": None, "strategies": {k: {"name": v, "open": {}, "trades": []} for k, v in NAMES.items()}, "runs": []}
+    # An after-close signal cannot actually fill at the already observed
+    # closing price. Preserve these as educational marks, not execution proof.
+    led["executionModel"] = "after_close_signal_same_close_mark"
+    led["executableFillEvidence"] = False
+    led["researchOnly"] = True
     for k, v in NAMES.items():
         led["strategies"].setdefault(k, {"name": v, "open": {}, "trades": []})
     made = []
