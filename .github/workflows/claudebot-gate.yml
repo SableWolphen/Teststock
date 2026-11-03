@@ -3,6 +3,8 @@ name: ClaudeBot trade gate
 # prices and publish docs/data/claudebot-gate.json. Claude trader runs only do work when it says so.
 on:
   workflow_dispatch:
+    inputs:
+      test_now: { description: 'Test mode: pretend it is this UTC time (nothing is written)', required: false, default: '' }
   schedule:
     - cron: '*/15 13-21 * * 1-5'
 concurrency: { group: claudebot-gate, cancel-in-progress: false }
@@ -20,6 +22,7 @@ jobs:
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          GATE_TEST_NOW: ${{ github.event.inputs.test_now }}
       - run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"

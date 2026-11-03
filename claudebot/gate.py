@@ -56,7 +56,10 @@ def symbol_facts(sym, today):
 def main():
     global H
     H = {"APCA-API-KEY-ID": os.environ["ALPACA_API_KEY"], "APCA-API-SECRET-KEY": os.environ["ALPACA_API_SECRET"], "User-Agent": "teststock"}
-    now = datetime.now(timezone.utc); local = now.astimezone(CT); today = local.date().isoformat()
+    now = datetime.now(timezone.utc)
+    if os.environ.get("GATE_TEST_NOW"):               # test mode: pretend it is this time (writes nothing)
+        now = datetime.fromisoformat(os.environ["GATE_TEST_NOW"].replace("Z", "+00:00"))
+    local = now.astimezone(CT); today = local.date().isoformat()
     market = local.weekday() < 5 and today not in HOLIDAYS and 8 * 60 + 30 <= local.hour * 60 + local.minute < 15 * 60
     out = {"generatedAt": now.isoformat().replace("+00:00", "Z"), "freshUntil": (now + timedelta(minutes=45)).isoformat().replace("+00:00", "Z"),
            "marketOpen": market, "needed": False, "reasons": [], "checked": []}
@@ -89,6 +92,8 @@ def main():
             else:
                 out["note"] = plan.get("reason", "")
             break
+    if os.environ.get("GATE_TEST_NOW"):
+        print("TEST", json.dumps(out)); return
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w") as f:
         json.dump(out, f, indent=1); f.write("\n")
