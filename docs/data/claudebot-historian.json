@@ -1,0 +1,113 @@
+{
+ "generatedAt": "2026-11-03T01:04:59.536713+00:00",
+ "leaderboard": [
+  {
+   "id": "dip",
+   "name": "Dip desk: buy sharp dips in uptrending ETFs",
+   "status": "LIVE",
+   "unit": "% per trade",
+   "outOfSample": 1.003,
+   "sample": "41 unseen trades, 85.4% wins, PF 6.34",
+   "verdict": "won",
+   "source": "claudebot-dip-backtest.json",
+   "note": "30/30 nearby settings also won on unseen data",
+   "dataAsOf": "2026-11-02T15:32:13.367862+00:00"
+  },
+  {
+   "id": "dipSectors",
+   "name": "Dip desk on sector ETFs (XLK, SMH, KRE)",
+   "status": "LIVE",
+   "unit": "% per trade",
+   "outOfSample": 1.156,
+   "sample": "30 unseen trades",
+   "verdict": "won",
+   "source": "claudebot-dip-backtest.json",
+   "note": "frozen live settings, passed both periods",
+   "dataAsOf": "2026-11-02T15:32:13.367862+00:00"
+  },
+  {
+   "id": "spreads",
+   "name": "Put credit spreads (modeled option prices)",
+   "status": "PAPER",
+   "unit": "$ per spread",
+   "outOfSample": 4.05,
+   "sample": "249 walk-forward trades",
+   "verdict": "won",
+   "source": "claudebot-options-robustness.json",
+   "note": "Robinhood blocks bot spreads. At ~$113 the simulation ended up 42.9% of the time (median $84.38); better at $300+",
+   "dataAsOf": "2026-11-02T13:58:52.456731+00:00"
+  },
+  {
+   "id": "daytrade",
+   "name": "Stock day trading (4 intraday strategies)",
+   "status": "PAPER",
+   "unit": "% per trade",
+   "outOfSample": -0.0119,
+   "sample": "2168 unseen trades; 3/19 settings positive",
+   "verdict": "lost",
+   "source": "claudebot-daytrade-backtest.json",
+   "note": "No day-trade rule beat costs reliably on unseen 2025-26 data. Paper-testing only.",
+   "dataAsOf": "2026-11-02T16:06:07.393433+00:00"
+  },
+  {
+   "id": "scalp_acct120",
+   "name": "Options scalping, $120 account (real option prices)",
+   "status": "REJECTED",
+   "unit": "% per trade",
+   "outOfSample": -25.41,
+   "sample": "35 unseen trades, 20.0% wins; 0/96 variants positive",
+   "verdict": "lost",
+   "source": "claudebot-scalp-backtest.json",
+   "note": "every variant lost after spreads and fees",
+   "dataAsOf": "2026-11-02T21:16:02.188368+00:00"
+  },
+  {
+   "id": "scalp_acct1000",
+   "name": "Options scalping, $1,000 account (real option prices)",
+   "status": "REJECTED",
+   "unit": "% per trade",
+   "outOfSample": -5.9,
+   "sample": "295 unseen trades, 52.2% wins; 0/96 variants positive",
+   "verdict": "lost",
+   "source": "claudebot-scalp-backtest.json",
+   "note": "every variant lost after spreads and fees",
+   "dataAsOf": "2026-11-02T21:16:02.188368+00:00"
+  }
+ ],
+ "winners": [
+  "Dip desk: buy sharp dips in uptrending ETFs",
+  "Dip desk on sector ETFs (XLK, SMH, KRE)",
+  "Put credit spreads (modeled option prices)"
+ ],
+ "losers": [
+  "Stock day trading (4 intraday strategies)",
+  "Options scalping, $120 account (real option prices)",
+  "Options scalping, $1,000 account (real option prices)"
+ ],
+ "alerts": [],
+ "history": [
+  {
+   "t": "2026-11-03T01:04:36.981739+00:00",
+   "scores": {
+    "spreads": 4.05,
+    "dipSectors": 1.156,
+    "dip": 1.003,
+    "daytrade": -0.0119,
+    "scalp_acct1000": -5.9,
+    "scalp_acct120": -25.41
+   }
+  },
+  {
+   "t": "2026-11-03T01:04:59.536713+00:00",
+   "scores": {
+    "dip": 1.003,
+    "dipSectors": 1.156,
+    "spreads": 4.05,
+    "daytrade": -0.0119,
+    "scalp_acct120": -25.41,
+    "scalp_acct1000": -5.9
+   }
+  }
+ ],
+ "rule": "Ranked by out-of-sample (unseen-data) results only. Picking on old data and checking on new data is the only test that counts."
+}

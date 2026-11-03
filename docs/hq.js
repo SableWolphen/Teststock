@@ -213,6 +213,7 @@ const AG = {
   ledger:  { name: 'Ledger',  role: 'Bookkeeper · every fill & P&L', room: 'vault', home: [17.3, 11.2], color: '#f5c451', kind: 'owl' , boss: 'atlas', title: 'Bookkeeper' },
   quinn:   { name: 'Quinn',   role: 'Strategist · runs the live Dip desk', room: 'strategy', home: [21.9, 3.0], color: '#38bdf8', kind: 'bunny', boss: 'analyst', title: 'Strategist' },
   sim:     { name: 'Sim',     role: 'Paper Lab · 5 options variants, no real money', room: 'research', home: [6.1, 4.7], color: '#a3e635', kind: 'robot' , boss: 'analyst', title: 'Paper Lab' },
+  clio:    { name: 'Clio',    role: 'Historian · re-tests every strategy on past data weekly', room: 'strategy', home: [23.4, 4.6], color: '#c4b5fd', kind: 'owl' , boss: 'analyst', title: 'Historian' },
   echo:    { name: 'Echo',    role: 'Paper Lab · crypto with no filters, no real money', room: 'research', home: [8.6, 4.8], color: '#f472b6', kind: 'cat' , boss: 'analyst', title: 'Paper Lab' },
 };
 const BEDS = Object.keys(AG).map((k, i) => [25.25 + (i % 4) * 1.15, .3 + Math.floor(i / 4) * 1.9]);
@@ -412,6 +413,7 @@ function payroll() {
   { const dt = D.dled?.trades || [], dp = dipPnl(); rows.quinn = { base: 1100, score: clamp(85 + dp * 4 - (D.dled?.open && !(D.dcfg?.symbols || []).includes(D.dled.open.symbol) ? 40 : 0)), why: D.dled?.open ? `Holding ${D.dled.open.symbol} from ${D.dled.open.entryPrice} · dip desk ${usd(dp)}` : `${dt.length} dip trades · ${usd(dp)} · waiting for a dip in an uptrend` }; }
   const started = !!D.pled?.updatedAt;
   rows.sim = { base: 900, score: started ? clamp(freshScore(pAge, 75, 360)) : 70, why: started ? `Paper Lab updated ${ago(D.pled.updatedAt)} · ${pTr} paper trades closed` : 'New hire: first Paper Lab run at :14' };
+  rows.clio = { base: 900, score: D.hist ? clamp(freshScore(ageMin(D.hist.generatedAt), 8 * 1440, 21 * 1440)) : 70, why: D.hist ? `Leaderboard ${ago(D.hist.generatedAt)} · ${(D.hist.winners || []).length} winners, ${(D.hist.losers || []).length} rejected` : 'New hire: first weekly history review Sunday' };
   rows.echo = { base: 900, score: started ? clamp(freshScore(pAge, 75, 360) - (D.pled?.strategies?.cryraw ? 0 : 20)) : 70, why: started ? `Crypto paper test ${D.pled?.strategies?.cryraw ? 'running' : 'missing'}` : 'New hire: first crypto paper test at :14' };
   const team = Object.values(rows).reduce((a, r) => a + r.score, 0) / Object.keys(rows).length;
   rows.atlas = { base: 1500, score: Math.round(team), why: `Team average · ${errors24 ? errors24 + ' errors today' : 'no errors today'}` };
@@ -524,6 +526,15 @@ const routines = {
     await say(a, o ? `Holding $${o.usd} of ${esc(o.symbol)} from ${o.entryPrice}. Out on the bounce or a 5% stop.` : (lr ? `Dip desk: ${esc(lr.detail)}` : 'Dip desk is live: I buy SPY, QQQ, DIA or IWM after a sharp dip in an uptrend.'), 3600);
     if (Math.random() < .5) await visit(a, R.guard, [['a', 'Dip desk check: $25 per trade, one at a time, 5% stop.'], ['b', 'Approved. Stay inside those limits.']]);
     else await visit(a, R.analyst, [['a', D.dbt ? `Backtest held up: ${D.dbt.combosWithPositiveTest} settings profitable on unseen 2025–26 data.` : 'Researching the next strategy.'], ['b', "Good. Keep the evidence coming. Rising markets flatter dip-buying."]]);
+  },
+  async clio(a) {
+    const h = D.hist, w = (h?.leaderboard || []).filter(r => r.verdict === 'won'), l = (h?.leaderboard || []).filter(r => r.verdict === 'lost');
+    await wander(a, [[23.4, 4.4], [22.8, 5.0]]);
+    await waitFree(a);
+    if (h?.alerts?.length) await say(a, `⚠️ ${esc(h.alerts[0])}`, 4200);
+    else await say(a, w.length ? `History says: ${w.length} winners, ${l.length} losers. Top: <b>${esc(w[0].name)}</b>.` : 'Re-running every backtest on the newest data this week.', 3600);
+    if (Math.random() < .6) await visit(a, R.quinn, [['a', 'Your dip rule still wins on unseen data.'], ['b', 'Keep checking it every week. Edges fade.']]);
+    else await visit(a, R.analyst, [['a', l.length ? `Still rejected: ${esc(l[0].name)}.` : 'Nothing rejected yet.'], ['b', 'Good. History first, money second.']]);
   },
   async sim(a) {
     const b = D.pled?.leaderboard?.filter(r => r.desk === 'options') || [], m = D.pled?.strategies?.mirror;
@@ -663,6 +674,7 @@ function agentStatus(a) {
     case 'options': return D.bled?.open ? ['hold', 'Holding ' + D.bled.open.label] : D.oled?.open ? ['', 'Paper spread'] : blackoutToday() ? ['warn', 'Event pause'] : ['', 'Idle'];
     case 'guard': return D.sig?.regime?.riskOff ? ['warn', 'Risk-off'] : ['ok', 'Watching'];
     case 'ledger': return ['ok', 'Books balanced'];
+    case 'clio': return D.hist?.alerts?.length ? ['warn', 'Edge fading!'] : ['work', `${(D.hist?.winners || []).length} winners on file`];
     case 'quinn': return D.dled?.open ? ['hold', 'Holding ' + D.dled.open.symbol] : ['work', 'Watching for dips'];
     case 'sim': { const o = Object.values(D.pled?.strategies || {}).filter(x => x.desk === 'options' && x.open).length; return o ? ['hold', o + ' paper spreads'] : ['work', 'Paper testing']; }
     case 'echo': return D.pled?.strategies?.cryraw?.open ? ['hold', 'Paper ' + D.pled.strategies.cryraw.open.symbol] : ['work', 'Paper testing'];
@@ -671,7 +683,7 @@ function agentStatus(a) {
 }
 const DOTC = { rest: '#6b7bb8', work: '#7c78ff', walk: '#3ccfcf', talk: '#ffffff', hold: '#ff8a3d', warn: '#f5c451', ok: '#3ddc84', bad: '#ff5c6c' };
 function renderRoster() {
-  const groups = [['CEO', ['claude']], ['Operations · Atlas', ['atlas', 'medic', 'ledger', 'planner']], ['Research · Analyst', ['analyst', 'quinn', 'scout', 'sim', 'echo']], ['Risk & Trading · Guard', ['guard', 'options']]];
+  const groups = [['CEO', ['claude']], ['Operations · Atlas', ['atlas', 'medic', 'ledger', 'planner']], ['Research · Analyst', ['analyst', 'quinn', 'clio', 'scout', 'sim', 'echo']], ['Risk & Trading · Guard', ['guard', 'options']]];
   $('roster').innerHTML = groups.map(([g, ks]) => `<div class="grp">${g}<span>${ks.length}</span></div>` + ks.map(k => { const a = agents[k];
     return `<div class="ag" data-k="${k}"><div class="av"><svg viewBox="-24 -64 48 66">${charSVG(a.kind, a.color)}</svg></div><div class="mid"><div class="n">${a.name} <span style="color:var(--muted);font-weight:500;font-size:11.5px">${esc(a.title || '')}</span></div><div class="r">${a.boss ? 'Reports to ' + agents[a.boss].name + ' · ' : ''}${esc(a.role)}</div></div><span class="stt" id="st-${k}"></span></div>`; }).join('')).join('');
   document.querySelectorAll('.ag').forEach(x => x.onclick = () => focusAgent(x.dataset.k));
@@ -862,7 +874,7 @@ function paperCard() {
   return card('🧪 Paper Lab · runs alongside live trading, no real money', `<p style="margin:0 0 10px">Sim and Echo paper-trade different versions of the rules on the same live Robinhood quotes. Options P&amp;L is per spread; crypto uses $15 paper positions. <b>CEO auto-approval:</b> a variant that reaches 20+ paper trades with profit factor ≥ 1.3 and beats the live rules is promoted to live automatically, within hard limits, and rolled back automatically if it loses live. Variants that remove a safety rule still need the board.</p>${body}<p>Updated ${L?.updatedAt ? ago(L.updatedAt) : 'never'}.</p>`, 'span3');
 }
 function payrollCard() {
-  const p = payroll(); const order = ['claude', 'atlas', 'analyst', 'guard', 'quinn', 'scout', 'sim', 'echo', 'medic', 'ledger', 'planner', 'options'];
+  const p = payroll(); const order = ['claude', 'atlas', 'analyst', 'guard', 'quinn', 'clio', 'scout', 'sim', 'echo', 'medic', 'ledger', 'planner', 'options'];
   const gc = g => g === 'A' || g === 'B' ? 'up' : g === 'C' ? 'warn' : 'down';
   const v = { profit: ['up', `The company made ${usd(p.wk.usd)} this week: full pay plus a ${credits(p.pool)} profit-sharing bonus.`], flat: ['warn', `No money made or lost this week (${p.wk.trades} closed trades): <b>half pay</b>. Capital was protected but nothing was earned.`], loss: ['down', `The company lost ${usd(p.wk.usd)} this week: <b>no paychecks</b>. Everyone's pay is docked to zero until results turn positive.`] }[p.wk.verdict];
   const lastTxt = { profit: `Last week: profit ${usd(p.last.usd)} · full pay`, flat: 'Last week: flat · half pay', loss: `Last week: loss ${usd(p.last.usd)} · no pay` }[p.last.verdict];
@@ -891,6 +903,12 @@ function planOut(p) {
       ${card('Return scenarios', `<div class="sbars">${p.scenarios.map(s => `<div class="sbar"><span class="mono ${cls(s.annualReturn)}">${s.annualReturn > 0 ? '+' : ''}${s.annualReturn}%/yr</span><div class="bar"><i style="width:${Math.max(1, s.value / mx * 100)}%"></i></div><span class="mono">${money(s.value)}</span></div>`).join('')}</div>`, 'span2')}
       ${card('Milestones', `<ul class="list">${p.milestones.map(m => li(`${money(m.capital)} → ${money(m.monthlyIncome)}/mo ${m.achieved ? '· reached' : m.projected ? '· on track' : ''}`, m.achieved ? 'g' : m.projected ? 'y' : '')).join('')}</ul>`)}`;
 }
+function histCard() {
+  const h = D.hist, b = h?.leaderboard || [];
+  const tag = st => ({ LIVE: 'bull', PAPER: 'neu', OFF: 'neu', REJECTED: 'bear' }[st] || 'neu');
+  const body = b.length ? `<div class="scroll"><table><thead><tr><th>Strategy</th><th>Status</th><th>Unseen-data result</th><th>Evidence</th><th>Note</th></tr></thead><tbody>${b.map(r => `<tr><td><b>${esc(r.name)}</b></td><td><span class="tag ${tag(r.status)}">${r.status}</span></td><td class="mono ${r.verdict === 'won' ? 'up' : r.verdict === 'lost' ? 'down' : ''}">${r.outOfSample == null ? '–' : (r.outOfSample > 0 ? '+' : '') + r.outOfSample} ${esc(r.unit)}</td><td style="white-space:normal">${esc(r.sample)}</td><td style="white-space:normal;color:var(--muted)">${esc(r.note || '')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">First leaderboard arrives with the weekly history run.</div>';
+  return card('📜 Historian · what has won on past data', `<p style="margin:0 0 10px">Clio re-runs every strategy's backtest on the newest data each week and ranks them only by results on <b>unseen</b> data (picked on older years, checked on newer ones). ${h?.alerts?.length ? `<span class="warn"><b>Alerts:</b> ${h.alerts.map(esc).join(' · ')}</span>` : 'No fading edges right now.'}</p>${body}<p>Updated ${h?.generatedAt ? ago(h.generatedAt) : 'never'}.</p>`, 'span3');
+}
 CONSOLES.strategy = function () {
   const o = D.dled?.open, tr = D.dled?.trades || [], bt = D.dbt?.chosenOnTrain, c = D.dcfg;
   const wins = tr.filter(t => t.pnlUsd > 0).length;
@@ -899,6 +917,7 @@ CONSOLES.strategy = function () {
     ${card('Dip desk (LIVE)', o ? `<div class="big org">${esc(o.symbol)}</div><p>$${o.usd} bought at ${o.entryPrice} on ${when(o.enteredAt)}. Sells on the bounce (above its 5-day average), after 10 days, or at a ${c?.exit?.stopPct ?? 5}% stop.</p>` : `<div class="big">WAITING</div><p>Buys $${c?.risk?.positionUsd ?? 25} of SPY, QQQ, DIA or IWM in the last run before the close when RSI(2) &lt; ${c?.entry?.rsi2Below ?? 5} and it's above its 200-day average.</p>`)}
     ${card('Results', `<div class="big ${cls(dipPnl())}">${usd(dipPnl())}</div><p>${tr.length} trades · ${wins} won · ${tr.length - wins} lost</p>`)}
     ${card('Why we hired for this', bt ? `<ul class="list">${li(`Picked on 2023–24, then tested on unseen 2025–26: <b>${bt.test.trades} trades, ${bt.test.winRatePct}% wins, +${bt.test.avgTradePct}%/trade</b>, profit factor ${bt.test.profitFactor}`, 'g')}${li(`All ${D.dbt.combosWithPositiveTest} nearby settings were profitable out of sample`, 'g')}${li('Caveat: 2023–26 was mostly a rising market. A bear market will be harder; the 200-day filter keeps it out of downtrends.', 'y')}</ul>` : '<div class="empty">Backtest loading.</div>')}
+    ${histCard()}
     ${card('Dip trades', tr.length ? `<div class="scroll"><table><thead><tr><th>ETF</th><th>Bought</th><th>Sold</th><th>Entry</th><th>Exit</th><th>Result</th><th>Why</th></tr></thead><tbody>${tr.slice().reverse().map(t => `<tr><td><b>${t.symbol}</b></td><td>${when(t.enteredAt)}</td><td>${when(t.exitedAt)}</td><td class="mono">${t.entryPrice}</td><td class="mono">${t.exitPrice}</td><td class="mono ${cls(t.pnlUsd)}">${usd(t.pnlUsd)} (${pct(t.returnPct)})</td><td>${esc(t.reason)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No dip trades yet. Dips like this come a couple of times a month.</div>', 'span3')}
   </div>`;
 };

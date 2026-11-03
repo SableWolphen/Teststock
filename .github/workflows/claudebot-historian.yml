@@ -1,0 +1,39 @@
+name: ClaudeBot historian
+# Weekly (free, no Claude usage): re-run the research backtests on the newest data, then rebuild
+# the Historian leaderboard. The long options-scalping test reruns on the 1st Sunday of the month.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 1 * * 1'   # Sunday evening US time, after the weekly day-trade backtest
+permissions:
+  contents: write
+jobs:
+  history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+      ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: python claudebot/dip_backtest.py
+        continue-on-error: true
+      - run: python claudebot/optbuy_backtest.py
+        continue-on-error: true
+      - run: python claudebot/options_robustness.py
+        continue-on-error: true
+      - name: Monthly long test (options scalping)
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule && (github.run_number % 4 == 0)
+        run: python claudebot/scalp_backtest.py
+        continue-on-error: true
+      - run: python claudebot/historian.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add docs/data/claudebot-*.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Historian: weekly backtests and leaderboard"
+          for i in 1 2 3 4 5; do git pull --rebase -X theirs origin main && git push origin HEAD:main && exit 0; sleep $((i*5)); done
+          exit 1
