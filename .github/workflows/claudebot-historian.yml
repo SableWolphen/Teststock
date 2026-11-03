@@ -24,9 +24,8 @@ jobs:
         continue-on-error: true
       - run: python claudebot/options_robustness.py
         continue-on-error: true
-      - name: Monthly long test (options scalping)
-        if: github.event_name == 'workflow_dispatch' || github.event.schedule && (github.run_number % 4 == 0)
-        run: python claudebot/scalp_backtest.py
+      - name: Monthly long test (options scalping, first week of the month only)
+        run: if [ "$(date -u +%d)" -le 07 ] && [ "${{ github.event_name }}" = "schedule" ]; then python claudebot/scalp_backtest.py; else echo "not this week"; fi
         continue-on-error: true
       - run: python claudebot/edge_research.py
         continue-on-error: true
