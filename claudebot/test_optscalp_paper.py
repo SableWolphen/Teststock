@@ -42,4 +42,21 @@ assert rows["tp3_sl15"]["retired"] and st["strategies"]["tp3_sl15"]["retired"]
 assert "notrade" in rows and rows["notrade"]["pnlUsd"] == 0
 assert rows["tp5_sl30"]["retired"] and not rows["ens_gated"]["retired"]   # CEO retired all no-forecast versions
 assert len([v for v in m.VARIANTS if v["mode"] == "ens"]) == 3 and any(v.get("gated") for v in m.VARIANTS)
+# 50+ favorable simulated trades do not override missing executable historical NBBO.
+st["strategies"]["ens_trail"]["trades"] = (
+    [{"pnlUsd": 1.0, "day": f"paper{i}"} for i in range(50)] +
+    [{"pnlUsd": -1.0, "day": "paper50"}]
+)
+paper = {r["id"]: r for r in m.board(st)}["ens_trail"]
+assert paper["paperGatePassed"] and not paper["historicalGatePassed"]
+assert not paper["boardProposal"]  # paper-only success is NOT live evidence
+st["historicalValidation"] = {
+    "ens_trail": {"quoteSource": "timestamped_option_nbbo",
+                  "independentOosTrades": 100, "profitFactor": 1.5,
+                  "meanNetUsd": 0.4, "bootstrapLow95Usd": 0.1,
+                  "positiveWithDoubleCost": True}
+}
+validated = {r["id"]: r for r in m.board(st)}["ens_trail"]
+assert validated["paperGatePassed"] and validated["historicalGatePassed"]
+assert validated["boardProposal"]  # still requires board review, never enables trading
 print("optscalp paper tests passed")

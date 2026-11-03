@@ -225,7 +225,21 @@ def board(st):
         pf = round(sum(w) / -sum(l), 2) if l and sum(l) < 0 else None
         lo = boot_low([x["pnlUsd"] for x in t]) if n >= 10 else None
         stress = round(sum(x.get("stressPnlUsd", x["pnlUsd"]) for x in t), 2)
-        ready = n >= 50 and days >= 30 and sum(w + l) > 0 and (pf or 0) > 1.2 and (lo or 0) > 0 and stress > 0
+        paper_ready = n >= 50 and days >= 30 and sum(w + l) > 0 and (pf or 0) > 1.2 and (lo or 0) > 0 and stress > 0
+        # A promising paper run is NOT a live-deployment proposal. Issue #107
+        # separately requires >=100 genuinely independent unseen trades using
+        # timestamp-matched executable option NBBO, positive expectancy and
+        # cost-stress evidence. Our indicative snapshots cannot meet that gate.
+        hist = (st.get("historicalValidation") or {}).get(v["id"], {})
+        historical_ready = (
+            hist.get("quoteSource") == "timestamped_option_nbbo"
+            and int(hist.get("independentOosTrades") or 0) >= 100
+            and float(hist.get("profitFactor") or 0) > 1.2
+            and float(hist.get("meanNetUsd") or 0) > 0
+            and float(hist.get("bootstrapLow95Usd") or 0) > 0
+            and hist.get("positiveWithDoubleCost") is True
+        )
+        ready = paper_ready and historical_ready
         avg_ret = sum(x.get("retPct", 0) for x in t) / n if n else 0
         if v["id"] in CEO_RETIRED:
             s["retired"] = True
@@ -234,7 +248,7 @@ def board(st):
         rows.append({"id": v["id"], "name": v["name"], "group": group_of(v), "trades": n, "wins": len(w),
                      "winRatePct": round(100 * len(w) / n, 1) if n else None, "pnlUsd": round(sum(w + l), 2), "profitFactor": pf,
                      "worstUsd": min(l) if l else None, "days": days, "open": 1 if s.get("open") else 0, "avgLow95Usd": lo,
-                     "pnlDoubleCostUsd": stress, "boardProposal": ready, "retired": bool(s.get("retired"))})
+                     "pnlDoubleCostUsd": stress, "paperGatePassed": paper_ready, "historicalGatePassed": historical_ready, "boardProposal": ready, "retired": bool(s.get("retired"))})
     rows.append({"id": "notrade", "name": "No trade (baseline to beat)", "group": "baseline", "trades": 0, "wins": 0, "winRatePct": None,
                  "pnlUsd": 0.0, "profitFactor": None, "worstUsd": None, "days": 0, "open": 0, "avgLow95Usd": None,
                  "pnlDoubleCostUsd": 0.0, "boardProposal": False, "retired": False})

@@ -26,12 +26,18 @@ assert chk(desk="dip", side="buy", symbol="SPY", usd=25)["allow"]
 assert chk(desk="dip", side="buy", symbol="SPY", usd=25, accountNickname="Individual")["allow"] is False
 assert chk(desk="dip", side="buy", symbol="TSLA", usd=25)["allow"] is False              # not approved
 assert chk(desk="dip", side="buy", symbol="XLE", usd=25)["allow"] is False               # edge not enabled
+assert chk(desk="dip", side="buy", symbol="XLK", usd=25)["allow"] is False   # duplicate holding
+assert chk(desk="dip", side="buy", symbol="SPY", usd=float("nan"))["allow"] is False
+assert chk(desk="dip", side="buy", symbol="SPY", usd=25, buyingPower=float("nan"))["allow"] is False
+assert chk(desk="dip", side="buy", symbol="SPY", usd=25, quoteAgeSec=float("nan"))["allow"] is False
 assert chk(desk="dip", side="buy", symbol="SPY", usd=60)["allow"] is False               # above cap
 assert chk(desk="dip", side="buy", symbol="SPY", usd=25, quoteAgeSec=900)["allow"] is False   # stale
 assert chk(desk="dip", side="buy", symbol="SPY", usd=25, now="2026-11-03T23:00:00Z")["allow"] is False  # closed
 assert chk(desk="dip", side="buy", symbol="SPY", usd=25, accountValue=40)["allow"] is False   # floor
 assert chk(desk="dip", side="sell", symbol="XLK", quantity="0.143")["allow"]
 assert chk(desk="dip", side="sell", symbol="XLK", quantity="0.143", quoteAgeSec=99999)["allow"]   # exits on stale data ok
+assert chk(desk="dip", side="sell", symbol="XLK", quantity="nan")["allow"] is False
+assert chk(desk="dip", side="sell", symbol="XLK", quantity="-1")["allow"] is False
 assert chk(desk="dip", side="sell", symbol="XLK", quantity="1.0")["allow"] is False       # more than bought
 assert chk(desk="dip", side="sell", symbol="KO", quantity="1")["allow"] is False          # board's shares
 assert chk(desk="dip", side="sell", symbol="SPY", quantity="0.1")["allow"] is False       # not held
