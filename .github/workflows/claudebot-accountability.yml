@@ -1,0 +1,53 @@
+name: ClaudeBot independent agent accountability audit
+# Read-only agent/accountability checks, separate from the Claude runtime.
+# Daily after US close; never places trades or changes risk/trading configs.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '10 23 * * 1-5'
+permissions:
+  contents: write
+concurrency:
+  group: claudebot-accountability
+  cancel-in-progress: false
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Inspect agent responsibilities and data provenance
+        run: python claudebot/audit.py
+      - name: Publish public audit status
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add docs/data/claudebot-audit.json
+          if ! git diff --cached --quiet; then
+            git commit -m "ClaudeBot daily independent agent audit"
+            ok=0
+            for i in 1 2 3 4 5; do
+              if git pull --rebase -X theirs origin main && git push origin HEAD:main; then ok=1; break; fi
+              sleep $((i*5))
+            done
+            [ "$ok" = 1 ]
+          fi
+      - name: Fail visibly if an actual agent check failed
+        run: |
+          python - <<'PY'
+          import json
+          import sys
+          with open("docs/data/claudebot-audit.json") as f:
+              report = json.load(f)
+          failures = [(r["manager"], c["agent"], c["check"], c["detail"])
+                      for r in report["reports"] for c in r["checks"]
+                      if c["status"] == "fail"]
+          for manager, agent, check, detail in failures:
+              print(f"::error::{manager} / {agent} / {check}: {detail}")
+          print("Audit status:", report["ceo"]["status"],
+                "| retired-agent checks are inactive, not passed")
+          sys.exit(1 if failures else 0)
+          PY
