@@ -34,3 +34,15 @@ Never promise returns.
    mismatch (planners + EXECUTOR reconciliation rules). Tests only; no live behaviour change.
 2. Trade autopsy (OpenAI #108), only once the options race has 20+ closed paper trades: per trade,
    forecast vs what happened, and the loss split into signal / spread / time decay / exit timing.
+
+## Learn every week (board order 2026-11-03: "learn what works and what doesn't")
+1. Read `docs/data/claudebot-historian.json` (leaderboards, CIO memo, alerts), `claudebot-hr.json`,
+   the options race, the moonshot desk and every paper desk.
+2. Append ONE entry to `docs/data/claudebot-lessons.json` (create it if missing):
+   `{"week": "<YYYY-MM-DD>", "worked": [...], "didNotWork": [...], "changed": [...], "nextTest": "..."}`,
+   with numbers. Read the previous entries first: never re-test an idea a lesson already rejected
+   unless the data has materially changed, and say why.
+3. Fire by evidence: `claudebot/hr.py` fires automatically each night. In addition, the CEO may fire
+   an agent whose work cannot become a live trade or has been rejected for 4+ weeks (add it to
+   `CEO_DECISIONS` in hr.py with a one-line reason). Re-hiring needs fresh evidence and, for any live
+   desk, the board's approval. Firing may only reduce risk, never increase it.

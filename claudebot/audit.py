@@ -147,9 +147,10 @@ def run(now=None):
     from zoneinfo import ZoneInfo
     ct = now.astimezone(ZoneInfo("America/Chicago")); mkt = ct.weekday() < 5 and 9 * 60 + 30 <= ct.hour * 60 + ct.minute <= 15 * 60 + 30
     plim = 420 if mkt else 4 * 24 * 60   # lean schedule: Paper Lab runs once a day (9:44 CT)
-    a.check("sim", "Paper Lab ran recently", pa <= plim, (f"updated {round(pa)}m ago" + ("" if mkt else " (market closed)")) if pa != float("inf") else "has not run yet", level="warn")
+    _fired = {f["agent"] for f in (load(D("docs", "data", "claudebot-hr.json"), {}) or {}).get("fired", [])}
+    a.check("sim", "Paper Lab ran recently", pa <= plim or "sim" in _fired, (f"updated {round(pa)}m ago" + ("" if mkt else " (market closed)")) if pa != float("inf") else "has not run yet", level="warn")
     a.check("sim", "Paper Lab never trades real money", pled.get("mode", "paper") == "paper", f"mode {pled.get('mode', 'paper')}")
-    a.check("echo", "Crypto paper test running", "cryraw" in (pled.get("strategies") or {}), "running" if "cryraw" in (pled.get("strategies") or {}) else "not started", level="warn")
+    a.check("echo", "Crypto paper test running", "cryraw" in (pled.get("strategies") or {}) or "echo" in _fired, "running" if "cryraw" in (pled.get("strategies") or {}) else "not started", level="warn")
     dtp = load(D("docs", "data", "claudebot-daytrade-paper.json"), {})
     a.check("sim", "Day-trade desk is paper only", dtp.get("mode", "paper") == "paper", f"mode {dtp.get('mode', 'paper')} · {len(dtp.get('days', []))} days replayed")
     dtw = load(D("docs", "data", "claudebot-daytrade-wide.json"), {})
