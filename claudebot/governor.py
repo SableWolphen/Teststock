@@ -18,6 +18,7 @@ for shares/contracts the bot's ledger says it bought.
 from __future__ import annotations
 
 import json
+import math
 import os
 import sys
 from datetime import datetime, timezone
@@ -55,6 +56,9 @@ def check(o, root_loader=load):
     desk, side, sym = o.get("desk"), o.get("side"), (o.get("symbol") or "").upper()
     av, bp = float(o.get("accountValue") or 0), float(o.get("buyingPower") or 0)
     usd = float(o.get("usd") or 0)
+    quote_age = float(o.get("quoteAgeSec", 1e9))
+    if not all(math.isfinite(x) for x in (av, bp, usd, quote_age)) or av < 0 or bp < 0 or quote_age < 0:
+        deny.append("invalid or non-finite account, order or quote values")
     if o.get("accountNickname") != HARD["account"]:
         deny.append(f"account must be {HARD['account']}")
     if side not in ("buy", "sell"):
@@ -65,7 +69,7 @@ def check(o, root_loader=load):
         deny.append(f"{sym} is the board's own holding: the bot never sells it")
     buy = side == "buy"
     if buy:
-        if float(o.get("quoteAgeSec", 1e9)) > HARD["maxQuoteAgeSec"]:
+        if quote_age > HARD["maxQuoteAgeSec"]:
             deny.append(f"quote is stale (> {HARD['maxQuoteAgeSec']}s): no new buys on old data")
         if av < HARD["accountFloorUsd"]:
             deny.append(f"account below the ${HARD['accountFloorUsd']} floor")
@@ -86,6 +90,8 @@ def check(o, root_loader=load):
                 deny.append("Dip desk is disabled")
             if sym not in allowed:
                 deny.append(f"{sym} is not on the Dip desk's approved list")
+            if any(p.get("symbol") == sym for p in held):
+                deny.append(f"already holding {sym}: block duplicate Dip buys")
             cap = max(float(r.get("positionUsd", 25)), av * min(float(r.get("positionPctOfAccount", 20)), HARD["dip.maxPctOfAccount"]) / 100)
             if usd > cap * 1.02 + 0.01:
                 deny.append(f"${usd:.2f} is above the position cap ${cap:.2f}")
