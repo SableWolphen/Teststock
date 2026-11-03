@@ -1,5 +1,5 @@
 name: ClaudeBot trade gate
-# Every 15 min in US market hours (free, no Claude usage): replay the live Dip desk rules on fresh
+# Every 5 min in US market hours (free, no Claude usage): replay the live Dip desk rules on fresh
 # prices and publish docs/data/claudebot-gate.json. When a trade is ready it calls the Claude trading task
 # right away (secrets ROUTINE_FIRE_URL / ROUTINE_FIRE_TOKEN); scheduled Claude runs remain the backup.
 on:
@@ -7,8 +7,7 @@ on:
     inputs:
       test_now: { description: 'Test mode: pretend it is this UTC time (nothing is written)', required: false, default: '' }
   schedule:
-    - cron: '*/15 13-21 * * 1-5'
-    - cron: '5-55/10 19-21 * * 1-5'   # extra checks around the 2-3 PM CT buying window (every 5 min combined)
+    - cron: '*/5 13-21 * * 1-5'   # every 5 min (GitHub's fastest) through US market hours
 concurrency: { group: claudebot-gate, cancel-in-progress: false }
 permissions:
   contents: write
