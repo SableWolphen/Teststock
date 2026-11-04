@@ -728,7 +728,7 @@ function renderKpis() {
     ['Trading today', tradingToday()[0], tradingToday()[1] + (D.sig?.regime?.riskOff ? ' · crypto risk-off' : ''), tradingToday()[2]],
     ['Market', D.latest?.regime?.label || '–', 'call: ' + (D.latest?.action || '–'), /OFF/.test(D.latest?.regime?.label || '') ? 'down' : ''],
     ['Published-ledger positions (verify at broker)', String(open), (lp.join(' · ') || 'all cash') + (paperSpread() ? ` · paper: ${paperSpread()}` : ''), open ? 'org' : ''],
-    ['Ledger-only gains (NOT broker confirmed)', `Closed ${usd(ma.closed)} · Open ${usd(ma.open)}`, `Today ${usd(mt.total)} modeled/recorded · excludes PAPER and unknown-tag options · crypto index is not cash P&L`, 'warn'],
+    ['Ledger-only gains (NOT broker confirmed)', `Closed ${usd(ma.closed)}\nOpen ${usd(ma.open)}`, `Today ${usd(mt.total)} modeled/recorded · excludes PAPER and unknown-tag options · crypto index is not cash P&L`, 'warn'],
     ['Simulated paper P&L (not actual cash)', usd(paperTotals().pnl), `${paperTotals().n} closed paper trades · options race counted once · not real money`, cls(paperTotals().pnl)],
     ['Paper win rate', paperTotals().wp == null ? '–' : paperTotals().wp + '%', `${paperTotals().open} paper trades open · could lose up to $${Math.round(paperTotals().risk)}`, paperTotals().wp == null ? '' : paperTotals().wp >= 60 ? 'up' : paperTotals().wp < 45 ? 'down' : 'warn'],
     ['Management audit', D.audit ? `${D.audit.reports.reduce((a, r) => a + r.passed, 0)}/${D.audit.reports.reduce((a, r) => a + r.total, 0)} ✓` : '–', D.audit ? `${D.audit.ceo.status.toUpperCase()} · ${ago(D.audit.generatedAt)}` : 'first audit at :14', D.audit?.ceo?.status === 'pass' ? 'up' : D.audit?.ceo?.status === 'fail' ? 'down' : 'warn'],
