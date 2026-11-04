@@ -44,6 +44,18 @@ main{padding:16px 22px 28px;min-width:0}
 .kpi .v{font-size:19px;font-weight:700;margin-top:6px;font-family:var(--mono);white-space:normal;overflow-wrap:anywhere;line-height:1.35;font-variant-numeric:tabular-nums}
 .kpi .s{font-size:11.5px;color:var(--muted);margin-top:5px;white-space:normal;overflow-wrap:anywhere;line-height:1.5}
 .up{color:var(--up)}.down{color:var(--down)}.warn{color:var(--warn)}.acc{color:var(--accent)}.org{color:var(--orange)}
+/* Each headline and dollar figure must remain legible regardless of card width.
+   Public-ledger qualifications are material; do not ellipsize or clip them. */
+.kpis{min-width:0}
+.kpi{overflow:visible}
+.kpi .l,.kpi .v,.kpi .s{
+  overflow:visible;text-overflow:clip;white-space:normal;max-width:100%;
+  overflow-wrap:anywhere;word-break:normal;
+}
+.kpi .v{font-size:clamp(16px,1.5vw,23px);line-height:1.35;letter-spacing:-.02em}
+.kpi .v .pnl-parts{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline}
+.kpi .v .pnl-parts > span{white-space:nowrap;font-size:inherit}
+.kpi .s{line-height:1.55}
 /* stage */
 .grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px}
 .stage{position:relative;border:1px solid var(--line);border-radius:16px;overflow:hidden;height:min(62vh,640px);min-height:400px;touch-action:none;
@@ -159,10 +171,11 @@ form.plan input,form.plan select{background:#0f1218;border:1px solid var(--line2
 /* Phone-sized view: one full-width metric per row to preserve complete
    amounts, including closed/open P&L and the broker-verification warning. */
 @media (max-width:600px){
-  .kpis{grid-template-columns:minmax(0,1fr);gap:10px}
+  .kpis{grid-template-columns:minmax(0,1fr)!important;gap:10px}
   .kpi{padding:14px 16px}
   .kpi .l{font-size:12px;letter-spacing:.035em}
   .kpi .v{font-size:clamp(18px,5vw,25px)}
+  .kpi .v .pnl-parts{flex-direction:column;align-items:flex-start;gap:2px}
   .kpi .s{font-size:12px}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
