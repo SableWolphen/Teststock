@@ -42,6 +42,15 @@ const num = x => typeof x === 'number' && Number.isFinite(x);
 const pos = x => num(x) && x > 0;
 const nonneg = x => num(x) && x >= 0;
 const round2 = x => Math.round(x * 100) / 100;
+/* Enforce settled/unleveraged capacity independent of margin buying power.
+   Missing values block entries; never use a leveraged buying-power number. */
+export function cashOnlyBudget(account = {}) {
+  if (!nonneg(account.cash) || !nonneg(account.unleveragedBuyingPower)) {
+    return { verified: false, available: 0, reason: 'UNLEVERAGED_FUNDS_UNVERIFIED' };
+  }
+  return { verified: true, available: Math.min(account.cash, account.unleveragedBuyingPower), reason: null };
+}
+
 
 export function nyMinuteOfDay(now = Date.now()) {
   const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(now));
@@ -111,7 +120,9 @@ export function evaluateOptionEntry({ account = {}, contract = {}, limits: overr
 
   const premiumPerContract = pos(ask) ? ask * 100 : NaN;
   const budget = pos(account.accountValue) ? account.accountValue * limits.maxOptionPremiumPctOfAccount / 100 : 0;
-  const cash = nonneg(account.cash) ? account.cash : 0;
+  const funds = cashOnlyBudget(account);
+  if (!funds.verified) reasons.push(funds.reason);
+  const cash = funds.available;
   let maxContracts = num(premiumPerContract) ? Math.floor(Math.min(budget, cash) / premiumPerContract) : 0;
   if (num(premiumPerContract) && maxContracts < 1) reasons.push(premiumPerContract > cash ? 'INSUFFICIENT_CASH' : 'CONTRACT_TOO_LARGE_FOR_ACCOUNT');
   if (maxContracts >= 1) {
@@ -141,7 +152,9 @@ export function evaluateStockEntry({ account = {}, order = {}, limits: overrides
   if (!pos(stopPrice) || !(stopPrice < entryPrice)) reasons.push('STOP_REQUIRED_BELOW_ENTRY');
   reentryCheck(account, symbol, limits, reasons);
   const value = pos(account.accountValue) ? account.accountValue : 0;
-  const cash = nonneg(account.cash) ? account.cash : 0;
+  const funds = cashOnlyBudget(account);
+  if (!funds.verified) reasons.push(funds.reason);
+  const cash = funds.available;
   const riskPerShare = pos(entryPrice) && pos(stopPrice) ? entryPrice - stopPrice : NaN;
   // Fractional shares are allowed; round down to 4 decimals so caps are never exceeded.
   const floor4 = x => Math.floor(x * 10000) / 10000;

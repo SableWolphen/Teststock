@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { evaluateOptionEntry, evaluateStockEntry, evaluateExitOrder, evaluateAccountBrakes, daysToExpiration, DEFAULT_LIMITS } from './account-risk-gate.mjs';
+import { evaluateOptionEntry, evaluateStockEntry, evaluateExitOrder, evaluateAccountBrakes, daysToExpiration, cashOnlyBudget, DEFAULT_LIMITS } from './account-risk-gate.mjs';
 
 // 2026-10-29 10:30 New York (EDT) — inside the entry window.
 const NOW = Date.parse('2026-10-29T14:30:00Z');
 
-const smallAccount = (over = {}) => ({ accountValue: 64, dayStartValue: 64, peakValue: 76, cash: 64, openRisk: 0, entriesToday: 0, losingExitsToday: 0, underlyingsTradedToday: [], ...over });
-const bigAccount = (over = {}) => ({ accountValue: 10000, dayStartValue: 10000, peakValue: 10000, cash: 10000, openRisk: 0, entriesToday: 0, losingExitsToday: 0, underlyingsTradedToday: [], ...over });
+const smallAccount = (over = {}) => ({ accountValue: 64, dayStartValue: 64, peakValue: 76, cash: 64, unleveragedBuyingPower: 64, openRisk: 0, entriesToday: 0, losingExitsToday: 0, underlyingsTradedToday: [], ...over });
+const bigAccount = (over = {}) => ({ accountValue: 10000, dayStartValue: 10000, peakValue: 10000, cash: 10000, unleveragedBuyingPower: 10000, openRisk: 0, entriesToday: 0, losingExitsToday: 0, underlyingsTradedToday: [], ...over });
 const goodContract = (over = {}) => ({ underlying: 'SPY', kind: 'LONG_CALL', bid: 1.95, ask: 2.0, expirationDate: '2026-11-27', openInterest: 2000, volume: 800, ...over });
 
 test('replay 2026-10-29: F 12C expiring next day is blocked', () => {
@@ -24,7 +24,7 @@ test('replay 2026-10-29: SOFI 18C at $0.30 is too large for a $64 account', () =
 });
 
 test('replay 2026-10-29: AAL 13.5C at $0.14 is a lottery ticket', () => {
-  const r = evaluateOptionEntry({ account: smallAccount({ accountValue: 31, cash: 31, entriesToday: 1, losingExitsToday: 2, underlyingsTradedToday: ['F', 'SOFI'] }), contract: { underlying: 'AAL', kind: 'LONG_CALL', bid: 0.12, ask: 0.14, expirationDate: '2026-11-06', openInterest: 3000, volume: 500 }, now: NOW });
+  const r = evaluateOptionEntry({ account: smallAccount({ accountValue: 31, cash: 31, unleveragedBuyingPower: 31, entriesToday: 1, losingExitsToday: 2, underlyingsTradedToday: ['F', 'SOFI'] }), contract: { underlying: 'AAL', kind: 'LONG_CALL', bid: 0.12, ask: 0.14, expirationDate: '2026-11-06', openInterest: 3000, volume: 500 }, now: NOW });
   assert.equal(r.allowed, false);
   for (const code of ['LOTTERY_PREMIUM', 'SPREAD_TOO_WIDE', 'DAILY_LOSS_LIMIT', 'LOSING_STREAK_PAUSE']) assert.ok(r.reasons.includes(code), code);
 });
@@ -72,7 +72,7 @@ test('stock entries need a stop and are sized by 2% risk', () => {
   assert.equal(r.maxShares, 12.5); // min(200/6=33.3, 2500/200=12.5)
   assert.ok(evaluateStockEntry({ account: bigAccount(), order: { symbol: 'AAPL', entryPrice: 200 }, now: NOW }).reasons.includes('STOP_REQUIRED_BELOW_ENTRY'));
   // Small accounts can still buy a fractional, defined-risk stock position.
-  const small = evaluateStockEntry({ account: smallAccount({ accountValue: 25, dayStartValue: 25, peakValue: 25, cash: 25 }), order: { symbol: 'F', entryPrice: 12.5, stopPrice: 12 }, now: NOW });
+  const small = evaluateStockEntry({ account: smallAccount({ accountValue: 25, dayStartValue: 25, peakValue: 25, cash: 25, unleveragedBuyingPower: 25 }), order: { symbol: 'F', entryPrice: 12.5, stopPrice: 12 }, now: NOW });
   assert.equal(small.allowed, true, small.reasons.join());
   assert.equal(small.maxShares, 0.5); // min(0.5/0.5=1, 6.25/12.5=0.5)
 });
@@ -96,4 +96,33 @@ test('daily loss cap shrinks to 5% of equity on small accounts', async () => {
   assert.equal(effectiveDailyLossLimitCents(6400, 8000), 320); // $64 account -> $3.20, not $80
   assert.equal(effectiveDailyLossLimitCents(1000000, 8000), 8000); // fixed cap still binds on big accounts
   assert.equal(effectiveDailyLossLimitCents(undefined, 8000), 8000);
+});
+
+test('strict cash-only rule rejects missing unleveraged balance, including margin accounts', () => {
+  const unverified = bigAccount({ unleveragedBuyingPower: undefined, cash: 10000 });
+  const option = evaluateOptionEntry({ account: unverified, contract: goodContract(), now: NOW });
+  const stock = evaluateStockEntry({ account: unverified, order: { symbol: 'AAPL', entryPrice: 200, stopPrice: 194 }, now: NOW });
+  assert.equal(option.allowed, false);
+  assert.equal(stock.allowed, false);
+  assert.ok(option.reasons.includes('UNLEVERAGED_FUNDS_UNVERIFIED'));
+  assert.ok(stock.reasons.includes('UNLEVERAGED_FUNDS_UNVERIFIED'));
+});
+
+test('margin borrowing capacity cannot fund stock or options entries', () => {
+  const marginAccount = bigAccount({ accountValue: 10000, cash: 10000, unleveragedBuyingPower: 18, buyingPower: 20000 });
+  const options = evaluateOptionEntry({ account: marginAccount, contract: goodContract(), now: NOW });
+  assert.equal(options.allowed, false);
+  assert.equal(options.maxContracts, 0);
+  const stock = evaluateStockEntry({ account: marginAccount, order: { symbol: 'AAPL', entryPrice: 200, stopPrice: 194 }, now: NOW });
+  assert.equal(stock.allowed, true);
+  assert.ok(stock.maxShares * 200 <= 18);
+  assert.deepEqual(cashOnlyBudget(marginAccount), { verified: true, available: 18, reason: null });
+});
+
+test('verified unleveraged funds cap size even if displayed cash is larger', () => {
+  const acct = bigAccount({ cash: 10000, unleveragedBuyingPower: 250, buyingPower: 30000 });
+  const option = evaluateOptionEntry({ account: acct, contract: goodContract(), now: NOW });
+  assert.equal(option.allowed, true);
+  assert.equal(option.maxContracts, 1);
+  assert.ok(evaluateStockEntry({ account: acct, order: { symbol: 'AAPL', entryPrice: 200, stopPrice: 194 }, now: NOW }).maxShares <= 1.25);
 });
