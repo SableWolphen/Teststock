@@ -404,6 +404,7 @@ def build_report(state, data_dir, now):
             "Daily IEX OHLC opens are observed after the session, not executable broker fills.",
             "Fixed spread/slippage estimates, fees and gap/stop assumptions may understate real costs.",
             "Opening-gap skips and capacity limits are modeled; queue priority is alphabetical.",
+            "Realized daily paper P&L alone omits unrealized changes on open positions.",
             "Bootstrap is clustered by entry day and cannot guarantee future profits.",
             "No new live strategies can be enabled by this research workflow.",
         ],
@@ -417,8 +418,21 @@ def update(state, bars, now):
         raise ValueError("Refusing unsafe or incompatible tournament state")
     if set(state.get("strategies", {})) != set(STRATEGIES):
         raise ValueError("Tournament strategy set changed unexpectedly")
+    # Preserve actual observed forward sessions, including NO-CLOSE days.
+    # Never backfill pre-enrollment historical days as forward performance.
+    observed = state.setdefault("observedSessions", [])
+    if not isinstance(observed, list):
+        raise ValueError("Invalid forward session history")
+    if not observed and prior:
+        observed.append(prior)  # migrate the already verified first session
+    if observed and (len(set(observed)) != len(observed) or observed != sorted(observed)):
+        raise ValueError("Corrupt/duplicated forward session history")
     for day in dates:
         process_day(state, bars, day)
+        observed.append(day)
+    if len(observed) != len(set(observed)):
+        raise ValueError("Duplicate forward session enrollment")
+    state["observedSessions"] = observed[-250:]
     stamp = now.isoformat().replace("+00:00", "Z")
     state["generatedAt"] = stamp
     state["latestProviderDay"] = newest

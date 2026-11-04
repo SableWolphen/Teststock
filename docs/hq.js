@@ -310,11 +310,11 @@ async function wander(a, pts) { await waitFree(a); a.busy++; try { const [x, y] 
 /* ============================== data ============================== */
 const D = {};
 async function refresh() {
-  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament] = await Promise.all([
+  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit] = await Promise.all([
     getJSON('docs/data/claudebot-signal.json'), getJSON('docs/data/claudebot-ledger.json'), getJSON('docs/data/claudebot-options-ledger.json'),
     getJSON('docs/data/live-trading-health.json'), getJSON('docs/data/latest-50.json'), getJSON('claudebot/options_config.json'), getJSON('claudebot/config.json'),
-    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json'), getJSON('docs/data/claudebot-crypto-paper.json'), getJSON('docs/data/claudebot-optscalp-paper.json'), getJSON('docs/data/claudebot-moonshot-paper.json'), getJSON('docs/data/claudebot-hr.json'), getJSON('docs/data/claudebot-decision-scorecard.json'), getJSON('docs/data/claudebot-edge-readiness.json'), getJSON('docs/data/claudebot-tournament-scorecard.json')]);
-  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament });
+    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json'), getJSON('docs/data/claudebot-crypto-paper.json'), getJSON('docs/data/claudebot-optscalp-paper.json'), getJSON('docs/data/claudebot-moonshot-paper.json'), getJSON('docs/data/claudebot-hr.json'), getJSON('docs/data/claudebot-decision-scorecard.json'), getJSON('docs/data/claudebot-edge-readiness.json'), getJSON('docs/data/claudebot-tournament-scorecard.json'), getJSON('docs/data/claudebot-daily-profit.json')]);
+  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit });
   renderAll();
 }
 function botHealth() {
@@ -788,6 +788,43 @@ function tournamentCard() {
     'new live risk. No strategy can guarantee a profit. Data through ' + esc(t.lastProcessedDay || 'none') +
     ' · updated ' + ago(t.generatedAt) + '.</p>', 'span3');
 }
+
+function dailyProfitCard() {
+  const d = D.dailyProfit;
+  if (!d || d.scope !== 'PUBLIC_RESEARCH_ONLY_NOT_BROKER_ACCOUNT_PERFORMANCE')
+    return card('📅 Daily profitability · evidence first',
+      '<p>Awaiting the first daily audit. No broker-confirmed daily profit is established from public research files.</p>', 'span3');
+  const latest = d.latestPaperDay || {};
+  const rows = (d.strategyClosingPerformance || []).map(r => {
+    const x = r.latestClosingSession || {};
+    return '<tr><td><b>' + esc(r.id) + '</b></td><td class="mono">' +
+      Number(x.closedTrades || 0) + '</td><td class="mono ' +
+      cls(Number(x.netClosedPaperUsd || 0)) + '">' +
+      usd(Number(x.netClosedPaperUsd || 0)) + '</td><td>' +
+      esc((x.status || 'UNKNOWN').replaceAll('_', ' ')) + '</td><td class="mono">' +
+      (r.profitablePctOfAllObservedSessions == null
+        ? '–' : Number(r.profitablePctOfAllObservedSessions).toFixed(1) + '%') +
+      '</td></tr>';
+  }).join('');
+  const alerts = (d.alerts || []).filter(a => a !== 'BROKER_DAILY_PROFIT_NOT_VERIFIED');
+  return card('📅 Daily net-profit accountability · not guaranteed',
+    '<p><b>Real account:</b> <span class="warn">UNVERIFIED</span> — GitHub has no authoritative broker daily P&amp;L or open-position valuation. ' +
+    'A green GitHub job, an open gain, or no closed trade is not a profitable day.</p>' +
+    '<p><b>Most recent paper session:</b> ' + esc(latest.session || 'not observed') +
+    ' · <b>Profitable modeled strategies:</b> ' + (latest.profitableStrategies || []).length +
+    ' · <b>Losing:</b> ' + (latest.losingStrategies || []).length +
+    ' · <b>No closed trades:</b> ' + (latest.strategiesWithNoClosedTrades || []).length + '.</p>' +
+    '<div class="scroll"><table><thead><tr><th>ETF paper model</th><th>Closed today</th>' +
+    '<th>Net closed P&amp;L</th><th>Session result</th><th>% of observed sessions profitable</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+    '<p>Only closed paper positions are counted. Open paper holdings have unreported daily changes. ' +
+    'Separate strategies overlap and are NOT a combined portfolio.</p>' +
+    '<p><b>Reviews:</b> ' + (alerts.length ? alerts.map(esc).join(' · ') : 'no paper-loss alerts') +
+    ' · evidence ' + esc(d.paperSourceStatus || 'UNKNOWN') +
+    ' · refreshed ' + ago(d.generatedAt) +
+    '. <b>No forced trades, loss chasing or automatic live strategy promotion.</b></p>', 'span3');
+}
+
 function tournamentHealthCard() {
   const t = D.tournament;
   const h = t?.agentHealth || {};
@@ -832,6 +869,7 @@ const CONSOLES = {
         ? '<p>No new paper strategy is activated live automatically. Current evidence:</p><ul class="list">' + Object.entries(D.edgeReady.strategies || {}).map(([id, data]) => li(esc(id) + ': ' + (data.evidence?.independentEntries ?? '–') + ' independent entries · ' + (data.evidence?.sessions ?? '–') + ' sessions · ' + esc(data.status.replaceAll('_', ' ')), data.status === 'review_only' ? 'g' : 'y')).join('') + '</ul><p>Close marks after the close are not executable fills. Updated ' + ago(D.edgeReady.generatedAt) + '</p>'
         : '<p>Research readiness will appear after the next paper run. New live strategies require independent evidence and separate approval.</p>', 'span2')}
       ${tournamentCard()}
+      ${dailyProfitCard()}
       ${paperScoreCard()}
       ${paperCard()}
       ${dayCard()}

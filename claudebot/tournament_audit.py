@@ -40,6 +40,16 @@ def validate(state, report):
         raise ValueError("Executable-fill claim is forbidden")
     if report.get("lastProcessedDay") != state.get("lastProcessedDay"):
         raise ValueError("Evidence session mismatch")
+    observed = state.get("observedSessions", [])
+    if observed:
+        if not isinstance(observed, list) or len(observed) != len(set(observed)) or observed != sorted(observed):
+            raise ValueError("Duplicate or unsorted forward session history")
+        if observed[-1] != state.get("lastProcessedDay"):
+            raise ValueError("Last observed session differs from the source")
+        if any(not isinstance(day, str) or len(day) != 10 for day in observed):
+            raise ValueError("Invalid forward session date")
+    elif observed not in (None, []):
+        raise ValueError("Invalid observed session structure")
     model = state.get("model", {})
     if (not near(model.get("notionalUsd"), 25, .00001)
             or not near(model.get("halfSpreadBpsPerSide"), 7, .00001)
