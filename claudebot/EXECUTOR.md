@@ -23,12 +23,16 @@ already refuses new entries on a stale signal.
 
 ## Gate first (board order 2026-11-02: everything runs on GitHub until a trade is ready)
 
-Right after cloning, read `docs/data/claudebot-gate.json` (written every 15 min in market hours by
-`.github/workflows/claudebot-gate.yml`, which replays the Dip desk's exact rules on fresh prices).
+Right after cloning, read `docs/data/claudebot-gate.json` (written every 5 min in market hours by the all-day loop
+`.github/workflows/claudebot-market-loop.yml`, which replays the Dip desk's exact rules on fresh prices).
 - If `needed` is false AND `freshUntil` is later than now: STOP. No Robinhood calls, no other
   parts, no commit, no message. (GitHub already ran the paper desks, audit inputs and research.)
 - Otherwise (`needed` true, or the file is missing/stale): do the full run below. Robinhood is the
   authority: re-check everything live; the gate only decides whether to look.
+- If the file is stale (`freshUntil` passed) during market hours (8:30-15:00 CT, weekdays), GitHub's
+  timer slipped: restart the all-day loop first with
+  `gh api -X POST repos/SableWolphen/Teststock/actions/workflows/claudebot-market-loop.yml/dispatches -f ref=main`
+  (a second copy just queues and exits, so this is always safe), then do the full run.
 
 ## RISK GOVERNOR (board order 2026-11-03): no live order without an ALLOW
 
