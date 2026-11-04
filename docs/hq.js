@@ -723,12 +723,12 @@ function renderKpis() {
   const runs = [...(D.led?.runs || []), ...(D.oled?.runs || [])].sort((a, b) => new Date(b.t) - new Date(a.t));
   const mt = madeToday(), ma = madeAllTime();
   const k = [
-    ['Estimated ledger P&L (NOT broker verified)', `Today ${usd(mt.total)} · All time ${usd(ma.total)}`, `today: ${mt.n} closed ${usd(mt.realized)}, open ${mt.marked.length ? mt.marked.join(', ') + ' ' + usd(mt.open) : 'none'} · all time: closed ${usd(ma.closed)}, open ${usd(ma.open)}`, cls(ma.total)],
+    ['REAL broker P&L', 'UNVERIFIED', 'Public GitHub data cannot prove Robinhood realized/unrealized gains · check the private broker account', 'warn'],
     ['ClaudeBot health', botHealth().status, botHealth().ok ? 'scan ' + Math.round(botHealth().sigAge) + 'm · trader ' + Math.round(botHealth().runAge) + 'm ago' : botHealth().issues[0], botHealth().ok ? 'up' : 'warn'],
     ['Trading today', tradingToday()[0], tradingToday()[1] + (D.sig?.regime?.riskOff ? ' · crypto risk-off' : ''), tradingToday()[2]],
     ['Market', D.latest?.regime?.label || '–', 'call: ' + (D.latest?.action || '–'), /OFF/.test(D.latest?.regime?.label || '') ? 'down' : ''],
     ['Published-ledger positions (verify at broker)', String(open), (lp.join(' · ') || 'all cash') + (paperSpread() ? ` · paper: ${paperSpread()}` : ''), open ? 'org' : ''],
-    ['Live-tagged ledger estimates (unverified)', usd(optPnl() + dipPnl()), `NOT broker-confirmed · crypto index ${pct(cryptoIdx() - 100)} is not cash P&L`, cls(cryptoIdx() - 100 + optPnl() + dipPnl())],
+    ['Ledger-only gains (NOT broker confirmed)', `Closed ${usd(ma.closed)} · Open ${usd(ma.open)}`, `Today ${usd(mt.total)} modeled/recorded · excludes PAPER and unknown-tag options · crypto index is not cash P&L`, 'warn'],
     ['Simulated paper P&L (not actual cash)', usd(paperTotals().pnl), `${paperTotals().n} closed paper trades · options race counted once · not real money`, cls(paperTotals().pnl)],
     ['Paper win rate', paperTotals().wp == null ? '–' : paperTotals().wp + '%', `${paperTotals().open} paper trades open · could lose up to $${Math.round(paperTotals().risk)}`, paperTotals().wp == null ? '' : paperTotals().wp >= 60 ? 'up' : paperTotals().wp < 45 ? 'down' : 'warn'],
     ['Management audit', D.audit ? `${D.audit.reports.reduce((a, r) => a + r.passed, 0)}/${D.audit.reports.reduce((a, r) => a + r.total, 0)} ✓` : '–', D.audit ? `${D.audit.ceo.status.toUpperCase()} · ${ago(D.audit.generatedAt)}` : 'first audit at :14', D.audit?.ceo?.status === 'pass' ? 'up' : D.audit?.ceo?.status === 'fail' ? 'down' : 'warn'],
