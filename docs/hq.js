@@ -309,12 +309,40 @@ async function wander(a, pts) { await waitFree(a); a.busy++; try { const [x, y] 
 
 /* ============================== data ============================== */
 const D = {};
+// GitHub Pages is public. Broker verification is only supported by a separate,
+// authenticated, same-origin, no-store backend. Never load account details from
+// published docs/data or localStorage. A failed request must remain unverified.
+const BROKER_SUMMARY_PATH = '/api/broker/verified-summary';
+async function getPrivateBrokerSummary() {
+  if (location.protocol !== 'https:') return null;
+  try {
+    const response = await fetch(BROKER_SUMMARY_PATH, {
+      credentials: 'include', cache: 'no-store',
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!response.ok || !(response.headers.get('content-type') || '').includes('application/json')) return null;
+    const payload = await response.json();
+    const age = Date.now() - Date.parse(payload?.verifiedAt || '');
+    const validAmount = x => typeof x === 'number' && Number.isFinite(x);
+    if (payload?.status !== 'verified' || payload?.source !== 'robinhood_authenticated'
+      || payload?.reconciled !== true || payload?.scope !== 'selected_account'
+      || !Number.isFinite(age) || age < 0 || age > 5 * 60 * 1000
+      || !validAmount(payload.realizedPnlUsd) || !validAmount(payload.unrealizedPnlUsd)
+      || !Number.isSafeInteger(payload.positionsCount) || payload.positionsCount < 0) return null;
+    // Read only a strict allowlist; never expose identifiers or underlying holdings.
+    return {
+      verifiedAt: payload.verifiedAt, realizedPnlUsd: payload.realizedPnlUsd,
+      unrealizedPnlUsd: payload.unrealizedPnlUsd, positionsCount: payload.positionsCount
+    };
+  } catch { return null; }
+}
 async function refresh() {
   const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit] = await Promise.all([
     getJSON('docs/data/claudebot-signal.json'), getJSON('docs/data/claudebot-ledger.json'), getJSON('docs/data/claudebot-options-ledger.json'),
     getJSON('docs/data/live-trading-health.json'), getJSON('docs/data/latest-50.json'), getJSON('claudebot/options_config.json'), getJSON('claudebot/config.json'),
     getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json'), getJSON('docs/data/claudebot-crypto-paper.json'), getJSON('docs/data/claudebot-optscalp-paper.json'), getJSON('docs/data/claudebot-moonshot-paper.json'), getJSON('docs/data/claudebot-hr.json'), getJSON('docs/data/claudebot-decision-scorecard.json'), getJSON('docs/data/claudebot-edge-readiness.json'), getJSON('docs/data/claudebot-tournament-scorecard.json'), getJSON('docs/data/claudebot-daily-profit.json')]);
   Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit });
+  D.privateBroker = await getPrivateBrokerSummary();
   renderAll();
 }
 function botHealth() {
@@ -723,7 +751,16 @@ function renderKpis() {
   const runs = [...(D.led?.runs || []), ...(D.oled?.runs || [])].sort((a, b) => new Date(b.t) - new Date(a.t));
   const mt = madeToday(), ma = madeAllTime();
   const k = [
-    ['REAL broker P&L', 'UNVERIFIED', 'Public GitHub data cannot prove Robinhood realized/unrealized gains · check the private broker account', 'warn'],
+    ['REAL broker P&L', D.privateBroker ? 'Verified privately' : 'UNVERIFIED', D.privateBroker
+      ? 'Reconciled Robinhood data · verified ' + new Date(D.privateBroker.verifiedAt).toLocaleTimeString() + ' · selected account only'
+      : 'No authenticated broker verification on this site · public ledger is not Robinhood proof', D.privateBroker ? 'up' : 'warn'],
+    ['Broker realized / unrealized', D.privateBroker
+      ? 'Closed ' + usd(D.privateBroker.realizedPnlUsd) + '\\nOpen ' + usd(D.privateBroker.unrealizedPnlUsd)
+      : 'NOT AVAILABLE', D.privateBroker
+      ? 'Broker-confirmed selected account · current snapshot, not public ledger'
+      : 'Requires private authenticated broker reconciliation · never sourced from GitHub public files', D.privateBroker ? 'up' : 'warn'],
+    ['Broker positions', D.privateBroker ? String(D.privateBroker.positionsCount) : 'NOT VERIFIED',
+      D.privateBroker ? 'Count confirmed by private Robinhood reconciliation · no symbols published' : 'Published-ledger positions below may not match Robinhood', D.privateBroker ? 'up' : 'warn'],
     ['ClaudeBot health', botHealth().status, botHealth().ok ? 'scan ' + Math.round(botHealth().sigAge) + 'm · trader ' + Math.round(botHealth().runAge) + 'm ago' : botHealth().issues[0], botHealth().ok ? 'up' : 'warn'],
     ['Trading today', tradingToday()[0], tradingToday()[1] + (D.sig?.regime?.riskOff ? ' · crypto risk-off' : ''), tradingToday()[2]],
     ['Market', D.latest?.regime?.label || '–', 'call: ' + (D.latest?.action || '–'), /OFF/.test(D.latest?.regime?.label || '') ? 'down' : ''],
