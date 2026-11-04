@@ -36,13 +36,15 @@ jobs:
         run: python claudebot/tournament.py
       - name: Independently verify no-lookahead evidence and costs
         run: python claudebot/tournament_audit.py
+      - name: Audit daily closed-paper profit and unverified broker P&L
+        run: python claudebot/daily_profit.py
       - name: Publish research evidence only
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add docs/data/claudebot-tournament.json docs/data/claudebot-tournament-scorecard.json
+          git add docs/data/claudebot-tournament.json docs/data/claudebot-tournament-scorecard.json docs/data/claudebot-daily-profit.json
           if git diff --cached --quiet; then
             echo "Paper tournament already current"
             exit 0
