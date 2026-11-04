@@ -340,26 +340,26 @@ function tradingToday() {
 const cryptoIdx = () => { const s = D.led?.snapshots || []; return s.length ? s[s.length - 1].index : (D.led?.equityIndex ?? 100); };
 const livePos = () => [D.led?.open?.symbol, D.oled?.mode === 'live' ? D.oled?.open?.label : null, ...((D.dled?.positions ?? (D.dled?.open ? [D.dled.open] : [])).map(x => x.symbol)), D.bled?.open?.label].filter(Boolean);
 const paperSpread = () => D.oled?.mode !== 'live' && D.oled?.open ? D.oled.open.label : null;
-const liveSpreadTrades = () => D.oled?.mode === 'live' ? (D.oled?.trades || []).filter(t => t.mode !== 'paper') : [];
-const optPnl = () => liveSpreadTrades().reduce((a, t) => a + t.pnlUsd, 0) + (D.bled?.trades || []).reduce((a, t) => a + t.pnlUsd, 0);
+const liveSpreadTrades = () => (D.oled?.trades || []).filter(t => t.mode === 'live'); // Per-trade provenance; current desk mode cannot reclassify historical paper trades.
+const optPnl = () => liveSpreadTrades().reduce((a, t) => a + Number(t.pnlUsd || 0), 0); // Only explicitly live-tagged paper-excluded ledger entries; still not broker verified.
 const dipPnl = () => (D.dled?.trades || []).reduce((a, t) => a + t.pnlUsd, 0);
 const todayCT = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-// real money made today (Chicago date): trades closed today + today's move on open positions (last hourly mark)
+// UNVERIFIED ledger estimates, NOT real broker P&L. Never include unlabeled or paper mode trades.
 function madeToday() {
   const day = todayCT(), isToday = t => t && new Date(t).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }) === day;
   const acct = D.ocfg?.backtest?.startingAccountUsd || 113;
   let realized = 0, n = 0;
-  for (const t of [...liveSpreadTrades(), ...(D.bled?.trades || []), ...(D.dled?.trades || [])]) if (isToday(t.exitedAt)) { realized += t.pnlUsd; n++; }
-  for (const t of D.led?.trades || []) if (isToday(t.exitedAt)) { realized += (t.accountImpactPct || 0) / 100 * acct; n++; }
+  for (const t of [...liveSpreadTrades(), ...(D.dled?.trades || [])]) if (isToday(t.exitedAt)) { realized += t.pnlUsd; n++; }
+  // Crypto percent-index records and unknown-origin option fills cannot be converted into broker dollars.
   let open = 0, marked = [];
   for (const p of (D.dled?.positions ?? (D.dled?.open ? [D.dled.open] : []))) if (p.mark?.day === day) { open += p.usd / p.entryPrice * (p.mark.price - p.mark.dayBase); marked.push(p.symbol); }
   const o = D.bled?.open; if (o?.mark?.day === day) { open += (o.mark.price - o.mark.dayBase) * 100; marked.push(o.label); }
   return { total: Math.round((realized + open) * 100) / 100, realized, open, n, marked };
 }
-// all real money made since start: every closed real trade + open positions vs what we paid (last hourly mark)
+// UNVERIFIED ledger-only lifetime estimate, NOT confirmed broker realized/unrealized profit.
 function madeAllTime() {
   const acct = D.ocfg?.backtest?.startingAccountUsd || 113;
-  const closed = optPnl() + dipPnl() + (D.led?.trades || []).reduce((a, t) => a + (t.accountImpactPct || 0) / 100 * acct, 0);
+  const closed = optPnl() + dipPnl(); // never turn a crypto index or paper estimate into account P&L
   let open = 0;
   for (const p of (D.dled?.positions ?? (D.dled?.open ? [D.dled.open] : []))) if (p.mark) open += p.usd / p.entryPrice * (p.mark.price - p.entryPrice);
   const o = D.bled?.open; if (o?.mark) open += (o.mark.price - o.entryPrice) * 100;
@@ -723,13 +723,13 @@ function renderKpis() {
   const runs = [...(D.led?.runs || []), ...(D.oled?.runs || [])].sort((a, b) => new Date(b.t) - new Date(a.t));
   const mt = madeToday(), ma = madeAllTime();
   const k = [
-    ['Ledger P&L (unverified)', `Today ${usd(mt.total)} · All time ${usd(ma.total)}`, `today: ${mt.n} closed ${usd(mt.realized)}, open ${mt.marked.length ? mt.marked.join(', ') + ' ' + usd(mt.open) : 'none'} · all time: closed ${usd(ma.closed)}, open ${usd(ma.open)}`, cls(ma.total)],
+    ['Estimated ledger P&L (NOT broker verified)', `Today ${usd(mt.total)} · All time ${usd(ma.total)}`, `today: ${mt.n} closed ${usd(mt.realized)}, open ${mt.marked.length ? mt.marked.join(', ') + ' ' + usd(mt.open) : 'none'} · all time: closed ${usd(ma.closed)}, open ${usd(ma.open)}`, cls(ma.total)],
     ['ClaudeBot health', botHealth().status, botHealth().ok ? 'scan ' + Math.round(botHealth().sigAge) + 'm · trader ' + Math.round(botHealth().runAge) + 'm ago' : botHealth().issues[0], botHealth().ok ? 'up' : 'warn'],
     ['Trading today', tradingToday()[0], tradingToday()[1] + (D.sig?.regime?.riskOff ? ' · crypto risk-off' : ''), tradingToday()[2]],
     ['Market', D.latest?.regime?.label || '–', 'call: ' + (D.latest?.action || '–'), /OFF/.test(D.latest?.regime?.label || '') ? 'down' : ''],
-    ['Real positions', String(open), (lp.join(' · ') || 'all cash') + (paperSpread() ? ` · paper: ${paperSpread()}` : ''), open ? 'org' : ''],
-    ['Ledger-reported closed P&L', usd(optPnl() + dipPnl()), `not broker-verified · crypto index ${pct(cryptoIdx() - 100)}`, cls(cryptoIdx() - 100 + optPnl() + dipPnl())],
-    ['Paper P&L (pretend $)', usd(paperTotals().pnl), `${paperTotals().n} closed paper trades · options race counted once · not real money`, cls(paperTotals().pnl)],
+    ['Published-ledger positions (verify at broker)', String(open), (lp.join(' · ') || 'all cash') + (paperSpread() ? ` · paper: ${paperSpread()}` : ''), open ? 'org' : ''],
+    ['Live-tagged ledger estimates (unverified)', usd(optPnl() + dipPnl()), `NOT broker-confirmed · crypto index ${pct(cryptoIdx() - 100)} is not cash P&L`, cls(cryptoIdx() - 100 + optPnl() + dipPnl())],
+    ['Simulated paper P&L (not actual cash)', usd(paperTotals().pnl), `${paperTotals().n} closed paper trades · options race counted once · not real money`, cls(paperTotals().pnl)],
     ['Paper win rate', paperTotals().wp == null ? '–' : paperTotals().wp + '%', `${paperTotals().open} paper trades open · could lose up to $${Math.round(paperTotals().risk)}`, paperTotals().wp == null ? '' : paperTotals().wp >= 60 ? 'up' : paperTotals().wp < 45 ? 'down' : 'warn'],
     ['Management audit', D.audit ? `${D.audit.reports.reduce((a, r) => a + r.passed, 0)}/${D.audit.reports.reduce((a, r) => a + r.total, 0)} ✓` : '–', D.audit ? `${D.audit.ceo.status.toUpperCase()} · ${ago(D.audit.generatedAt)}` : 'first audit at :14', D.audit?.ceo?.status === 'pass' ? 'up' : D.audit?.ceo?.status === 'fail' ? 'down' : 'warn'],
   ];
@@ -851,7 +851,7 @@ const CONSOLES = {
     <div class="cgrid">
       ${card('ClaudeBot health', `<div class="big ${botHealth().ok ? 'up' : 'warn'}">${botHealth().status}</div><p>${botHealth().ok ? 'Price scan and hourly trader are running on schedule.' : esc(botHealth().issues.join(' · '))}</p><p>Trading today: <b>${tradingToday()[0]}</b> · ${esc(tradingToday()[1])}</p>`)}
       ${card('Market regime', `<div class="big ${/OFF/.test(r?.label || '') ? 'down' : 'up'}">${esc(r?.label || '–')}</div><p>${esc(r?.detail || '')}</p><p>Today's call: <b>${esc(D.latest?.action || '–')}</b></p>`)}
-      ${card('ClaudeBot', `<div class="big ${cls(cryptoIdx() - 100)}">${pct(cryptoIdx() - 100)}</div><p>Crypto since start · options ${usd(optPnl())} realized</p><p>${livePos().length ? 'Open: ' + esc(livePos().join(' · ')) : 'All cash right now'}${paperSpread() ? ' · paper: ' + esc(paperSpread()) : ''}</p>`)}
+      ${card('ClaudeBot', `<div class="big ${cls(cryptoIdx() - 100)}">${pct(cryptoIdx() - 100)}</div><p>Crypto simulated/index snapshot; options ${usd(optPnl())} live-tagged ledger estimate (not broker-verified)</p><p>${livePos().length ? 'Open: ' + esc(livePos().join(' · ')) : 'All cash right now'}${paperSpread() ? ' · paper: ' + esc(paperSpread()) : ''}</p>`)}
       ${card('Legacy Teststock engine (not ClaudeBot)', `<p>The older stock engine reports <b>${esc(h?.status || '–')}</b> with new risk <b>${esc(h?.newRiskPermission || '–')}</b>. Its live trading is locked by design and ClaudeBot does not depend on it. Its reasons:</p><ul class="list">${(h?.reasons || []).map(x => li(esc(x), 'y')).join('') || li('Nothing blocking', 'g')}</ul>`, 'span2')}
       ${orgCard()}
       ${card('Up next', `<ul class="list">${li('Price scan: every hour at :04')}${li('ClaudeBot trade check: every hour at :14')}${li(blackoutToday() ? 'Options: no new spreads today (' + esc(blackoutToday()) + ')' : 'Options: entries 9:00–1:30 CT', blackoutToday() ? 'y' : 'g')}</ul>`)}
@@ -902,13 +902,13 @@ const CONSOLES = {
   },
   trading() {
     const s = D.sig, lo = D.oled, cr = D.led;
-    const t = [...(cr?.trades || []).map(x => ({ w: x.symbol, e: x.enteredAt, x: x.exitedAt, r: pct(x.returnPct), why: x.exitReason, c: x.returnPct })), ...(lo?.trades || []).map(x => ({ w: x.label, e: x.enteredAt, x: x.exitedAt, r: usd(x.pnlUsd), why: x.reason, c: x.pnlUsd }))].sort((a, b) => new Date(b.x) - new Date(a.x));
-    return `<div class="ch"><h2>📈 Trading Floor</h2><span class="who">Crypto and Options trade the agent-enabled Robinhood account</span></div>
+    const t = [...(cr?.trades || []).map(x => ({ w: x.symbol, e: x.enteredAt, x: x.exitedAt, r: pct(x.returnPct), why: x.exitReason, c: x.returnPct, source: 'Index / unverified' })), ...(lo?.trades || []).map(x => ({ w: x.label, e: x.enteredAt, x: x.exitedAt, r: usd(x.pnlUsd), why: x.reason, c: x.pnlUsd, source: x.mode === 'paper' ? 'PAPER / simulation' : x.mode === 'live' ? 'LIVE-TAGGED / unverified' : 'UNKNOWN / unverified' }))].sort((a, b) => new Date(b.x) - new Date(a.x));
+    return `<div class="ch"><h2>📈 Trading Floor</h2><span class="who">Published ledger activity; paper, unknown and broker-confirmed results are different</span></div>
     <div class="cgrid">
       ${card('Crypto desk', cr?.open ? `<div class="big org">${esc(cr.open.symbol)}</div><p>Entry ${cr.open.entryPrice} · stop ${cr.open.stop} · target ${cr.open.target} · ${cr.open.allocationPct}% of account</p>` : `<div class="big">CASH</div><p>${s?.regime?.riskOff ? 'Bitcoin risk-off.' : s?.bestCandidate ? 'Setup: ' + esc(s.bestCandidate) : 'No coin passes every check.'} Max $15 per buy; stop placed at fill.</p>`)}
       ${card('Options desk', lo?.open ? `<div class="big org">${esc(lo.open.label)}</div><p>Credit ${lo.open.credit} · max loss $${lo.open.maxLossUsd} · delta ${lo.open.shortDelta}</p>` : `<div class="big">NO SPREAD</div><p>${blackoutToday() ? 'Event pause: ' + esc(blackoutToday()) : 'Scans SPY, DIA, KRE, IWM, XLF 9:00–1:30 CT.'} Mode: <b>${esc((lo?.mode || '').toUpperCase())}</b></p>`)}
-      ${card('Results since start', `<div class="big ${cls(cryptoIdx() - 100)}">${pct(cryptoIdx() - 100)}</div><p>crypto index · options ${usd(optPnl())} over ${(lo?.trades || []).length} spreads</p>`)}
-      ${card('Recent trades', t.length ? `<div class="scroll"><table><thead><tr><th>What</th><th>Opened</th><th>Closed</th><th>Result</th><th>Why</th></tr></thead><tbody>${t.slice(0, 8).map(r => `<tr><td><b>${esc(r.w)}</b></td><td>${when(r.e)}</td><td>${when(r.x)}</td><td class="mono ${cls(r.c)}">${r.r}</td><td>${esc(r.why)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No closed trades yet. The bot only trades when every check passes.</div>', 'span3')}
+      ${card('Results since start', `<div class="big ${cls(cryptoIdx() - 100)}">${pct(cryptoIdx() - 100)}</div><p>crypto reference index (not broker dollars) · options live-tagged ledger estimate ${usd(optPnl())} (unverified)</p>`)}
+      ${card('Recent trades', t.length ? `<div class="scroll"><table><thead><tr><th>What</th><th>Source</th><th>Opened</th><th>Closed</th><th>Result</th><th>Why</th></tr></thead><tbody>${t.slice(0, 8).map(r => `<tr><td><b>${esc(r.w)}</b></td><td>${esc(r.source)}</td><td>${when(r.e)}</td><td>${when(r.x)}</td><td class="mono ${cls(r.c)}">${r.r}</td><td>${esc(r.why)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No closed trades yet. The bot only trades when every check passes.</div>', 'span3')}
     </div>`;
   },
   risk() {
@@ -924,15 +924,15 @@ const CONSOLES = {
   },
   vault() {
     const ct = D.led?.trades || [], ot = D.oled?.trades || [];
-    const all = [...ct.map(t => ({ k: 'Crypto', w: t.symbol, x: t.exitedAt, r: pct(t.returnPct), a: pct(t.accountImpactPct), c: t.returnPct })), ...ot.map(t => ({ k: 'Options', w: t.label, x: t.exitedAt, r: usd(t.pnlUsd), a: `credit ${t.credit} → ${t.debit}`, c: t.pnlUsd }))].sort((a, b) => new Date(b.x) - new Date(a.x));
+    const all = [...ct.map(t => ({ k: 'Crypto', w: t.symbol, x: t.exitedAt, r: pct(t.returnPct), a: pct(t.accountImpactPct), c: t.returnPct, source: 'Index / unverified' })), ...ot.map(t => ({ k: 'Options', w: t.label, x: t.exitedAt, r: usd(t.pnlUsd), a: `credit ${t.credit} → ${t.debit}`, c: t.pnlUsd, source: t.mode === 'paper' ? 'PAPER' : t.mode === 'live' ? 'LIVE-TAGGED (unverified)' : 'UNKNOWN (unverified)' }))].sort((a, b) => new Date(b.x) - new Date(a.x));
     const wins = all.filter(t => t.c > 0).length;
-    return `<div class="ch"><h2>📒 Vault · Ledger</h2><span class="who">Every fill, from Robinhood-confirmed prices</span></div>
+    return `<div class="ch"><h2>📒 Vault · Ledger</h2><span class="who">Published strategy journals; NOT independently broker-confirmed fills</span></div>
     <div class="cgrid">
-      ${card('Closed trades', `<div class="big">${all.length}</div><p>${wins} won · ${all.length - wins} lost</p>`)}
+      ${card('Published-ledger closures (ALL modes)', `<div class="big">${all.length}</div><p>${wins} positive · ${all.length - wins} nonpositive · includes paper/unknown records, NOT broker-verified</p>`)}
       ${card('Crypto since start', `<div class="big ${cls(cryptoIdx() - 100)}">${pct(cryptoIdx() - 100)}</div><p>equity index (start = 100)</p>`)}
-      ${card('Options realized', `<div class="big ${cls(optPnl())}">${usd(optPnl())}</div><p>per-spread dollars after fees</p>`)}
+      ${card('Options ledger, explicitly live-tagged only', `<div class="big ${cls(optPnl())}">${usd(optPnl())}</div><p>excludes paper and untagged trades · still NOT broker-verified</p>`)}
       ${payrollCard()}
-      ${card('Ledger', all.length ? `<div class="scroll"><table><thead><tr><th>Desk</th><th>Trade</th><th>Closed</th><th>Result</th><th>Detail</th></tr></thead><tbody>${all.map(t => `<tr><td>${t.k}</td><td><b>${esc(t.w)}</b></td><td>${when(t.x)}</td><td class="mono ${cls(t.c)}">${t.r}</td><td>${esc(t.a)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">The books are empty, so no trades have closed yet.</div>', 'span3')}
+      ${card('Ledger', all.length ? `<div class="scroll"><table><thead><tr><th>Desk</th><th>Source</th><th>Trade</th><th>Closed</th><th>Result</th><th>Detail</th></tr></thead><tbody>${all.map(t => `<tr><td>${t.k}</td><td>${esc(t.source)}</td><td><b>${esc(t.w)}</b></td><td>${when(t.x)}</td><td class="mono ${cls(t.c)}">${t.r}</td><td>${esc(t.a)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">The books are empty, so no trades have closed yet.</div>', 'span3')}
     </div>`;
   },
 };
@@ -999,11 +999,11 @@ function paperCard() {
 function payrollCard() {
   const p = payroll(); const order = ['claude', 'atlas', 'analyst', 'guard', 'quinn', 'clio', 'moxie', 'vega', 'scout', 'medic', 'ledger', 'planner', 'options'];
   const gc = g => g === 'A' || g === 'B' ? 'up' : g === 'C' ? 'warn' : 'down';
-  const v = { profit: ['up', `The company made ${usd(p.wk.usd)} this week: full pay plus a ${credits(p.pool)} profit-sharing bonus.`], flat: ['warn', `No money made or lost this week (${p.wk.trades} closed trades): <b>half pay</b>. Capital was protected but nothing was earned.`], loss: ['down', `The company lost ${usd(p.wk.usd)} this week: <b>no paychecks</b>. Everyone's pay is docked to zero until results turn positive.`] }[p.wk.verdict];
+  const v = { profit: ['up', `Published ledgers suggest ${usd(p.wk.usd)} this week (UNVERIFIED): full pay plus a ${credits(p.pool)} profit-sharing bonus.`], flat: ['warn', `Published ledger estimate was flat (${p.wk.trades} closures, NOT broker verified): <b>half pay</b>. Capital was protected but nothing was earned.`], loss: ['down', `Published ledgers suggest a loss of ${usd(p.wk.usd)} this week (UNVERIFIED): <b>no paychecks</b>. Everyone's pay is docked to zero until results turn positive.`] }[p.wk.verdict];
   const lastTxt = { profit: `Last week: profit ${usd(p.last.usd)} · full pay`, flat: 'Last week: flat · half pay', loss: `Last week: loss ${usd(p.last.usd)} · no pay` }[p.last.verdict];
-  return card('🎮 Office payroll · just for fun', `${(D.hr?.fired || []).length ? `<p style="margin:0 0 8px" class="warn"><b>Fired:</b> ${D.hr.fired.map(f => `${esc(f.agent)} (${esc(f.date)}): ${esc(f.reason)}`).join(' · ')}</p>` : ''}<p style="margin:0 0 8px">Agents earn made-up <b>HQ credits</b>. Their score comes from doing their real jobs well, and from passing their boss's audit. <b>How much of it gets paid depends on the company's real result this week</b>: profit means full pay plus a bonus, flat means half pay, a loss means no paychecks. <b>No real money is paid, and credits are not dollars.</b></p>
+  return card('🎮 Office payroll · just for fun', `${(D.hr?.fired || []).length ? `<p style="margin:0 0 8px" class="warn"><b>Fired:</b> ${D.hr.fired.map(f => `${esc(f.agent)} (${esc(f.date)}): ${esc(f.reason)}`).join(' · ')}</p>` : ''}<p style="margin:0 0 8px">Agents earn made-up <b>HQ credits</b>. Their score comes from doing their real jobs well, and from passing their boss's audit. <b>How much of it gets paid depends on unverified published-ledger estimates, NOT actual broker profit</b>: profit means full pay plus a bonus, flat means half pay, a loss means no paychecks. <b>No real money is paid, and credits are not dollars.</b></p>
     <p class="${v[0]}" style="font-weight:600">${v[1]}</p>
-    <p>🏆 <b>$1K bonus:</b> when trading profits grow the $117 start to <b>$1,000</b>, everyone shares a one-time <b>🪙 100,000</b> bonus. Progress: <b class="${cls(p.life)}">${usd(p.life)}</b> of ${usd(p.goal)} (${Math.max(0, Math.min(100, p.life / p.goal * 100)).toFixed(1)}%)${p.hit ? ' · <b class="up">HIT!</b>' : ''}</p>
+    <p>🏆 <b>$1K bonus:</b> when the simulated HQ scoreboard grows the $117 reference start to <b>$1,000</b>, everyone shares a one-time <b>🪙 100,000</b> bonus. Progress: <b class="${cls(p.life)}">${usd(p.life)}</b> of ${usd(p.goal)} (${Math.max(0, Math.min(100, p.life / p.goal * 100)).toFixed(1)}%)${p.hit ? ' · <b class="up">HIT!</b>' : ''}</p>
     <div class="scroll"><table><thead><tr><th>Agent</th><th>Boss</th><th>Score</th><th>Grade</th><th>Earned</th><th>Docked</th><th>Bonus</th><th>Paycheck</th><th>Why</th></tr></thead><tbody>${order.map(k => { const r = p.rows[k], a = agents[k];
       return `<tr><td><b style="color:${a.kind === 'chief' ? '#fff' : a.color}">${a.name}</b> <span style="color:var(--muted);font-size:11px">${esc(a.title || '')}</span></td><td>${a.boss ? agents[a.boss].name : '–'}</td><td class="mono">${r.score}</td><td class="mono ${gc(r.grade)}">${r.grade}</td><td class="mono">${credits(r.earned)}</td><td class="mono ${r.docked ? 'down' : ''}">${r.docked ? '−' + credits(r.docked).slice(3) : '0'}</td><td class="mono">${credits(r.bonus)}</td><td class="mono"><b>${credits(r.pay)}</b></td><td style="white-space:normal;color:var(--muted)">${esc(r.why)}</td></tr>`; }).join('')}</tbody></table></div>
     <p>Total paychecks <b>${credits(p.total)}</b> · team score <b>${p.team}</b> · ${lastTxt} · next payday ${nextPayday()}</p>`, 'span3');
@@ -1039,7 +1039,7 @@ CONSOLES.strategy = function () {
   return `<div class="ch"><h2>🧠 Strategy Lab</h2><span class="who">Quinn the Strategist runs the live Dip desk</span></div>
   <div class="cgrid">
     ${card('Dip desk (LIVE)', o ? `<div class="big org">${esc(o.symbol)}</div><p>$${o.usd} bought at ${o.entryPrice} on ${when(o.enteredAt)}. Sells on the bounce (above its 5-day average), after 10 days, or at a ${c?.exit?.stopPct ?? 5}% stop.</p>` : `<div class="big">WAITING</div><p>Buys $${c?.risk?.positionUsd ?? 25} of SPY, QQQ, DIA or IWM in the last run before the close when RSI(2) &lt; ${c?.entry?.rsi2Below ?? 5} and it's above its 200-day average.</p>`)}
-    ${card('Results', `<div class="big ${cls(dipPnl())}">${usd(dipPnl())}</div><p>${tr.length} trades · ${wins} won · ${tr.length - wins} lost</p>`)}
+    ${card('Dip ledger results (NOT broker verified)', `<div class="big ${cls(dipPnl())}">${usd(dipPnl())}</div><p>${tr.length} ledger closures · ${wins} positive · ${tr.length - wins} nonpositive. Confirm against Robinhood before calling this real profit.</p>`)}
     ${card('Why we hired for this', bt ? `<ul class="list">${li(`Picked on 2023–24, then tested on unseen 2025–26: <b>${bt.test.trades} trades, ${bt.test.winRatePct}% wins, +${bt.test.avgTradePct}%/trade</b>, profit factor ${bt.test.profitFactor}`, 'g')}${li(`All ${D.dbt.combosWithPositiveTest} nearby settings were profitable out of sample`, 'g')}${li('Caveat: 2023–26 was mostly a rising market. A bear market will be harder; the 200-day filter keeps it out of downtrends.', 'y')}</ul>` : '<div class="empty">Backtest loading.</div>')}
     ${histCard()}
     ${card('Dip trades', tr.length ? `<div class="scroll"><table><thead><tr><th>ETF</th><th>Bought</th><th>Sold</th><th>Entry</th><th>Exit</th><th>Result</th><th>Why</th></tr></thead><tbody>${tr.slice().reverse().map(t => `<tr><td><b>${t.symbol}</b></td><td>${when(t.enteredAt)}</td><td>${when(t.exitedAt)}</td><td class="mono">${t.entryPrice}</td><td class="mono">${t.exitPrice}</td><td class="mono ${cls(t.pnlUsd)}">${usd(t.pnlUsd)} (${pct(t.returnPct)})</td><td>${esc(t.reason)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No dip trades yet. Dips like this come a couple of times a month.</div>', 'span3')}
