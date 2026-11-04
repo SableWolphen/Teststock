@@ -29,3 +29,12 @@ test('real, ledger estimates and paper profit labels remain distinct', () => {
   assert.ok(script.includes('Simulated paper P&L (not actual cash)'));
   assert.match(html, /hq\.css\?v=/);
 });
+
+test('new mobile overflow guards and refreshed assets expose complete numbers', () => {
+  assert.match(css, /\.kpi \.l,\.kpi \.v,\.kpi \.s\s*\{[^}]*overflow:visible;text-overflow:clip/);
+  assert.match(css, /\.kpi \.v\{white-space:pre-line\}/);
+  assert.match(css, /\.kpis\{grid-template-columns:minmax\(0,1fr\)!important/);
+  assert.match(html, /hq\.css\?v=20261103-mobile-visible119/);
+  assert.match(html, /hq\.js\?v=20261103-mobile-visible119/);
+  assert.ok(script.includes('Closed ${usd(ma.closed)}\\nOpen ${usd(ma.open)}'));
+});
