@@ -41,9 +41,10 @@ const ROOMS = {
   risk:        { name: 'Risk Office', short: 'Risk', x0: 10, x1: 15, y0: 8, y1: 14, c: ['#5a3a44', '#53363f'], icon: '🛡️' },
   vault:       { name: 'Vault · Ledger', short: 'Vault', x0: 15, x1: 20, y0: 8, y1: 14, c: ['#5e5640', '#57503b'], icon: '📒' },
   strategy:    { name: 'Strategy Lab', short: 'Strategy', x0: 20, x1: 30, y0: 0, y1: 6, c: ['#4a3d66', '#44385e'], icon: '🧠' },
-  breakroom:   { name: 'Break Room', short: 'Break', x0: 20, x1: 30, y0: 8, y1: 14, c: ['#6b4f3a', '#634935'], icon: '☕' },
+  breakroom:   { name: 'Break Room', short: 'Break', x0: 20, x1: 25, y0: 8, y1: 14, c: ['#6b4f3a', '#634935'], icon: '☕' },
+  profitability: { name: 'Profitability Control Center', short: 'Profitability', x0: 25, x1: 30, y0: 8, y1: 14, c: ['#25534d', '#204a44'], icon: '💹' },
 };
-const ROOM_IDS = ['lobby', 'research', 'diagnostics', 'freedom', 'strategy', 'trading', 'risk', 'vault', 'breakroom'];
+const ROOM_IDS = ['lobby', 'research', 'diagnostics', 'freedom', 'strategy', 'trading', 'risk', 'vault', 'breakroom', 'profitability'];
 const roomOf = (x, y) => Object.entries(ROOMS).find(([k, r]) => k !== 'hall' && x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1)?.[0] || 'hall';
 const doorX = id => id === 'trading' ? 5 : id === 'breakroom' ? 22.5 : (ROOMS[id].x0 + ROOMS[id].x1) / 2;
 const isBack = id => ROOMS[id].y1 <= 6;
@@ -127,12 +128,12 @@ function glass(x0, y0, x1, y1, h) {
 }
 // partitions between back rooms and along the hall, with door gaps
 for (const x of [5, 10, 15, 20]) glass(x, 0, x, 6, 66);
-for (const x of [10, 15, 20]) glass(x, 8, x, 14, 30);
+for (const x of [10, 15, 20, 25]) glass(x, 8, x, 14, 30);
 function wallWithDoors(y, h, doors) {
   let x = 0; for (const dx of [...doors, 99].sort((a, b) => a - b)) { const e = Math.min(dx - .8, W); if (e > x + .05) glass(x, y, e, y, h); x = dx + .8; if (x >= W) break; }
 }
 wallWithDoors(6, 66, ['lobby', 'research', 'diagnostics', 'freedom', 'strategy'].map(doorX));
-wallWithDoors(8, 26, ['trading', 'risk', 'vault', 'breakroom'].map(doorX));
+wallWithDoors(8, 26, ['trading', 'risk', 'vault', 'breakroom', 'profitability'].map(doorX));
 
 // furniture
 const glows = [];
@@ -189,8 +190,9 @@ plant(24.4, 13.3, .9); lamp(20.4, 11.0);
 // every agent has their own bed (drawn after the team is defined, see BEDS below)
 function bed(x, y, col, name) { const g = obj(x + y + 2.0); box(g, x, y, .95, 1.6, 9, '#3a3f55'); box(g, x + .05, y + .45, .85, 1.1, 5, col, 9); box(g, x + .1, y + .07, .75, .34, 6, '#e8ecf4', 9); box(g, x, y, .95, .09, 24, '#4a5070');
   if (name) { const p = iso(x + .48, y, 27); const t = el('text', { x: p[0], y: p[1], fill: '#dfe5ff', 'font-size': 7.5, 'font-weight': 800, 'text-anchor': 'middle' }, g); t.textContent = name; } }
-// break room annex
-couch(25.6, 12.6, '#5a6e8a'); rtable(27.6, 10.4); stool(26.8, 10.0); stool(28.4, 10.8); plant(29.4, 8.6, .9);
+// Profitability center: separate evidence, friction, and broker-verification desks.
+desk(25.45, 8.95, '#21574b', '#3ddc84', 1.6); desk(27.7, 9.15, '#21574b', '#f5c451', 1.6);
+rack(29.05, 11.0, 'PROOF'); plant(25.3, 13.1, .8); lamp(29.35, 13.1);
 // vault
 safe(18.3, 8.6); cabinet(15.6, 8.55); cabinet(16.3, 8.55); shelf(19.3, 10.6, .6, 2.6); lamp(15.7, 13.3);
 
@@ -212,9 +214,12 @@ const AG = {
   quinn:   { name: 'Quinn',   role: 'Strategist · runs the live Dip desk', room: 'strategy', home: [21.9, 3.0], color: '#38bdf8', kind: 'bunny', boss: 'analyst', title: 'Strategist' },
   clio:    { name: 'Clio',    role: 'Historian & CIO · re-tests every strategy weekly, writes the CIO memo on where money goes', room: 'strategy', home: [23.4, 4.6], color: '#c4b5fd', kind: 'owl' , boss: 'analyst', title: 'Historian' },
   moxie:   { name: 'Moxie',   role: 'Moonshot scout · beaten-down stocks turning around, cheap long-dated calls (paper only)', room: 'strategy', home: [26.2, 3.4], color: '#fb923c', kind: 'cat', boss: 'analyst', title: 'Moonshot scout' },
+  edge:    { name: 'Edge', role: 'Evidence analyst · independent forward samples, positive after-cost expectancy and minimum trade counts', room: 'profitability', home: [26.1, 11.3], color: '#3ddc84', kind: 'robot', boss: 'analyst', title: 'Profitability analyst' },
+  friction: { name: 'Friction', role: 'Cost auditor · double-cost survival, fill quality and slippage stress', room: 'profitability', home: [28.4, 11.8], color: '#f5c451', kind: 'owl', boss: 'guard', title: 'Execution-cost auditor' },
+  proof:   { name: 'Proof', role: 'Broker verifier · separates Robinhood-confirmed results from public ledgers and paper performance', room: 'profitability', home: [27.2, 13.0], color: '#7c9cff', kind: 'cat', boss: 'ledger', title: 'Broker evidence steward' },
   vega:    { name: 'Vega',    role: 'Options race lead · 14 paper versions, 5-specialist ensemble, learned price forecast (paper only)', room: 'research', home: [7.4, 5.3], color: '#facc15', kind: 'robot', boss: 'analyst', title: 'Options race' },
 };
-const BEDS = Object.keys(AG).map((k, i) => [25.25 + (i % 4) * 1.15, .3 + Math.floor(i / 4) * 1.9]);
+const BEDS = Object.keys(AG).map((k, i) => [25.25 + (i % 4) * 1.15, .3 + Math.floor(i / 4) * 1.1]);
 function charSVG(kind, c) {
   const leg = shade(c, -34);
   const legs = `<rect x="-9" y="-12" width="7" height="11" rx="3.5" fill="${leg}"/><rect x="2" y="-12" width="7" height="11" rx="3.5" fill="${leg}"/>`;
@@ -337,11 +342,11 @@ async function getPrivateBrokerSummary() {
   } catch { return null; }
 }
 async function refresh() {
-  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit] = await Promise.all([
+  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission] = await Promise.all([
     getJSON('docs/data/claudebot-signal.json'), getJSON('docs/data/claudebot-ledger.json'), getJSON('docs/data/claudebot-options-ledger.json'),
     getJSON('docs/data/live-trading-health.json'), getJSON('docs/data/latest-50.json'), getJSON('claudebot/options_config.json'), getJSON('claudebot/config.json'),
-    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json'), getJSON('docs/data/claudebot-crypto-paper.json'), getJSON('docs/data/claudebot-optscalp-paper.json'), getJSON('docs/data/claudebot-moonshot-paper.json'), getJSON('docs/data/claudebot-hr.json'), getJSON('docs/data/claudebot-decision-scorecard.json'), getJSON('docs/data/claudebot-edge-readiness.json'), getJSON('docs/data/claudebot-tournament-scorecard.json'), getJSON('docs/data/claudebot-daily-profit.json')]);
-  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit });
+    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json'), getJSON('docs/data/claudebot-crypto-paper.json'), getJSON('docs/data/claudebot-optscalp-paper.json'), getJSON('docs/data/claudebot-moonshot-paper.json'), getJSON('docs/data/claudebot-hr.json'), getJSON('docs/data/claudebot-decision-scorecard.json'), getJSON('docs/data/claudebot-edge-readiness.json'), getJSON('docs/data/claudebot-tournament-scorecard.json'), getJSON('docs/data/claudebot-daily-profit.json'), getJSON('docs/data/options-profitability-admission.json')]);
+  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission });
   D.privateBroker = await getPrivateBrokerSummary();
   renderAll();
 }
@@ -704,7 +709,21 @@ function renderWalls() {
     spark.setAttribute('points', P(v.map((p, i) => iso(.04, 13.2 - i / (v.length - 1) * 4.4, 46 + (p - mn) / ((mx - mn) || 1) * 34)))); spark.setAttribute('stroke', c.trend === 'down' ? '#ff6b7a' : '#3ddc84');
     tickT.textContent = `${c.symbol} ${c.change24hPct > 0 ? '+' : ''}${c.change24hPct}% 24h`; }
 }
+function profitEvidence() {
+  const t = D.tournament, rows = Array.isArray(t?.etfLeaderboard) ? t.etfLeaderboard : [];
+  const age = Date.now() - Date.parse(t?.generatedAt || '');
+  const fresh = t?.mode === 'PAPER_ONLY' && Number.isFinite(age) && age >= 0 && age < 36 * 3600000;
+  const passing = fresh ? rows.filter(r => r.paperReviewCandidate === true &&
+    Number(r.independentTrades) >= 50 && Number(r.entrySessions) >= 30 &&
+    Number.isFinite(r.profitFactor) && r.profitFactor > 1.3 &&
+    Number(r.netPaperUsd) > 0 && Number(r.netDoubleCostUsd) > 0 &&
+    Object.values(r.checks || {}).every(Boolean)) : [];
+  return { t, rows, fresh, passing, liveAllowed: false, broker: Boolean(D.privateBroker) };
+}
 function agentStatus(a) {
+  if (a.k === 'edge') { const e = profitEvidence(); return e.fresh ? ['work', e.passing.length + ' paper candidate(s) pass all checks'] : ['warn', 'Research evidence stale or missing']; }
+  if (a.k === 'friction') { const e = profitEvidence(); return e.fresh ? ['work', 'Reviewing modeled trading friction'] : ['warn', 'Cost evidence stale']; }
+  if (a.k === 'proof') return D.privateBroker ? ['ok', 'Private broker snapshot verified'] : ['warn', 'Broker P&L unverified'];
   if ((D.hr?.fired || []).some(f => f.agent === a.k)) return ['', 'Retired · no active assignment'];
   const checks = (D.audit?.reports || []).flatMap(r => r.checks || []).filter(c => c.agent === a.k);
   if (checks.some(c => c.status === 'fail')) return ['bad', 'Assigned check failed'];
@@ -735,7 +754,7 @@ function agentStatus(a) {
 }
 const DOTC = { rest: '#6b7bb8', work: '#7c78ff', walk: '#3ccfcf', talk: '#ffffff', hold: '#ff8a3d', warn: '#f5c451', ok: '#3ddc84', bad: '#ff5c6c' };
 function renderRoster() {
-  const groups = [['CEO', ['claude']], ['Operations · Atlas', ['atlas', 'medic', 'ledger', 'planner']], ['Research · Analyst', ['analyst', 'quinn', 'clio', 'moxie', 'vega', 'scout']], ['Risk & Trading · Guard', ['guard', 'options']]];
+  const groups = [['CEO', ['claude']], ['Operations · Atlas', ['atlas', 'medic', 'ledger', 'planner']], ['Research · Analyst', ['analyst', 'quinn', 'clio', 'moxie', 'vega', 'scout']], ['Risk & Trading · Guard', ['guard', 'options']], ['Profitability · independent evidence', ['edge', 'friction', 'proof']]];
   $('roster').innerHTML = groups.map(([g, ks]) => `<div class="grp">${g}<span>${ks.length}</span></div>` + ks.map(k => { const a = agents[k];
     return `<div class="ag" data-k="${k}"><div class="av"><svg viewBox="-24 -64 48 66">${charSVG(a.kind, a.color)}</svg></div><div class="mid"><div class="n">${a.name} <span style="color:var(--muted);font-weight:500;font-size:11.5px">${esc(a.title || '')}</span></div><div class="r">${a.boss ? 'Reports to ' + agents[a.boss].name + ' · ' : ''}${esc(a.role)}</div></div><span class="stt" id="st-${k}"></span></div>`; }).join('')).join('');
   document.querySelectorAll('.ag').forEach(x => x.onclick = () => focusAgent(x.dataset.k));
@@ -878,9 +897,44 @@ function tournamentHealthCard() {
 
 const CONSOLES = {
   office() {
-    return `<div class="ch"><h2>🏢 Whole office</h2><span class="who">Thirteen agents in nine rooms, led by Claude (CEO) · click a room to open it</span></div>
+    return `<div class="ch"><h2>🏢 Whole office</h2><span class="who">Sixteen illustrated agents in ten rooms, led by Claude (CEO) · click a room to open it</span></div>
     <div class="cgrid">${ROOM_IDS.map(id => card(`${ROOMS[id].icon} ${ROOMS[id].name}`, `<p>${esc(ROOM_BLURB[id])}</p><p><a href="#${id}" style="color:var(--accent);font-weight:600;text-decoration:none">Open room →</a></p>`)).join('')}
     ${card('How it works', '<p>GitHub scans prices and research every hour. The hourly ClaudeBot task checks Robinhood, follows the rules in its planners, places or skips trades, and publishes what it did. The office characters illustrate reported activity; their conversations are not proof that an autonomous agent ran. Use the audit and broker records for verification.</p>', 'span2')}</div>`;
+  },
+  profitability() {
+    const e = profitEvidence(), t = e.t, d = D.dailyProfit, op = D.optionAdmission;
+    const rows = e.rows.map(r => '<tr><td><b>' + esc(r.name || r.id || 'Strategy') +
+      '</b></td><td class="mono">' + Number(r.independentTrades || 0) +
+      '</td><td class="mono">' + (r.profitFactor == null ? '—' : Number(r.profitFactor).toFixed(2)) +
+      '</td><td class="mono ' + cls(Number(r.netPaperUsd || 0)) + '">' + usd(r.netPaperUsd || 0) +
+      '</td><td class="mono ' + cls(Number(r.netDoubleCostUsd || 0)) + '">' + usd(r.netDoubleCostUsd || 0) +
+      '</td><td>' + esc(r.decision || 'UNVERIFIED') + '</td></tr>').join('');
+    const risks = [
+      !e.fresh ? 'Tournament evidence is missing or stale' : null,
+      e.passing.length === 0 ? 'No independently qualified ETF strategy' : null,
+      !D.privateBroker ? 'Robinhood P&L and holdings are not verified on this public site' : null,
+      op?.state !== 'LIVE_ADMITTED' ? 'Options strategy has not earned full admission' : null
+    ].filter(Boolean);
+    return '<div class="ch"><h2>💹 Profitability Control Center</h2>' +
+      '<span class="who">Edge · Friction · Proof | evidence monitoring, not autonomous live execution</span>' +
+      '<a class="full" href="PRIVATE-BROKER-VERIFICATION.md">Verification contract ↗</a></div>' +
+      '<div class="profit-banner"><b>NEW LIVE STRATEGIES: NOT APPROVED</b><span>Research and paper results cannot authorize orders. No guaranteed profit and no automatic strategy promotion.</span></div>' +
+      '<div class="profit-metrics">' +
+      '<div><span>Forward paper strategies</span><strong>' + (e.fresh ? e.rows.length : '—') + '</strong><small>' + (e.fresh ? 'Modeled fills only' : 'Missing / stale evidence') + '</small></div>' +
+      '<div><span>Passed all independent checks</span><strong>' + (e.fresh ? e.passing.length : '—') + '</strong><small>Paper review only, never order permission</small></div>' +
+      '<div><span>Actual broker performance</span><strong>' + (e.broker ? 'PRIVATE VERIFIED' : 'UNVERIFIED') + '</strong><small>' + (e.broker ? 'Authenticated snapshot' : 'Not inferred from GitHub') + '</small></div>' +
+      '<div><span>Options evidence lane</span><strong>' + esc(op?.state || 'UNKNOWN') + '</strong><small>' + Number(op?.shadow?.samples || 0) + ' independent shadow samples</small></div></div>' +
+      '<div class="cgrid">' +
+      card('Priority blockers', '<ul class="list">' + (risks.length ? risks.map(x => li(esc(x), 'y')).join('') : li('Review model data and independent broker gates before any deployment', 'y')) + '</ul>') +
+      card('Strategy decision', '<div class="big warn">' + esc(t?.decision || 'UNKNOWN') + '</div><p>Cash benchmark: no forced trades. Research snapshot: ' + (e.fresh ? ago(t.generatedAt) : 'unavailable / stale') + '.</p><p>Any live decision remains subject to separate safety policy and broker authorization.</p>') +
+      card('Daily profit accountability', '<p>Public research only, NOT an actual account statement.</p><p>Last paper session: <b>' + esc(d?.latestPaperDay?.session || 'unavailable') + '</b></p><p>Daily audit: ' + esc(d?.paperSourceStatus || 'UNKNOWN') + '</p>') +
+      card('Forward paper tournament', '<p>All P&L amounts below are simulated, with modeled spreads and slippage. Independent executable fills and out-of-sample validation are still required.</p><div class="scroll"><table><thead><tr><th>Strategy</th><th>Independent</th><th>PF</th><th>Net paper</th><th>Double-cost</th><th>Evidence status</th></tr></thead><tbody>' + (rows || '<tr><td colspan="6">No trustworthy strategy results yet</td></tr>') + '</tbody></table></div>', 'span3') +
+      card('Meet the evidence team', '<ul class="list">' +
+        li('<b>Edge:</b> forward-trade independence, sample size, risk-adjusted expectancy') +
+        li('<b>Friction:</b> spread, slippage and doubled-cost stress; no paper fills presented as executable') +
+        li('<b>Proof:</b> actual broker reconciliation and private-vs-public source separation') +
+        '</ul><p>Agents are dashboard characters representing checks. They do not independently trade, run jobs, or change risk rules.</p>', 'span3') +
+      '</div>';
   },
   lobby() {
     const h = D.health, r = D.latest?.regime;
@@ -1091,8 +1145,8 @@ CONSOLES.breakroom = function () {
     ${card('House rules', `<ul class="list">${li('Breaks are short: trading checks never wait for coffee')}${li('No talking about positions you can\'t back with evidence')}${li('Ping-pong losers refill the coffee 🏓')}</ul>`)}
   </div>`;
 };
-const ROOM_BLURB = { lobby: 'ClaudeBot health, the org chart, management audit and market regime.', research: 'Stock watchlist, Scout\'s dip watch and the 🧪 Paper Lab.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The trade ledger, results and the 🎮 agent payroll.', strategy: 'Quinn, Clio the Historian, Moxie the moonshot scout and the live Dip desk: research, evidence, trades.', breakroom: 'Coffee, ping-pong and team morale.' };
-const TITLES = { office: ['Office', "What are ClaudeBot's agents doing right now?"], lobby: ['Lobby · Overview', 'The big picture'], research: ['Research Lab', 'What the agents are watching'], diagnostics: ['Diagnostics', 'Is everything healthy?'], freedom: ['Freedom Room', 'Planning the path to monthly income'], trading: ['Trading Floor', 'Positions and trades'], risk: ['Risk Office', 'The rules every order must pass'], vault: ['Vault · Ledger', 'Every trade on the record, plus the agent payroll game'], strategy: ['Strategy Lab', 'New ways to make money, tested before they trade'], breakroom: ['Break Room', 'Coffee, ping-pong and morale'] };
+const ROOM_BLURB = { lobby: 'ClaudeBot health, the org chart, management audit and market regime.', research: 'Stock watchlist, Scout\'s dip watch and the 🧪 Paper Lab.', diagnostics: 'Data freshness, runners, breakers and pipelines.', freedom: 'Your financial-freedom planner and milestones.', trading: 'What the crypto and options desks hold and did.', risk: 'Every limit, event pause and the strategy stress test.', vault: 'The trade ledger, results and the 🎮 agent payroll.', strategy: 'Quinn, Clio the Historian, Moxie the moonshot scout and the live Dip desk: research, evidence, trades.', breakroom: 'Coffee, ping-pong and team morale.', profitability: 'Forward-test results, cost stress, broker proof and blockers to new live strategies.' };
+const TITLES = { office: ['Office', "What are ClaudeBot's agents doing right now?"], lobby: ['Lobby · Overview', 'The big picture'], research: ['Research Lab', 'What the agents are watching'], diagnostics: ['Diagnostics', 'Is everything healthy?'], freedom: ['Freedom Room', 'Planning the path to monthly income'], trading: ['Trading Floor', 'Positions and trades'], risk: ['Risk Office', 'The rules every order must pass'], vault: ['Vault · Ledger', 'Every trade on the record, plus the agent payroll game'], strategy: ['Strategy Lab', 'New ways to make money, tested before they trade'], breakroom: ['Break Room', 'Coffee, ping-pong and morale'], profitability: ['Profitability Control Center', 'Evidence, costs and broker-proof checks'] };
 let current = 'office';
 function renderConsole() {
   $('console').innerHTML = CONSOLES[current]();

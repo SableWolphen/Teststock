@@ -16,10 +16,10 @@ test('financial KPI labels, values, and descriptions are not visually clipped', 
   }
 });
 
-test('phone layout uses full-width KPI cards and readable P&L amounts', () => {
+test('phone layout pairs compact KPIs while keeping broker provenance full-width', () => {
   const media = css.match(/@media \(max-width:600px\)\{([\s\S]*?)\n\}/);
   assert.ok(media, 'phone-specific KPI breakpoint');
-  assert.match(media[1], /\.kpis\{grid-template-columns:minmax\(0,1fr\)/);
+  assert.match(media[1], /\.kpis\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
   assert.match(media[1], /\.kpi \.v\{font-size:clamp\(/);
 });
 
@@ -33,8 +33,19 @@ test('real, ledger estimates and paper profit labels remain distinct', () => {
 test('new mobile overflow guards and refreshed assets expose complete numbers', () => {
   assert.match(css, /\.kpi \.l,\.kpi \.v,\.kpi \.s\s*\{[^}]*overflow:visible;text-overflow:clip/);
   assert.match(css, /\.kpi \.v\{white-space:pre-line\}/);
-  assert.match(css, /\.kpis\{grid-template-columns:minmax\(0,1fr\)!important/);
-  assert.match(html, /hq\.css\?v=20261103-mobile-visible119/);
-  assert.match(html, /hq\.js\?v=20261103-mobile-visible119/);
+  assert.match(css, /\.kpis\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
+  assert.match(html, /hq\.css\?v=20261103-profitability122/);
+  assert.match(html, /hq\.js\?v=20261103-profitability122/);
   assert.ok(script.includes('Closed ${usd(ma.closed)}\\nOpen ${usd(ma.open)}'));
+});
+
+test('profitability room and evidence agents show separate paper and broker sources', () => {
+  assert.match(html, /data-room="profitability"/);
+  for (const name of ["edge", "friction", "proof"]) assert.match(script, new RegExp(name + ":\\s*\\{ name:"));
+  assert.match(script, /profitability\(\)\s*\{/);
+  assert.ok(script.includes("D.optionAdmission"));
+  assert.ok(script.includes("D.tournament"));
+  assert.ok(script.includes("D.privateBroker"));
+  assert.ok(script.includes("No guaranteed profit and no automatic strategy promotion"));
+  assert.ok(script.includes("No independently qualified ETF strategy"));
 });
