@@ -755,7 +755,7 @@ function renderKpis() {
       ? 'Reconciled Robinhood data · verified ' + new Date(D.privateBroker.verifiedAt).toLocaleTimeString() + ' · selected account only'
       : 'No authenticated broker verification on this site · public ledger is not Robinhood proof', D.privateBroker ? 'up' : 'warn'],
     ['Broker realized / unrealized', D.privateBroker
-      ? 'Closed ' + usd(D.privateBroker.realizedPnlUsd) + '\\nOpen ' + usd(D.privateBroker.unrealizedPnlUsd)
+      ? 'Closed ' + usd(D.privateBroker.realizedPnlUsd) + '\nOpen ' + usd(D.privateBroker.unrealizedPnlUsd)
       : 'NOT AVAILABLE', D.privateBroker
       ? 'Broker-confirmed selected account · current snapshot, not public ledger'
       : 'Requires private authenticated broker reconciliation · never sourced from GitHub public files', D.privateBroker ? 'up' : 'warn'],
