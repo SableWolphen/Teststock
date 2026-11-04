@@ -770,16 +770,16 @@ function renderKpis() {
   const runs = [...(D.led?.runs || []), ...(D.oled?.runs || [])].sort((a, b) => new Date(b.t) - new Date(a.t));
   const mt = madeToday(), ma = madeAllTime();
   const k = [
-    ['REAL broker P&L', D.privateBroker ? 'Verified privately' : 'UNVERIFIED', D.privateBroker
+    ['REAL broker P&L', D.privateBroker ? 'Verified privately' : 'NOT CONNECTED', D.privateBroker
       ? 'Reconciled Robinhood data · verified ' + new Date(D.privateBroker.verifiedAt).toLocaleTimeString() + ' · selected account only'
-      : 'No authenticated broker verification on this site · public ledger is not Robinhood proof', D.privateBroker ? 'up' : 'warn'],
+      : 'WHY: This public GitHub Pages site has no authenticated Robinhood backend. Connecting Robinhood to ChatGPT does not connect this website. A private login and broker server are required.', D.privateBroker ? 'up' : 'warn'],
     ['Broker realized / unrealized', D.privateBroker
       ? 'Closed ' + usd(D.privateBroker.realizedPnlUsd) + '\nOpen ' + usd(D.privateBroker.unrealizedPnlUsd)
       : 'NOT AVAILABLE', D.privateBroker
       ? 'Broker-confirmed selected account · current snapshot, not public ledger'
-      : 'Requires private authenticated broker reconciliation · never sourced from GitHub public files', D.privateBroker ? 'up' : 'warn'],
+      : 'Unavailable until a private server authenticates to Robinhood. The GitHub ledger is not a broker statement.', D.privateBroker ? 'up' : 'warn'],
     ['Broker positions', D.privateBroker ? String(D.privateBroker.positionsCount) : 'NOT VERIFIED',
-      D.privateBroker ? 'Count confirmed by private Robinhood reconciliation · no symbols published' : 'Published-ledger positions below may not match Robinhood', D.privateBroker ? 'up' : 'warn'],
+      D.privateBroker ? 'Count confirmed by private Robinhood reconciliation · no symbols published' : 'This site cannot read private holdings. Published-ledger positions below may not match Robinhood.', D.privateBroker ? 'up' : 'warn'],
     ['ClaudeBot health', botHealth().status, botHealth().ok ? 'scan ' + Math.round(botHealth().sigAge) + 'm · trader ' + Math.round(botHealth().runAge) + 'm ago' : botHealth().issues[0], botHealth().ok ? 'up' : 'warn'],
     ['Trading today', tradingToday()[0], tradingToday()[1] + (D.sig?.regime?.riskOff ? ' · crypto risk-off' : ''), tradingToday()[2]],
     ['Market', D.latest?.regime?.label || '–', 'call: ' + (D.latest?.action || '–'), /OFF/.test(D.latest?.regime?.label || '') ? 'down' : ''],
