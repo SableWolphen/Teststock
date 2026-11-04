@@ -119,7 +119,7 @@ test('margin borrowing capacity cannot fund stock or options entries', () => {
   assert.deepEqual(cashOnlyBudget(marginAccount), { verified: true, available: 18, reason: null });
 });
 
-test('broker's verified unleveraged funds cap size even if displayed cash is larger', () => {
+test('verified unleveraged funds cap size even if displayed cash is larger', () => {
   const acct = bigAccount({ cash: 10000, unleveragedBuyingPower: 250, buyingPower: 30000 });
   const option = evaluateOptionEntry({ account: acct, contract: goodContract(), now: NOW });
   assert.equal(option.allowed, true);
