@@ -34,8 +34,8 @@ test('new mobile overflow guards and refreshed assets expose complete numbers', 
   assert.match(css, /\.kpi \.l,\.kpi \.v,\.kpi \.s\s*\{[^}]*overflow:visible;text-overflow:clip/);
   assert.match(css, /\.kpi \.v\{white-space:pre-line\}/);
   assert.match(css, /\.kpis\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
-  assert.match(html, /hq\.css\?v=20261103-profitability122/);
-  assert.match(html, /hq\.js\?v=20261103-profitability122/);
+  assert.match(html, /hq\.css\?v=20261103-verification-explained123/);
+  assert.match(html, /hq\.js\?v=20261103-verification-explained123/);
   assert.ok(script.includes('Closed ${usd(ma.closed)}\\nOpen ${usd(ma.open)}'));
 });
 
@@ -48,4 +48,9 @@ test('profitability room and evidence agents show separate paper and broker sour
   assert.ok(script.includes("D.privateBroker"));
   assert.ok(script.includes("No guaranteed profit and no automatic strategy promotion"));
   assert.ok(script.includes("No independently qualified ETF strategy"));
+});
+
+test('broker not-connected state explains that GitHub Pages has no authenticated backend', () => {
+  assert.ok(script.includes('This public GitHub Pages site has no authenticated Robinhood backend'));
+  assert.ok(html.includes('Dashboard online'));
 });
