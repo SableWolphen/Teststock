@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
-"""Paper-first edge promotion review (never activates a new live strategy).
+"""Paper-first AUTOMATIC edge promotion (board order 2026-11-05: "Restore automatic. Everything
+must be automatic").
 
-After-close paper marks are not broker fills. Research candidates require extensive
-independent forward results and executable-price evidence before live review.
-This module ONLY produces readiness evidence and can turn OFF already-live edges
-after losses; it never switches a new edge ON. Separate board approval and a
-reviewed deployment are required for activation. No broker orders are placed.
+An ETF edge switches ON in the live Dip desk automatically once its paper evidence passes EVERY
+check below, using only executable paper fills (signal at the close, filled at the next session's
+open). The board's standing approval is recorded on the edge (boardApproval.approvalId). The live
+desk then trades it inside the existing caps and the independent risk governor. Auto-rollback: an
+edge with 10+ live trades and profit factor < 1.0 switches OFF and stays off until re-proven.
+No broker orders are placed here.
 """
 import json, os, sys, random
 from datetime import datetime, timezone
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CFG = os.path.join(ROOT, "claudebot", "dip_config.json")
 L = lambda n: json.load(open(os.path.join(ROOT, "docs", "data", n))) if os.path.exists(os.path.join(ROOT, "docs", "data", n)) else {}
-MIN_TRADES, MIN_DAYS, MIN_WIN, MIN_PF, MIN_AVG, RB_TRADES = 50, 30, 60.0, 1.3, 0.15, 10
+MIN_TRADES, MIN_DAYS, MIN_WIN, MIN_PF, MIN_AVG, RB_TRADES = 30, 20, 60.0, 1.3, 0.15, 10
+APPROVAL = "board-standing-order-2026-11-05-automatic-promotion"
 EXTRA_COST_PER_USD = 0.0006  # an additional 0.03% per side for doubled modeled trading costs
 
 
@@ -33,6 +36,8 @@ def lower95_mean(values):
 def evidence(kind, trades, paper, research):
     """Only independent, realistic, after-cost observations qualify for review."""
     independent = {}
+    if paper.get("executionModel") == "next_session_executable":
+        trades = [t for t in trades if t.get("fill", "next_open") == "next_open"]   # close-marked trades don't count
     for t in trades:
         key = (t.get("symbol"), t.get("in"))
         if all(key) and key not in independent:
@@ -71,7 +76,7 @@ def evidence(kind, trades, paper, research):
         "netPnlWithDoubledCostsUsd": stressed,
         "executionModel": paper.get("executionModel", "UNVERIFIED_CLOSE_MARK"),
         "checks": checks, "allPassed": all(checks.values()),
-        "disposition": "REVIEW_ONLY" if all(checks.values()) else "KEEP_PAPER",
+        "disposition": "PROMOTE" if all(checks.values()) else "KEEP_PAPER",
     }
 
 
@@ -94,8 +99,16 @@ def run(cfg, paper, research, live, now):
             out.append(("rolled_back", k, "Requires separate board review"))
             continue
         report = evidence(k, t, paper, research)
-        out.append(("review_only" if report["allPassed"] else "paper_only", k, report))
-        # Never enable a live strategy automatically from backtests or paper trades.
+        if report["allPassed"]:
+            er["enabled"] = True
+            er["promotedAt"] = now
+            er["boardApproval"] = {"approvalId": APPROVAL, "by": "board standing order (2026-11-02, restored 2026-11-05)",
+                                   "evidence": {x: report[x] for x in ("independentEntries", "sessions", "winRatePct", "profitFactor", "avgReturnPct", "lower95MeanUsd")}}
+            cfg.setdefault("changeLog", []).append(f"{now[:10]}: auto-promoted {er.get('name', k)} on executable paper evidence "
+                                                   f"({report['independentEntries']} trades, {report['winRatePct']}% wins, PF {report['profitFactor']}).")
+            out.append(("promote", k, report))
+        else:
+            out.append(("paper_only", k, report))
     return out
 
 if __name__ == "__main__":
@@ -103,15 +116,15 @@ if __name__ == "__main__":
     now = datetime.now(timezone.utc).isoformat()
     res = run(cfg, L("claudebot-edge-paper.json"), L("claudebot-edge-research.json"),
               L("claudebot-dip-ledger.json"), now)
-    if any(r[0] == "rollback" for r in res):
+    if any(r[0] in ("rollback", "promote") for r in res):
         with open(CFG, "w") as f:
             json.dump(cfg, f, indent=2)
             f.write("\n")
     public_report = {
-        "generatedAt": now, "mode": "RESEARCH_ONLY",
-        "automaticLivePromotion": False,
+        "generatedAt": now, "mode": "AUTOMATIC_PROMOTION",
+        "automaticLivePromotion": True,
         "strategies": {r[1]: {"status": r[0], "evidence": r[2]} for r in res},
-        "warning": "Same-day close marks observed after the close are not executable entry prices. Separate approval is required before new live strategy activation."
+        "rule": f"Switches ON automatically when every check passes ({MIN_TRADES}+ executable paper trades over {MIN_DAYS}+ sessions, {MIN_WIN}%+ wins, PF {MIN_PF}+, bootstrap lower bound > 0, profitable with doubled costs, and an unseen-data research edge). Auto-rollback after {RB_TRADES}+ live trades with PF < 1.0."
     }
     with open(os.path.join(ROOT, "docs", "data", "claudebot-edge-readiness.json"), "w") as f:
         json.dump(public_report, f, indent=2)

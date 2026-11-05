@@ -74,7 +74,7 @@ def main():
                "strategies": {"dipcall": {"name": "Dip calls (ATM, ~45 days, sell on the bounce)", "open": {}, "trades": []}}, "runs": []}
     st = led["strategies"]["dipcall"]; today = datetime.now(timezone.utc).date(); made = []
     for s in SYMS:
-        bars = ob.daily_bars(s, (today - timedelta(days=420)).isoformat())[0]
+        bars = ob.daily_bars(s, (today - timedelta(days=600)).isoformat())[0]   # helper needs 300+ bars
         d = [x for x, _ in bars]; c = [x for _, x in bars]
         if len(c) < 210 or (led.get("lastDay") and d[-1] <= led["lastDay"]):
             continue
