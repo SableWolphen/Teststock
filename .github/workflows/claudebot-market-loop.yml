@@ -45,7 +45,7 @@ jobs:
             python claudebot/intraday_dip_paper.py || echo "intraday desk failed"
             python claudebot/hr.py active sim && python claudebot/spread_paper_gh.py || echo "spread paper desk skipped/failed"
             python claudebot/decision_scorecard.py || echo "scorecard refresh failed"
-            git add docs/data/claudebot-intraday-paper.json docs/data/claudebot-spread-paper.json 2>/dev/null; git add docs/data/claudebot-gate.json docs/data/claudebot-optscalp-paper.json docs/data/claudebot-decision-scorecard.json 2>/dev/null || git add docs/data/claudebot-gate.json
+            for f in docs/data/claudebot-gate.json docs/data/claudebot-optscalp-paper.json docs/data/claudebot-decision-scorecard.json docs/data/claudebot-intraday-paper.json docs/data/claudebot-spread-paper.json; do [ -e "$f" ] && git add "$f"; done; true
             if ! git diff --cached --quiet; then
               git commit -q -m "ClaudeBot loop $(date -u +%H:%MZ)"
               for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push -q origin HEAD:main && break; sleep $((i*5)); done
