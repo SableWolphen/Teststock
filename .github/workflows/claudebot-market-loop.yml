@@ -38,7 +38,7 @@ jobs:
           end=$(( $(date -u +%s) + 340*60 ))
           while [ "$(date -u +%s)" -lt "$end" ]; do
             hm=$(TZ=America/Chicago date +%H%M); dow=$(TZ=America/Chicago date +%u)
-            if [ "$dow" -gt 5 ] || [ "$hm" -gt 1505 ]; then echo "market closed ($hm CT): loop done"; break; fi
+            if [ "$dow" -gt 5 ] || [ $((10#$hm)) -gt 1505 ]; then echo "market closed ($hm CT): loop done"; break; fi
             git pull -q --rebase -X theirs origin main || true
             python claudebot/gate.py || echo "gate failed"
             python claudebot/hr.py active vega && python claudebot/optscalp_paper.py || echo "options race skipped/failed"
@@ -57,12 +57,12 @@ jobs:
             sleep 300
           done
       - name: Hand off to a fresh loop if the market is still open (jobs max out at 6 hours)
-        if: always()
+        if: success()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           hm=$(TZ=America/Chicago date +%H%M); dow=$(TZ=America/Chicago date +%u)
-          if [ "$dow" -le 5 ] && [ "$hm" -lt 1455 ]; then
+          if [ "$dow" -le 5 ] && [ $((10#$hm)) -lt 1455 ]; then
             curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
               "https://api.github.com/repos/${{ github.repository }}/actions/workflows/claudebot-market-loop.yml/dispatches" -d '{"ref":"main"}' && echo "handed off at $hm CT"
           else echo "market closing: no hand-off"; fi
