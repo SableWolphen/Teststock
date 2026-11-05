@@ -17,6 +17,7 @@ on:
 concurrency: { group: claudebot-market-loop, cancel-in-progress: false }
 permissions:
   contents: write
+  actions: write
 jobs:
   loop:
     runs-on: ubuntu-latest
@@ -53,3 +54,13 @@ jobs:
             fi
             sleep 300
           done
+      - name: Hand off to a fresh loop if the market is still open (jobs max out at 6 hours)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          hm=$(TZ=America/Chicago date +%H%M); dow=$(TZ=America/Chicago date +%u)
+          if [ "$dow" -le 5 ] && [ "$hm" -lt 1455 ]; then
+            curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/claudebot-market-loop.yml/dispatches" -d '{"ref":"main"}' && echo "handed off at $hm CT"
+          else echo "market closing: no hand-off"; fi
