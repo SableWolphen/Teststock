@@ -217,6 +217,7 @@ const AG = {
   edge:    { name: 'Edge', role: 'Evidence analyst · independent forward samples, positive after-cost expectancy and minimum trade counts', room: 'profitability', home: [26.1, 11.3], color: '#3ddc84', kind: 'robot', boss: 'analyst', title: 'Profitability analyst' },
   friction: { name: 'Friction', role: 'Cost auditor · double-cost survival, fill quality and slippage stress', room: 'profitability', home: [28.4, 11.8], color: '#f5c451', kind: 'owl', boss: 'guard', title: 'Execution-cost auditor' },
   proof:   { name: 'Proof', role: 'Broker verifier · separates Robinhood-confirmed results from public ledgers and paper performance', room: 'profitability', home: [27.2, 13.0], color: '#7c9cff', kind: 'cat', boss: 'ledger', title: 'Broker evidence steward' },
+  sim:     { name: 'Sim',     role: 'Spread desk (paper) · put credit spreads on 5 funds, live prices, free on GitHub', room: 'research', home: [6.1, 4.7], color: '#a3e635', kind: 'robot' , boss: 'analyst', title: 'Spread desk' },
   vega:    { name: 'Vega',    role: 'Options race lead · 14 paper versions, 5-specialist ensemble, learned price forecast (paper only)', room: 'research', home: [7.4, 5.3], color: '#facc15', kind: 'robot', boss: 'analyst', title: 'Options race' },
 };
 const BEDS = Object.keys(AG).map((k, i) => [25.25 + (i % 4) * 1.15, .3 + Math.floor(i / 4) * 1.1]);
@@ -342,11 +343,11 @@ async function getPrivateBrokerSummary() {
   } catch { return null; }
 }
 async function refresh() {
-  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission, dcp, idp] = await Promise.all([
+  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission, dcp, idp, spp] = await Promise.all([
     getJSON('docs/data/claudebot-signal.json'), getJSON('docs/data/claudebot-ledger.json'), getJSON('docs/data/claudebot-options-ledger.json'),
     getJSON('docs/data/live-trading-health.json'), getJSON('docs/data/latest-50.json'), getJSON('claudebot/options_config.json'), getJSON('claudebot/config.json'),
-    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json'), getJSON('docs/data/claudebot-crypto-paper.json'), getJSON('docs/data/claudebot-optscalp-paper.json'), getJSON('docs/data/claudebot-moonshot-paper.json'), getJSON('docs/data/claudebot-hr.json'), getJSON('docs/data/claudebot-decision-scorecard.json'), getJSON('docs/data/claudebot-edge-readiness.json'), getJSON('docs/data/claudebot-tournament-scorecard.json'), getJSON('docs/data/claudebot-daily-profit.json'), getJSON('docs/data/options-profitability-admission.json'), getJSON('docs/data/claudebot-dipcall-paper.json'), getJSON('docs/data/claudebot-intraday-paper.json')]);
-  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission, dcp, idp });
+    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json'), getJSON('docs/data/claudebot-crypto-paper.json'), getJSON('docs/data/claudebot-optscalp-paper.json'), getJSON('docs/data/claudebot-moonshot-paper.json'), getJSON('docs/data/claudebot-hr.json'), getJSON('docs/data/claudebot-decision-scorecard.json'), getJSON('docs/data/claudebot-edge-readiness.json'), getJSON('docs/data/claudebot-tournament-scorecard.json'), getJSON('docs/data/claudebot-daily-profit.json'), getJSON('docs/data/options-profitability-admission.json'), getJSON('docs/data/claudebot-dipcall-paper.json'), getJSON('docs/data/claudebot-intraday-paper.json'), getJSON('docs/data/claudebot-spread-paper.json')]);
+  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission, dcp, idp, spp });
   D.privateBroker = await getPrivateBrokerSummary();
   renderAll();
 }
@@ -442,7 +443,7 @@ function payroll() {
   const pAge = ageMin(D.pled?.updatedAt), pTr = Object.values(D.pled?.strategies || {}).reduce((n, x) => n + (x.trades?.length || 0), 0);
   { const dt = D.dled?.trades || [], dp = dipPnl(); rows.quinn = { base: 1100, score: clamp(85 + dp * 4 - (D.dled?.open && !(D.dcfg?.symbols || []).includes(D.dled.open.symbol) ? 40 : 0)), why: D.dled?.open ? `Holding ${D.dled.open.symbol} from ${D.dled.open.entryPrice} · dip desk ${usd(dp)}` : `${dt.length} dip trades · ${usd(dp)} · waiting for a dip in an uptrend` }; }
   const started = !!D.pled?.updatedAt;
-  rows.sim = { base: 900, score: started ? clamp(freshScore(pAge, 75, 360)) : 70, why: started ? `Paper Lab updated ${ago(D.pled.updatedAt)} · ${pTr} paper trades closed` : 'New hire: first Paper Lab run at :14' };
+  rows.sim = { base: 900, score: D.spp ? clamp(freshScore(ageMin(D.spp.updatedAt), 30, 3 * 1440)) : 70, why: D.spp ? `Spread desk (paper): ${(D.spp.leaderboard || [{}])[0].trades || 0} closed, ${(D.spp.leaderboard || [{}])[0].open || 0} open` : 'Re-hired: spread desk starts on GitHub today' };
   rows.vega = { base: 800, score: D.osp ? clamp(freshScore(ageMin(D.osp.updatedAt), 30, 3 * 1440)) : 70, why: D.osp ? `${(D.osp.leaderboard || []).reduce((a, r) => a + (r.trades || 0), 0)} paper option trades · ${(D.osp.proposals || []).length} ready for the board` : 'New hire: race starts 8:45 AM' };
   rows.moxie = { base: 700, score: D.msp ? clamp(freshScore(ageMin(D.msp.updatedAt), 2 * 1440, 5 * 1440)) : 70, why: D.msp ? `${(D.msp.candidates || []).length} turnarounds found, ${(D.msp.strategies?.moonshot?.open || []).length} paper bets open` : 'New hire: first scan after tonight\'s close' };
   rows.clio = { base: 900, score: D.hist ? clamp(freshScore(ageMin(D.hist.generatedAt), 8 * 1440, 21 * 1440)) : 70, why: D.hist ? `Leaderboard ${ago(D.hist.generatedAt)} · ${(D.hist.winners || []).length} winners, ${(D.hist.losers || []).length} rejected` : 'New hire: first weekly history review Sunday' };
@@ -743,6 +744,7 @@ function agentStatus(a) {
     case 'options': return D.bled?.open ? ['hold', 'Holding ' + D.bled.open.label] : D.oled?.open ? ['', 'Paper spread'] : blackoutToday() ? ['warn', 'Event pause'] : ['', 'Idle'];
     case 'guard': return D.sig?.regime?.riskOff ? ['warn', 'Risk-off'] : ['ok', 'Watching'];
     case 'ledger': return ['ok', 'Books balanced'];
+    case 'sim': { const n = Object.keys(D.spp?.strategies?.spreads?.open || {}).length; return n ? ['hold', `${n} paper spread${n > 1 ? 's' : ''} open`] : ['work', 'Spread desk (paper)']; }
     case 'vega': { const n = (D.osp?.leaderboard || []).filter(r => r.open).length; return n ? ['hold', `${n} paper options open`] : ['work', 'Options race (paper)']; }
     case 'moxie': { const n = (D.msp?.strategies?.moonshot?.open || []).length; return n ? ['hold', `${n} paper moonshot${n > 1 ? 's' : ''}`] : ['work', `${(D.msp?.candidates || []).length} turnarounds on watch`]; }
     case 'clio': return D.hist?.alerts?.length ? ['warn', 'Edge fading!'] : ['work', `${(D.hist?.winners || []).length} historical candidate(s)`];
@@ -754,7 +756,7 @@ function agentStatus(a) {
 }
 const DOTC = { rest: '#6b7bb8', work: '#7c78ff', walk: '#3ccfcf', talk: '#ffffff', hold: '#ff8a3d', warn: '#f5c451', ok: '#3ddc84', bad: '#ff5c6c' };
 function renderRoster() {
-  const groups = [['CEO', ['claude']], ['Operations · Atlas', ['atlas', 'medic', 'ledger', 'planner']], ['Research · Analyst', ['analyst', 'quinn', 'clio', 'moxie', 'vega', 'scout']], ['Risk & Trading · Guard', ['guard', 'options']], ['Profitability · independent evidence', ['edge', 'friction', 'proof']]];
+  const groups = [['CEO', ['claude']], ['Operations · Atlas', ['atlas', 'medic', 'ledger', 'planner']], ['Research · Analyst', ['analyst', 'quinn', 'clio', 'moxie', 'vega', 'sim', 'scout']], ['Risk & Trading · Guard', ['guard', 'options']], ['Profitability · independent evidence', ['edge', 'friction', 'proof']]];
   $('roster').innerHTML = groups.map(([g, ks]) => `<div class="grp">${g}<span>${ks.length}</span></div>` + ks.map(k => { const a = agents[k];
     return `<div class="ag" data-k="${k}"><div class="av"><svg viewBox="-24 -64 48 66">${charSVG(a.kind, a.color)}</svg></div><div class="mid"><div class="n">${a.name} <span style="color:var(--muted);font-weight:500;font-size:11.5px">${esc(a.title || '')}</span></div><div class="r">${a.boss ? 'Reports to ' + agents[a.boss].name + ' · ' : ''}${esc(a.role)}</div></div><span class="stt" id="st-${k}"></span></div>`; }).join('')).join('');
   document.querySelectorAll('.ag').forEach(x => x.onclick = () => focusAgent(x.dataset.k));
@@ -1060,6 +1062,7 @@ function paperRows() {
   };
   if (D.oled && D.oled.mode !== 'live') add('Options', 'Put spreads (our live rules)', D.oled.trades || [], D.oled.open?.label, D.oled.open?.maxLossUsd);
   for (const [id, st] of Object.entries(D.pled?.strategies || {})) add('Paper Lab', st.name || id, st.trades || [], st.open ? (st.open.label || st.open.symbol) : null, st.open?.maxLossUsd ?? (st.open ? 15 : null));
+  for (const [id, st] of Object.entries(D.spp?.strategies || {})) { const o = Object.values(st.open || {}); add('Spreads', st.name || id, st.trades || [], o.length ? o.map(x => x.label).join(', ') : null, Math.round(o.reduce((a, x) => a + (x.maxLossUsd || 0), 0))); }
   for (const [id, st] of Object.entries(D.idp?.strategies || {})) { const o = Object.keys(st.open || {}); add('Intraday dips', st.name || id, st.trades || [], o.length ? o.join(', ') : null, o.length * 25); }
   for (const [id, st] of Object.entries(D.dcp?.strategies || {})) { const o = Object.values(st.open || {}); add('Dip calls ($25-scaled)', st.name || id, (st.trades || []).map(t => ({ pnlUsd: (t.retPct || 0) / 4 })), o.length ? o.map(x => x.underlying).join(', ') : null, o.length * 25); }
   for (const [id, st] of Object.entries(D.msp?.strategies || {})) { const o = st.open || []; add('Moonshot', st.name || id, st.trades || [], o.length ? o.map(x => x.underlying).join(', ') : null, Math.round(o.reduce((a, x) => a + x.ask * 100, 0))); }
@@ -1090,7 +1093,7 @@ function paperCard() {
   return card('🧪 Paper Lab · runs alongside live trading, no real money', `<p style="margin:0 0 10px">This archived Paper Lab contains historical research marks from retired Sim and Echo roles. Figures are simulated and not broker-verified. <b>No new strategy promotes to live automatically.</b> The active forward-only tournament requires independent observations, realistic cost modeling, and a separate approval before live consideration.</p>${body}<p>Updated ${L?.updatedAt ? ago(L.updatedAt) : 'never'}.</p>`, 'span3');
 }
 function payrollCard() {
-  const p = payroll(); const order = ['claude', 'atlas', 'analyst', 'guard', 'quinn', 'clio', 'moxie', 'vega', 'scout', 'medic', 'ledger', 'planner', 'options'];
+  const p = payroll(); const order = ['claude', 'atlas', 'analyst', 'guard', 'quinn', 'clio', 'moxie', 'vega', 'sim', 'scout', 'medic', 'ledger', 'planner', 'options'];
   const gc = g => g === 'A' || g === 'B' ? 'up' : g === 'C' ? 'warn' : 'down';
   const v = { profit: ['up', `Published ledgers suggest ${usd(p.wk.usd)} this week (UNVERIFIED): full pay plus a ${credits(p.pool)} profit-sharing bonus.`], flat: ['warn', `Published ledger estimate was flat (${p.wk.trades} closures, NOT broker verified): <b>half pay</b>. Capital was protected but nothing was earned.`], loss: ['down', `Published ledgers suggest a loss of ${usd(p.wk.usd)} this week (UNVERIFIED): <b>no paychecks</b>. Everyone's pay is docked to zero until results turn positive.`] }[p.wk.verdict];
   const lastTxt = { profit: `Last week: profit ${usd(p.last.usd)} · full pay`, flat: 'Last week: flat · half pay', loss: `Last week: loss ${usd(p.last.usd)} · no pay` }[p.last.verdict];

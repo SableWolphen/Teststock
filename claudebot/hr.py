@@ -21,9 +21,10 @@ from datetime import datetime, timezone
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "docs", "data", "claudebot-hr.json")
+# Re-hired: Sim (2026-11-05, board: "do everything on paper... options and spreads"). The spread desk
+# now runs free on GitHub (claudebot/spread_paper_gh.py), so the usage reason for firing is gone.
+REHIRED = {"sim"}
 CEO_DECISIONS = {
-    "sim": "Paper Lab options spreads: Robinhood blocks agent multi-leg orders, so this work can never become a live trade, "
-           "and it cost Claude usage every day. Spread research stays in the weekly backtests (free, on GitHub).",
     "echo": "Crypto paper desk: the crypto desk was fired 2026-11-02 (about 1.9% round-trip cost at $15 positions). "
             "Paper-testing a desk that will not be rehired is wasted work.",
 }
@@ -39,7 +40,7 @@ def load(rel, d=None):
 
 def evaluate():
     hr = load("docs/data/claudebot-hr.json", {}) or {}
-    fired = {f["agent"]: f for f in hr.get("fired", [])}
+    fired = {f["agent"]: f for f in hr.get("fired", []) if f["agent"] not in REHIRED}
     today = datetime.now(timezone.utc).date().isoformat()
     notes = []
 
