@@ -2,7 +2,7 @@
 import importlib.util, os, copy
 spec = importlib.util.spec_from_file_location("db", os.path.join(os.path.dirname(os.path.abspath(__file__)), "dip_bot.py"))
 db = importlib.util.module_from_spec(spec); spec.loader.exec_module(db)
-cfg = db.load(db.CONFIG); cfg["symbols"] = ["SPY", "QQQ"]; cfg["risk"]["reserveForOptionsUsd"] = 86; cfg["risk"]["maxOpenPositions"] = 3; cfg["risk"]["deployAllCash"] = False   # scenarios below test the fixed-size, reserve and 3-position rules
+cfg = db.load(db.CONFIG); [e.update(enabled=False) for e in (cfg.get("edges") or {}).values()]; cfg["symbols"] = ["SPY", "QQQ"]; cfg["risk"]["reserveForOptionsUsd"] = 86; cfg["risk"]["maxOpenPositions"] = 3; cfg["risk"]["deployAllCash"] = False   # scenarios below test the fixed-size, reserve and 3-position rules
 up = [600 + i * 0.6 for i in range(220)]                 # steady uptrend, last close ~731
 dip = up[:-3] + [up[-3] - 6, up[-3] - 13, up[-3] - 20]  # three down days, still above the 200d SMA
 LED = {"open": None, "trades": [], "runs": []}
