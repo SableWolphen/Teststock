@@ -10,7 +10,8 @@ NOW_W = "2026-11-04T20:14:00Z"   # 14:14 CT
 F = {"now": NOW_W, "marketOpen": True, "accountValue": 117, "buyingPower": 112, "symbols": {"SPY": {"price": dip[-1] - 2, "closes": dip, "heldQty": 0}, "QQQ": {"price": up[-1] + 1, "closes": up, "heldQty": 0}}}
 def act(f=F, l=LED): return db.plan(copy.deepcopy(f), cfg, copy.deepcopy(l))["actions"][0]
 a = act(); assert a["do"] == "buy" and a["symbol"] == "SPY" and a["dollarAmount"] == "25.00", a
-assert act({**F, "now": "2026-11-04T16:14:00Z"})["do"] == "none"                          # outside window
+assert act({**F, "now": "2026-11-04T16:14:00Z"})["do"] == "buy"                           # all-day buys (board 2026-11-06)
+assert act({**F, "now": "2026-11-04T15:10:00Z"})["do"] == "none"                          # 9:10 CT: before the buy window
 assert act({**F, "buyingPower": 20})["do"] == "none"
 assert act({**F, "marketOpen": False})["reason"] == "market closed"
 down = [900 - i for i in range(220)]
@@ -20,7 +21,7 @@ L2 = {**LED, "open": pos}
 S = lambda px, q=0.0357: {**F, "symbols": {"SPY": {"price": px, "closes": dip, "heldQty": q}}}
 a = act(S(740), L2); assert a["do"] == "sell" and a["reason"] == "bounce" and a["quantity"] == "0.035700", a
 a = act({**S(660), "now": "2026-11-04T16:14:00Z"}, L2); assert a["do"] == "sell" and a["reason"] == "stop", a
-assert act({**S(690), "now": "2026-11-04T16:14:00Z"}, L2)["do"] == "none"                 # no exit outside window unless stop
+assert act({**S(690), "now": "2026-11-04T16:14:00Z"}, L2)["do"] != "sell"                 # no rule exit outside the exit window unless stop
 assert act(S(660), {**LED, "open": {**pos, "enteredAt": "2026-11-04T20:10:00Z"}})["do"] != "sell"   # no same-day exits
 assert act(S(700, 0), L2)["do"] == "record_broker_close"
 a = act({**S(705), "now": "2026-11-18T20:14:00Z"}, {**LED, "open": {**pos, "entryPrice": 720.0}}); assert a["do"] == "sell" and a["reason"] in ("time", "bounce"), a

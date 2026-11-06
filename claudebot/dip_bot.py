@@ -141,8 +141,9 @@ def plan(facts, cfg, led):
         return none(f"at the {r['maxOpenPositions']}-position limit")
     if not cfg.get("enabled", True):
         return none("dip desk disabled")
-    if not in_window:
-        return none("entries only in the last run before the close (14:00-14:59 CT)")
+    b0, b1 = (time.fromisoformat(t) for t in e.get("buyWindowCT", e["windowCT"]))
+    if not (b0 <= local.time() <= b1):
+        return none(f"entries only {e.get('buyWindowCT', e['windowCT'])[0]}-{e.get('buyWindowCT', e['windowCT'])[1]} CT")
     if float(facts.get("accountValue", 0)) < r["pauseBelowAccountValueUsd"]:
         return none("account below the pause floor")
     bp = float(facts.get("buyingPower", 0))
