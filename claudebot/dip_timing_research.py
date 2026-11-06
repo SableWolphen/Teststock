@@ -57,7 +57,7 @@ def qualifies(c, i, px):
     return px > sum(c[i - 199:i] + [px]) / 200 and rsi2(c[i - 30:i] + [px]) < 5
 
 
-def run(daily, intr, hm):
+def run(daily, intr, hm, hourly_exit=False):
     """hm = (h, m) one check time; (15, 0) = the close; "all" = buy at the FIRST of the 4 check times that qualifies."""
     d = [x for x, _ in daily]; c = [x for _, x in daily]; trades = []; i = 210
     while i < len(c) - 1:
@@ -73,12 +73,19 @@ def run(daily, intr, hm):
         else:
             px = next((p for m, p in bars if m >= hm[0] * 60 + hm[1]), None)
         if px and d[i] >= "2018-01-01" and qualifies(c, i, px):
-            entry = px * (1 + COST); j = i
+            entry = px * (1 + COST); j = i; out_px = None
             while j < len(c) - 1:
                 j += 1; held = j - i
+                if hourly_exit:                         # check the bounce at every hourly run, sell at the first one
+                    for h_, m_ in TIMES.values():
+                        p_ = next((p for m, p in (intr.get(d[j]) or []) if m >= h_ * 60 + m_), None)
+                        if p_ and (p_ <= entry * 0.95 or p_ > (sum(c[j - 4:j]) + p_) / 5):
+                            out_px = p_; break
+                    if out_px:
+                        break
                 if c[j] <= entry * 0.95 or c[j] > sum(c[j - 4:j + 1]) / 5 or held >= 10:
-                    break
-            trades.append({"in": d[i], "ret": c[j] * (1 - COST) / entry - 1}); i = j + 1
+                    out_px = c[j]; break
+            trades.append({"in": d[i], "ret": (out_px or c[j]) * (1 - COST) / entry - 1}); i = j + 1
         else:
             i += 1
     return trades
@@ -96,13 +103,14 @@ def main():
     global H
     H = {"APCA-API-KEY-ID": os.environ["ALPACA_API_KEY"], "APCA-API-SECRET-KEY": os.environ["ALPACA_API_SECRET"], "User-Agent": "teststock"}
     sp = importlib.util.spec_from_file_location("ob", os.path.join(HERE, "options_backtest.py")); ob = importlib.util.module_from_spec(sp); sp.loader.exec_module(ob)
-    res = {k: [] for k in TIMES}; res["close (backtest baseline)"] = []; res["all 4 checks (first that qualifies)"] = []
+    res = {k: [] for k in TIMES}; res["close (backtest baseline)"] = []; res["all 4 checks (first that qualifies)"] = []; res["all-day buys + sell at first hourly bounce"] = []
     for s in SYMS:
         daily = ob.daily_bars(s, "2016-06-01")[0]; intr = intraday(s)
         for k, hm in TIMES.items():
             res[k] += run(daily, intr, hm)
         res["close (backtest baseline)"] += run(daily, intr, (15, 0))
         res["all 4 checks (first that qualifies)"] += run(daily, intr, "all")
+        res["all-day buys + sell at first hourly bounce"] += run(daily, intr, "all", hourly_exit=True)
     rows = {k: {"pick": summ([x for x in t if x["in"] < "2023-01-01"]), "unseen": summ([x for x in t if x["in"] >= "2023-01-01"])} for k, t in res.items()}
     live = rows["14:45"]
     better = [k for k in list(TIMES) + ["all 4 checks (first that qualifies)"] if k != "14:45" and (rows[k]["pick"].get("avgTradePct") or -9) > (live["pick"].get("avgTradePct") or -9)
