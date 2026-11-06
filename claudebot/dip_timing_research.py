@@ -53,13 +53,26 @@ def rsi2(c):
     return 100.0 if l == 0 else 100 - 100 / (1 + g / l)
 
 
+def qualifies(c, i, px):
+    return px > sum(c[i - 199:i] + [px]) / 200 and rsi2(c[i - 30:i] + [px]) < 5
+
+
 def run(daily, intr, hm):
+    """hm = (h, m) one check time; (15, 0) = the close; "all" = buy at the FIRST of the 4 check times that qualifies."""
     d = [x for x, _ in daily]; c = [x for _, x in daily]; trades = []; i = 210
-    target = hm[0] * 60 + hm[1]
     while i < len(c) - 1:
         bars = intr.get(d[i]) or []
-        px = next((p for m, p in bars if m >= target), None) if hm != (15, 0) else c[i]
-        if px and d[i] >= "2018-01-01" and px > sum(c[i - 199:i] + [px]) / 200 and rsi2(c[i - 30:i] + [px]) < 5:
+        if hm == "all":
+            px = None
+            for h_, m_ in TIMES.values():
+                p_ = next((p for m, p in bars if m >= h_ * 60 + m_), None)
+                if p_ and qualifies(c, i, p_):
+                    px = p_; break
+        elif hm == (15, 0):
+            px = c[i]
+        else:
+            px = next((p for m, p in bars if m >= hm[0] * 60 + hm[1]), None)
+        if px and d[i] >= "2018-01-01" and qualifies(c, i, px):
             entry = px * (1 + COST); j = i
             while j < len(c) - 1:
                 j += 1; held = j - i
@@ -83,15 +96,16 @@ def main():
     global H
     H = {"APCA-API-KEY-ID": os.environ["ALPACA_API_KEY"], "APCA-API-SECRET-KEY": os.environ["ALPACA_API_SECRET"], "User-Agent": "teststock"}
     sp = importlib.util.spec_from_file_location("ob", os.path.join(HERE, "options_backtest.py")); ob = importlib.util.module_from_spec(sp); sp.loader.exec_module(ob)
-    res = {k: [] for k in TIMES}; res["close (backtest baseline)"] = []
+    res = {k: [] for k in TIMES}; res["close (backtest baseline)"] = []; res["all 4 checks (first that qualifies)"] = []
     for s in SYMS:
         daily = ob.daily_bars(s, "2016-06-01")[0]; intr = intraday(s)
         for k, hm in TIMES.items():
             res[k] += run(daily, intr, hm)
         res["close (backtest baseline)"] += run(daily, intr, (15, 0))
+        res["all 4 checks (first that qualifies)"] += run(daily, intr, "all")
     rows = {k: {"pick": summ([x for x in t if x["in"] < "2023-01-01"]), "unseen": summ([x for x in t if x["in"] >= "2023-01-01"])} for k, t in res.items()}
     live = rows["14:45"]
-    better = [k for k in TIMES if k != "14:45" and (rows[k]["pick"].get("avgTradePct") or -9) > (live["pick"].get("avgTradePct") or -9)
+    better = [k for k in list(TIMES) + ["all 4 checks (first that qualifies)"] if k != "14:45" and (rows[k]["pick"].get("avgTradePct") or -9) > (live["pick"].get("avgTradePct") or -9)
               and (rows[k]["unseen"].get("avgTradePct") or -9) > (live["unseen"].get("avgTradePct") or -9)]
     out = {"generatedAt": datetime.now(timezone.utc).isoformat(), "researchOnly": True, "rows": rows, "betterThanLive": better,
            "verdict": ("earlier checks beat the live 2:44 timing on BOTH periods: " + ", ".join(better)) if better else "keep the live 2:14/2:44 timing: no earlier check time beat it on both periods"}
