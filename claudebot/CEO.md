@@ -46,3 +46,15 @@ Never promise returns.
    an agent whose work cannot become a live trade or has been rejected for 4+ weeks (add it to
    `CEO_DECISIONS` in hr.py with a one-line reason). Re-hiring needs fresh evidence and, for any live
    desk, the board's approval. Firing may only reduce risk, never increase it.
+
+## Board standing order 2026-11-06: "you are allowed to use whatever mode wins to buy"
+Any paper desk (ETF edges, intraday dips, options race, dip calls, spreads, moonshots) that passes ITS
+gates on executable paper prices is pre-approved for real money:
+- ETF edges switch on automatically (claudebot/edge_promote.py).
+- Any other mode: the CEO wires it into the live desks the same week, sized inside the risk governor's
+  hard caps (which are never raised by this order), with automatic rollback after 10 live trades at
+  profit factor < 1.0. Report it in the next board report.
+- Gates: 30+ independent executable paper trades over 20+ sessions, profit factor >= 1.3, net profit
+  with doubled costs, bootstrap lower bound > 0. A mode that cannot be executed by the bot (spreads:
+  Robinhood blocks agent multi-leg orders) or cannot fit under the caps (dip calls at the current
+  account size) is reported to the board instead.
