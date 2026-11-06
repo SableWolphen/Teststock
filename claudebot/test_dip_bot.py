@@ -11,7 +11,7 @@ F = {"now": NOW_W, "marketOpen": True, "accountValue": 117, "buyingPower": 112, 
 def act(f=F, l=LED): return db.plan(copy.deepcopy(f), cfg, copy.deepcopy(l))["actions"][0]
 a = act(); assert a["do"] == "buy" and a["symbol"] == "SPY" and a["dollarAmount"] == "25.00", a
 assert act({**F, "now": "2026-11-04T16:14:00Z"})["do"] == "buy"                           # all-day buys (board 2026-11-06)
-assert act({**F, "now": "2026-11-04T15:10:00Z"})["do"] == "none"                          # 9:10 CT: before the buy window
+assert act({**F, "now": "2026-11-04T14:35:00Z"})["do"] == "none"                          # 8:35 CT: before the buy window
 assert act({**F, "buyingPower": 20})["do"] == "none"
 assert act({**F, "marketOpen": False})["reason"] == "market closed"
 down = [900 - i for i in range(220)]
