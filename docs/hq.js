@@ -217,6 +217,7 @@ const AG = {
   edge:    { name: 'Edge', role: 'Evidence analyst · independent forward samples, positive after-cost expectancy and minimum trade counts', room: 'profitability', home: [26.1, 11.3], color: '#3ddc84', kind: 'robot', boss: 'analyst', title: 'Profitability analyst' },
   friction: { name: 'Friction', role: 'Cost auditor · double-cost survival, fill quality and slippage stress', room: 'profitability', home: [28.4, 11.8], color: '#f5c451', kind: 'owl', boss: 'guard', title: 'Execution-cost auditor' },
   proof:   { name: 'Proof', role: 'Broker verifier · separates Robinhood-confirmed results from public ledgers and paper performance', room: 'profitability', home: [27.2, 13.0], color: '#7c9cff', kind: 'cat', boss: 'ledger', title: 'Broker evidence steward' },
+  nova:    { name: 'Nova',    role: 'News watcher · reads headlines every 5 min; blocks new buys only on severe news (halts, fraud, bankruptcy)', room: 'research', home: [8.6, 4.4], color: '#38bdf8', kind: 'owl', boss: 'analyst', title: 'News watcher' },
   sim:     { name: 'Sim',     role: 'Spread desk (paper) · put credit spreads on 5 funds, live prices, free on GitHub', room: 'research', home: [6.1, 4.7], color: '#a3e635', kind: 'robot' , boss: 'analyst', title: 'Spread desk' },
   vega:    { name: 'Vega',    role: 'Options race lead · 14 paper versions, 5-specialist ensemble, learned price forecast (paper only)', room: 'research', home: [7.4, 5.3], color: '#facc15', kind: 'robot', boss: 'analyst', title: 'Options race' },
 };
@@ -343,11 +344,11 @@ async function getPrivateBrokerSummary() {
   } catch { return null; }
 }
 async function refresh() {
-  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission, dcp, idp, spp] = await Promise.all([
+  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission, dcp, idp, spp, news] = await Promise.all([
     getJSON('docs/data/claudebot-signal.json'), getJSON('docs/data/claudebot-ledger.json'), getJSON('docs/data/claudebot-options-ledger.json'),
     getJSON('docs/data/live-trading-health.json'), getJSON('docs/data/latest-50.json'), getJSON('claudebot/options_config.json'), getJSON('claudebot/config.json'),
-    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json'), getJSON('docs/data/claudebot-crypto-paper.json'), getJSON('docs/data/claudebot-optscalp-paper.json'), getJSON('docs/data/claudebot-moonshot-paper.json'), getJSON('docs/data/claudebot-hr.json'), getJSON('docs/data/claudebot-decision-scorecard.json'), getJSON('docs/data/claudebot-edge-readiness.json'), getJSON('docs/data/claudebot-tournament-scorecard.json'), getJSON('docs/data/claudebot-daily-profit.json'), getJSON('docs/data/options-profitability-admission.json'), getJSON('docs/data/claudebot-dipcall-paper.json'), getJSON('docs/data/claudebot-intraday-paper.json'), getJSON('docs/data/claudebot-spread-paper.json')]);
-  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission, dcp, idp, spp });
+    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json'), getJSON('docs/data/claudebot-crypto-paper.json'), getJSON('docs/data/claudebot-optscalp-paper.json'), getJSON('docs/data/claudebot-moonshot-paper.json'), getJSON('docs/data/claudebot-hr.json'), getJSON('docs/data/claudebot-decision-scorecard.json'), getJSON('docs/data/claudebot-edge-readiness.json'), getJSON('docs/data/claudebot-tournament-scorecard.json'), getJSON('docs/data/claudebot-daily-profit.json'), getJSON('docs/data/options-profitability-admission.json'), getJSON('docs/data/claudebot-dipcall-paper.json'), getJSON('docs/data/claudebot-intraday-paper.json'), getJSON('docs/data/claudebot-spread-paper.json'), getJSON('docs/data/claudebot-news.json')]);
+  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission, dcp, idp, spp, news });
   D.privateBroker = await getPrivateBrokerSummary();
   renderAll();
 }
@@ -444,6 +445,7 @@ function payroll() {
   { const dt = D.dled?.trades || [], dp = dipPnl(); rows.quinn = { base: 1100, score: clamp(85 + dp * 4 - (D.dled?.open && !(D.dcfg?.symbols || []).includes(D.dled.open.symbol) ? 40 : 0)), why: D.dled?.open ? `Holding ${D.dled.open.symbol} from ${D.dled.open.entryPrice} · dip desk ${usd(dp)}` : `${dt.length} dip trades · ${usd(dp)} · waiting for a dip in an uptrend` }; }
   const started = !!D.pled?.updatedAt;
   rows.sim = { base: 900, score: D.spp ? clamp(freshScore(ageMin(D.spp.updatedAt), 30, 3 * 1440)) : 70, why: D.spp ? `Spread desk (paper): ${(D.spp.leaderboard || [{}])[0].trades || 0} closed, ${(D.spp.leaderboard || [{}])[0].open || 0} open` : 'Re-hired: spread desk starts on GitHub today' };
+  rows.nova = { base: 700, score: D.news ? clamp(freshScore(ageMin(D.news.generatedAt), 30, 3 * 1440)) : 70, why: D.news ? `${D.news.headlinesLast6h} headlines read · mood ${D.news.marketMood}` : 'New hire: starts reading at the open' };
   rows.vega = { base: 800, score: D.osp ? clamp(freshScore(ageMin(D.osp.updatedAt), 30, 3 * 1440)) : 70, why: D.osp ? `${(D.osp.leaderboard || []).reduce((a, r) => a + (r.trades || 0), 0)} paper option trades · ${(D.osp.proposals || []).length} ready for the board` : 'New hire: race starts 8:45 AM' };
   rows.moxie = { base: 700, score: D.msp ? clamp(freshScore(ageMin(D.msp.updatedAt), 2 * 1440, 5 * 1440)) : 70, why: D.msp ? `${(D.msp.candidates || []).length} turnarounds found, ${(D.msp.strategies?.moonshot?.open || []).length} paper bets open` : 'New hire: first scan after tonight\'s close' };
   rows.clio = { base: 900, score: D.hist ? clamp(freshScore(ageMin(D.hist.generatedAt), 8 * 1440, 21 * 1440)) : 70, why: D.hist ? `Leaderboard ${ago(D.hist.generatedAt)} · ${(D.hist.winners || []).length} winners, ${(D.hist.losers || []).length} rejected` : 'New hire: first weekly history review Sunday' };
@@ -560,6 +562,13 @@ const routines = {
     await say(a, o ? `Holding $${o.usd} of ${esc(o.symbol)} from ${o.entryPrice}. Out on the bounce or a 5% stop.` : (lr ? `Dip desk: ${esc(lr.detail)}` : 'Dip desk is live: I buy SPY, QQQ, DIA or IWM after a sharp dip in an uptrend.'), 3600);
     if (Math.random() < .5) await visit(a, R.guard, [['a', 'Dip desk check: $25 per trade, one at a time, 5% stop.'], ['b', 'Approved. Stay inside those limits.']]);
     else await visit(a, R.analyst, [['a', D.dbt ? `Backtest held up: ${D.dbt.combosWithPositiveTest} settings profitable on unseen 2025–26 data.` : 'Researching the next strategy.'], ['b', "Good. Keep the evidence coming. Rising markets flatter dip-buying."]]);
+  },
+  async nova(a) {
+    const n = D.news, h = (n?.headlines || [])[0], f = Object.entries(n?.flags || {});
+    await wander(a, [[8.6, 4.4], [9.2, 5.0]]);
+    await waitFree(a);
+    await say(a, f.length ? `News veto: <b>${esc(f[0][0])}</b>, ${esc(f[0][1])}.` : h ? `Mood is <b>${esc(n.marketMood)}</b>. Latest: ${esc(h.headline.slice(0, 90))}` : 'Reading the news feed every 5 minutes.', 4200);
+    await visit(a, R.quinn, [['a', f.length ? 'Skip new buys in the flagged fund today.' : 'Nothing severe in the news. Bad headlines alone are not a veto.'], ['b', 'Got it. Exits always run.']]);
   },
   async vega(a) {
     const o = D.osp, lb = (o?.leaderboard || []).filter(r => r.id !== 'notrade'), best = lb[0], fc = o?.forecast;
@@ -744,6 +753,7 @@ function agentStatus(a) {
     case 'options': return D.bled?.open ? ['hold', 'Holding ' + D.bled.open.label] : D.oled?.open ? ['', 'Paper spread'] : blackoutToday() ? ['warn', 'Event pause'] : ['', 'Idle'];
     case 'guard': return D.sig?.regime?.riskOff ? ['warn', 'Risk-off'] : ['ok', 'Watching'];
     case 'ledger': return ['ok', 'Books balanced'];
+    case 'nova': { const f = Object.keys(D.news?.flags || {}); return f.length ? ['warn', `News veto: ${f.join(', ')}`] : ['work', D.news ? `Market mood: ${D.news.marketMood}` : 'Reading the news']; }
     case 'sim': { const n = Object.keys(D.spp?.strategies?.spreads?.open || {}).length; return n ? ['hold', `${n} paper spread${n > 1 ? 's' : ''} open`] : ['work', 'Spread desk (paper)']; }
     case 'vega': { const n = (D.osp?.leaderboard || []).filter(r => r.open).length; return n ? ['hold', `${n} paper options open`] : ['work', 'Options race (paper)']; }
     case 'moxie': { const n = (D.msp?.strategies?.moonshot?.open || []).length; return n ? ['hold', `${n} paper moonshot${n > 1 ? 's' : ''}`] : ['work', `${(D.msp?.candidates || []).length} turnarounds on watch`]; }
@@ -756,7 +766,7 @@ function agentStatus(a) {
 }
 const DOTC = { rest: '#6b7bb8', work: '#7c78ff', walk: '#3ccfcf', talk: '#ffffff', hold: '#ff8a3d', warn: '#f5c451', ok: '#3ddc84', bad: '#ff5c6c' };
 function renderRoster() {
-  const groups = [['CEO', ['claude']], ['Operations · Atlas', ['atlas', 'medic', 'ledger', 'planner']], ['Research · Analyst', ['analyst', 'quinn', 'clio', 'moxie', 'vega', 'sim', 'scout']], ['Risk & Trading · Guard', ['guard', 'options']], ['Profitability · independent evidence', ['edge', 'friction', 'proof']]];
+  const groups = [['CEO', ['claude']], ['Operations · Atlas', ['atlas', 'medic', 'ledger', 'planner']], ['Research · Analyst', ['analyst', 'quinn', 'clio', 'moxie', 'vega', 'sim', 'nova', 'scout']], ['Risk & Trading · Guard', ['guard', 'options']], ['Profitability · independent evidence', ['edge', 'friction', 'proof']]];
   $('roster').innerHTML = groups.map(([g, ks]) => `<div class="grp">${g}<span>${ks.length}</span></div>` + ks.map(k => { const a = agents[k];
     return `<div class="ag" data-k="${k}"><div class="av"><svg viewBox="-24 -64 48 66">${charSVG(a.kind, a.color)}</svg></div><div class="mid"><div class="n">${a.name} <span style="color:var(--muted);font-weight:500;font-size:11.5px">${esc(a.title || '')}</span></div><div class="r">${a.boss ? 'Reports to ' + agents[a.boss].name + ' · ' : ''}${esc(a.role)}</div></div><span class="stt" id="st-${k}"></span></div>`; }).join('')).join('');
   document.querySelectorAll('.ag').forEach(x => x.onclick = () => focusAgent(x.dataset.k));
@@ -1093,7 +1103,7 @@ function paperCard() {
   return card('🧪 Paper Lab · runs alongside live trading, no real money', `<p style="margin:0 0 10px">This archived Paper Lab contains historical research marks from retired Sim and Echo roles. Figures are simulated and not broker-verified. <b>No new strategy promotes to live automatically.</b> The active forward-only tournament requires independent observations, realistic cost modeling, and a separate approval before live consideration.</p>${body}<p>Updated ${L?.updatedAt ? ago(L.updatedAt) : 'never'}.</p>`, 'span3');
 }
 function payrollCard() {
-  const p = payroll(); const order = ['claude', 'atlas', 'analyst', 'guard', 'quinn', 'clio', 'moxie', 'vega', 'sim', 'scout', 'medic', 'ledger', 'planner', 'options'];
+  const p = payroll(); const order = ['claude', 'atlas', 'analyst', 'guard', 'quinn', 'clio', 'moxie', 'vega', 'sim', 'nova', 'scout', 'medic', 'ledger', 'planner', 'options'];
   const gc = g => g === 'A' || g === 'B' ? 'up' : g === 'C' ? 'warn' : 'down';
   const v = { profit: ['up', `Published ledgers suggest ${usd(p.wk.usd)} this week (UNVERIFIED): full pay plus a ${credits(p.pool)} profit-sharing bonus.`], flat: ['warn', `Published ledger estimate was flat (${p.wk.trades} closures, NOT broker verified): <b>half pay</b>. Capital was protected but nothing was earned.`], loss: ['down', `Published ledgers suggest a loss of ${usd(p.wk.usd)} this week (UNVERIFIED): <b>no paychecks</b>. Everyone's pay is docked to zero until results turn positive.`] }[p.wk.verdict];
   const lastTxt = { profit: `Last week: profit ${usd(p.last.usd)} · full pay`, flat: 'Last week: flat · half pay', loss: `Last week: loss ${usd(p.last.usd)} · no pay` }[p.last.verdict];

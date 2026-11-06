@@ -78,6 +78,9 @@ def main():
         out["reasons"].append("crypto position held (its stop rests at Robinhood; checked on full runs)")
     if market:
         facts = {"now": out["generatedAt"], "marketOpen": True, "accountValue": 117.0, "buyingPower": 112.0, "symbols": {}}
+        news = load(os.path.join(ROOT, "docs", "data", "claudebot-news.json"), {}) or {}
+        if news.get("flags"):                         # Nova's news veto: no NEW buys in flagged funds
+            facts["skip"] = sorted(news["flags"]); out["newsFlags"] = news["flags"]
         for p in held:     # assume still held at the broker; the full run reconciles
             pass
         for _ in range(40):

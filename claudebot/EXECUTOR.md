@@ -250,7 +250,9 @@ all free cash (minus $1) across the day's signals; always buy exactly the `dolla
    start about 400 days ago; drop today's unfinished bar); heldQty = that symbol's
    `shares_available_for_sells` from get_equity_positions (0 if not held). Re-plan.
    **News check before every buy (board order 2026-11-02; veto only, never adds a trade).**
-   Before placing a `buy` (here or in E7), run at most 2 WebSearch calls: "<SYMBOL> news today"
+   First read `docs/data/claudebot-news.json` (Nova, refreshed every 5 min by GitHub): any fund in its
+   `flags` is skipped for new buys (severe news only); `watch` is information, not a veto. Then,
+   before placing a `buy` (here or in E7), run at most 2 WebSearch calls: "<SYMBOL> news today"
    and "stock market news today". Skip that buy ONLY for a fresh (last ~24h), specific danger:
    the fund or stock is halted, delisting, under fraud/accounting investigation, or hit by a
    company/sector shock still unfolding (e.g. a bank failure for KRE/XLF, a chip export ban for
