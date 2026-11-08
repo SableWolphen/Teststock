@@ -153,9 +153,21 @@ def plan(facts, cfg, led):
         return none("not enough free cash" + ("" if options_open() else f" (keeping ${reserve:.0f} free so the options desk can open its spread)"))
     looked, hits = [], []
     skip = set(facts.get("skip") or [])   # news veto for this run (EXECUTOR news check)
+    # Recovery guard (CEO 2026-11-08): shares the broker holds that the ledger does not record mean an
+    # earlier run may have filled mid-order (or the board bought by hand). Never buy that symbol again
+    # until the books are reconciled; other symbols are unaffected. Only ever blocks a buy.
+    mine = {p["symbol"] for p in held}
+    for sym, s_ in syms.items():
+        try:
+            q_ = float(s_.get("heldQty") or 0)
+            unrec = sym not in mine and (q_ > 0 or q_ != q_ or q_ in (float("inf"), float("-inf")))
+        except (TypeError, ValueError):
+            unrec = True
+        if unrec:
+            skip.add(sym); looked.append(f"{sym} held at the broker but not in the Dip ledger: reconcile before buying")
     for sym in cfg["symbols"]:
         s = syms.get(sym)
-        if sym in {p["symbol"] for p in held} or sym in skip:
+        if sym in mine or sym in skip:
             continue
         if not s:
             return {"actions": [{"do": "need_symbol", "symbol": sym}]}

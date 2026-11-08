@@ -32,6 +32,8 @@ Never promise returns.
 1. Recovery test suite (OpenAI #108): automated tests that a duplicate scheduled run, a restart
    mid-order, a partial fill and a rejected order never create a second order or a book/broker
    mismatch (planners + EXECUTOR reconciliation rules). Tests only; no live behaviour change.
+   DONE 2026-11-08: `claudebot/test_recovery.py` (in CI). It found one gap, closed fail-safe: the Dip
+   planner no longer buys a fund the broker holds but the ledger does not record.
 2. Trade autopsy (OpenAI #108), only once the options race has 20+ closed paper trades: per trade,
    forecast vs what happened, and the loss split into signal / spread / time decay / exit timing.
 
