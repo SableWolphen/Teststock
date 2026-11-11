@@ -8,10 +8,10 @@ Board order 2026-11-11 ("Live: cheap-stock + index", chosen when asked whether t
               <= min($50, 43% of account). Stocks skip earnings inside the holding window.
   index       the same signal on SPY, QQQ or IWM -> the call closest to the price (up to 15% above)
               about 45 days out (38-52) that fits the same budget.
-Entry only in the 14:00-14:59 CT run (the tests bought at the close). A contract is skipped when its
+Entries at any run 8:40-14:59 CT (board order 2026-11-11; the tests bought at the close). A contract is skipped when its
 quote is wider than the tests assumed by enough to erase the tested edge (see `forecast`).
 Exit follows the STOCK, as in the tests: the underlying falls 5% below where it was at entry (any run),
-or, in the 14:30-14:59 CT run, it is back above its 5-day average or 10 trading days have passed; also
+or, at any run (board order 2026-11-11), it is back above its 5-day average or 10 trading days have passed; also
 5 days before expiry. There is no resting take-profit order and no premium stop: the most one trade
 can lose is what was paid for the option.
 A rule switches itself off after 10 closed live trades if its profit factor is below 1.0.
@@ -119,12 +119,12 @@ def plan(f, cfg, led):
             return {"actions": acts}
         return none(f"holding {pos['label']} from {cost} (bid {bid}); {pos['symbol']} at {px}"
                     + (" (bought today, sell checks start next session)" if entered == today else
-                       f": sells when the stock is back above its {x['bounceSma']}-day average near the close, {x['stockStopPct']}% below {upx}, or on day {x['maxHoldDays']}"))
+                       f": sells when the stock is back above its {x['bounceSma']}-day average, {x['stockStopPct']}% below {upx}, or on day {x['maxHoldDays']}"))
     if not cfg.get("enabled", True):
         return none("options-buying desk disabled")
     w0, w1 = (time.fromisoformat(t) for t in s["windowCT"])
     if not (w0 <= local.time() <= w1):
-        return none("entries only in the last run before the close (14:00-14:59 CT)")
+        return none(f"entries only {s['windowCT'][0]}-{s['windowCT'][1]} CT")
     acct = float(f.get("accountValue", 0))
     if acct < r["pauseBelowAccountValueUsd"]:
         return none("account below the pause floor")

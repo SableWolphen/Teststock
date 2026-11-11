@@ -53,6 +53,41 @@ def symbol_facts(sym, today):
     return {"price": float(trade["p"]), "closes": closes[-260:], "heldQty": 0}
 
 
+def latest_prices(syms):
+    out = {}
+    for i in range(0, len(syms), 100):
+        d = get("https://data.alpaca.markets/v2/stocks/trades/latest?feed=iex&symbols=" + ",".join(syms[i:i + 100]))
+        out.update({k: float(v["p"]) for k, v in (d.get("trades") or {}).items()})
+    return out
+
+
+def option_signals(cfg, scan, now, today, local, prices=None, facts=None):
+    """Symbols where the live options desk's dip signal is on right now (same tests as optbuy_bot.plan)."""
+    s, sc, rules, hits = cfg["signal"], cfg.get("scan") or {}, cfg.get("rules") or {}, []
+    sp_ = importlib.util.spec_from_file_location("db_sig", os.path.join(HERE, "dip_bot.py")); db = importlib.util.module_from_spec(sp_); sp_.loader.exec_module(db)
+    w0, w1 = s["windowCT"]
+    if not (w0 <= local.strftime("%H:%M") <= w1):
+        return []
+    cs = rules.get("cheapStock") or {}
+    age = (now - datetime.fromisoformat(scan["generatedAt"].replace("Z", "+00:00"))).total_seconds() / 3600 if scan.get("generatedAt") else 999
+    if cs.get("enabled", True) and cs.get("boardApproval") and age <= sc.get("maxAgeHours", 100) and scan.get("asOf") and scan["asOf"] < today:
+        near = cs["maxStockPrice"] * (1 + sc.get("maxDropPct", 6) / 100)
+        watch = [w for w in scan.get("watch", []) if 0 < float((scan["symbols"].get(w) or {}).get("lastClose") or 0) <= near]
+        px = prices if prices is not None else (latest_prices(watch) if watch else {})
+        for w in watch:
+            r_, p_ = scan["symbols"][w], px.get(w)
+            if p_ and r_.get("rsiTrigger") and r_["trendFloor"] < p_ < r_["rsiTrigger"] and p_ <= cs["maxStockPrice"]:
+                hits.append(w)
+    ix = rules.get("index") or {}
+    if ix.get("enabled", True) and ix.get("boardApproval"):
+        for sym in ix.get("symbols", []):
+            f = (facts or {}).get(sym) or symbol_facts(sym, today)
+            c = [float(v) for v in f["closes"]][-(s["trendSma"] + 10):] + [float(f["price"])]
+            if len(c) > s["trendSma"] and c[-1] > db.sma(c, s["trendSma"]) and db.rsi2(c) < s["rsi2Below"]:
+                hits.append(sym)
+    return hits
+
+
 def stop_alerts(rows, market):
     """Held positions trading at or below their stop price while the market is open. The workflow turns each
     one into a GitHub alert to the owner (board 2026-11-11: Robinhood refuses stop orders on fractional shares,
@@ -83,13 +118,19 @@ def main():
         out["needed"] = True
         out["reasons"].append("Dip holding: verify broker position, open orders and protective exits")
     # other live desks that need Robinhood attention whenever they hold something
-    EOD = "options desk: end-of-day signal check"
     if (load(os.path.join(ROOT, "docs", "data", "claudebot-optbuy-ledger.json"), {}) or {}).get("open"):
         out["needed"] = True; out["reasons"].append("options-buying desk holds an option (manage its exit)")
-    elif market and (load(os.path.join(HERE, "optbuy_config.json"), {}) or {}).get("enabled") and local.hour * 60 + local.minute >= 14 * 60 + 35:
-        # The options desk only buys in the last run before the close and its signals are not replayed here,
-        # so that run (2:44 PM CT) must do the full check. It never triggers an extra call by itself (see below).
-        out["needed"] = True; out["reasons"].append(EOD)
+    elif market and (load(os.path.join(HERE, "optbuy_config.json"), {}) or {}).get("enabled"):
+        # Board 2026-11-11: the options desk buys all day, so check its dip signals here on live prices and
+        # call the trader the moment one appears. Read-only; the trader re-checks everything at Robinhood.
+        try:
+            hits = option_signals(load(os.path.join(HERE, "optbuy_config.json"), {}), load(os.path.join(ROOT, "docs", "data", "claudebot-optbuy-scan.json"), {}) or {},
+                                  now, today, local)
+            out["optionSignals"] = hits
+            if hits:
+                out["needed"] = True; out["reasons"].append("options desk: dip signal on " + ", ".join(hits[:6]))
+        except Exception as e:  # noqa: BLE001
+            out["needed"] = True; out["reasons"].append(f"options signal check failed ({str(e)[:60]}); full run checks live")
     if (load(os.path.join(ROOT, "docs", "data", "claudebot-ledger.json"), {}) or {}).get("open"):
         out["reasons"].append("crypto position held (its stop rests at Robinhood; checked on full runs)")
     if market:
@@ -136,7 +177,7 @@ def main():
     last_at, last_why = prev.get("lastCallAt"), prev.get("lastCallReasons")
     out["lastCallAt"], out["lastCallReasons"] = last_at, last_why
     stale = not last_at or now - datetime.fromisoformat(last_at.replace("Z", "+00:00")) > timedelta(minutes=40)
-    call_reasons = [r_ for r_ in out["reasons"] if r_ != EOD]      # the scheduled 2:44 PM run handles the end-of-day check
+    call_reasons = list(out["reasons"])
     out["callClaude"] = bool(call_reasons and out["needed"] and market and (stale or last_why != call_reasons))
     if out["callClaude"]:
         out["lastCallAt"], out["lastCallReasons"] = out["generatedAt"], call_reasons

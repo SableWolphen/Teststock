@@ -38,7 +38,8 @@ assert a["do"] == "buy" and a["id"] == "b" and a["limitPrice"] == "0.41" and a["
 assert a["rule"] == "index" and a["strategyId"] == "optbuy:index" and a["underlyingPx"] == PX and a["forecastUsd"] > 0 and a["holdMinutes"] == 1170, a
 assert float(a["limitPrice"]) * 100 <= 50 and float(a["maxPrice"]) * 100 <= 50
 assert act({**F2, "calls": C[:2]})[0]["do"] == "none"                                           # only the too-expensive and too-wide ones
-assert act({**F2, "calls": C, "now": "2026-11-04T17:14:00Z"})[0]["do"] == "none"                # 11:14 CT: outside the entry window
+assert act({**F2, "calls": C, "now": "2026-11-04T17:14:00Z"})[0]["do"] == "buy"                 # 11:14 CT: buys during the day too (board 2026-11-11)
+assert act({**F2, "calls": C, "now": "2026-11-04T14:30:00Z"})[0]["do"] == "none"                # 8:30 CT: before the first run window
 assert "pause floor" in act({**F, "accountValue": 50})[0]["reason"]
 assert "free cash" in act({**F, "buyingPower": 4})[0]["reason"]
 assert "disabled" in act(c={**cfg, "enabled": False})[0]["reason"]
@@ -74,7 +75,7 @@ assert act({k: v for k, v in hold(PX).items() if k != "optQuote"}, L)[0]["do"] =
 assert act(hold(PX, optHeld=0), L)[0]["do"] == "record_broker_close"
 a = act(hold(PX, symbols={}), L)[0]; assert a == {"do": "need_symbol", "symbol": "SPY"}, a        # needs the stock's price and closes
 a = act(hold(avg4 + 0.3), L)[0]; assert a["do"] == "sell" and a["reason"] == "bounce" and a["limitPrice"] == "0.40" and a["quantity"] == "1", a
-assert act(hold(avg4 + 0.3, now="2026-11-04T17:14:00Z"), L)[0]["do"] == "none"                    # a bounce at 11:14 waits for the run near the close
+assert act(hold(avg4 + 0.3, now="2026-11-04T17:14:00Z"), L)[0]["reason"] == "bounce"               # a bounce at 11:14 sells then (board 2026-11-11)
 assert act(hold(avg4 - 0.3), L)[0]["do"] == "none"                                                # not back above its average: hold
 a = act(hold(PX * 0.95 - 0.01, now="2026-11-04T17:14:00Z"), L)[0]; assert a["do"] == "sell" and a["reason"] == "stock stop", a   # 5% stock stop, any run
 assert act(hold(PX * 0.95 + 0.05, now="2026-11-04T17:14:00Z"), L)[0]["do"] == "none"

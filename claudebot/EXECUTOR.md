@@ -54,7 +54,7 @@ matter on THIS run (Chicago time), then commit and stop. Exits are never skipped
 | A crypto | only if `docs/data/claudebot-ledger.json` has an `open` position (live crypto entries are off) |
 | B options spreads (paper) | never: Sim was fired 2026-11-03 (spreads can't trade live; research stays in the free weekly backtests) |
 | E Dip desk | every run: buys at the first run of the day where a fund qualifies (hourly: 8:44, 9:44, 10:14, 11:14, 12:14, 1:14, 2:14, 2:44; board 2026-11-06), stops, bounce and time exits at every run too |
-| E7 options-buying | every run while an option is held (the exit follows the stock); when flat and `claudebot/optbuy_config.json` has `"enabled": true`, only in the 14:00-14:59 CT run (the only time it buys) |
+| E7 options-buying | every run while an option is held (the exit follows the stock); when flat and `claudebot/optbuy_config.json` has `"enabled": true`, every run 8:40-14:59 CT (board 2026-11-11: buys and sells all day) |
 | C Paper Lab | never: Sim was fired 2026-11-03 |
 | C3 day-trade paper | never: GitHub Actions replays each day for free after the close |
 | C2 promote + D audit | every run (local scripts, cheap) |
@@ -290,8 +290,8 @@ Add `docs/data/claudebot-dip-ledger.json` to the same commit.
 rule): the desk trades two rules with real money, one option at a time, inside the governor's caps ($50 and
 43% of the account). (1) cheap-stock call: a scan-list name at $25 or less, the call within 3% of the price
 about 30 days out; (2) index call: SPY, QQQ or IWM, the closest-to-the-price call about 45 days out. Buys only
-in the 14:00-14:59 CT run. The exit follows the STOCK (5% below where it was at entry at any run; back above
-its 5-day average or day 10 in the 14:30-14:59 run; 5 days before expiry). There is NO resting take-profit
+at any run 8:40-14:59 CT (board 2026-11-11). The exit follows the STOCK at any run (5% below where it was at entry;
+back above its 5-day average; day 10; 5 days before expiry). There is NO resting take-profit
 order and no premium stop: the most a trade can lose is what was paid. The evidence is thin and there are no
 paper trades (optbuy_config.json `rules.*.evidence`); never widen a rule, a cap or the budget.
 
