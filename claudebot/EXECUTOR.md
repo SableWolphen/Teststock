@@ -107,6 +107,13 @@ Never write account numbers, dollar balances, coin quantities or order IDs into
 the repo. The ledger only holds prices and percentages.
 
 ## 4. Report
+**An order the rules called for that could not be placed is always reported (board order 2026-11-11).**
+If a planner returned a buy or sell and it did not go through (the order tool was blocked or denied,
+Robinhood rejected it, or it never filled), log it with the desk's `log --action error`, then tell the
+user in one or two plain lines: which order, why it failed, that nothing was placed, and that they can
+place it themselves in the Robinhood app if they want it. A blocked SELL or STOP is urgent: say so.
+(2026-11-06: a planned buy was blocked by the run's own permission layer and nobody was told.)
+
 Only send a message when something happened (a buy, a sell, a stop moved, a paper
 spread opened or closed, or an error). One or two lines: what, price, why, and running % since start.
 
