@@ -39,6 +39,17 @@ def money(v):
     return ("-" if v < 0 else "+") + f"${abs(v):,.2f}"
 
 
+def second_look(ch):
+    """The by-fund cut of the cheap dip-call research, in one sentence. Chosen after the first result: a lead, not proof."""
+    r = next((x for x in ch.get("rows", []) if x.get("dte") == 45 and x.get("indexFundsOnly")), None)
+    if not r:
+        return None
+    a, b = r["indexFundsOnly"], r["otherFunds"]
+    g = lambda s: f"{s['trades']} trades, {s['winRatePct']:.0f}% wins, {s['avgRetPct']:+.1f}% average" if s.get("trades") else "no trades"
+    return (f"On SPY, QQQ and IWM alone (45 days): 2024 {g(a['train'])}; 2025-26 {g(a['test'])}. On the other funds: 2024 {g(b['train'])}; 2025-26 {g(b['test'])}. "
+            "This cut was picked after seeing the first result, so it is a lead for the paper test, not proof.")
+
+
 def paper_stats(trades):
     pn = [t.get("pnlUsd") for t in trades if t.get("pnlUsd") is not None]
     return {"trades": len(pn), "wins": sum(1 for p in pn if p > 0), "netUsd": round(sum(pn), 2)} if pn else {"trades": 0, "wins": 0, "netUsd": 0.0}
@@ -97,6 +108,7 @@ def build(data_dir=DATA, cfg_dir=os.path.join(ROOT, "claudebot")):
                        f"Single trades lost up to {abs(min(r['test']['worstRetPct'] for r in te)):.0f}%. "
                        f"For {rng([r['noAffordableContract'] for r in ch['rows']])} of {ch['rows'][0]['signals']} signals, no contract within 15% of the price fit the cap.",
             "paper": (f"{cp['trades']} paper trades, net {money(cp['netUsd'])}" if cp["trades"] else "0 paper trades so far (its forward test at live prices has just started)"),
+            "secondLook": second_look(ch),
             "affordable": True, "canBuy": "Yes", "status": "Paper test at live prices"})
     # 3) Quick in-and-out trades
     s = (sbt.get("modes") or {}).get("acct120") or {}

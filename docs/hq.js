@@ -1261,7 +1261,7 @@ function optionsReportCard() {
   if (!rows.length) return card('🎓 Options report card', '<div class="empty">The report card appears after tonight\'s paper run.</div>', 'span3');
   const tag = v => ({ 'held up': 'bull', 'lost': 'bear', 'no edge': 'bear', 'did not hold up': 'bear' }[v] || 'neu');
   const item = x => `<div class="orc-i"><span class="tag ${tag(x.verdict)}">${esc(x.verdict)}</span><b>${esc(x.type)}</b>
-      <dl><dt>A contract costs</dt><dd>${esc(x.cost)}</dd><dt>On unseen past prices</dt><dd>${esc(x.history)}</dd><dt>On paper at live prices</dt><dd>${esc(x.paper)}</dd><dt>Can the account buy it?</dt><dd>${esc(x.canBuy)}</dd><dt>Status</dt><dd>${esc(x.status)}</dd></dl></div>`;
+      <dl><dt>A contract costs</dt><dd>${esc(x.cost)}</dd><dt>On unseen past prices</dt><dd>${esc(x.history)}</dd>${x.secondLook ? `<dt>A second look</dt><dd>${esc(x.secondLook)}</dd>` : ''}<dt>On paper at live prices</dt><dd>${esc(x.paper)}</dd><dt>Can the account buy it?</dt><dd>${esc(x.canBuy)}</dd><dt>Status</dt><dd>${esc(x.status)}</dd></dl></div>`;
   return card('🎓 Options report card · every kind we have tested, side by side', `<p style="margin:0 0 10px;max-width:80ch">${(r.lessons || []).map(esc).join(' ')}</p>
     <div class="orc">${rows.map(item).join('')}</div>
     <p style="color:var(--muted);margin:10px 0 0">History and paper only, updated ${ago(r.generatedAt)}. Past results do not predict future results.</p>`, 'span3');

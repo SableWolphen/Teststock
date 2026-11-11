@@ -29,6 +29,7 @@ OUT = os.path.join(os.path.dirname(HERE), "docs", "data", "claudebot-cheapcall-p
 sp = importlib.util.spec_from_file_location("dipcall_paper", os.path.join(HERE, "dipcall_paper.py"))
 dp = importlib.util.module_from_spec(sp); sp.loader.exec_module(dp)
 CAP, MAX_OTM = 50.0, 0.15
+INDEX_FUNDS = {"SPY", "QQQ", "IWM"}
 NAME = "Cheap dip calls (closest call to the price costing $50 or less, sold on the bounce)"
 
 
@@ -86,10 +87,16 @@ def step(led, bars_by_sym, today):
         led["_day"] = max(led.get("_day") or "", day)
     if led.get("_day"):
         led["lastDay"] = led.pop("_day")
-    t = st["trades"]; w = [x["pnlUsd"] for x in t if x["pnlUsd"] > 0]; l = [x["pnlUsd"] for x in t if x["pnlUsd"] <= 0]
-    led["leaderboard"] = [{"id": "cheapcall", "name": st["name"], "trades": len(t), "wins": len(w), "winRatePct": round(100 * len(w) / len(t), 1) if t else None,
-                           "pnlUsd": round(sum(w + l), 2), "avgRetPct": round(sum(x["retPct"] for x in t) / len(t), 1) if t else None,
-                           "profitFactor": round(sum(w) / -sum(l), 2) if l and sum(l) < 0 else None, "open": len(st["open"])}]
+    def row(rid, name, t, n_open):
+        w = [x["pnlUsd"] for x in t if x["pnlUsd"] > 0]; l = [x["pnlUsd"] for x in t if x["pnlUsd"] <= 0]
+        return {"id": rid, "name": name, "trades": len(t), "wins": len(w), "winRatePct": round(100 * len(w) / len(t), 1) if t else None,
+                "pnlUsd": round(sum(w + l), 2), "avgRetPct": round(sum(x["retPct"] for x in t) / len(t), 1) if t else None,
+                "profitFactor": round(sum(w) / -sum(l), 2) if l and sum(l) < 0 else None, "open": n_open}
+    # The second row is the SAME trades counted for SPY, QQQ and IWM only: on historical prices that slice was
+    # about flat in 2024 and profitable in 2025-26, while the other funds lost. Tracked forward, not traded twice.
+    idx = lambda x: x.get("underlying") in INDEX_FUNDS
+    led["leaderboard"] = [row("cheapcall", st["name"], st["trades"], len(st["open"])),
+                          row("cheapcall_index", "of which SPY, QQQ and IWM only", [x for x in st["trades"] if idx(x)], sum(1 for x in st["open"].values() if idx(x)))]
     led["updatedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     led["runs"] = (led.get("runs", []) + [{"t": led["updatedAt"], "detail": ", ".join(made) or "no signals"}])[-60:]
     return led
