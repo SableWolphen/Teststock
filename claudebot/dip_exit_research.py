@@ -10,7 +10,7 @@ market) and 2023-now. Past results do not predict future results.
 Writes docs/data/claudebot-dip-exit-research.json.
 """
 import importlib.util, json, os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 spec = importlib.util.spec_from_file_location("db", os.path.join(HERE, "dip_backtest.py"))
@@ -76,17 +76,27 @@ def compare(data):
 
 
 def bars_longest(sym, start):
-    """The bot's usual source only reaches back to mid-2020 for most funds. Also try the long-history
-    source and keep whichever starts earlier, so the older period really covers 2018-2022."""
+    """The bot's usual feed only reaches back to mid-2020 for most funds. Also try the full-market
+    historical feed (free for data older than 15 minutes) and keep whichever starts earlier, so the
+    older period really covers 2018-2022."""
     best, name = db.ob.daily_bars(sym, start)
-    try:
-        import csv, io
-        txt = db.ob.get(f"https://stooq.com/q/d/l/?s={sym.lower()}.us&i=d")
-        rows = [(r["Date"], float(r["Close"])) for r in csv.DictReader(io.StringIO(txt)) if r.get("Date", "") >= start]
-        if len(rows) > 300 and rows[0][0] < best[0][0] and rows[-1][0] >= best[-1][0][:8] + "01":
-            best, name = rows, "stooq"
-    except Exception as e:  # noqa: BLE001
-        print(sym, "long-history source unavailable:", str(e)[:80])
+    key, sec = os.environ.get("ALPACA_API_KEY"), os.environ.get("ALPACA_API_SECRET")
+    if key and sec:
+        try:
+            end = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
+            rows, tok = [], None
+            while True:
+                url = (f"https://data.alpaca.markets/v2/stocks/{sym}/bars?timeframe=1Day&start={start}&end={end}"
+                       f"&adjustment=split&feed=sip&limit=10000" + (f"&page_token={tok}" if tok else ""))
+                d = json.loads(db.ob.get(url, {"APCA-API-KEY-ID": key, "APCA-API-SECRET-KEY": sec}))
+                rows += [(b["t"][:10], float(b["c"])) for b in d.get("bars") or []]
+                tok = d.get("next_page_token")
+                if not tok:
+                    break
+            if len(rows) > 300 and rows[0][0] < best[0][0]:
+                best, name = rows, "alpaca-sip"
+        except Exception as e:  # noqa: BLE001
+            print(sym, "long-history feed unavailable:", str(e)[:80])
     return best, name
 
 
