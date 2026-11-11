@@ -88,6 +88,13 @@ def summ(t):
     return s
 
 
+INDEX_FUNDS = {"SPY", "QQQ", "IWM"}      # the three with penny-wide option quotes
+
+
+def by_period(t, split):
+    return {"train": summ([x for x in t if x["day"] < split]), "test": summ([x for x in t if x["day"] >= split])}
+
+
 def analyse(sigs, data, split):
     rows = []
     for dte in DTES:
@@ -97,12 +104,21 @@ def analyse(sigs, data, split):
             by.setdefault(x["sym"], []).append(x)
         rows.append({"dte": dte, "signals": len(sigs), "noAffordableContract": nofit, "noExitPrice": noexit,
                      "train": summ([x for x in t if x["day"] < split]), "test": summ([x for x in t if x["day"] >= split]),
-                     "byFund": {s: summ(v) for s, v in sorted(by.items())}})
+                     # second look (board, 2026-11-11 "check cheap options again"): the same trades cut by fund, by
+                     # index funds vs the rest, and by how far above the price the contract sat, each in BOTH periods.
+                     # These cuts were chosen after seeing the first result, so a good-looking one is a lead, not proof.
+                     "byFund": {s: by_period(v, split) for s, v in sorted(by.items())},
+                     "indexFundsOnly": by_period([x for x in t if x["sym"] in INDEX_FUNDS], split),
+                     "otherFunds": by_period([x for x in t if x["sym"] not in INDEX_FUNDS], split),
+                     "byDistance": {"within 5% of the price": by_period([x for x in t if x["otmPct"] <= 5], split),
+                                    "5 to 10% above": by_period([x for x in t if 5 < x["otmPct"] <= 10], split),
+                                    "more than 10% above": by_period([x for x in t if x["otmPct"] > 10], split)},
+                     "trades": [[x["day"], x["sym"], x["otmPct"], x["premiumUsd"], x["retPct"], x["pnl"]] for x in t]})
     cand = [r for r in rows if r["train"].get("trades", 0) >= 5]
     best = max(cand, key=lambda r: r["train"].get("avgRetPct", -99)) if cand else None
     both = [r for r in cand if (r["train"].get("avgRetPct") or -1) > 0 and (r["test"].get("avgRetPct") or -1) > 0]
     held = bool(best and (best["test"].get("avgRetPct") or -1) > 0 and (best["test"].get("profitFactor") or 0) > 1.2 and best["test"].get("trades", 0) >= 10)
-    return {"rows": rows, "chosenOnPick": best and {k: best[k] for k in ("dte", "train", "test")},
+    return {"tradeColumns": ["day", "fund", "pctAbovePrice", "premiumUsd", "retPct", "pnlUsd"], "rows": rows, "chosenOnPick": best and {k: best[k] for k in ("dte", "train", "test")},
             "settingsPositiveBoth": f"{len(both)}/{len(cand)}", "verdict": "held up" if held else "did not hold up"}
 
 
