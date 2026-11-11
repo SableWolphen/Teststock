@@ -78,7 +78,14 @@ def step(led, bars, today, universe):
 def main():
     dp.H = {"APCA-API-KEY-ID": os.environ["ALPACA_API_KEY"], "APCA-API-SECRET-KEY": os.environ["ALPACA_API_SECRET"], "User-Agent": "teststock"}
     sp2 = importlib.util.spec_from_file_location("ob", os.path.join(HERE, "options_backtest.py")); ob = importlib.util.module_from_spec(sp2); sp2.loader.exec_module(ob)
-    universe = json.load(open(os.path.join(HERE, "optbuy_config.json")))["scanUniverse"]
+    universe = list(json.load(open(os.path.join(HERE, "optbuy_config.json")))["scanUniverse"])
+    try:   # board 2026-11-11 "watch all stocks": also every optionable stock the nightly scan found in the cheap range
+        scan = json.load(open(os.path.join(os.path.dirname(HERE), "docs", "data", "claudebot-optbuy-scan.json")))
+        universe += [x for x in scan.get("discovered") or [] if x not in universe]
+        rows = scan.get("symbols") or {}
+        universe = [x for x in universe if (rows.get(x) or {}).get("lastClose", 0) <= MAX_PX * 1.06 or x not in rows]
+    except Exception as e:  # noqa: BLE001
+        print("scan file unavailable, fixed list only:", e, file=sys.stderr)
     try:
         led = json.load(open(OUT))
     except Exception:  # noqa: BLE001
