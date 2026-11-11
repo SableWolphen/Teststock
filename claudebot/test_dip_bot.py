@@ -63,3 +63,15 @@ assert act({**F, "accountValue": 117, "buyingPower": float("nan")})["do"] == "no
 db.options_open = lambda: True
 a = act({**F, "skip": ["SPY"]}); assert a["do"] != "buy" or a["symbol"] != "SPY", a
 print("all dip desk scenarios pass")
+
+# partial sale (board trim to 25%): the sold part becomes a finished trade, the rest stays open at its cost
+import tempfile, json as _j
+with tempfile.TemporaryDirectory() as _d:
+    _orig = db.LEDGER; db.LEDGER = _d + "/l.json"
+    _j.dump({"positions": [{"symbol": "DIA", "entryPrice": 500.0, "usd": 100.0, "pctOfAccount": 90, "rule": "double7", "enteredAt": "2026-11-06T15:00:00Z"}], "trades": [], "runs": []}, open(db.LEDGER, "w"))
+    assert db.main(["trim", "--symbol", "DIA", "--price", "510", "--qty", "0.15", "--account-value", "110", "--reason", "trim"]) == 0
+    _l = _j.load(open(db.LEDGER)); _p = _l["positions"][0]; _t = _l["trades"][0]
+    assert _p["usd"] == 25.0 and _t["usd"] == 75.0 and _t["pnlUsd"] == 1.5 and _t["partial"] is True and _p["pctOfAccount"] == round(100 * 0.05 * 510 / 110, 1)
+    assert db.main(["trim", "--symbol", "DIA", "--price", "510", "--qty", "0.05", "--account-value", "110", "--reason", "x"]) == 2   # cannot trim the whole position
+    db.LEDGER = _orig
+print("trim ok")

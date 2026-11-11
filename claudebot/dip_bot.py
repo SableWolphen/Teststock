@@ -226,6 +226,9 @@ def main(argv=None):
     p = sub.add_parser("plan"); p.add_argument("facts")
     p = sub.add_parser("open"); p.add_argument("--symbol", required=True); p.add_argument("--price", type=float, required=True); p.add_argument("--usd", type=float, required=True); p.add_argument("--pct", type=float, default=None); p.add_argument("--rule", default="dip")
     p = sub.add_parser("close"); p.add_argument("--symbol", required=True); p.add_argument("--price", type=float, required=True); p.add_argument("--reason", required=True)
+    # partial sale ordered by the board (e.g. trim to 25% of the account): book the sold part as a finished trade, keep the rest open
+    p = sub.add_parser("trim"); p.add_argument("--symbol", required=True); p.add_argument("--price", type=float, required=True)
+    p.add_argument("--qty", type=float, required=True); p.add_argument("--account-value", type=float, required=True); p.add_argument("--reason", required=True)
     p = sub.add_parser("log"); p.add_argument("--action", required=True); p.add_argument("--detail", default="")
     p = sub.add_parser("mark"); p.add_argument("facts")
     a = ap.parse_args(argv)
@@ -253,6 +256,18 @@ def main(argv=None):
         led["trades"].append({"label": p_["symbol"], "symbol": p_["symbol"], "enteredAt": p_["enteredAt"], "exitedAt": iso(now), "entryPrice": p_["entryPrice"],
                               "exitPrice": a.price, "usd": p_["usd"], "rule": p_.get("rule", "dip"), "returnPct": round(ret, 3), "pnlUsd": round(p_["usd"] * ret / 100, 2), "reason": a.reason})
         ps.remove(p_); log("sell", f"sold {p_['symbol']} at {a.price} ({ret:+.2f}%, {a.reason})"); save_led(led, ps); return 0
+    if a.cmd == "trim":
+        p_ = next((x for x in ps if x["symbol"] == a.symbol), None)
+        held = p_ and p_["usd"] / p_["entryPrice"]
+        if not p_ or not (0 < a.qty < held - 1e-6):
+            print(f"ERROR: no open {a.symbol} position larger than {a.qty} shares", file=sys.stderr); return 2
+        sold_usd, ret = round(a.qty * p_["entryPrice"], 2), 100 * (a.price / p_["entryPrice"] - 1)
+        led["trades"].append({"label": p_["symbol"], "symbol": p_["symbol"], "enteredAt": p_["enteredAt"], "exitedAt": iso(now), "entryPrice": p_["entryPrice"],
+                              "exitPrice": a.price, "usd": sold_usd, "rule": p_.get("rule", "dip"), "returnPct": round(ret, 3),
+                              "pnlUsd": round(sold_usd * ret / 100, 2), "reason": a.reason, "partial": True})
+        p_["usd"] = round(p_["usd"] - sold_usd, 2)
+        p_["pctOfAccount"] = round(100 * (held - a.qty) * a.price / a.account_value, 1)
+        log("sell", f"sold part of {p_['symbol']} at {a.price} ({ret:+.2f}%, {a.reason}); ${p_['usd']:.2f} of cost still open"); save_led(led, ps); return 0
     if a.cmd == "mark":
         # record each open position's live price for the dashboard's "made today" (prices only)
         f, today = load(a.facts), now.astimezone(CT).date()
