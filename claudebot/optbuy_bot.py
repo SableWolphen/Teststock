@@ -58,6 +58,13 @@ def tick_up(p):
     return round(math.ceil(round(p / step, 6)) * step, 2)
 
 
+def positions(led):
+    """Held options (board 2026-11-11: up to maxOpenPositions at once). Reads the older single 'open' too."""
+    if led.get("positions") is not None:
+        return led["positions"]
+    return [led["open"]] if led.get("open") else []
+
+
 def rule_state(cfg, led, rule):
     """(ok, closedTrades, profitFactor). A rule switches itself off once it has `afterTrades` closed live
     trades with a profit factor below the floor (board order: stop after 10 live trades if it is losing)."""
@@ -84,42 +91,51 @@ def plan(f, cfg, led):
     if not f.get("marketOpen"):
         return none("market closed")
     syms = f.get("symbols", {})
-    pos = led.get("open")
-    if pos:
-        if "optQuote" not in f or "optHeld" not in f:
-            return {"actions": [{"do": "need_position", "id": pos["id"], "note": "optHeld from get_option_positions, optQuote from get_option_quotes, tpOrder from open option orders"}]}
-        if float(f["optHeld"]) <= 0:
-            return {"actions": [{"do": "record_broker_close", "id": pos["id"], "note": "no longer held at the broker: find the filled sell and record it"}]}
-        d = syms.get(pos["symbol"])
-        if not d or not d.get("closes"):                 # the exit follows the stock, so its price and closes are needed
-            return {"actions": [{"do": "need_symbol", "symbol": pos["symbol"]}]}
-        bid, cost, px = float(f["optQuote"]["bid"]), pos["entryPrice"], float(d["price"])
-        entered = ts(pos["enteredAt"]).astimezone(CT).date()
-        dte = (date.fromisoformat(pos["expiration"]) - today).days
-        c0, c1 = (time.fromisoformat(t) for t in x["closeWindowCT"])
-        why, upx = None, pos.get("underlyingPx")
-        if entered != today:                             # as in the tests: no exit on the day it was bought
-            cl = [float(v) for v in d["closes"]]; n = x["bounceSma"]
-            if upx and px <= float(upx) * (1 - x["stockStopPct"] / 100):
-                why = "stock stop"
-            elif dte <= x["exitAtDte"]:
-                why = "expiry near"
-            elif c0 <= local.time() <= c1:
-                if len(cl) >= n - 1 and px > (sum(cl[-(n - 1):]) + px) / n:
-                    why = "bounce"
-                elif tdays(entered, today) >= x["maxHoldDays"]:
-                    why = "time"
-        tp = f.get("tpOrder")                            # this rule keeps no resting order: clear any left over
-        acts = [{"do": "cancel_order", "orderId": tp["id"]}] if tp else []
-        if why:
-            if bid <= 0:
-                return {"actions": acts + [{"do": "none", "reason": f"wanted to sell ({why}) but the bid is 0; next run retries"}]}
-            return {"actions": acts + [{"do": "sell", "id": pos["id"], "symbol": pos["symbol"], "limitPrice": f"{bid:.2f}", "quantity": "1", "reason": why}]}
-        if acts:
-            return {"actions": acts}
-        return none(f"holding {pos['label']} from {cost} (bid {bid}); {pos['symbol']} at {px}"
-                    + (" (bought today, sell checks start next session)" if entered == today else
-                       f": sells when the stock is back above its {x['bounceSma']}-day average, {x['stockStopPct']}% below {upx}, or on day {x['maxHoldDays']}"))
+    held = positions(led)
+    if held:
+        # facts per held option, keyed by option id: optHeldById, optQuotes, tpOrders (see need_position)
+        if "optQuotes" not in f or "optHeldById" not in f:
+            return {"actions": [{"do": "need_position", "ids": [p["id"] for p in held],
+                                 "note": "optHeldById[id] from get_option_positions, optQuotes[id] = {bid, ask} from get_option_quotes, tpOrders[id] = {id, price} of any open sell-to-close order"}]}
+        notes = []
+        for pos in held:
+            if float(f["optHeldById"].get(pos["id"], 0)) <= 0:
+                return {"actions": [{"do": "record_broker_close", "id": pos["id"], "note": "no longer held at the broker: find the filled sell and record it"}]}
+            d = syms.get(pos["symbol"])
+            if not d or not d.get("closes"):                 # the exit follows the stock, so its price and closes are needed
+                return {"actions": [{"do": "need_symbol", "symbol": pos["symbol"]}]}
+            q = f["optQuotes"].get(pos["id"]) or {}
+            bid, cost, px = float(q.get("bid") or 0), pos["entryPrice"], float(d["price"])
+            entered = ts(pos["enteredAt"]).astimezone(CT).date()
+            dte = (date.fromisoformat(pos["expiration"]) - today).days
+            c0, c1 = (time.fromisoformat(t) for t in x["closeWindowCT"])
+            why, upx = None, pos.get("underlyingPx")
+            if entered != today:                             # as in the tests: no exit on the day it was bought
+                cl = [float(v) for v in d["closes"]]; n = x["bounceSma"]
+                if upx and px <= float(upx) * (1 - x["stockStopPct"] / 100):
+                    why = "stock stop"
+                elif dte <= x["exitAtDte"]:
+                    why = "expiry near"
+                elif c0 <= local.time() <= c1:
+                    if len(cl) >= n - 1 and px > (sum(cl[-(n - 1):]) + px) / n:
+                        why = "bounce"
+                    elif tdays(entered, today) >= x["maxHoldDays"]:
+                        why = "time"
+            tp = (f.get("tpOrders") or {}).get(pos["id"])     # this rule keeps no resting order: clear any left over
+            acts = [{"do": "cancel_order", "orderId": tp["id"]}] if tp else []
+            if why:
+                if bid <= 0:
+                    notes.append(f"{pos['label']}: wanted to sell ({why}) but the bid is 0; next run retries")
+                    if acts:
+                        return {"actions": acts}
+                    continue
+                return {"actions": acts + [{"do": "sell", "id": pos["id"], "symbol": pos["symbol"], "label": pos["label"], "limitPrice": f"{bid:.2f}", "quantity": "1", "reason": why}]}
+            if acts:
+                return {"actions": acts}
+            notes.append(f"holding {pos['label']} from {cost} (bid {bid}); {pos['symbol']} at {px}"
+                         + (" (bought today)" if entered == today else ""))
+        if len(held) >= r.get("maxOpenPositions", 1):
+            return none("; ".join(notes) + f"; at the limit of {r.get('maxOpenPositions', 1)} options")
     if not cfg.get("enabled", True):
         return none("options-buying desk disabled")
     w0, w1 = (time.fromisoformat(t) for t in s["windowCT"])
@@ -128,7 +144,10 @@ def plan(f, cfg, led):
     acct = float(f.get("accountValue", 0))
     if acct < r["pauseBelowAccountValueUsd"]:
         return none("account below the pause floor")
-    budget = min(r["maxPremiumUsd"], acct * r["maxPctOfAccount"] / 100, float(f.get("buyingPower", 0)) - r["minCashAfterUsd"])
+    open_usd = sum(p["entryPrice"] * 100 for p in held)
+    budget = min(r["maxPremiumUsd"], acct * r["maxPctOfAccount"] / 100, float(f.get("buyingPower", 0)) - r["minCashAfterUsd"],
+                 acct * r.get("maxTotalPctOfAccount", 100) / 100 - open_usd)
+    held_syms = {p["symbol"] for p in held}
     if budget < 5:
         return none("not enough free cash for an option")
     live, off = {}, []
@@ -162,7 +181,7 @@ def plan(f, cfg, led):
             if miss:
                 return {"actions": [{"do": "need_scan_prices", "symbols": miss, "note": "scanPrices[SYM] = live price from get_equity_quotes"}]}
             hits = []
-            for w in [w for w in watch if w not in skip]:
+            for w in [w for w in watch if w not in skip and w not in held_syms]:
                 rr = scan["symbols"].get(w) or {}
                 if not rr.get("rsiTrigger"):
                     continue
@@ -176,7 +195,7 @@ def plan(f, cfg, led):
     # 2) the three index funds (full closes, shared with the Dip desk)
     ix = live.get("index")
     for sym in (ix or {}).get("symbols", []):
-        if sym in skip:
+        if sym in skip or sym in held_syms:
             continue
         d = syms.get(sym)
         if not d or not d.get("closes"):
@@ -245,40 +264,47 @@ def main(argv=None):
     ap = argparse.ArgumentParser(); sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("plan"); p.add_argument("facts")
     p = sub.add_parser("open"); p.add_argument("--json", required=True); p.add_argument("--price", type=float, required=True)
-    p = sub.add_parser("close"); p.add_argument("--price", type=float, required=True); p.add_argument("--reason", required=True)
+    p = sub.add_parser("close"); p.add_argument("--price", type=float, required=True); p.add_argument("--reason", required=True); p.add_argument("--id")
     p = sub.add_parser("log"); p.add_argument("--action", required=True); p.add_argument("--detail", default="")
     p = sub.add_parser("mark"); p.add_argument("facts")
     a = ap.parse_args(argv)
     cfg = load(CONFIG)
-    led = load(LEDGER) if os.path.exists(LEDGER) else {"schemaVersion": 1, "mode": "live", "open": None, "trades": [], "runs": []}
+    led = load(LEDGER) if os.path.exists(LEDGER) else {"schemaVersion": 1, "mode": "live", "open": None, "positions": [], "trades": [], "runs": []}
     now = datetime.now(timezone.utc)
     def log(act, det):
         led.setdefault("runs", []).append({"t": iso(now), "action": act, "detail": det}); led["runs"] = led["runs"][-60:]
     if a.cmd == "plan":
         print(json.dumps(plan(load(a.facts), cfg, led), indent=1)); return 0
+    ps = positions(led)
+    def save_led():
+        led["positions"] = ps; led["open"] = ps[0] if ps else None     # "open" mirrors the first one for older readers
+        save(LEDGER, led)
     if a.cmd == "open":
-        if led.get("open"):
-            print("ERROR: position already open", file=sys.stderr); return 2
         b = json.loads(a.json)
-        led["open"] = ({k: b[k] for k in ("symbol", "id", "strike", "expiration", "label", "delta")}
-                       | {k: b[k] for k in ("rule", "underlyingPx", "forecastUsd") if k in b} | {"entryPrice": a.price, "enteredAt": iso(now)})
+        if len(ps) >= int(cfg["risk"].get("maxOpenPositions", 1)) or any(p["id"] == b["id"] for p in ps):
+            print("ERROR: at the option limit or this option is already held", file=sys.stderr); return 2
+        ps.append({k: b[k] for k in ("symbol", "id", "strike", "expiration", "label", "delta")}
+                  | {k: b[k] for k in ("rule", "underlyingPx", "forecastUsd") if k in b} | {"entryPrice": a.price, "enteredAt": iso(now)})
         led["startedAt"] = led.get("startedAt") or iso(now)
-        log("buy", f"bought 1 {b['label']} at {a.price} (${a.price * 100:.0f})"); save(LEDGER, led); return 0
+        log("buy", f"bought 1 {b['label']} at {a.price} (${a.price * 100:.0f})"); save_led(); return 0
     if a.cmd == "close":
-        o = led.get("open")
+        o = next((p for p in ps if p["id"] == a.id), None) if a.id else (ps[0] if len(ps) == 1 else None)
         if not o:
-            print("ERROR: nothing open", file=sys.stderr); return 2
+            print("ERROR: no such open option (pass --id when more than one is held)", file=sys.stderr); return 2
         pnl = round((a.price - o["entryPrice"]) * 100 - 0.06, 2)
         led["trades"].append({"label": o["label"], "symbol": o["symbol"], "enteredAt": o["enteredAt"], "exitedAt": iso(now), "entryPrice": o["entryPrice"],
                               "exitPrice": a.price, "pnlUsd": pnl, "returnPct": round(100 * (a.price / o["entryPrice"] - 1), 1), "reason": a.reason,
                               "rule": o.get("rule")})
-        led["open"] = None; log("sell", f"sold {o['label']} at {a.price} ({a.reason}, {'+' if pnl >= 0 else ''}${pnl})"); save(LEDGER, led); return 0
+        ps.remove(o); log("sell", f"sold {o['label']} at {a.price} ({a.reason}, {'+' if pnl >= 0 else ''}${pnl})"); save_led(); return 0
     if a.cmd == "mark":
-        # record the held option's live bid for the dashboard's "made today" (prices only)
-        o, f = led.get("open"), load(a.facts)
-        q = f.get("optQuote") or {}
-        if o and q.get("bid") is not None:
-            today = now.astimezone(CT).date().isoformat(); prev = o.get("mark")
+        # record each held option's live bid for the dashboard's "made today" (prices only)
+        f = load(a.facts); qs = f.get("optQuotes") or {}
+        today = now.astimezone(CT).date().isoformat()
+        for o in ps:
+            q = qs.get(o["id"]) or {}
+            if q.get("bid") is None:
+                continue
+            prev = o.get("mark")
             if ts(o["enteredAt"]).astimezone(CT).date().isoformat() == today:
                 base = o["entryPrice"]
             elif prev and prev.get("day") == today:
@@ -286,8 +312,7 @@ def main(argv=None):
             else:
                 base = prev["price"] if prev else o["entryPrice"]
             o["mark"] = {"t": iso(now), "price": float(q["bid"]), "dayBase": base, "day": today}
-            save(LEDGER, led)
-        return 0
+        save_led(); return 0
     if a.cmd == "log":
         log(a.action, a.detail); save(LEDGER, led); return 0
 

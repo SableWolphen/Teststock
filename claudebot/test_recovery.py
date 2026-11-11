@@ -161,11 +161,11 @@ oled = {"open": opt, "trades": [], "runs": []}
 # one option at a time: a second buy is always denied while one is booked
 g = gov({"desk": "optbuy", "side": "buy", "symbol": "QQQ", "usd": 30, "gatekeeper": {"pass": True, "live": True}},
         EMPTY, ocfg={"enabled": True, "risk": {"maxPremiumUsd": 50, "maxPctOfAccount": 43}}, oled=oled)
-assert not g["allow"] and any("one at a time" in r for r in g["reasons"]), g
+assert not g["allow"] and any("the limit" in r for r in g["reasons"]), g
 # never sells an option the ledger does not hold
 assert not gov({"desk": "optbuy", "side": "sell", "symbol": "QQQ"}, EMPTY, oled={"open": None})["allow"]
 # restart after the take-profit filled at the broker: record it, don't sell again
-of = {"now": NOW, "marketOpen": True, "accountValue": 117, "buyingPower": 112, "symbols": {}, "optHeld": 0, "optQuote": {"bid": 0.5, "ask": 0.55}, "tpOrder": None}
+of = {"now": NOW, "marketOpen": True, "accountValue": 117, "buyingPower": 112, "symbols": {}, "optHeldById": {}, "optQuotes": {}, "tpOrders": {}}
 oa = ob.plan(copy.deepcopy(of), copy.deepcopy(ocfg), copy.deepcopy(oled))["actions"][0]
 assert oa["do"] == "record_broker_close", oa
 

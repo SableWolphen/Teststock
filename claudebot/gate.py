@@ -118,9 +118,12 @@ def main():
         out["needed"] = True
         out["reasons"].append("Dip holding: verify broker position, open orders and protective exits")
     # other live desks that need Robinhood attention whenever they hold something
-    if (load(os.path.join(ROOT, "docs", "data", "claudebot-optbuy-ledger.json"), {}) or {}).get("open"):
+    _oled = load(os.path.join(ROOT, "docs", "data", "claudebot-optbuy-ledger.json"), {}) or {}
+    _ocfg = load(os.path.join(HERE, "optbuy_config.json"), {}) or {}
+    _oheld = _oled.get("positions") if _oled.get("positions") is not None else ([_oled["open"]] if _oled.get("open") else [])
+    if _oheld:
         out["needed"] = True; out["reasons"].append("options-buying desk holds an option (manage its exit)")
-    elif market and (load(os.path.join(HERE, "optbuy_config.json"), {}) or {}).get("enabled"):
+    if market and _ocfg.get("enabled") and len(_oheld) < int((_ocfg.get("risk") or {}).get("maxOpenPositions", 1)) and (load(os.path.join(HERE, "optbuy_config.json"), {}) or {}).get("enabled"):
         # Board 2026-11-11: the options desk buys all day, so check its dip signals here on live prices and
         # call the trader the moment one appears. Read-only; the trader re-checks everything at Robinhood.
         try:

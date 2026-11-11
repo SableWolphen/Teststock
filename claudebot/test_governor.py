@@ -50,6 +50,21 @@ assert chk(desk="optbuy", side="buy", symbol="SPY", usd=40, gatekeeper={"pass": 
 assert chk(desk="optbuy", side="buy", symbol="SPY", usd=60, gatekeeper=GK)["allow"] is False   # hard $50
 DATA["claudebot/optbuy_config.json"]["risk"]["maxPremiumUsd"] = 500                        # loosened config...
 assert chk(desk="optbuy", side="buy", symbol="SPY", usd=60, gatekeeper=GK)["allow"] is False   # ...governor still says no
+# board 2026-11-11: up to 3 options at once, never two on one stock, all together under 65% of the account
+DATA["claudebot/optbuy_config.json"]["risk"].update({"maxPremiumUsd": 25, "maxPctOfAccount": 22, "maxOpenPositions": 3, "maxTotalPctOfAccount": 65})
+_op = lambda s_, px: {"symbol": s_, "id": s_, "entryPrice": px}
+DATA["docs/data/claudebot-optbuy-ledger.json"] = {"positions": [_op("F", 0.24)]}
+assert chk(desk="optbuy", side="buy", symbol="SPY", usd=24, gatekeeper=GK)["allow"]                 # second option: allowed
+assert chk(desk="optbuy", side="buy", symbol="F", usd=20, gatekeeper=GK)["allow"] is False          # same stock twice
+DATA["docs/data/claudebot-optbuy-ledger.json"] = {"positions": [_op("F", 0.24), _op("T", 0.24), _op("Q", 0.24)]}
+assert chk(desk="optbuy", side="buy", symbol="SPY", usd=10, gatekeeper=GK)["allow"] is False        # a fourth
+DATA["claudebot/optbuy_config.json"]["risk"]["maxOpenPositions"] = 9
+assert chk(desk="optbuy", side="buy", symbol="SPY", usd=10, gatekeeper=GK)["allow"] is False        # hard limit of 3 holds even if the config says 9
+DATA["docs/data/claudebot-optbuy-ledger.json"] = {"positions": [_op("F", 0.25), _op("T", 0.25)]}
+DATA["claudebot/optbuy_config.json"]["risk"]["maxOpenPositions"] = 3
+assert chk(desk="optbuy", side="buy", symbol="SPY", usd=25, gatekeeper=GK, accountValue=100)["allow"] is False   # $75 > 65% of $100
+assert chk(desk="optbuy", side="sell", symbol="T", quantity="1")["allow"]                           # selling one the bot holds
+DATA["docs/data/claudebot-optbuy-ledger.json"] = {"open": None}
 assert chk(desk="spread", side="buy", symbol="SPY", usd=10)["allow"] is False
 assert chk(desk="crypto", side="buy", symbol="BTC", usd=10)["allow"] is False
 DATA["docs/data/claudebot-dip-ledger.json"]["positions"].append({"symbol": "SPY", "usd": 25, "entryPrice": 600})

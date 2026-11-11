@@ -1262,12 +1262,12 @@ function liveOptionsCard() {
   const c = D.obc, led = D.bled, rules = Object.entries(c?.rules || {}).filter(([, r]) => r.enabled !== false && r.boardApproval?.approvalId);
   if (!c) return '';
   if (!c.enabled || !rules.length) return card('Options desk (real money)', '<div class="big">OFF</div><p>No option rule is trading real money.</p>');
-  const tr = (led?.trades || []).filter(t => t.rule), pnl = tr.reduce((a, t) => a + t.pnlUsd, 0), o = led?.open, x = c.exit || {}, rk = c.risk || {};
+  const tr = (led?.trades || []).filter(t => t.rule), pnl = tr.reduce((a, t) => a + t.pnlUsd, 0), ps = led?.positions || (led?.open ? [led.open] : []), o = ps[0], x = c.exit || {}, rk = c.risk || {};
   const what = { cheapStock: `A stock at $${c.rules.cheapStock?.maxStockPrice} or less: the call within ${c.rules.cheapStock?.strikeWithinPct}% of the price, about ${c.rules.cheapStock?.targetDte} days out`, index: `SPY, QQQ or IWM: the closest-to-the-price call about ${c.rules.index?.targetDte} days out` };
-  return card('Options desk (real money) · live by your order of Nov 11', `<div class="big ${o ? 'org' : ''}">${o ? esc(o.label) : 'WAITING'}</div>
-    <p>${o ? `Bought at ${o.entryPrice} on ${when(o.enteredAt)}.` : 'Nothing held. It checks all day and buys on a dip signal.'} ${tr.length} finished trade${tr.length === 1 ? '' : 's'}${tr.length ? ', ' + usd(pnl) : ''}.</p>
+  return card('Options desk (real money) · live by your order of Nov 11', `<div class="big ${o ? 'org' : ''}">${o ? esc(ps.map(p => p.label).join(', ')) : 'WAITING'}</div>
+    <p>${o ? ps.map(p => `${esc(p.label)} bought at ${p.entryPrice} on ${when(p.enteredAt)}.`).join(' ') : 'Nothing held. It checks all day and buys on a dip signal.'} ${tr.length} finished trade${tr.length === 1 ? '' : 's'}${tr.length ? ', ' + usd(pnl) : ''}.</p>
     <ul class="list">${rules.map(([k, r]) => li(`<b>${esc(r.name || k)}.</b> ${esc(what[k] || '')}`, 'g')).join('')}
-    ${li(`One option at a time, at most $${rk.maxPremiumUsd} or ${rk.maxPctOfAccount}% of the account. A losing trade can lose all of what was paid.`, 'y')}
+    ${li(`Up to ${rk.maxOpenPositions} options at once, each at most $${rk.maxPremiumUsd}, together at most ${rk.maxTotalPctOfAccount}% of the account. A losing trade can lose all of what was paid.`, 'y')}
     ${li(`Sold when the stock is back above its ${x.bounceSma}-day average, falls ${x.stockStopPct}% from where it was at entry, or after ${x.maxHoldDays} trading days.`)}
     ${li(`Each rule switches itself off after ${c.rollback?.afterTrades} finished trades if it is losing.`)}
     ${li('Started ahead of its paper test: the evidence is tens of past trades, not hundreds. The research scorecard still says that evidence does not support new options risk; this desk runs on your order, and the paper desks keep measuring both ideas.', 'y')}</ul>`, 'span2');

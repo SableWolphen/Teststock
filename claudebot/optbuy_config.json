@@ -82,11 +82,12 @@
   "since": "2026-11-11T00:00:00Z"
  },
  "risk": {
-  "maxPremiumUsd": 50,
-  "maxPctOfAccount": 43,
-  "maxOpenPositions": 1,
+  "maxPremiumUsd": 25,
+  "maxPctOfAccount": 22,
+  "maxOpenPositions": 3,
   "pauseBelowAccountValueUsd": 60,
-  "minCashAfterUsd": 1
+  "minCashAfterUsd": 1,
+  "maxTotalPctOfAccount": 65
  },
  "evidence": "LIVE by board order 2026-11-11 for two rules only (see rules.*.evidence for each rule's numbers and limits). The desk's earlier rule (+10% target, -40% stop on cheap out-of-the-money calls) lost in both periods and is retired. The hard caps in claudebot/governor.py are unchanged.",
  "scan": {
@@ -307,7 +308,8 @@
   "2026-11-11: Board order ('Make sure it watches all stocks'): the nightly scan now also discovers every active US stock with listed options, keeps those priced $5 to about $26.50 with enough trading, and computes their dip triggers, so the cheap-stock call rule watches the whole market, not only scanUniverse. Same rule, caps and quote checks.",
   "2026-11-11: Board order ('Buy and sell throughout the day not just a certain time'): the options desk now buys at any run from 8:40 to 2:59 CT on a live dip signal, and sells at any run once the stock is back above its 5-day average or day 10 is reached (the 5% stock stop already applied at any run). The research bought and sold at the close, so intraday entries and exits are untested for this desk; the Dip desk's own all-day test (2026-11-06) found all-day buys about 12% less profitable in total than near-close buys but still positive. GitHub's 5-minute gate now checks the options signals on live prices and calls the trader when one appears.",
   "2026-11-11: CEO paused the cheap-stock call rule (risk reduction) after the rerun on new stocks failed in both periods; the index rule is unchanged. Waiting for the board.",
-  "2026-11-11: Board re-enabled the cheap-stock call rule across the whole market ('No run it') after seeing the failed rerun. Caps, quote checks and the 10-trade self switch-off unchanged."
+  "2026-11-11: Board re-enabled the cheap-stock call rule across the whole market ('No run it') after seeing the failed rerun. Caps, quote checks and the 10-trade self switch-off unchanged.",
+  "2026-11-11: Board order ('Multiple options at a time', chose 'Up to 3 at $25 each'): up to 3 options held at once, each at most $25 (and 22% of the account), all together at most 65% of the account, never two on the same stock. Losing all three at once would take about $75 off a $117 account. The $60 pause floor still stops new buys below $60."
  ],
  "wideningAddedSymbols": [
   "KEY",

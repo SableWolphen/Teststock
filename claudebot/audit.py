@@ -111,7 +111,7 @@ def run(now=None):
         _sp = _iu.spec_from_file_location("gov", os.path.join(os.path.dirname(os.path.abspath(__file__)), "governor.py")); _gv = _iu.module_from_spec(_sp); _sp.loader.exec_module(_gv)
         H = _gv.HARD
         gov_ok = (H["account"] == "MCP" and H["dip.maxPctOfAccount"] <= 25 and H["dip.maxOpen"] <= 5 and H["optbuy.maxPremiumUsd"] <= 50
-                  and H["optbuy.maxPctOfAccount"] <= 43 and H["optbuy.maxOpen"] <= 1 and "KO" in H["neverSell"] and H["maxQuoteAgeSec"] <= 180)
+                  and H["optbuy.maxPctOfAccount"] <= 43 and H["optbuy.maxOpen"] <= 3 and H.get("optbuy.maxTotalPctOfAccount", 100) <= 65 and "KO" in H["neverSell"] and H["maxQuoteAgeSec"] <= 180)
         gdet = f"hard ceilings intact: {H['dip.maxPctOfAccount']}% per ETF, ${H['optbuy.maxPremiumUsd']} per option, MCP only, KO never sold"
     except Exception as e:  # noqa: BLE001
         gov_ok, gdet = False, f"governor missing or broken: {e}"
@@ -148,19 +148,22 @@ def run(now=None):
                 level="warn")
     bcfg = load(D("claudebot", "optbuy_config.json"), {}); bled = load(D("docs", "data", "claudebot-optbuy-ledger.json"), {})
     br, bx = bcfg.get("risk", {}), bcfg.get("exit", {})
-    g.check("options", "Options-buying caps", br.get("maxPremiumUsd", 999) <= 50 and br.get("maxPctOfAccount", 99) <= 45 and br.get("maxOpenPositions", 9) <= 1
+    g.check("options", "Options-buying caps", br.get("maxPremiumUsd", 999) <= 50 and br.get("maxPctOfAccount", 99) <= 45 and br.get("maxOpenPositions", 9) <= 3
+            and (br.get("maxOpenPositions", 1) <= 1 or br.get("maxTotalPctOfAccount", 100) <= 65)
             and (0 < bx.get("stockStopPct", 0) <= 8 or 0 < bx.get("stopPct", 0) <= 50) and 0 < bx.get("maxHoldDays", 0) <= 10,
-            f"max ${br.get('maxPremiumUsd')} / {br.get('maxPctOfAccount')}% per option, 1 at a time, sold if the stock falls {bx.get('stockStopPct', bx.get('stopPct'))}% or after {bx.get('maxHoldDays')} days")
+            f"max ${br.get('maxPremiumUsd')} / {br.get('maxPctOfAccount')}% per option, {br.get('maxOpenPositions', 1)} at a time (at most {br.get('maxTotalPctOfAccount', br.get('maxPctOfAccount'))}% together), sold if the stock falls {bx.get('stockStopPct', bx.get('stopPct'))}% or after {bx.get('maxHoldDays')} days")
     brules = bcfg.get("rules") or {}
     unapproved = [k for k, rc in brules.items() if rc.get("enabled", True) and not (rc.get("boardApproval") or {}).get("approvalId")]
     g.check("options", "Live option rules carry a recorded board order", (not bcfg.get("enabled")) or (bool(brules) and not unapproved),
             "desk is off" if not bcfg.get("enabled") else ("rules without a recorded order: " + ", ".join(unapproved) if unapproved or not brules else
             "live by board order: " + ", ".join(rc.get("name", k) for k, rc in brules.items() if rc.get("enabled", True)) + "; traded before their paper gates"))
-    bo = bled.get("open")
+    bps = bled.get("positions") if bled.get("positions") is not None else ([bled["open"]] if bled.get("open") else [])
+    bo = bps[0] if bps else None
     b_ok_syms = set(bcfg.get("symbols", [])) | set(bcfg.get("scanUniverse", [])) | {s_ for rc in brules.values() for s_ in rc.get("symbols", [])}
     # premium ceiling = the governor's hard $50 cap (was checked at $40 here, a leftover from the earlier $30/$40 cap)
-    g.check("options", "Bought option within limits", bo is None or (bo.get("entryPrice", 99) * 100 <= 50.01 and bo.get("symbol") in b_ok_syms),
-            "no option held" if bo is None else f"{bo.get('label')} at {bo.get('entryPrice')}")
+    g.check("options", "Bought options within limits", len(bps) <= min(int(br.get("maxOpenPositions", 1)), 3)
+            and all(p.get("entryPrice", 99) * 100 <= 50.01 and p.get("symbol") in b_ok_syms for p in bps) and len({p.get("symbol") for p in bps}) == len(bps),
+            "no option held" if not bps else ", ".join(f"{p.get('label')} at {p.get('entryPrice')}" for p in bps))
     reports.append(g.done())
 
     # ---------------- Analyst: check each active research agent's OWN output

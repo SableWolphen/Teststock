@@ -8,7 +8,7 @@ for _rc in cfg["rules"].values(): _rc["enabled"] = True    # scenarios exercise 
 # the live file must carry exactly what the board approved
 assert set(cfg["rules"]) == {"cheapStock", "index"} and all(rc["boardApproval"]["approvalId"] for rc in cfg["rules"].values())
 assert cfg["rules"]["index"]["symbols"] == ["SPY", "QQQ", "IWM"] and cfg["rules"]["cheapStock"]["maxStockPrice"] == 25 and cfg["rules"]["cheapStock"]["strikeWithinPct"] == 3
-assert cfg["risk"]["maxPremiumUsd"] <= 50 and cfg["risk"]["maxPctOfAccount"] <= 43 and cfg["risk"]["maxOpenPositions"] == 1     # caps untouched
+assert cfg["risk"]["maxPremiumUsd"] <= 25 and cfg["risk"]["maxPctOfAccount"] <= 22 and cfg["risk"]["maxOpenPositions"] == 3 and cfg["risk"]["maxTotalPctOfAccount"] <= 65   # board 2026-11-11: up to 3 at $25
 assert cfg["exit"]["stockStopPct"] == 5 and cfg["exit"]["maxHoldDays"] == 10 and "takeProfitPct" not in cfg["exit"]
 
 up = [60 + i * 0.06 for i in range(220)]
@@ -30,14 +30,14 @@ F2 = {**F, "expirations": {"SPY": ["2026-11-27", "2026-12-12", "2026-12-18", "20
 a = act(F2)[0]; assert a["do"] == "need_calls" and a["expiration"] == "2026-12-18", a            # nearest to 45 days inside 38-52
 assert a["strikeMin"] == PX and a["strikeMax"] == round(PX * 1.15, 2), a
 K = lambda i, strike, bid, ask: {"symbol": "SPY", "id": i, "strike": strike, "expiration": "2026-12-18", "bid": bid, "ask": ask, "delta": 0.1}
-C = [K("a", 72, 0.52, 0.53),    # closest, but $53: over the $50 cap
-     K("d", 74, 0.44, 0.47),    # affordable, but the quote is 3 cents wide: wider than tested by enough to erase the edge
-     K("b", 75, 0.40, 0.41),    # fits: a penny wide, $41
-     K("c", 76, 0.30, 0.31)]    # fits too, but further from the price
+C = [K("a", 72, 0.27, 0.28),    # closest, but $28: over the $25 cap
+     K("d", 74, 0.22, 0.25),    # affordable, but the quote is 3 cents wide: wider than tested by enough to erase the edge
+     K("b", 75, 0.20, 0.21),    # fits: a penny wide, $21
+     K("c", 76, 0.15, 0.16)]    # fits too, but further from the price
 a = act({**F2, "calls": C})[0]
-assert a["do"] == "buy" and a["id"] == "b" and a["limitPrice"] == "0.41" and a["quantity"] == "1", a
+assert a["do"] == "buy" and a["id"] == "b" and a["limitPrice"] == "0.21" and a["quantity"] == "1", a
 assert a["rule"] == "index" and a["strategyId"] == "optbuy:index" and a["underlyingPx"] == PX and a["forecastUsd"] > 0 and a["holdMinutes"] == 1170, a
-assert float(a["limitPrice"]) * 100 <= 50 and float(a["maxPrice"]) * 100 <= 50
+assert float(a["limitPrice"]) * 100 <= 25 and float(a["maxPrice"]) * 100 <= 25
 assert act({**F2, "calls": C[:2]})[0]["do"] == "none"                                           # only the too-expensive and too-wide ones
 assert act({**F2, "calls": C, "now": "2026-11-04T17:14:00Z"})[0]["do"] == "buy"                 # 11:14 CT: buys during the day too (board 2026-11-11)
 assert act({**F2, "calls": C, "now": "2026-11-04T14:30:00Z"})[0]["do"] == "none"                # 8:30 CT: before the first run window
@@ -58,22 +58,26 @@ a = act({**F2, "calls": C}, {**LED, "trades": losing})[0]; assert a["do"] == "no
 ix, cs = cfg["rules"]["index"], cfg["rules"]["cheapStock"]
 assert ob.forecast(ix, 0.40, 0.41) > 0 and ob.forecast(ix, 0.38, 0.41) < 0
 # a quote two cents wide leaves the index rule almost no edge: the planner skips it, as the Gatekeeper would
-assert act({**F2, "calls": [K("b2", 75, 0.39, 0.41)]})[0]["do"] == "none"
-# after losses, an account at $85 cannot lose even the $31 option and stay above its $60 floor: no buy
-a = act({**F2, "calls": C, "accountValue": 95})[0]; assert a["do"] == "buy" and a["id"] == "c", a     # $95: the $31 one still fits the 43% cap
-assert act({**F2, "calls": C, "accountValue": 85})[0]["do"] == "none"
+assert act({**F2, "calls": [K("b2", 75, 0.19, 0.21)]})[0]["do"] == "none"
+# after losses the 22% cap shrinks, and below about $76 even the $16 option would take it under the $60 floor
+a = act({**F2, "calls": C, "accountValue": 95})[0]; assert a["do"] == "buy" and a["id"] == "c", a     # $95: only the $16 one fits 22%
+assert act({**F2, "calls": C, "accountValue": 75})[0]["do"] == "none"
 assert ob.forecast(cs, 0.44, 0.47) > 0 and ob.forecast(cs, 0.36, 0.47) < 0
 
 # ---------------------------------------------------------------- holding: the exit follows the stock
 pos = {"symbol": "SPY", "id": "b", "strike": 75, "expiration": "2026-12-18", "label": "SPY 12-18 75C", "delta": 0.1, "rule": "index",
        "underlyingPx": PX, "entryPrice": 0.41, "enteredAt": "2026-11-03T20:44:00Z"}
 L = {**LED, "open": pos}
+C1 = copy.deepcopy(cfg); C1["risk"]["maxOpenPositions"] = 1      # holding scenarios: no room for another buy, so the plan is only about the held one
 def hold(price, **kw):
-    f = {**F, "optHeld": 1, "optQuote": {"bid": 0.40, "ask": 0.42}, "tpOrder": None, "symbols": {"SPY": {"price": price, "closes": dip, "heldQty": 0}}}
+    f = {**F, "optHeldById": {"b": 1}, "optQuotes": {"b": {"bid": 0.40, "ask": 0.42}}, "tpOrders": {}, "symbols": {"SPY": {"price": price, "closes": dip, "heldQty": 0}}}
     f.update(kw); return f
+_act = act
+def act(f=F, l=LED, c=None): return _act(f, l, c if c is not None else (C1 if positions_of(l) else cfg))
+def positions_of(l): return l.get("positions") or ([l["open"]] if l.get("open") else [])
 avg4 = sum(dip[-4:]) / 4                                                                          # above this = above its own 5-day average
-assert act({k: v for k, v in hold(PX).items() if k != "optQuote"}, L)[0]["do"] == "need_position"
-assert act(hold(PX, optHeld=0), L)[0]["do"] == "record_broker_close"
+assert act({k: v for k, v in hold(PX).items() if k != "optQuotes"}, L)[0]["do"] == "need_position"
+assert act(hold(PX, optHeldById={"b": 0}), L)[0]["do"] == "record_broker_close"
 a = act(hold(PX, symbols={}), L)[0]; assert a == {"do": "need_symbol", "symbol": "SPY"}, a        # needs the stock's price and closes
 a = act(hold(avg4 + 0.3), L)[0]; assert a["do"] == "sell" and a["reason"] == "bounce" and a["limitPrice"] == "0.40" and a["quantity"] == "1", a
 assert act(hold(avg4 + 0.3, now="2026-11-04T17:14:00Z"), L)[0]["reason"] == "bounce"               # a bounce at 11:14 sells then (board 2026-11-11)
@@ -85,9 +89,9 @@ a = act(hold(avg4 - 0.3), old)[0]; assert a["do"] == "sell" and a["reason"] == "
 a = act(hold(avg4 - 0.3, now="2026-11-04T17:14:00Z"), {**L, "open": {**pos, "expiration": "2026-11-06"}})[0]; assert a["reason"] == "expiry near", a
 today = {**L, "open": {**pos, "enteredAt": "2026-11-04T20:14:00Z"}}
 a = act(hold(avg4 + 0.3), today)[0]; assert a["do"] == "none" and "bought today" in a["reason"], a  # never sold on the day it was bought
-a = act(hold(avg4 - 0.3, tpOrder={"id": "t", "price": 0.45}), L); assert [x["do"] for x in a] == ["cancel_order"], a   # no resting order under this rule
-a = act(hold(avg4 + 0.3, tpOrder={"id": "t", "price": 0.45}), L); assert [x["do"] for x in a] == ["cancel_order", "sell"], a
-a = act(hold(avg4 + 0.3, optQuote={"bid": 0, "ask": 0.05}), L)[0]; assert a["do"] == "none" and "bid is 0" in a["reason"], a
+a = act(hold(avg4 - 0.3, tpOrders={"b": {"id": "t", "price": 0.45}}), L); assert [x["do"] for x in a] == ["cancel_order"], a   # no resting order under this rule
+a = act(hold(avg4 + 0.3, tpOrders={"b": {"id": "t", "price": 0.45}}), L); assert [x["do"] for x in a] == ["cancel_order", "sell"], a
+a = act(hold(avg4 + 0.3, optQuotes={"b": {"bid": 0, "ask": 0.05}}), L)[0]; assert a["do"] == "none" and "bid is 0" in a["reason"], a
 assert ob.tick_up(0.286) == 0.29 and ob.tick_up(3.11) == 3.15
 
 # ---------------------------------------------------------------- cheap-stock rule (scan list, $25 or less, call within 3%)
@@ -104,12 +108,12 @@ U2 = {**U, "scanPrices": P, "earnings": {"F": None}, "expirations": {"F": ["2026
 a = act({**U2, "expirations": {}}, c=cc)[0]; assert a == {"do": "need_expirations", "symbol": "F"}, a
 a = act(U2, c=cc)[0]; assert a["do"] == "need_calls" and a["expiration"] == "2026-12-04" and a["strikeMin"] == 11.74 and a["strikeMax"] == 12.46, a
 FK = lambda i, strike, bid, ask: {"symbol": "F", "id": i, "strike": strike, "expiration": "2026-12-04", "bid": bid, "ask": ask, "delta": 0.5}
-FC = [FK("f115", 11.5, 0.80, 0.83), FK("f12", 12.0, 0.44, 0.47), FK("f125", 12.5, 0.20, 0.22)]        # 11.5 and 12.5 are more than 3% away
+FC = [FK("f115", 11.5, 0.40, 0.43), FK("f12", 12.0, 0.20, 0.22), FK("f125", 12.5, 0.10, 0.12)]        # 11.5 and 12.5 are more than 3% away
 a = act({**U2, "calls": FC}, c=cc)[0]
-assert a["do"] == "buy" and a["id"] == "f12" and a["rule"] == "cheapStock" and a["strategyId"] == "optbuy:cheapStock" and a["limitPrice"] == "0.46", a
+assert a["do"] == "buy" and a["id"] == "f12" and a["rule"] == "cheapStock" and a["strategyId"] == "optbuy:cheapStock" and a["limitPrice"] == "0.21", a
 assert a["underlyingPx"] == 12.1 and a["forecastUsd"] > 0 and abs(a["strike"] / 12.1 - 1) <= 0.03
-a = act({**U2, "calls": [FK("f125", 12.5, 0.20, 0.22)]}, c=cc)[0]; assert a["do"] == "none" and "F" in a["reason"], a      # only a far strike: no trade
-a = act({**U2, "calls": [FK("f12", 12.0, 0.40, 0.50)]}, c=cc)[0]; assert a["do"] == "none" and "too wide" in a["reason"], a  # 10-cent-wide quote
+a = act({**U2, "calls": [FK("f125", 12.5, 0.10, 0.12)]}, c=cc)[0]; assert a["do"] == "none" and "F" in a["reason"], a      # only a far strike: no trade
+a = act({**U2, "calls": [FK("f12", 12.0, 0.10, 0.20)]}, c=cc)[0]; assert a["do"] == "none" and "too wide" in a["reason"], a  # 10-cent-wide quote
 a = act({**U2, "calls": [], "callsFetched": ["F|2026-12-04"]}, c=cc)[0]; assert a["do"] == "none" and "F" in a["reason"], a
 a = act({**U, "scan": {**SC, "generatedAt": "2026-10-20T02:00:00Z"}}, c=cc)[0]; assert a["do"] == "none" and "stale" in a["reason"], a
 assert act({**U, "scanPrices": {"F": 12.3, "SOFI": 25.2}}, c=cc)[0]["do"] == "none"                  # F above its trigger, SOFI not cheap: no signal
@@ -123,8 +127,31 @@ with tempfile.TemporaryDirectory() as d:
     ob.LEDGER = os.path.join(d, "led.json")
     assert ob.main(["open", "--json", json.dumps(buy), "--price", "0.46"]) == 0
     o = json.load(open(ob.LEDGER))["open"]; assert o["rule"] == "cheapStock" and o["underlyingPx"] == 12.1 and o["entryPrice"] == 0.46, o
-    assert ob.main(["open", "--json", json.dumps(buy), "--price", "0.46"]) == 2                      # never a second option
+    assert ob.main(["open", "--json", json.dumps(buy), "--price", "0.46"]) == 2                      # never the same option twice
+    for i_ in (2, 3):
+        assert ob.main(["open", "--json", json.dumps({**buy, "id": f"x{i_}", "symbol": f"S{i_}", "label": f"S{i_}"}), "--price", "0.20"]) == 0
+    assert ob.main(["open", "--json", json.dumps({**buy, "id": "x4", "symbol": "S4", "label": "S4"}), "--price", "0.20"]) == 2   # a 4th: over the limit of 3
+    assert ob.main(["close", "--price", "0.30", "--reason", "bounce"]) == 2                          # three held: must say which
+    assert ob.main(["close", "--price", "0.30", "--reason", "bounce", "--id", "x2"]) == 0
+    assert ob.main(["close", "--price", "0.30", "--reason", "bounce", "--id", "x3"]) == 0
+    assert len(json.load(open(ob.LEDGER))["positions"]) == 1
     assert ob.main(["close", "--price", "0.60", "--reason", "bounce"]) == 0
-    led = json.load(open(ob.LEDGER)); t = led["trades"][0]
+    led = json.load(open(ob.LEDGER)); t = led["trades"][-1]
     assert led["open"] is None and t["rule"] == "cheapStock" and t["reason"] == "bounce" and t["pnlUsd"] == round((0.60 - 0.46) * 100 - 0.06, 2), t
+# ---------------------------------------------------------------- several options at once (board 2026-11-11: up to 3 at $25)
+held1 = {**LED, "positions": [pos]}
+f3 = {**hold(avg4 - 0.3), "symbols": {"SPY": {"price": avg4 - 0.3, "closes": dip, "heldQty": 0}, **{k: v for k, v in F["symbols"].items() if k != "SPY"}},
+      "scan": SC, "scanPrices": P, "earnings": {"F": None}, "expirations": {"F": ["2026-12-04"]}, "calls": FC}
+a = _act(f3, held1, cfg)[0]; assert a["do"] == "buy" and a["symbol"] == "F", a                       # one held (SPY), still room: buys another
+two = {**LED, "positions": [pos, {**pos, "id": "f12x", "symbol": "F", "label": "F", "entryPrice": 0.21, "underlyingPx": 12.1}]}
+f3b = {**f3, "optHeldById": {"b": 1, "f12x": 1}, "optQuotes": {"b": {"bid": 0.4, "ask": 0.42}, "f12x": {"bid": 0.2, "ask": 0.22}},
+       "symbols": {**f3["symbols"], "F": {"price": 12.1, "closes": [12.5] * 220, "heldQty": 0}}}
+a = _act(f3b, two, cfg)[0]; assert a["do"] != "buy" or a["symbol"] not in ("SPY", "F"), a           # never a second option on a stock already held
+three = {**LED, "positions": two["positions"] + [{**pos, "id": "z", "symbol": "IWM", "label": "IWM", "underlyingPx": F["symbols"]["IWM"]["price"], "enteredAt": "2026-11-04T19:00:00Z"}]}
+f3c = {**f3b, "optHeldById": {**f3b["optHeldById"], "z": 1}, "optQuotes": {**f3b["optQuotes"], "z": {"bid": 0.2, "ask": 0.22}}}
+a = _act(f3c, three, cfg)[0]; assert a["do"] == "none" and "limit of 3" in a["reason"], a            # at the limit: no more buys
+# the 65% account-wide cap: $117 x 65% = $76; with $66 already in options only a ~$10 option could fit
+big = {**LED, "positions": [{**pos, "entryPrice": 0.33}, {**pos, "id": "q", "symbol": "QQQ", "label": "QQQ", "entryPrice": 0.33, "underlyingPx": F["symbols"]["QQQ"]["price"], "enteredAt": "2026-11-04T19:00:00Z"}]}
+fb = {**f3, "optHeldById": {"b": 1, "q": 1}, "optQuotes": {"b": {"bid": 0.3, "ask": 0.32}, "q": {"bid": 0.3, "ask": 0.32}}}
+a = _act(fb, big, cfg)[0]; assert a["do"] == "none" and "nothing fits" in a["reason"], a
 print("all options-buying scenarios pass")
