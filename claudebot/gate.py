@@ -100,6 +100,18 @@ def main():
             else:
                 out["note"] = plan.get("reason", "")
             break
+    # Exit outlook for the site: what each holding is waiting for, in prices and dates. Read-only and
+    # wrapped so that it can never change or break the gate decision above.
+    try:
+        sp2 = importlib.util.spec_from_file_location("outlook", os.path.join(HERE, "outlook.py")); ol = importlib.util.module_from_spec(sp2); sp2.loader.exec_module(ol)
+        sess = ol.session_date(local, HOLIDAYS)
+        rows = []
+        for p in held:
+            sf = (facts["symbols"].get(p["symbol"]) if market else None) or symbol_facts(p["symbol"], sess.isoformat())
+            rows.append(ol.exit_outlook(p, sf["closes"], sf["price"], cfg, sess, HOLIDAYS))
+        out["outlook"] = {"session": sess.isoformat(), "positions": rows}
+    except Exception as e:  # noqa: BLE001
+        out["outlookError"] = str(e)[:120]
     # Call Claude right away when a trade is ready (board order 2026-11-02). At most once per 40 min
     # for the same reasons, so one signal never starts a pile of runs. The workflow does the call
     # AFTER pushing this file, so the called run reads needed=true.
