@@ -1,0 +1,30 @@
+name: ClaudeBot dip exit research
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 9 * * 0'   # every Sunday, before the weekly CEO run
+  push:
+    branches: [main]
+    paths: ['claudebot/dip_exit_research.py', '.github/workflows/claudebot-dip-exit-research.yml']
+permissions:
+  contents: write
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: python claudebot/dip_exit_research.py
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data/claudebot-dip-exit-research.json
+          git diff --cached --quiet && exit 0
+          git commit -m "ClaudeBot dip exit research results"
+          for i in 1 2 3 4 5; do git pull --rebase -X theirs origin main && git push origin HEAD:main && exit 0; sleep $((i*5)); done
+          exit 1

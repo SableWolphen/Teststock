@@ -214,6 +214,7 @@ const AG = {
   quinn:   { name: 'Quinn',   role: 'Strategist · runs the live Dip desk', room: 'strategy', home: [21.9, 3.0], color: '#38bdf8', kind: 'bunny', boss: 'analyst', title: 'Strategist' },
   clio:    { name: 'Clio',    role: 'Historian & CIO · re-tests every strategy weekly, writes the CIO memo on where money goes', room: 'strategy', home: [23.4, 4.6], color: '#c4b5fd', kind: 'owl' , boss: 'analyst', title: 'Historian' },
   moxie:   { name: 'Moxie',   role: 'Moonshot scout · beaten-down stocks turning around, cheap long-dated calls (paper only)', room: 'strategy', home: [26.2, 3.4], color: '#fb923c', kind: 'cat', boss: 'analyst', title: 'Moonshot scout' },
+  dex:     { name: 'Dex',     role: 'Exit analyst · re-tests the Dip desk\'s sell rules side by side every week so the board can pick (research only)', room: 'strategy', home: [24.8, 5.2], color: '#f472b6', kind: 'robot', boss: 'analyst', title: 'Exit analyst' },
   edge:    { name: 'Edge', role: 'Evidence analyst · independent forward samples, positive after-cost expectancy and minimum trade counts', room: 'profitability', home: [26.1, 11.3], color: '#3ddc84', kind: 'robot', boss: 'analyst', title: 'Profitability analyst' },
   friction: { name: 'Friction', role: 'Cost auditor · double-cost survival, fill quality and slippage stress', room: 'profitability', home: [28.4, 11.8], color: '#f5c451', kind: 'owl', boss: 'guard', title: 'Execution-cost auditor' },
   proof:   { name: 'Proof', role: 'Broker verifier · separates Robinhood-confirmed results from public ledgers and paper performance', room: 'profitability', home: [27.2, 13.0], color: '#7c9cff', kind: 'cat', boss: 'ledger', title: 'Broker evidence steward' },
@@ -344,11 +345,11 @@ async function getPrivateBrokerSummary() {
   } catch { return null; }
 }
 async function refresh() {
-  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission, dcp, idp, spp, news] = await Promise.all([
+  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission, dcp, idp, spp, news, exitr] = await Promise.all([
     getJSON('docs/data/claudebot-signal.json'), getJSON('docs/data/claudebot-ledger.json'), getJSON('docs/data/claudebot-options-ledger.json'),
     getJSON('docs/data/live-trading-health.json'), getJSON('docs/data/latest-50.json'), getJSON('claudebot/options_config.json'), getJSON('claudebot/config.json'),
-    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json'), getJSON('docs/data/claudebot-crypto-paper.json'), getJSON('docs/data/claudebot-optscalp-paper.json'), getJSON('docs/data/claudebot-moonshot-paper.json'), getJSON('docs/data/claudebot-hr.json'), getJSON('docs/data/claudebot-decision-scorecard.json'), getJSON('docs/data/claudebot-edge-readiness.json'), getJSON('docs/data/claudebot-tournament-scorecard.json'), getJSON('docs/data/claudebot-daily-profit.json'), getJSON('docs/data/options-profitability-admission.json'), getJSON('docs/data/claudebot-dipcall-paper.json'), getJSON('docs/data/claudebot-intraday-paper.json'), getJSON('docs/data/claudebot-spread-paper.json'), getJSON('docs/data/claudebot-news.json')]);
-  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission, dcp, idp, spp, news });
+    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json'), getJSON('docs/data/claudebot-crypto-paper.json'), getJSON('docs/data/claudebot-optscalp-paper.json'), getJSON('docs/data/claudebot-moonshot-paper.json'), getJSON('docs/data/claudebot-hr.json'), getJSON('docs/data/claudebot-decision-scorecard.json'), getJSON('docs/data/claudebot-edge-readiness.json'), getJSON('docs/data/claudebot-tournament-scorecard.json'), getJSON('docs/data/claudebot-daily-profit.json'), getJSON('docs/data/options-profitability-admission.json'), getJSON('docs/data/claudebot-dipcall-paper.json'), getJSON('docs/data/claudebot-intraday-paper.json'), getJSON('docs/data/claudebot-spread-paper.json'), getJSON('docs/data/claudebot-news.json'), getJSON('docs/data/claudebot-dip-exit-research.json')]);
+  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission, dcp, idp, spp, news, exitr });
   D.privateBroker = await getPrivateBrokerSummary();
   renderAll();
 }
@@ -448,6 +449,7 @@ function payroll() {
   rows.nova = { base: 700, score: D.news ? clamp(freshScore(ageMin(D.news.generatedAt), 30, 3 * 1440)) : 70, why: D.news ? `${D.news.headlinesLast6h} headlines read · mood ${D.news.marketMood}` : 'New hire: starts reading at the open' };
   rows.vega = { base: 800, score: D.osp ? clamp(freshScore(ageMin(D.osp.updatedAt), 30, 3 * 1440)) : 70, why: D.osp ? `${(D.osp.leaderboard || []).reduce((a, r) => a + (r.trades || 0), 0)} paper option trades · ${(D.osp.proposals || []).length} ready for the board` : 'New hire: race starts 8:45 AM' };
   rows.moxie = { base: 700, score: D.msp ? clamp(freshScore(ageMin(D.msp.updatedAt), 2 * 1440, 5 * 1440)) : 70, why: D.msp ? `${(D.msp.candidates || []).length} turnarounds found, ${(D.msp.strategies?.moonshot?.open || []).length} paper bets open` : 'New hire: first scan after tonight\'s close' };
+  rows.dex = { base: 700, score: D.exitr ? clamp(freshScore(ageMin(D.exitr.generatedAt), 8 * 1440, 21 * 1440)) : 70, why: D.exitr ? `${(D.exitr.variants || []).length} sell rules compared ${ago(D.exitr.generatedAt)} · the board picks` : 'New hire: first sell-rule comparison is running' };
   rows.clio = { base: 900, score: D.hist ? clamp(freshScore(ageMin(D.hist.generatedAt), 8 * 1440, 21 * 1440)) : 70, why: D.hist ? `Leaderboard ${ago(D.hist.generatedAt)} · ${(D.hist.winners || []).length} winners, ${(D.hist.losers || []).length} rejected` : 'New hire: first weekly history review Sunday' };
   rows.echo = { base: 900, score: started ? clamp(freshScore(pAge, 75, 360) - (D.pled?.strategies?.cryraw ? 0 : 20)) : 70, why: started ? `Crypto paper test ${D.pled?.strategies?.cryraw ? 'running' : 'missing'}` : 'New hire: first crypto paper test at :14' };
   for (const f of (D.hr?.fired || [])) delete rows[f.agent];        // fired agents get no pay
@@ -585,6 +587,13 @@ const routines = {
     await say(a, o.length ? `Paper moonshots: <b>${o.map(x => esc(x.underlying)).join(', ')}</b>. Most expire worthless; one big winner pays for the rest.` : c ? `Turnaround watch: <b>${esc(c.symbol)}</b>, ${esc(c.why)}.` : 'Hunting beaten-down stocks that are starting to turn.', 4200);
     if (Math.random() < .5) await visit(a, R.guard, [['a', 'Moonshot bets: $15 max each, paper only.'], ['b', 'Keep it paper until months of evidence say otherwise.']]);
     else await visit(a, R.clio, [['a', 'Can history tell me if turnarounds pay?'], ['b', "We'll know after a few months of paper bets. Patience."]]);
+  },
+  async dex(a) {
+    const v = D.exitr?.variants || [], cur = v.find(r => r.id === 'current')?.['2023-now'];
+    await wander(a, [[24.8, 5.2], [24.2, 4.6]]);
+    await waitFree(a);
+    await say(a, cur?.trades ? `Sell rules compared: ${v.length} versions. Current rule since 2023: ${cur.trades} trades, ${cur.winRatePct}% wins, ${cur.avgTradePct}% a trade. Past results are not a promise.` : 'Lining up the sell rules side by side for the board.', 3800);
+    await visit(a, R.quinn, [['a', 'Here is how each sell rule did on history.'], ['b', 'Thanks. Nothing changes until the board picks one.']]);
   },
   async clio(a) {
     const h = D.hist, w = (h?.leaderboard || []).filter(r => r.verdict === 'won'), l = (h?.leaderboard || []).filter(r => r.verdict === 'lost');
@@ -757,6 +766,7 @@ function agentStatus(a) {
     case 'sim': { const n = Object.keys(D.spp?.strategies?.spreads?.open || {}).length; return n ? ['hold', `${n} paper spread${n > 1 ? 's' : ''} open`] : ['work', 'Spread desk (paper)']; }
     case 'vega': { const n = (D.osp?.leaderboard || []).filter(r => r.open).length; return n ? ['hold', `${n} paper options open`] : ['work', 'Options race (paper)']; }
     case 'moxie': { const n = (D.msp?.strategies?.moonshot?.open || []).length; return n ? ['hold', `${n} paper moonshot${n > 1 ? 's' : ''}`] : ['work', `${(D.msp?.candidates || []).length} turnarounds on watch`]; }
+    case 'dex': return ['work', D.exitr ? `${(D.exitr.variants || []).length} sell rules compared` : 'First comparison running'];
     case 'clio': return D.hist?.alerts?.length ? ['warn', 'Edge fading!'] : ['work', `${(D.hist?.winners || []).length} historical candidate(s)`];
     case 'quinn': return D.dled?.open ? ['hold', 'Ledger reports ' + D.dled.open.symbol] : ['work', 'Watching for dips'];
     case 'sim': { const o = Object.values(D.pled?.strategies || {}).filter(x => x.desk === 'options' && x.open).length; return o ? ['hold', o + ' paper spreads'] : ['work', 'Paper testing']; }
@@ -766,7 +776,7 @@ function agentStatus(a) {
 }
 const DOTC = { rest: '#6b7bb8', work: '#7c78ff', walk: '#3ccfcf', talk: '#ffffff', hold: '#ff8a3d', warn: '#f5c451', ok: '#3ddc84', bad: '#ff5c6c' };
 function renderRoster() {
-  const groups = [['CEO', ['claude']], ['Operations · Atlas', ['atlas', 'medic', 'ledger', 'planner']], ['Research · Analyst', ['analyst', 'quinn', 'clio', 'moxie', 'vega', 'sim', 'nova', 'scout']], ['Risk & Trading · Guard', ['guard', 'options']], ['Profitability · independent evidence', ['edge', 'friction', 'proof']]];
+  const groups = [['CEO', ['claude']], ['Operations · Atlas', ['atlas', 'medic', 'ledger', 'planner']], ['Research · Analyst', ['analyst', 'quinn', 'clio', 'dex', 'moxie', 'vega', 'sim', 'nova', 'scout']], ['Risk & Trading · Guard', ['guard', 'options']], ['Profitability · independent evidence', ['edge', 'friction', 'proof']]];
   $('roster').innerHTML = groups.map(([g, ks]) => `<div class="grp">${g}<span>${ks.length}</span></div>` + ks.map(k => { const a = agents[k];
     return `<div class="ag" data-k="${k}"><div class="av"><svg viewBox="-24 -64 48 66">${charSVG(a.kind, a.color)}</svg></div><div class="mid"><div class="n">${a.name} <span style="color:var(--muted);font-weight:500;font-size:11.5px">${esc(a.title || '')}</span></div><div class="r">${a.boss ? 'Reports to ' + agents[a.boss].name + ' · ' : ''}${esc(a.role)}</div></div><span class="stt" id="st-${k}"></span></div>`; }).join('')).join('');
   document.querySelectorAll('.ag').forEach(x => x.onclick = () => focusAgent(x.dataset.k));
@@ -1103,7 +1113,7 @@ function paperCard() {
   return card('🧪 Paper Lab · runs alongside live trading, no real money', `<p style="margin:0 0 10px">This archived Paper Lab contains historical research marks from retired Sim and Echo roles. Figures are simulated and not broker-verified. <b>No new strategy promotes to live automatically.</b> The active forward-only tournament requires independent observations, realistic cost modeling, and a separate approval before live consideration.</p>${body}<p>Updated ${L?.updatedAt ? ago(L.updatedAt) : 'never'}.</p>`, 'span3');
 }
 function payrollCard() {
-  const p = payroll(); const order = ['claude', 'atlas', 'analyst', 'guard', 'quinn', 'clio', 'moxie', 'vega', 'sim', 'nova', 'scout', 'medic', 'ledger', 'planner', 'options'];
+  const p = payroll(); const order = ['claude', 'atlas', 'analyst', 'guard', 'quinn', 'clio', 'dex', 'moxie', 'vega', 'sim', 'nova', 'scout', 'medic', 'ledger', 'planner', 'options'];
   const gc = g => g === 'A' || g === 'B' ? 'up' : g === 'C' ? 'warn' : 'down';
   const v = { profit: ['up', `Published ledgers suggest ${usd(p.wk.usd)} this week (UNVERIFIED): full pay plus a ${credits(p.pool)} profit-sharing bonus.`], flat: ['warn', `Published ledger estimate was flat (${p.wk.trades} closures, NOT broker verified): <b>half pay</b>. Capital was protected but nothing was earned.`], loss: ['down', `Published ledgers suggest a loss of ${usd(p.wk.usd)} this week (UNVERIFIED): <b>no paychecks</b>. Everyone's pay is docked to zero until results turn positive.`] }[p.wk.verdict];
   const lastTxt = { profit: `Last week: profit ${usd(p.last.usd)} · full pay`, flat: 'Last week: flat · half pay', loss: `Last week: loss ${usd(p.last.usd)} · no pay` }[p.last.verdict];

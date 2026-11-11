@@ -40,6 +40,9 @@ Never promise returns.
 ## Learn every week (board order 2026-11-03: "learn what works and what doesn't")
 1. Read `docs/data/claudebot-historian.json` (leaderboards, CIO memo, alerts), `claudebot-hr.json`,
    the options race, the moonshot desk and every paper desk.
+   Also read `docs/data/claudebot-dip-exit-research.json` (Dex, board order 2026-11-10: the Dip desk's sell rules
+   compared side by side every Sunday). Put the table in the board report. It is research only: the board
+   picks the sell rule; never change the live exit because of it.
 2. Append ONE entry to `docs/data/claudebot-lessons.json` (create it if missing):
    `{"week": "<YYYY-MM-DD>", "worked": [...], "didNotWork": [...], "changed": [...], "nextTest": "..."}`,
    with numbers. Read the previous entries first: never re-test an idea a lesson already rejected
