@@ -110,9 +110,9 @@ def run(now=None):
         import importlib.util as _iu
         _sp = _iu.spec_from_file_location("gov", os.path.join(os.path.dirname(os.path.abspath(__file__)), "governor.py")); _gv = _iu.module_from_spec(_sp); _sp.loader.exec_module(_gv)
         H = _gv.HARD
-        gov_ok = (H["account"] == "MCP" and H["dip.maxPctOfAccount"] <= 25 and H["dip.maxOpen"] <= 5 and H["optbuy.maxPremiumUsd"] <= 50
-                  and H["optbuy.maxPctOfAccount"] <= 43 and H["optbuy.maxOpen"] <= 3 and H.get("optbuy.maxTotalPctOfAccount", 100) <= 65 and "KO" in H["neverSell"] and H["maxQuoteAgeSec"] <= 180)
-        gdet = f"hard ceilings intact: {H['dip.maxPctOfAccount']}% per ETF, ${H['optbuy.maxPremiumUsd']} per option, MCP only, KO never sold"
+        gov_ok = (H["account"] == "MCP" and H["dip.maxPctOfAccount"] <= 25 and H["dip.maxOpen"] <= 5 and H["optbuy.maxPctOfAccount"] <= 100
+                  and H["optbuy.maxOpen"] <= 3 and H.get("optbuy.maxTotalPctOfAccount", 100) <= 100 and "KO" in H["neverSell"] and H["maxQuoteAgeSec"] <= 180)
+        gdet = f"hard ceilings intact: {H['dip.maxPctOfAccount']}% per ETF, {"free cash" if H['optbuy.maxPremiumUsd'] >= 1000 else "$" + str(H['optbuy.maxPremiumUsd'])} per option (board order), MCP only, KO never sold"
     except Exception as e:  # noqa: BLE001
         gov_ok, gdet = False, f"governor missing or broken: {e}"
     g.check("options", "Risk governor in place and not loosened", gov_ok, gdet)
@@ -148,10 +148,9 @@ def run(now=None):
                 level="warn")
     bcfg = load(D("claudebot", "optbuy_config.json"), {}); bled = load(D("docs", "data", "claudebot-optbuy-ledger.json"), {})
     br, bx = bcfg.get("risk", {}), bcfg.get("exit", {})
-    g.check("options", "Options-buying caps", br.get("maxPremiumUsd", 999) <= 50 and br.get("maxPctOfAccount", 99) <= 45 and br.get("maxOpenPositions", 9) <= 3
-            and (br.get("maxOpenPositions", 1) <= 1 or br.get("maxTotalPctOfAccount", 100) <= 65)
+    g.check("options", "Options-buying caps", (br.get("maxPremiumUsd", 999) <= 50 or br.get("cashIsTheCap")) and br.get("maxPctOfAccount", 999) <= 100 and br.get("maxOpenPositions", 9) <= 3
             and (0 < bx.get("stockStopPct", 0) <= 8 or 0 < bx.get("stopPct", 0) <= 50) and 0 < bx.get("maxHoldDays", 0) <= 10,
-            f"max ${br.get('maxPremiumUsd')} / {br.get('maxPctOfAccount')}% per option, {br.get('maxOpenPositions', 1)} at a time (at most {br.get('maxTotalPctOfAccount', br.get('maxPctOfAccount'))}% together), sold if the stock falls {bx.get('stockStopPct', bx.get('stopPct'))}% or after {bx.get('maxHoldDays')} days")
+            f"{'all free cash' if br.get('cashIsTheCap') else '$' + str(br.get('maxPremiumUsd'))} per option, {br.get('maxOpenPositions', 1)} at a time (at most {br.get('maxTotalPctOfAccount', br.get('maxPctOfAccount'))}% together), sold if the stock falls {bx.get('stockStopPct', bx.get('stopPct'))}% or after {bx.get('maxHoldDays')} days")
     brules = bcfg.get("rules") or {}
     unapproved = [k for k, rc in brules.items() if rc.get("enabled", True) and not (rc.get("boardApproval") or {}).get("approvalId")]
     g.check("options", "Live option rules carry a recorded board order", (not bcfg.get("enabled")) or (bool(brules) and not unapproved),
@@ -162,7 +161,7 @@ def run(now=None):
     b_ok_syms = set(bcfg.get("symbols", [])) | set(bcfg.get("scanUniverse", [])) | {s_ for rc in brules.values() for s_ in rc.get("symbols", [])}
     # premium ceiling = the governor's hard $50 cap (was checked at $40 here, a leftover from the earlier $30/$40 cap)
     g.check("options", "Bought options within limits", len(bps) <= min(int(br.get("maxOpenPositions", 1)), 3)
-            and all(p.get("entryPrice", 99) * 100 <= 50.01 and p.get("symbol") in b_ok_syms for p in bps) and len({p.get("symbol") for p in bps}) == len(bps),
+            and all((p.get("entryPrice", 99) * 100 <= 50.01 or br.get("cashIsTheCap")) and p.get("symbol") in b_ok_syms for p in bps) and len({p.get("symbol") for p in bps}) == len(bps),
             "no option held" if not bps else ", ".join(f"{p.get('label')} at {p.get('entryPrice')}" for p in bps))
     reports.append(g.done())
 

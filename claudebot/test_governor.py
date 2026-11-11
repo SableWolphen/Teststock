@@ -47,7 +47,7 @@ assert chk(desk="optbuy", side="buy", symbol="SPY", usd=40)["allow"] is False   
 GK = {"pass": True, "live": True}
 assert chk(desk="optbuy", side="buy", symbol="SPY", usd=40, gatekeeper=GK)["allow"]
 assert chk(desk="optbuy", side="buy", symbol="SPY", usd=40, gatekeeper={"pass": True, "live": False})["allow"] is False   # paper verdict
-assert chk(desk="optbuy", side="buy", symbol="SPY", usd=60, gatekeeper=GK)["allow"] is False   # hard $50
+assert chk(desk="optbuy", side="buy", symbol="SPY", usd=60, gatekeeper=GK)["allow"] is False   # $60 is more than the free cash ($92 - $1 is fine, but the config cap applies here)
 DATA["claudebot/optbuy_config.json"]["risk"]["maxPremiumUsd"] = 500                        # loosened config...
 assert chk(desk="optbuy", side="buy", symbol="SPY", usd=60, gatekeeper=GK)["allow"] is False   # ...governor still says no
 # board 2026-11-11: up to 3 options at once, never two on one stock, all together under 65% of the account

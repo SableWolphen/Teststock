@@ -8,7 +8,9 @@ for _rc in cfg["rules"].values(): _rc["enabled"] = True    # scenarios exercise 
 # the live file must carry exactly what the board approved
 assert set(cfg["rules"]) == {"cheapStock", "index"} and all(rc["boardApproval"]["approvalId"] for rc in cfg["rules"].values())
 assert cfg["rules"]["index"]["symbols"] == ["SPY", "QQQ", "IWM"] and cfg["rules"]["cheapStock"]["maxStockPrice"] == 25 and cfg["rules"]["cheapStock"]["strikeWithinPct"] == 3
-assert cfg["risk"]["maxPremiumUsd"] <= 25 and cfg["risk"]["maxPctOfAccount"] <= 22 and cfg["risk"]["maxOpenPositions"] == 3 and cfg["risk"]["maxTotalPctOfAccount"] <= 65   # board 2026-11-11: up to 3 at $25
+assert cfg["risk"]["cashIsTheCap"] and cfg["risk"]["maxOpenPositions"] == 3 and cfg["risk"]["minCashAfterUsd"] >= 1   # board 2026-11-11: up to 3 options, free cash is the only size limit
+cfg25 = copy.deepcopy(cfg); cfg25["risk"].update({"maxPremiumUsd": 25, "maxPctOfAccount": 22, "maxTotalPctOfAccount": 65, "cashIsTheCap": False})   # the earlier caps, to keep the contract-choice scenarios exact
+cfg_cash = cfg; cfg = cfg25
 assert cfg["exit"]["stockStopPct"] == 5 and cfg["exit"]["maxHoldDays"] == 10 and "takeProfitPct" not in cfg["exit"]
 
 up = [60 + i * 0.06 for i in range(220)]
@@ -59,9 +61,9 @@ ix, cs = cfg["rules"]["index"], cfg["rules"]["cheapStock"]
 assert ob.forecast(ix, 0.40, 0.41) > 0 and ob.forecast(ix, 0.38, 0.41) < 0
 # a quote two cents wide leaves the index rule almost no edge: the planner skips it, as the Gatekeeper would
 assert act({**F2, "calls": [K("b2", 75, 0.19, 0.21)]})[0]["do"] == "none"
-# after losses the 22% cap shrinks, and below about $76 even the $16 option would take it under the $60 floor
+# after losses the 22% cap shrinks; below the $60 pause floor nothing new is bought
 a = act({**F2, "calls": C, "accountValue": 95})[0]; assert a["do"] == "buy" and a["id"] == "c", a     # $95: only the $16 one fits 22%
-assert act({**F2, "calls": C, "accountValue": 75})[0]["do"] == "none"
+assert act({**F2, "calls": C, "accountValue": 55})[0]["do"] == "none"                               # below the $60 pause floor: no new buys
 assert ob.forecast(cs, 0.44, 0.47) > 0 and ob.forecast(cs, 0.36, 0.47) < 0
 
 # ---------------------------------------------------------------- holding: the exit follows the stock
@@ -154,4 +156,10 @@ a = _act(f3c, three, cfg)[0]; assert a["do"] == "none" and "limit of 3" in a["re
 big = {**LED, "positions": [{**pos, "entryPrice": 0.33}, {**pos, "id": "q", "symbol": "QQQ", "label": "QQQ", "entryPrice": 0.33, "underlyingPx": F["symbols"]["QQQ"]["price"], "enteredAt": "2026-11-04T19:00:00Z"}]}
 fb = {**f3, "optHeldById": {"b": 1, "q": 1}, "optQuotes": {"b": {"bid": 0.3, "ask": 0.32}, "q": {"bid": 0.3, "ask": 0.32}}}
 a = _act(fb, big, cfg)[0]; assert a["do"] == "none" and "nothing fits" in a["reason"], a
+# ---------------------------------------------------------------- cash is the cap (board 2026-11-11)
+CK = [K("big", 72, 0.70, 0.71), K("b", 75, 0.20, 0.21)]
+a = _act({**F2, "calls": CK, "buyingPower": 83}, LED, cfg_cash)[0]; assert a["do"] == "buy" and a["id"] == "big", a     # $71 with $83 free: the closest call is allowed
+assert float(a["maxPrice"]) * 100 <= 82
+a = _act({**F2, "calls": CK, "buyingPower": 40}, LED, cfg_cash)[0]; assert a["do"] == "buy" and a["id"] == "b", a       # only $39 usable: falls back to the $21 one
+assert _act({**F2, "calls": CK, "buyingPower": 15}, LED, cfg_cash)[0]["do"] == "none"                                   # not enough cash for either
 print("all options-buying scenarios pass")

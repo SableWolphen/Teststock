@@ -28,7 +28,7 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Dip desk benchmark: +0.98% per trade on unseen data, about 2.6 trading days (6.5 h each) per trade
 DIP_PCT_PER_HOUR = 0.98 / (2.6 * 6.5)
-ACCOUNT_FLOOR, MAX_PREMIUM, MAX_PCT = 60.0, 50.0, 43.0
+ACCOUNT_FLOOR, MAX_PREMIUM, MAX_PCT = 0.0, 1000000.0, 100.0   # board 2026-11-11: "the cap is what is in the account only" (was $60 floor, $50, 43%)
 
 
 def load(rel, d=None):

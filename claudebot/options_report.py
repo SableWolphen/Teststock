@@ -60,7 +60,7 @@ def build(data_dir=DATA, cfg_dir=os.path.join(ROOT, "claudebot")):
     dcr, dcp, obb, sbt, osp, spp = (L("claudebot-dipcall-research.json"), L("claudebot-dipcall-paper.json"), L("claudebot-optbuy-backtest.json"),
                                     L("claudebot-scalp-backtest.json"), L("claudebot-optscalp-paper.json"), L("claudebot-spread-paper.json"))
     optcfg = load("optbuy_config.json", cfg_dir)
-    cap = (optcfg.get("risk") or {}).get("maxPremiumUsd", 50)
+    cap = min((optcfg.get("risk") or {}).get("maxPremiumUsd", 50), 50)   # research tested $50 contracts; the live cash cap is shown on the Trading Floor
     live_rule = lambda k: bool(optcfg.get("enabled") and ((optcfg.get("rules") or {}).get(k) or {}).get("enabled", False)
                                and (((optcfg.get("rules") or {}).get(k) or {}).get("boardApproval") or {}).get("approvalId"))
     rows = []

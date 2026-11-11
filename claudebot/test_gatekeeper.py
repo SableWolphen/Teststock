@@ -12,8 +12,9 @@ assert not g.evaluate(good, 117, evidence="unknown", live=True)["pass"]  # live:
 assert g.evaluate(good, 117, evidence="yes", live=True)["pass"]
 assert not g.evaluate({**good, "forecastUsd": -1.4}, 117)["pass"]       # Q1 no: loses after costs
 assert "q3_beatsEtfAndCash" in g.evaluate({**good, "forecastUsd": 0.01}, 117)["failed"]   # tiny edge loses to the ETF
-assert "q4_survivesWorstCase" in g.evaluate({**good, "ask": 0.45}, 80)["failed"]          # premium > 43% of $80? no: 45>34.4
-assert "q4_survivesWorstCase" in g.evaluate({**good, "ask": 0.30}, 85)["failed"]          # 85-30 < $60 floor
+# board 2026-11-11 "the cap is what is in the account only": an option may use the account, never more than it
+assert "q4_survivesWorstCase" not in g.evaluate({**good, "ask": 0.45}, 80)["failed"]      # $45 of an $80 account: allowed now
+assert "q4_survivesWorstCase" in g.evaluate({**good, "ask": 0.90}, 80)["failed"]          # $90 > the whole $80 account
 assert not g.evaluate({**good, "forecastUsd": None}, 117)["pass"]        # unknown forecast rejects
 # board order 2026-11-11: a recorded order to trade a live-desk rule can stand in for the paper gates,
 # is always labelled as an override, and never excuses the other three questions
@@ -21,7 +22,7 @@ v = g.evaluate(good, 117, evidence="board", live=True, hold_minutes=1170)
 assert v["pass"] and v["boardOverride"] is True and v["answers"]["q2_evidence"] == "board"
 assert g.evaluate(good, 117, evidence="yes", live=True)["boardOverride"] is False
 assert not g.evaluate({**good, "forecastUsd": -0.5}, 117, evidence="board", live=True, hold_minutes=1170)["pass"]   # Q1 still required
-assert not g.evaluate({**good, "ask": 0.30}, 85, evidence="board", live=True, hold_minutes=1170)["pass"]             # Q4 still required
+assert not g.evaluate({**good, "ask": 0.90}, 85, evidence="board", live=True, hold_minutes=1170)["pass"]             # Q4 still required
 real_load = g.load
 CFG = {"enabled": True, "rollback": {"afterTrades": 10, "minProfitFactor": 1.0, "since": "2026-11-11T00:00:00Z"},
        "rules": {"cheapStock": {"enabled": True, "boardApproval": {"approvalId": "board-x"}}, "noOrder": {"enabled": True}}}

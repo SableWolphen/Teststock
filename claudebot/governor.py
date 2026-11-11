@@ -30,7 +30,7 @@ CT = ZoneInfo("America/Chicago")
 HARD = {   # never above these, whatever the configs say (changing them needs the board)
     "account": "MCP", "maxQuoteAgeSec": 180, "accountFloorUsd": 50,
     "dip.maxPctOfAccount": 25, "dip.minPositionUsd": 1, "dip.maxPositionUsdAbs": 5000, "dip.maxOpen": 5,
-    "optbuy.maxPremiumUsd": 50, "optbuy.maxPctOfAccount": 43, "optbuy.maxOpen": 3, "optbuy.maxTotalPctOfAccount": 65,   # maxOpen 1 -> 3 by board order 2026-11-11 ("Up to 3 at $25 each")
+    "optbuy.maxPremiumUsd": 1000000, "optbuy.maxPctOfAccount": 100, "optbuy.maxOpen": 3, "optbuy.maxTotalPctOfAccount": 100,   # board 2026-11-11: "the cap is what is in the account only" (was $50 / 43% / 65%)   # maxOpen 1 -> 3 by board order 2026-11-11 ("Up to 3 at $25 each")
     "neverSell": ["KO"],
 }
 HOLIDAYS = {"2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"}
@@ -122,6 +122,8 @@ def check(o, root_loader=load):
             cap = min(float(r.get("maxPremiumUsd", 50)), HARD["optbuy.maxPremiumUsd"], av * min(float(r.get("maxPctOfAccount", 43)), HARD["optbuy.maxPctOfAccount"]) / 100)
             if usd > cap + 0.01:
                 deny.append(f"premium ${usd:.2f} is above the cap ${cap:.2f}")
+            if usd > float(o.get("buyingPower", 0)) - 1 + 0.01:
+                deny.append(f"premium ${usd:.2f} is more than the free cash (${float(o.get('buyingPower', 0)):.2f} less $1)")
             if len(held) >= min(int(r.get("maxOpenPositions", 1)), HARD["optbuy.maxOpen"]):
                 deny.append(f"already holding {len(held)} option(s), the limit")
             tot = sum(p["entryPrice"] * 100 for p in held) + usd

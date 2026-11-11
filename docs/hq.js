@@ -1267,7 +1267,7 @@ function liveOptionsCard() {
   return card('Options desk (real money) · live by your order of Nov 11', `<div class="big ${o ? 'org' : ''}">${o ? esc(ps.map(p => p.label).join(', ')) : 'WAITING'}</div>
     <p>${o ? ps.map(p => `${esc(p.label)} bought at ${p.entryPrice} on ${when(p.enteredAt)}.`).join(' ') : 'Nothing held. It checks all day and buys on a dip signal.'} ${tr.length} finished trade${tr.length === 1 ? '' : 's'}${tr.length ? ', ' + usd(pnl) : ''}.</p>
     <ul class="list">${rules.map(([k, r]) => li(`<b>${esc(r.name || k)}.</b> ${esc(what[k] || '')}`, 'g')).join('')}
-    ${li(`Up to ${rk.maxOpenPositions} options at once, each at most $${rk.maxPremiumUsd}, together at most ${rk.maxTotalPctOfAccount}% of the account. A losing trade can lose all of what was paid.`, 'y')}
+    ${li(`Up to ${rk.maxOpenPositions} options at once, ${rk.cashIsTheCap ? 'each can use all free cash' : `each at most $${rk.maxPremiumUsd}`}. A losing trade can lose all of what was paid.`, 'y')}
     ${li(`Sold when the stock is back above its ${x.bounceSma}-day average, falls ${x.stockStopPct}% from where it was at entry, or after ${x.maxHoldDays} trading days.`)}
     ${li(`Each rule switches itself off after ${c.rollback?.afterTrades} finished trades if it is losing.`)}
     ${li('Started ahead of its paper test: the evidence is tens of past trades, not hundreds. The research scorecard still says that evidence does not support new options risk; this desk runs on your order, and the paper desks keep measuring both ideas.', 'y')}</ul>`, 'span2');
