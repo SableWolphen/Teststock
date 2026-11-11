@@ -34,7 +34,7 @@ test('new mobile overflow guards and refreshed assets expose complete numbers', 
   assert.match(css, /\.kpi \.l,\.kpi \.v,\.kpi \.s\s*\{[^}]*overflow:visible;text-overflow:clip/);
   assert.match(css, /\.kpi \.v\{white-space:pre-line\}/);
   assert.match(css, /\.kpis\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
-  assert.match(html, /hq\.css\?v=20261103-verification-explained123/);
+  assert.match(html, /hq\.css\?v=\d{8}-[a-z0-9-]+/);   // cache-busting version present (bumped whenever the stylesheet changes)
   assert.match(html, /hq\.js\?v=[^"\s]+/);
   assert.ok(script.includes('Closed ${usd(ma.closed)}\\nOpen ${usd(ma.open)}'));
 });

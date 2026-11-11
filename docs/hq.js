@@ -345,22 +345,23 @@ async function getPrivateBrokerSummary() {
   } catch { return null; }
 }
 async function refresh() {
-  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission, dcp, idp, spp, news, exitr, gate] = await Promise.all([
+  const [sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission, dcp, idp, spp, news, exitr, gate, optrep] = await Promise.all([
     getJSON('docs/data/claudebot-signal.json'), getJSON('docs/data/claudebot-ledger.json'), getJSON('docs/data/claudebot-options-ledger.json'),
     getJSON('docs/data/live-trading-health.json'), getJSON('docs/data/latest-50.json'), getJSON('claudebot/options_config.json'), getJSON('claudebot/config.json'),
-    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json'), getJSON('docs/data/claudebot-crypto-paper.json'), getJSON('docs/data/claudebot-optscalp-paper.json'), getJSON('docs/data/claudebot-moonshot-paper.json'), getJSON('docs/data/claudebot-hr.json'), getJSON('docs/data/claudebot-decision-scorecard.json'), getJSON('docs/data/claudebot-edge-readiness.json'), getJSON('docs/data/claudebot-tournament-scorecard.json'), getJSON('docs/data/claudebot-daily-profit.json'), getJSON('docs/data/options-profitability-admission.json'), getJSON('docs/data/claudebot-dipcall-paper.json'), getJSON('docs/data/claudebot-intraday-paper.json'), getJSON('docs/data/claudebot-spread-paper.json'), getJSON('docs/data/claudebot-news.json'), getJSON('docs/data/claudebot-dip-exit-research.json'), getJSON('docs/data/claudebot-gate.json')]);
-  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission, dcp, idp, spp, news, exitr, gate });
+    getJSON('docs/data/claudebot-options-robustness.json'), getJSON('docs/data/claudebot-paper-ledger.json'), getJSON('docs/data/claudebot-audit.json'), getJSON('docs/data/claudebot-dip-ledger.json'), getJSON('docs/data/claudebot-dip-backtest.json'), getJSON('claudebot/dip_config.json'), getJSON('docs/data/claudebot-daytrade-paper.json'), getJSON('docs/data/claudebot-daytrade-backtest.json'), getJSON('docs/data/claudebot-optbuy-ledger.json'), getJSON('docs/data/claudebot-daytrade-wide.json'), getJSON('docs/data/claudebot-optbuy-scan.json'), getJSON('docs/data/claudebot-historian.json'), getJSON('docs/data/claudebot-edge-paper.json'), getJSON('docs/data/claudebot-crypto-paper.json'), getJSON('docs/data/claudebot-optscalp-paper.json'), getJSON('docs/data/claudebot-moonshot-paper.json'), getJSON('docs/data/claudebot-hr.json'), getJSON('docs/data/claudebot-decision-scorecard.json'), getJSON('docs/data/claudebot-edge-readiness.json'), getJSON('docs/data/claudebot-tournament-scorecard.json'), getJSON('docs/data/claudebot-daily-profit.json'), getJSON('docs/data/options-profitability-admission.json'), getJSON('docs/data/claudebot-dipcall-paper.json'), getJSON('docs/data/claudebot-intraday-paper.json'), getJSON('docs/data/claudebot-spread-paper.json'), getJSON('docs/data/claudebot-news.json'), getJSON('docs/data/claudebot-dip-exit-research.json'), getJSON('docs/data/claudebot-gate.json'), getJSON('docs/data/claudebot-options-report.json')]);
+  Object.assign(D, { sig, led, oled, health, latest, ocfg, ccfg, obt, pled, audit, dled, dbt, dcfg, dtp, dtbt, bled, dtw, scan, hist, eped, cpp, osp, msp, hr, decision, edgeReady, tournament, dailyProfit, optionAdmission, dcp, idp, spp, news, exitr, gate, optrep });
   D.privateBroker = await getPrivateBrokerSummary();
   renderAll();
 }
 function botHealth() {
   const sigAge = D.sig ? (Date.now() - new Date(D.sig.generatedAt)) / 6e4 : Infinity;
-  const runs = [...(D.led?.runs || []), ...(D.oled?.runs || [])].sort((a, b) => new Date(b.t) - new Date(a.t));
+  const runs = [...(D.led?.runs || []), ...(D.oled?.runs || []), ...(D.dled?.runs || []), ...(D.bled?.runs || [])].sort((a, b) => new Date(b.t) - new Date(a.t));
   const runAge = runs[0] ? (Date.now() - new Date(runs[0].t)) / 6e4 : Infinity;
   const errs = runs.filter(r => r.action === 'error' && (Date.now() - new Date(r.t)) < 864e5).length;
-  const issues = [];
-  if (sigAge > 150) issues.push(`price scan ${Math.round(sigAge)}m old`);
-  if (runAge > 130) issues.push(`trader last ran ${isFinite(runAge) ? Math.round(runAge) + 'm' : 'never'} ago`);
+  const issues = [], open = marketState().k === 'open';
+  // The hourly crypto scan only matters while a coin is held, and the trader only runs in market hours.
+  if (sigAge > 150 && D.led?.open) issues.push(`price scan ${Math.round(sigAge)}m old`);
+  if (runAge > 130 && open) issues.push(`trader last ran ${isFinite(runAge) ? Math.round(runAge) + 'm' : 'never'} ago`);
   if (errs) issues.push(`${errs} error${errs > 1 ? 's' : ''} in 24h`);
   return { ok: !issues.length, status: issues.length ? 'CHECK' : 'HEALTHY', issues, sigAge, runAge };
 }
@@ -625,7 +626,7 @@ const routines = {
     await wander(a, [[17.3, 10.6], [16.4, 9.8], [18.0, 11.6]]);
     const roll = Math.random();
     if (roll < .4) {
-      const k = pick(Object.keys(R).filter(x => x !== 'ledger')), r = payroll().rows[k];
+      const pr = payroll().rows, k = pick(Object.keys(R).filter(x => x !== 'ledger' && pr[x])), r = pr[k];   // only agents on the payroll
       const w = payroll().wk;
       await visit(a, R[k], [['a', w.verdict === 'loss' ? `Sorry, ${R[k].name}: the company lost money, so your paycheck is <b>🪙 0</b>.` : `Paycheck for you, ${R[k].name}: <b>${credits(r.pay)}</b> (score ${r.score}, ${w.verdict === 'flat' ? 'half pay this week' : 'full pay + bonus'}).`], ['b', w.verdict === 'loss' ? "Understood. Let's earn it back the right way." : r.score >= 85 ? 'Thanks! 🎉' : "Thanks. I'll do better next week."]]);
     } else if (roll < .7) await visit(a, R.options, [['a', 'Any fills to record?'], ['b', (D.led?.trades?.length || 0) + (D.oled?.trades?.length || 0) ? 'Already in your books.' : 'Not yet. Waiting for a clean setup.']]);
@@ -671,7 +672,7 @@ async function rest(a) {
     a.resting = false; await say(a, a.energy >= 75 ? 'Well rested. Back to work! 😄' : 'Back to work! ☕', 1800); await goHome(a);
   } finally { a.resting = false; a.busy--; }
 }
-async function runAgent(k) { const a = agents[k]; await sleep(rnd(500, 4000)); for (;;) { try { if (Math.random() < (a.energy < 50 ? .4 : .1)) await coffeeBreak(a); else await routines[k](a); } catch (e) { console.error(k, e); } await sleep(rnd(1500, 4500)); } }
+async function runAgent(k) { const a = agents[k]; await sleep(rnd(500, 4000)); for (;;) { try { if (Math.random() < (a.energy < 50 ? .4 : .1)) await coffeeBreak(a); else if (routines[k]) await routines[k](a); else await wander(a, [a.home || [a.x, a.y]]); } catch (e) { console.error(k, e); } await sleep(rnd(1500, 4500)); } }
 
 /* ============================== camera ============================== */
 const BW = 1560; const CX = 256, CY = 270;
@@ -788,6 +789,116 @@ function updateStatuses() {
   for (const id of ROOM_IDS) { const e = $('rc-' + id); if (e) e.querySelector('span').textContent = `${counts[id] || 0} agent${counts[id] === 1 ? '' : 's'} here`; }
 }
 setInterval(updateStatuses, 500);
+/* ============================== at a glance: the plain-language summary ============================== */
+// Restates the bot's published records in everyday words. Nothing here is broker-verified unless
+// D.privateBroker is set; the full provenance cards stay available under "All status details".
+const RUN_TIMES_CT = [[8, 44], [9, 44], [10, 14], [11, 14], [12, 14], [13, 14], [14, 14], [14, 44]];
+const MARKET_HOLIDAYS = new Set(['2026-11-26', '2026-12-25', '2027-01-01', '2027-01-18', '2027-02-15', '2027-03-26', '2027-05-31', '2027-06-18', '2027-07-05', '2027-09-06', '2027-11-25', '2027-12-24']);
+const ctNow = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+const isoDay = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const tradingDay = d => d.getDay() >= 1 && d.getDay() <= 5 && !MARKET_HOLIDAYS.has(isoDay(d));
+function marketState() {
+  const ct = ctNow(), m = ct.getHours() * 60 + ct.getMinutes();
+  if (tradingDay(ct) && m >= 510 && m < 900) return { k: 'open', label: 'Market open' };
+  if (tradingDay(ct) && m < 510) return { k: 'pre', label: 'Market opens 8:30 AM CT' };
+  return { k: 'closed', label: 'Market closed' };
+}
+function nextCheck() {
+  const ct = ctNow(), nowM = ct.getHours() * 60 + ct.getMinutes();
+  for (let add = 0; add < 10; add++) {
+    const day = new Date(ct); day.setDate(ct.getDate() + add);
+    if (!tradingDay(day)) continue;
+    for (const [h, mi] of RUN_TIMES_CT) {
+      if (add === 0 && h * 60 + mi <= nowM) continue;
+      const t = `${h > 12 ? h - 12 : h}:${String(mi).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'} CT`;
+      return add === 0 ? t : add === 1 ? `tomorrow at ${t}` : `${day.toLocaleDateString('en-US', { weekday: 'long' })} at ${t}`;
+    }
+  }
+  return 'the next trading day';
+}
+const px = v => v == null || !isFinite(v) ? '–' : '$' + Number(v).toFixed(2);
+const shortDay = iso => iso ? new Date(String(iso).slice(0, 10) + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+const dipPositions = () => D.dled?.positions ?? (D.dled?.open ? [D.dled.open] : []);
+const DESK_PLAIN = { 'Options quick-profit': 'Quick option trades', 'Day trade': 'Day trades', '2nd edge': 'Double 7s and 3 down days', 'Spreads': 'Option spreads', 'Paper Lab': 'Older paper lab', 'Intraday dips': 'Same-day dip buys', 'Dip calls ($25-scaled)': 'Dip calls', 'Moonshot': 'Long-shot calls', 'Crypto 24/7': 'Crypto', 'Options': 'Put spreads' };
+function paperByDesk() {
+  const by = new Map();
+  for (const r of paperRows()) { if (!r.n) continue; const g = by.get(r.desk) || []; g.push(r); by.set(r.desk, g); }
+  return [...by.entries()].map(([desk, rows]) => {
+    const k = desk === 'Options quick-profit' ? rows.length : 1;   // the race replays the same picks through many sell rules: count it once
+    const n = rows.reduce((a, r) => a + r.n, 0) / k, w = rows.reduce((a, r) => a + r.n * (r.wp || 0) / 100, 0) / k;
+    return { name: DESK_PLAIN[desk] || desk, n: Math.round(n), wp: n ? Math.round(100 * w / n) : null, pnl: rows.reduce((a, r) => a + r.pnl, 0) / k };
+  }).sort((a, b) => b.n - a.n);
+}
+function positionBlock(p, many) {
+  const o = (D.gate?.outlook?.positions || []).find(x => x.symbol === p.symbol && x.entryPrice === p.entryPrice);
+  const entry = p.entryPrice, now = o?.lastPrice ?? p.mark?.price ?? null, sell = o?.sellAt?.price ?? null;
+  const stop = o?.stopPrice ?? Math.floor(entry * (100 - (D.dcfg?.exit?.stopPct ?? 5))) / 100;
+  const chg = now != null ? 100 * (now / entry - 1) : null;
+  const pts = [stop, entry, now, sell].filter(v => v != null), lo = Math.min(...pts), hi = Math.max(...pts);
+  const at = v => (hi > lo ? Math.max(0, Math.min(100, 100 * (v - lo) / (hi - lo))) : 50).toFixed(1);
+  const reached = sell != null && now != null && (o?.sellAt?.orHigher ? now >= sell : now > sell);
+  const track = `<div class="trk" role="img" aria-label="${esc(`${p.symbol}: stops out at ${px(stop)}, bought at ${px(entry)}, now ${px(now)}${sell != null ? ', sells at ' + px(sell) : ''}`)}">
+      ${now != null ? `<i class="trk-seg ${chg < 0 ? 'down' : ''}" style="left:${Math.min(at(entry), at(now))}%;width:${Math.abs(at(now) - at(entry)).toFixed(1)}%"></i>` : ''}
+      <i class="trk-mk stop" style="left:${at(stop)}%"></i><i class="trk-mk buy" style="left:${at(entry)}%"></i>${sell != null ? `<i class="trk-mk sell" style="left:${at(sell)}%"></i>` : ''}${now != null ? `<i class="trk-mk now" style="left:${at(now)}%"></i>` : ''}
+    </div>
+    <dl class="trk-key">
+      <div><dt><i class="trk-mk stop"></i>Stops out at</dt><dd>${px(stop)}</dd></div>
+      <div><dt><i class="trk-mk buy"></i>Bought at</dt><dd>${px(entry)}</dd></div>
+      <div><dt><i class="trk-mk now"></i>Now</dt><dd>${px(now)}</dd></div>
+      <div><dt><i class="trk-mk sell"></i>${sell == null ? 'Sells' : o.sellAt.orHigher ? 'Sells at' : 'Sells above'}</dt><dd>${sell == null ? 'by its rule' : px(sell)}</dd></div>
+    </dl>`;
+  const next = [];
+  if (!o) next.push(exitOutlook(p));
+  else if (o.boughtThisSession) next.push('Bought today, so sell checks start next session.');
+  else if (reached) next.push('It has reached the sell level and sells at the next check.');
+  else if (sell != null && now != null) next.push(`Needs ${pct(100 * (sell / now - 1), 1)} to reach the sell level (${o.sellAt.why}).`);
+  if (o?.later && !reached) next.push(`If the price holds, the sell level drops to about ${px(o.later.price)} on ${shortDay(o.later.session)}.`);
+  if (o?.timeLimit) next.push(`Sold by ${shortDay(o.timeLimit)} at the latest.`);
+  return `${many ? `<h4 class="g-sym">${esc(p.symbol)}</h4>` : ''}
+    <p class="g-sub">Bought ${shortDay(p.enteredAt)}.${chg == null ? '' : ` <span class="${cls(chg)}">${chg >= 0 ? 'Up' : 'Down'} ${Math.abs(chg).toFixed(1)}%</span> since then.`}</p>
+    ${track}<ul class="g-next">${next.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`;
+}
+function renderGlance() {
+  const el = $('glance'); if (!el) return;
+  if (!D.dled) { el.innerHTML = `<div class="g-panel g-now"><p class="g-sub">Loading the bot's latest records…</p></div>`; return; }
+  const ps = dipPositions(), opt = D.bled?.open, mk = marketState(), ma = madeAllTime(), vb = D.privateBroker;
+  const names = [...ps.map(p => p.symbol), ...(opt ? [opt.label] : [])];
+  const title = names.length ? 'Holding ' + (names.length > 2 ? names.slice(0, -1).join(', ') + ' and ' + names.slice(-1) : names.join(' and ')) : 'All cash';
+  const priceAge = D.gate?.generatedAt ? `Prices as of ${ago(D.gate.generatedAt)}. ` : '';
+  const hero = `<div class="g-panel g-now">
+    <div class="g-head"><h2 class="g-title">${esc(title)}</h2><span class="g-chip ${mk.k}">${mk.label}</span></div>
+    ${ps.length ? ps.map(p => positionBlock(p, ps.length > 1)).join('') : `<p class="g-sub">Nothing is held right now. The bot buys when one of its funds drops sharply while still in a longer uptrend.</p>`}
+    <p class="g-note">${priceAge}Next scheduled check ${nextCheck()}.</p></div>`;
+  const closed = vb ? vb.realizedPnlUsd : ma.closed, open = vb ? vb.unrealizedPnlUsd : ma.open;
+  const nClosed = (D.dled?.trades || []).length + liveSpreadTrades().length;
+  const money = `<div class="g-panel"><h3>Real money so far</h3>
+    <div class="g-two"><div><span class="g-num ${cls(closed)}">${usd(closed)}</span><span class="g-cap">${nClosed} finished trade${nClosed === 1 ? '' : 's'}</span></div>
+    <div><span class="g-num ${cls(open)}">${usd(open)}</span><span class="g-cap">${names.length ? 'still open, not sold yet' : 'nothing open'}</span></div></div>
+    <p class="g-note">${vb ? `Checked against Robinhood at ${new Date(vb.verifiedAt).toLocaleTimeString()}.` : `From the bot's own records, not a Robinhood statement. Your Robinhood app has the exact figures.`}</p></div>`;
+  // Is it working?
+  const runs = [...(D.dled?.runs || []), ...(D.bled?.runs || []), ...(D.led?.runs || []), ...(D.oled?.runs || [])].sort((a, b) => new Date(b.t) - new Date(a.t));
+  const runAge = runs[0] ? ageMin(runs[0].t) : Infinity, err = runs.find(r => r.action === 'error' && ageMin(r.t) < 1440);
+  const gateAge = D.gate?.generatedAt ? ageMin(D.gate.generatedAt) : Infinity;
+  const checks = [];
+  checks.push(err ? ['warn', 'Trading runs', `A run hit a problem ${ago(err.t)}: ${String(err.detail || '').slice(0, 140)}`]
+    : mk.k === 'open' && runAge > 130 ? ['warn', 'Trading runs', `The last run was ${ago(runs[0]?.t)}, later than expected.`]
+    : ['ok', 'Trading runs', `Last ran ${runs[0] ? ago(runs[0].t) : 'not yet'}.`]);
+  checks.push(mk.k === 'open' && gateAge > 25 ? ['warn', 'Price checks', `Last check was ${ago(D.gate?.generatedAt)}; they should come every 5 minutes.`]
+    : ['ok', 'Price checks', mk.k === 'open' ? `Every 5 minutes. Last one ${ago(D.gate?.generatedAt)}.` : 'Every 5 minutes while the market is open.']);
+  if (D.audit) {
+    const all = D.audit.reports.flatMap(r => r.checks || []), passed = D.audit.reports.reduce((a, r) => a + r.passed, 0), total = D.audit.reports.reduce((a, r) => a + r.total, 0);
+    const bad = all.find(c => c.status === 'fail') || all.find(c => c.status === 'warn');
+    checks.push([all.some(c => c.status === 'fail') ? 'bad' : bad ? 'warn' : 'ok', 'Safety checks', `${passed} of ${total} pass.${bad ? ` Open item: ${bad.detail}.`.replace(/\.\.$/, '.') : ''}`]);
+  }
+  const working = `<div class="g-panel"><h3>Is it working?</h3><ul class="g-checks">${checks.map(([st, name, detail]) => `<li><i class="g-ic ${st}" aria-hidden="true">${st === 'ok' ? '✓' : st === 'warn' ? '!' : '✕'}</i><div><b>${name}</b> <span>${esc(detail)}</span></div></li>`).join('')}</ul></div>`;
+  // Practice trades
+  const T = paperTotals(), desks = paperByDesk();
+  const practice = `<details class="g-panel g-practice"><summary><span><b>Practice trades</b> with pretend money</span><span class="g-sum ${cls(T.pnl)}">${usd(T.pnl)}</span></summary>
+    <p class="g-note">${T.n} practice trades so far, ${T.wp == null ? '–' : T.wp + '%'} of them winners. Each line is an experiment at real prices, and none of it is your money. A low score here means an idea was tested and did not earn a place.</p>
+    ${desks.length ? `<table class="g-table"><thead><tr><th>Experiment</th><th>Trades</th><th>Winners</th><th>Result</th></tr></thead><tbody>${desks.map(d => `<tr><td>${esc(d.name)}</td><td class="mono">${d.n}</td><td class="mono">${d.wp == null ? '–' : d.wp + '%'}</td><td class="mono ${cls(d.pnl)}">${usd(d.pnl)}</td></tr>`).join('')}</tbody></table>` : ''}
+    <p class="g-note"><a href="#research">Open the full scorecard in the Research Lab</a></p></details>`;
+  el.innerHTML = hero + money + working + practice;
+}
 function renderKpis() {
   const h = D.health, lp = livePos(), open = lp.length;
   const runs = [...(D.led?.runs || []), ...(D.oled?.runs || [])].sort((a, b) => new Date(b.t) - new Date(a.t));
@@ -982,6 +1093,7 @@ const CONSOLES = {
       ${card('ETF challengers · paper before live', D.edgeReady
         ? '<p>No new paper strategy is activated live automatically. Current evidence:</p><ul class="list">' + Object.entries(D.edgeReady.strategies || {}).map(([id, data]) => li(esc(id) + ': ' + (data.evidence?.independentEntries ?? '–') + ' independent entries · ' + (data.evidence?.sessions ?? '–') + ' sessions · ' + esc(data.status.replaceAll('_', ' ')), data.status === 'review_only' ? 'g' : 'y')).join('') + '</ul><p>Close marks after the close are not executable fills. Updated ' + ago(D.edgeReady.generatedAt) + '</p>'
         : '<p>Research readiness will appear after the next paper run. New live strategies require independent evidence and separate approval.</p>', 'span2')}
+      ${optionsReportCard()}
       ${tournamentCard()}
       ${dailyProfitCard()}
       ${paperScoreCard()}
@@ -1143,6 +1255,16 @@ function planOut(p) {
       ${card('Return scenarios', `<div class="sbars">${p.scenarios.map(s => `<div class="sbar"><span class="mono ${cls(s.annualReturn)}">${s.annualReturn > 0 ? '+' : ''}${s.annualReturn}%/yr</span><div class="bar"><i style="width:${Math.max(1, s.value / mx * 100)}%"></i></div><span class="mono">${money(s.value)}</span></div>`).join('')}</div>`, 'span2')}
       ${card('Milestones', `<ul class="list">${p.milestones.map(m => li(`${money(m.capital)} → ${money(m.monthlyIncome)}/mo ${m.achieved ? '· reached' : m.projected ? '· on track' : ''}`, m.achieved ? 'g' : m.projected ? 'y' : '')).join('')}</ul>`)}`;
 }
+function optionsReportCard() {
+  const r = D.optrep, rows = r?.rows || [];
+  if (!rows.length) return card('🎓 Options report card', '<div class="empty">The report card appears after tonight\'s paper run.</div>', 'span3');
+  const tag = v => ({ 'held up': 'bull', 'lost': 'bear', 'no edge': 'bear', 'did not hold up': 'bear' }[v] || 'neu');
+  const item = x => `<div class="orc-i"><span class="tag ${tag(x.verdict)}">${esc(x.verdict)}</span><b>${esc(x.type)}</b>
+      <dl><dt>A contract costs</dt><dd>${esc(x.cost)}</dd><dt>On unseen past prices</dt><dd>${esc(x.history)}</dd><dt>On paper at live prices</dt><dd>${esc(x.paper)}</dd><dt>Can the account buy it?</dt><dd>${esc(x.canBuy)}</dd><dt>Status</dt><dd>${esc(x.status)}</dd></dl></div>`;
+  return card('🎓 Options report card · every kind we have tested, side by side', `<p style="margin:0 0 10px;max-width:80ch">${(r.lessons || []).map(esc).join(' ')}</p>
+    <div class="orc">${rows.map(item).join('')}</div>
+    <p style="color:var(--muted);margin:10px 0 0">History and paper only, updated ${ago(r.generatedAt)}. Past results do not predict future results.</p>`, 'span3');
+}
 function histCard() {
   const h = D.hist, b = h?.leaderboard || [];
   const tag = st => ({ LIVE: 'bull', CANDIDATE: 'bull', PAPER: 'neu', OFF: 'neu', REJECTED: 'bear' }[st] || 'neu');
@@ -1191,7 +1313,7 @@ function route2() {
   animCam(current === 'office' ? HOME() : roomCam(current)); renderConsole(); $('nav').classList.remove('open');
 }
 addEventListener('hashchange', route2);
-function renderAll() { renderWalls(); renderKpis(); renderJournal(); if (current === 'freedom') return; renderConsole(); }
+function renderAll() { renderWalls(); renderGlance(); renderKpis(); renderJournal(); if (current === 'freedom') return; renderConsole(); }
 
 renderRoster(); renderRoomCards();
 await refresh(); route2(); updateStatuses();
