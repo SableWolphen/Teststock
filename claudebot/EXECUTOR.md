@@ -303,6 +303,7 @@ Rules: `claudebot/optbuy_bot.py` + `claudebot/optbuy_config.json`. Ledger:
 | `need_scan` | load `docs/data/claudebot-optbuy-scan.json` into `scan` in /tmp/dfacts.json (once per run). If it is more than ~30 hours old on a weekday, first dispatch `claudebot-optbuy-scan.yml` the same way as the stale crypto scan (step 0) and pull; if it's still stale the planner skips the cheap stocks by itself. Re-plan |
 | `need_symbol` | same as the Dip desk: add `symbols[SYM] = {price, closes, heldQty}`; re-plan. Also asked for the stock under a HELD option: its price and closes decide the exit |
 | `need_scan_prices` | `scanPrices[SYM]` = live price from get_equity_quotes (up to 20 symbols per call) for every symbol listed; re-plan |
+| `need_quality` | `quality[SYM]` = {`pe`: pe_ratio from get_equity_fundamentals (null if missing), `buy`, `hold`, `sell`: num_*_ratings from get_equity_analyst_ratings (0 each if no coverage)}; re-plan |
 | `need_earnings` | `earnings[SYM]` = that stock's next report date (YYYY-MM-DD) from get_earnings_calendar (days 31; look for the symbol), or null if none in the window; re-plan |
 | `need_expirations` | `expirations[SYM]` = get_option_chains(SYM).expiration_dates; re-plan |
 | `need_calls` | get_option_instruments(chain_symbol SYM, expiration_dates, type call), keep strikes between strikeMin and strikeMax, one get_option_quotes for those ids; append `{symbol, id, strike, expiration, bid, ask, delta}` to `calls` and add `"SYM|expiration"` to `callsFetched` (even if nothing was in range); re-plan |

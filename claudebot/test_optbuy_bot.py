@@ -104,6 +104,12 @@ SC = {"generatedAt": "2026-11-04T02:00:00Z", "asOf": "2026-11-03", "watch": ["F"
 U = {**F, "symbols": {}, "scan": SC}
 a = act(U, c=cc)[0]; assert a["do"] == "need_scan_prices" and a["symbols"] == ["F", "SOFI"], a       # only names that could be $25 or less today
 P = {"F": 12.1, "SOFI": 25.2}                                                                        # both signal; SOFI is above $25
+a = act({**U, "scanPrices": P}, c=cc)[0]; assert a["do"] == "need_quality" and a["symbol"] == "F", a      # board 2026-11-11: good stocks only
+GOOD = {"F": {"pe": 8.0, "buy": 6, "hold": 3, "sell": 0}}
+U = {**U, "quality": GOOD}
+assert "not profitable" in act({**U, "scanPrices": P, "quality": {"F": {"pe": -6.7, "buy": 9, "hold": 1, "sell": 0}}}, c=cc)[0]["reason"]
+assert "not rated a buy" in act({**U, "scanPrices": P, "quality": {"F": {"pe": 8, "buy": 9, "hold": 12, "sell": 0}}}, c=cc)[0]["reason"]
+assert "not rated a buy" in act({**U, "scanPrices": P, "quality": {"F": {"pe": 31, "buy": 0, "hold": 0, "sell": 0}}}, c=cc)[0]["reason"]   # no coverage (like PAYS)
 a = act({**U, "scanPrices": P}, c=cc)[0]; assert a == {"do": "need_earnings", "symbol": "F", "note": a["note"]}, a
 a = act({**U, "scanPrices": P, "earnings": {"F": "2026-11-17"}}, c=cc)[0]; assert a["do"] == "none" and "earnings" in a["reason"], a   # report inside 14 days
 U2 = {**U, "scanPrices": P, "earnings": {"F": None}, "expirations": {"F": ["2026-11-20", "2026-12-04", "2026-12-11"]}}
@@ -142,7 +148,7 @@ with tempfile.TemporaryDirectory() as d:
     assert led["open"] is None and t["rule"] == "cheapStock" and t["reason"] == "bounce" and t["pnlUsd"] == round((0.60 - 0.46) * 100 - 0.06, 2), t
 # ---------------------------------------------------------------- several options at once (board 2026-11-11: up to 3 at $25)
 held1 = {**LED, "positions": [pos]}
-f3 = {**hold(avg4 - 0.3), "symbols": {"SPY": {"price": avg4 - 0.3, "closes": dip, "heldQty": 0}, **{k: v for k, v in F["symbols"].items() if k != "SPY"}},
+f3 = {**hold(avg4 - 0.3), "quality": GOOD, "symbols": {"SPY": {"price": avg4 - 0.3, "closes": dip, "heldQty": 0}, **{k: v for k, v in F["symbols"].items() if k != "SPY"}},
       "scan": SC, "scanPrices": P, "earnings": {"F": None}, "expirations": {"F": ["2026-12-04"]}, "calls": FC}
 a = _act(f3, held1, cfg)[0]; assert a["do"] == "buy" and a["symbol"] == "F", a                       # one held (SPY), still room: buys another
 two = {**LED, "positions": [pos, {**pos, "id": "f12x", "symbol": "F", "label": "F", "entryPrice": 0.21, "underlyingPx": 12.1}]}

@@ -211,6 +211,19 @@ def plan(f, cfg, led):
     skipped = []
     for sig, rule, kind in sigs[: cfg["scan"].get("maxSignalsPerRun", 6)]:
         rc = live[rule]
+        qc = rc.get("quality")
+        if kind == "stock" and qc:
+            # board 2026-11-11 "only buy good stocks": profitable and rated a buy by most analysts (untested filter)
+            ql = (f.get("quality") or {}).get(sig)
+            if ql is None:
+                return {"actions": [{"do": "need_quality", "symbol": sig,
+                                     "note": "quality[SYM] = {pe: get_equity_fundamentals pe_ratio (null if none), buy, hold, sell: get_equity_analyst_ratings counts (0 if no coverage)}"}]}
+            n_ = sum(int(ql.get(k) or 0) for k in ("buy", "hold", "sell"))
+            pe_ = ql.get("pe")
+            if pe_ is None or float(pe_) <= qc["minPe"]:
+                skipped.append(f"{sig} not profitable (P/E {pe_})"); continue
+            if n_ < qc["minAnalysts"] or 100 * int(ql.get("buy") or 0) / n_ < qc["minBuyPct"]:
+                skipped.append(f"{sig} not rated a buy ({int(ql.get('buy') or 0)} of {n_} analysts)"); continue
         if kind == "stock":
             earn = f.get("earnings") or {}
             if sig not in earn:
