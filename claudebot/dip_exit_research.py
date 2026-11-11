@@ -75,10 +75,25 @@ def compare(data):
     return rows
 
 
+def bars_longest(sym, start):
+    """The bot's usual source only reaches back to mid-2020 for most funds. Also try the long-history
+    source and keep whichever starts earlier, so the older period really covers 2018-2022."""
+    best, name = db.ob.daily_bars(sym, start)
+    try:
+        import csv, io
+        txt = db.ob.get(f"https://stooq.com/q/d/l/?s={sym.lower()}.us&i=d")
+        rows = [(r["Date"], float(r["Close"])) for r in csv.DictReader(io.StringIO(txt)) if r.get("Date", "") >= start]
+        if len(rows) > 300 and rows[0][0] < best[0][0] and rows[-1][0] >= best[-1][0][:8] + "01":
+            best, name = rows, "stooq"
+    except Exception as e:  # noqa: BLE001
+        print(sym, "long-history source unavailable:", str(e)[:80])
+    return best, name
+
+
 def main():
     data, src = {}, {}
     for s in SYMS:
-        data[s], src[s] = db.ob.daily_bars(s, "2017-01-01")
+        data[s], src[s] = bars_longest(s, "2017-01-01")
     out = {"generatedAt": datetime.now(timezone.utc).isoformat(), "symbols": SYMS, "costPerSidePct": COST * 100,
            "dataSource": src, "firstBar": {s: data[s][0][0] for s in SYMS},
            "entry": "RSI(2) < 5 at the close, close above the 200-day average (live Dip rule, frozen)",
