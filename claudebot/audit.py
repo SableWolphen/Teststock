@@ -31,6 +31,9 @@ LIMITS = {
 }
 
 
+LEGACY_OVERSIZE = {("DIA", "2026-11-06T15:41:44.352000Z")}
+
+
 def load(path, default=None):
     try:
         with open(path) as f:
@@ -130,9 +133,19 @@ def run(now=None):
             "no unapproved new edges; paper results alone never authorize live changes")
     dps = dled.get("positions") if dled.get("positions") is not None else ([dled["open"]] if dled.get("open") else [])
     syms_ = [p_.get("symbol") for p_ in dps]
+    # Bought under the old "use all free cash" sizing, before the governor's 25% ceiling existed. Listed by
+    # exact symbol + entry time so it cannot cover any other or any later position. Remove once it is sold.
+    legacy = [p_ for p_ in dps if (p_.get("symbol"), p_.get("enteredAt")) in LEGACY_OVERSIZE]
+    newer = [p_ for p_ in dps if p_ not in legacy]
     g.check("dip", "Dip positions within limits", len(dps) <= min(5, dr.get("maxOpenPositions", 1)) and len(set(syms_)) == len(syms_)
-            and all((p_.get("usd", 999) <= 30 or (p_.get("pctOfAccount") or 99) <= 25.5) and p_.get("symbol") in dcfg.get("symbols", []) for p_ in dps),
+            and all(p_.get("symbol") in dcfg.get("symbols", []) for p_ in dps)
+            and all((p_.get("usd", 999) <= 30 or (p_.get("pctOfAccount") or 99) <= 25.5) for p_ in newer),
             "no open positions" if not dps else ", ".join(f"{p_['symbol']} ${p_.get('usd')}" for p_ in dps))
+    for p_ in legacy:
+        over = not (p_.get("usd", 999) <= 30 or (p_.get("pctOfAccount") or 99) <= 25.5)
+        g.check("dip", "Older position above today's 25% cap", not over,
+                f"{p_['symbol']} is {p_.get('pctOfAccount')}% of the account, bought before the 25% cap; new buys cannot exceed the cap; it leaves by the normal sell rules",
+                level="warn")
     bcfg = load(D("claudebot", "optbuy_config.json"), {}); bled = load(D("docs", "data", "claudebot-optbuy-ledger.json"), {})
     br, bx = bcfg.get("risk", {}), bcfg.get("exit", {})
     g.check("options", "Options-buying caps", br.get("maxPremiumUsd", 999) <= 50 and br.get("maxPctOfAccount", 99) <= 45 and br.get("maxOpenPositions", 9) <= 1
@@ -193,15 +206,18 @@ def run(now=None):
                 f"updated {round(moon_age)}m ago" if moon_age != float("inf") else "no moonshot paper output",
                 level="warn")
 
-    pa = age_min(pled.get("updatedAt"), now)
+    # Sim was re-hired 2026-11-05 onto the GitHub spread desk (claudebot/spread_paper_gh.py), which writes
+    # claudebot-spread-paper.json. The old Paper Lab file is no longer refreshed, so judge Sim on the new desk.
+    spl = load(D("docs", "data", "claudebot-spread-paper.json"), {}) or {}
+    pa = age_min(spl.get("updatedAt"), now)
     if "sim" in fired:
         a.skip("sim", "Retired spread Paper Lab", "retired by HR: archived paper files are not evidence of current work")
     else:
-        a.check("sim", "Spread Paper Lab stays paper only", pled.get("mode") == "paper",
-                f"mode {pled.get('mode', 'missing')}")
+        a.check("sim", "Spread Paper Lab stays paper only", spl.get("mode") == "paper",
+                f"mode {spl.get('mode', 'missing')}")
         a.check("sim", "Spread Paper Lab refreshed",
                 0 <= pa <= (420 if mkt else 4 * 24 * 60),
-                f"updated {round(pa)}m ago" if pa != float("inf") else "paper lab missing", level="warn")
+                f"spread desk updated {round(pa)}m ago" if pa != float("inf") else "spread desk file missing", level="warn")
     if "echo" in fired:
         a.skip("echo", "Retired crypto Paper Lab", "retired by HR: old results are not new work")
     else:
