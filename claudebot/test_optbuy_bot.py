@@ -4,6 +4,7 @@ import copy, importlib.util, json, os, tempfile
 sp = importlib.util.spec_from_file_location("ob", os.path.join(os.path.dirname(os.path.abspath(__file__)), "optbuy_bot.py"))
 ob = importlib.util.module_from_spec(sp); sp.loader.exec_module(ob)
 cfg = ob.load(ob.CONFIG); cfg["enabled"] = True
+for _rc in cfg["rules"].values(): _rc["enabled"] = True    # scenarios exercise both rules even while one is paused in the live file
 # the live file must carry exactly what the board approved
 assert set(cfg["rules"]) == {"cheapStock", "index"} and all(rc["boardApproval"]["approvalId"] for rc in cfg["rules"].values())
 assert cfg["rules"]["index"]["symbols"] == ["SPY", "QQQ", "IWM"] and cfg["rules"]["cheapStock"]["maxStockPrice"] == 25 and cfg["rules"]["cheapStock"]["strikeWithinPct"] == 3
