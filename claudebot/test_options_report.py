@@ -20,6 +20,12 @@ if not rows["dipcalls"]["affordable"]:
     assert rows["dipcalls"]["canBuy"].startswith("No")
 assert r["anyAffordableKindHeldUp"] == any(x["affordable"] and x["verdict"] == "held up" for x in r["rows"])
 assert m.money(-29.4) == "-$29.40" and m.money(3) == "+$3.00"
+# the report must say plainly when a rule is trading real money ahead of its paper test, and must never
+# call the retired +10%/-40% rule live
+cfg_live = json.load(open(os.path.join(HERE, "optbuy_config.json")))
+if cfg_live.get("enabled") and "cheapstocks" in rows:
+    assert "LIVE by board order" in rows["cheapstocks"]["status"] and "ahead of its paper test" in rows["cheapstocks"]["status"]
+assert "LIVE" not in rows["cheapcalls"]["status"]
 # missing files: empty card, no crash
 with tempfile.TemporaryDirectory() as d:
     e = m.build(d, d)

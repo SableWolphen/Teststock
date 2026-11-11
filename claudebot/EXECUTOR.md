@@ -54,7 +54,7 @@ matter on THIS run (Chicago time), then commit and stop. Exits are never skipped
 | A crypto | only if `docs/data/claudebot-ledger.json` has an `open` position (live crypto entries are off) |
 | B options spreads (paper) | never: Sim was fired 2026-11-03 (spreads can't trade live; research stays in the free weekly backtests) |
 | E Dip desk | every run: buys at the first run of the day where a fund qualifies (hourly: 8:44, 9:44, 10:14, 11:14, 12:14, 1:14, 2:14, 2:44; board 2026-11-06), stops, bounce and time exits at every run too |
-| E7 options-buying | only if `claudebot/optbuy_config.json` has `"enabled": true` or its ledger has an `open` option |
+| E7 options-buying | every run while an option is held (the exit follows the stock); when flat and `claudebot/optbuy_config.json` has `"enabled": true`, only in the 14:00-14:59 CT run (the only time it buys) |
 | C Paper Lab | never: Sim was fired 2026-11-03 |
 | C3 day-trade paper | never: GitHub Actions replays each day for free after the close |
 | C2 promote + D audit | every run (local scripts, cheap) |
@@ -286,23 +286,32 @@ Add `docs/data/claudebot-dip-ledger.json` to the same commit.
 
 ## E7. Options-buying desk (LIVE, single-leg calls), right after the Dip desk
 
+**Board order 2026-11-11** ("Live: cheap-stock + index", chosen when asked whether to skip the 30-paper-trade
+rule): the desk trades two rules with real money, one option at a time, inside the governor's caps ($50 and
+43% of the account). (1) cheap-stock call: a scan-list name at $25 or less, the call within 3% of the price
+about 30 days out; (2) index call: SPY, QQQ or IWM, the closest-to-the-price call about 45 days out. Buys only
+in the 14:00-14:59 CT run. The exit follows the STOCK (5% below where it was at entry at any run; back above
+its 5-day average or day 10 in the 14:30-14:59 run; 5 days before expiry). There is NO resting take-profit
+order and no premium stop: the most a trade can lose is what was paid. The evidence is thin and there are no
+paper trades (optbuy_config.json `rules.*.evidence`); never widen a rule, a cap or the budget.
+
 Rules: `claudebot/optbuy_bot.py` + `claudebot/optbuy_config.json`. Ledger:
 `docs/data/claudebot-optbuy-ledger.json`. Reuse `/tmp/dfacts.json` (same `symbols` data), then
-`python3 claudebot/optbuy_bot.py plan /tmp/dfacts.json` and loop (up to 8 rounds):
+`python3 claudebot/optbuy_bot.py plan /tmp/dfacts.json` and loop (up to 10 rounds):
 | action | what to do |
 |---|---|
-| `need_symbol` | same as the Dip desk: add `symbols[SYM] = {price, closes, heldQty}`; re-plan |
-| `need_scan_prices` | wider universe (board order: options on any stock). Load `docs/data/claudebot-optbuy-scan.json` into `scan` in /tmp/dfacts.json (once per run). Then `scanPrices[SYM]` = live price from get_equity_quotes (up to 20 symbols per call) for every symbol listed; re-plan. If the scan file is more than ~30 hours old on a weekday, first dispatch `claudebot-optbuy-scan.yml` the same way as the stale crypto scan (step 0) and pull; if it's still stale the planner skips the universe by itself |
+| `need_scan` | load `docs/data/claudebot-optbuy-scan.json` into `scan` in /tmp/dfacts.json (once per run). If it is more than ~30 hours old on a weekday, first dispatch `claudebot-optbuy-scan.yml` the same way as the stale crypto scan (step 0) and pull; if it's still stale the planner skips the cheap stocks by itself. Re-plan |
+| `need_symbol` | same as the Dip desk: add `symbols[SYM] = {price, closes, heldQty}`; re-plan. Also asked for the stock under a HELD option: its price and closes decide the exit |
+| `need_scan_prices` | `scanPrices[SYM]` = live price from get_equity_quotes (up to 20 symbols per call) for every symbol listed; re-plan |
 | `need_earnings` | `earnings[SYM]` = that stock's next report date (YYYY-MM-DD) from get_earnings_calendar (days 31; look for the symbol), or null if none in the window; re-plan |
 | `need_expirations` | `expirations[SYM]` = get_option_chains(SYM).expiration_dates; re-plan |
 | `need_calls` | get_option_instruments(chain_symbol SYM, expiration_dates, type call), keep strikes between strikeMin and strikeMax, one get_option_quotes for those ids; append `{symbol, id, strike, expiration, bid, ask, delta}` to `calls` and add `"SYM|expiration"` to `callsFetched` (even if nothing was in range); re-plan |
-| `need_position` | `optHeld` = quantity of that option id in get_option_positions(nonzero=true) (0 if absent); `optQuote` = {bid, ask} from get_option_quotes; `tpOrder` = {id, price} of the open sell-to-close order on that id (get_option_orders state queued/confirmed), else null; re-plan |
-| `buy` | Profitability Gatekeeper first: `python3 claudebot/gatekeeper.py '{"candidate": {"ask": <ask>, "bid": <bid>, "forecastUsd": <forecast>}, "accountValue": <V>, "strategyId": "<paper strategy id>", "live": true}'`; pass its JSON verdict as `gatekeeper` in the governor check (desk optbuy, side buy, usd = limitPrice x 100), which must ALLOW; then review_option_order (one leg: option_id id, side buy, position_effect open; type limit, price limitPrice, quantity "1", gfd), then place_option_order with a fresh UUID ref_id. Poll ~every 30s up to 3 min; if unfilled, cancel and place once more at maxPrice, wait 3 min; still unfilled: cancel and log "no fill". Filled: `optbuy_bot.py open --json '<action JSON>' --price <average fill price>`, then re-plan (it will ask to place the take-profit). |
-| `place_tp` | review then place_option_order: one leg (id, side sell, position_effect close), type limit, price limitPrice, quantity "1", **time_in_force gtc**. Log it. |
-| `cancel_order` | cancel_option_order(orderId) (the bot's own take-profit; pre-authorized); confirm cancelled |
-| `sell` | governor check (desk optbuy, side sell) must ALLOW; then one leg (id, side sell, position_effect close), type limit, price limitPrice, quantity "1", gfd. Poll up to 2 min; if unfilled, cancel and re-place $0.01 lower, up to 3 times (never below $0.01). Filled: `optbuy_bot.py close --price <fill> --reason "<reason>"`. |
-| `record_broker_close` | find the filled sell-to-close for that id in get_option_orders(state filled) and run `close --price <its price> --reason "take profit (resting order)"` |
+| `need_position` | `optHeld` = quantity of that option id in get_option_positions(nonzero=true) (0 if absent); `optQuote` = {bid, ask} from get_option_quotes; `tpOrder` = {id, price} of any open sell-to-close order on that id (get_option_orders state queued/confirmed), else null; re-plan |
+| `buy` | Profitability Gatekeeper first, with the numbers FROM THE BUY ACTION: `python3 claudebot/gatekeeper.py '{"candidate": {"ask": <ask>, "bid": <bid>, "forecastUsd": <forecastUsd>}, "accountValue": <V>, "strategyId": "<strategyId>", "holdMinutes": <holdMinutes>, "live": true}'`; pass its JSON verdict as `gatekeeper` in the governor check (desk optbuy, side buy, usd = limitPrice x 100), which must ALLOW; then review_option_order (one leg: option_id id, side buy, position_effect open; type limit, price limitPrice, quantity "1", gfd), then place_option_order with a fresh UUID ref_id. Poll ~every 30s up to 3 min; if unfilled, cancel and place once more at maxPrice, wait 3 min; still unfilled: cancel and log "no fill". Filled: `optbuy_bot.py open --json '<the whole buy action JSON>' --price <average fill price>`, then re-plan. |
+| `cancel_order` | cancel_option_order(orderId) (a leftover resting order of the bot's own; pre-authorized); confirm cancelled; re-plan |
+| `sell` | governor check (desk optbuy, side sell) must ALLOW; then one leg (id, side sell, position_effect close), type limit, price limitPrice, quantity "1", gfd. Poll up to 2 min; if unfilled, cancel and re-place $0.01 lower, up to 3 times (never below $0.01). Filled: `optbuy_bot.py close --price <fill> --reason "<reason>"`. If it could not be sold, follow section 4 (tell the board; a blocked sell is urgent). |
+| `record_broker_close` | find the filled sell-to-close for that id in get_option_orders(state filled) and run `close --price <its price> --reason "closed at broker"` |
 | `none` | `optbuy_bot.py log --action hold --detail "<reason>"` (skip when "market closed") |
-Never hold more than one option, never buy more than quantity 1, never sell options you didn't buy. Universe = optbuy_config.json `symbols` (tested ETFs, tried first) plus `scanUniverse` (stocks and extra ETFs, via the nightly scan); never buy an option on a ticker outside those lists.
+Never hold more than one option, never buy more than quantity 1, never sell options you didn't buy, never place a resting take-profit. Universe = the planner's two rules only: SPY, QQQ, IWM, and `scanUniverse` names priced $25 or less; never buy an option the planner did not return.
 While an option is held, finish with `python3 claudebot/optbuy_bot.py mark /tmp/dfacts.json` (uses `optQuote`) so the site can show what was made today.
 Add `docs/data/claudebot-optbuy-ledger.json` to the same commit.

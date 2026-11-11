@@ -149,9 +149,17 @@ def run(now=None):
     bcfg = load(D("claudebot", "optbuy_config.json"), {}); bled = load(D("docs", "data", "claudebot-optbuy-ledger.json"), {})
     br, bx = bcfg.get("risk", {}), bcfg.get("exit", {})
     g.check("options", "Options-buying caps", br.get("maxPremiumUsd", 999) <= 50 and br.get("maxPctOfAccount", 99) <= 45 and br.get("maxOpenPositions", 9) <= 1
-            and 0 < bx.get("stopPct", 0) <= 50, f"max ${br.get('maxPremiumUsd')} / {br.get('maxPctOfAccount')}% per option, 1 at a time, stop -{bx.get('stopPct')}%")
+            and (0 < bx.get("stockStopPct", 0) <= 8 or 0 < bx.get("stopPct", 0) <= 50) and 0 < bx.get("maxHoldDays", 0) <= 10,
+            f"max ${br.get('maxPremiumUsd')} / {br.get('maxPctOfAccount')}% per option, 1 at a time, sold if the stock falls {bx.get('stockStopPct', bx.get('stopPct'))}% or after {bx.get('maxHoldDays')} days")
+    brules = bcfg.get("rules") or {}
+    unapproved = [k for k, rc in brules.items() if rc.get("enabled", True) and not (rc.get("boardApproval") or {}).get("approvalId")]
+    g.check("options", "Live option rules carry a recorded board order", (not bcfg.get("enabled")) or (bool(brules) and not unapproved),
+            "desk is off" if not bcfg.get("enabled") else ("rules without a recorded order: " + ", ".join(unapproved) if unapproved or not brules else
+            "live by board order: " + ", ".join(rc.get("name", k) for k, rc in brules.items() if rc.get("enabled", True)) + "; traded before their paper gates"))
     bo = bled.get("open")
-    g.check("options", "Bought option within limits", bo is None or (bo.get("entryPrice", 99) * 100 <= 40 and bo.get("symbol") in bcfg.get("symbols", [])),
+    b_ok_syms = set(bcfg.get("symbols", [])) | set(bcfg.get("scanUniverse", [])) | {s_ for rc in brules.values() for s_ in rc.get("symbols", [])}
+    # premium ceiling = the governor's hard $50 cap (was checked at $40 here, a leftover from the earlier $30/$40 cap)
+    g.check("options", "Bought option within limits", bo is None or (bo.get("entryPrice", 99) * 100 <= 50.01 and bo.get("symbol") in b_ok_syms),
             "no option held" if bo is None else f"{bo.get('label')} at {bo.get('entryPrice')}")
     reports.append(g.done())
 
@@ -180,8 +188,8 @@ def run(now=None):
         a.skip("vega", "Options paper race", "retired by HR: no work credited")
     else:
         a.check("vega", "Options race remains paper only",
-                race.get("mode") == "paper" and not bcfg.get("enabled", False),
-                f"race mode {race.get('mode')}; live long-option enabled={bcfg.get('enabled')}")
+                race.get("mode") == "paper",
+                f"race mode {race.get('mode')} (the live options desk is a separate desk and needs its own recorded board order)")
         a.check("vega", "Options paper race produced recent evidence",
                 bool(race.get("strategies")) and 0 <= race_age <= 3 * 24 * 60,
                 f"{len(race.get('strategies') or {})} variants, updated {round(race_age)}m ago" if race_age != float("inf") else "no paper output",

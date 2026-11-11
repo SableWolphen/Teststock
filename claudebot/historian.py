@@ -84,7 +84,7 @@ def build():
                 if r:
                     t = r["test"]
                     rows.append(entry(f"calls_{mk}_{key}", f"Buy calls on dips, {nm}, {label} account (real option prices)",
-                                      "LIVE" if ocfg.get("enabled") else "OFF", "% per trade", t.get("avgRetPct"),
+                                      "OFF", "% per trade", t.get("avgRetPct"),
                                       f"{t.get('trades')} unseen trades, {t.get('winRatePct')}% wins; {m.get('combosPositiveBoth')} variants won both periods",
                                       "claudebot-optbuy-backtest.json", f"same signals bought as the ETF: {t.get('sameSignalsEtfAvgPct')}% per trade", ob.get("generatedAt")))
     er = load(D("claudebot-edge-research.json"))

@@ -52,6 +52,19 @@ Never promise returns.
    `CEO_DECISIONS` in hr.py with a one-line reason). Re-hiring needs fresh evidence and, for any live
    desk, the board's approval. Firing may only reduce risk, never increase it.
 
+## Board order 2026-11-11: two option rules are live ahead of their paper tests
+Asked whether to skip the 30-paper-trade rule, the board chose "Live: cheap-stock + index". The options-buying
+desk (`claudebot/optbuy_bot.py`, `optbuy_config.json` `rules`) now trades, one option at a time inside the
+governor's unchanged caps ($50, 43% of the account): the cheap-stock call within 3% of the price, and the
+closest-to-the-price $50 call on SPY, QQQ, IWM; both sold by the stock rule. The evidence is thin (tens of
+historical trades, no paper trades) and is written out in `rules.*.evidence`.
+- The weekly run reports each rule's live record next to its paper desk (`claudebot-cheapstock-paper.json`,
+  `claudebot-cheapcall-paper.json`) and says plainly if live and paper disagree.
+- Each rule switches itself off after 10 closed live trades with profit factor below 1.0 (planner and
+  Gatekeeper both enforce it). Re-enabling needs the board.
+- This order covers these two rules as written. The "Never (real money)" list still applies to everything
+  else: do not widen a rule, add tickers, raise a cap, or copy this exception to another idea.
+
 ## Board standing order 2026-11-06: "you are allowed to use whatever mode wins to buy"
 Any paper desk (ETF edges, intraday dips, options race, dip calls, spreads, moonshots) that passes ITS
 gates on executable paper prices is pre-approved for real money:

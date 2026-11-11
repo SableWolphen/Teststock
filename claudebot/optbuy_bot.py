@@ -1,24 +1,33 @@
 #!/usr/bin/env python3
-"""ClaudeBot Options-buying desk (LIVE, single-leg calls, board order 2026-11-02).
+"""ClaudeBot Options-buying desk (LIVE, single-leg calls).
 
-Entry: in the 14:00-14:59 CT run, when a fund in optbuy_config.json `symbols` (or, via the nightly
-claudebot-optbuy-scan.json triggers, any name in `scanUniverse`) shows the Dip
-desk's tested signal (RSI(2) < 5 and price above its 200-day average), buy ONE call on it:
-12-35 days out (nearest 21), strike from the money up to 8% above, delta >= 0.15, quotes not
-too wide, premium <= min($50, 43% of account); stocks skip earnings within 10 days. Highest delta that fits wins.
-Exit: a resting GTC limit sell at +10% goes in right after the fill (profit taken between runs);
-sell at the bid if it falls 40%, after 7 trading days, or 5 days before expiry.
+Board order 2026-11-11 ("Live: cheap-stock + index", chosen when asked whether to skip the
+30-paper-trade rule): the desk trades two rules, one option at a time, inside the governor's caps.
+  cheapStock  Dip signal (RSI(2) < 5 above the 200-day average) on a name from `scanUniverse` priced
+              $25 or less -> the call within 3% of the price, about 30 days out (24-37), costing
+              <= min($50, 43% of account). Stocks skip earnings inside the holding window.
+  index       the same signal on SPY, QQQ or IWM -> the call closest to the price (up to 15% above)
+              about 45 days out (38-52) that fits the same budget.
+Entry only in the 14:00-14:59 CT run (the tests bought at the close). A contract is skipped when its
+quote is wider than the tests assumed by enough to erase the tested edge (see `forecast`).
+Exit follows the STOCK, as in the tests: the underlying falls 5% below where it was at entry (any run),
+or, in the 14:30-14:59 CT run, it is back above its 5-day average or 10 trading days have passed; also
+5 days before expiry. There is no resting take-profit order and no premium stop: the most one trade
+can lose is what was paid for the option.
+A rule switches itself off after 10 closed live trades if its profit factor is below 1.0.
+Evidence and its limits: optbuy_config.json `rules[*].evidence` (thin: tens of trades, not hundreds).
 
   python claudebot/optbuy_bot.py plan facts.json
   python claudebot/optbuy_bot.py open  --json '<buy action>' --price 0.27
-  python claudebot/optbuy_bot.py close --price 0.30 --reason "take profit"
+  python claudebot/optbuy_bot.py close --price 0.30 --reason "bounce"
   python claudebot/optbuy_bot.py log   --action hold --detail "..."
 
 facts.json (same file as the Dip desk's /tmp/dfacts.json, plus option fields):
  {"now", "marketOpen", "accountValue", "buyingPower",
-  "symbols": {"KRE": {"price", "closes": [...>= 201 daily closes...], "heldQty"}},
-  "expirations": {"KRE": ["2026-11-20", ...]},
-  "calls": [{"symbol", "id", "strike", "expiration", "bid", "ask", "delta"}],
+  "symbols": {"SPY": {"price", "closes": [...>= 201 daily closes...], "heldQty"}},
+  "scan": <docs/data/claudebot-optbuy-scan.json>, "scanPrices": {"F": 12.1}, "earnings": {"F": "2026-12-02" | null},
+  "expirations": {"F": ["2026-12-11", ...]},
+  "calls": [{"symbol", "id", "strike", "expiration", "bid", "ask", "delta"}], "callsFetched": ["F|2026-12-11"],
   "optHeld": 1, "optQuote": {"bid", "ask"}, "tpOrder": {"id", "price"} | null}
 """
 from __future__ import annotations
@@ -40,11 +49,32 @@ CT = ZoneInfo("America/Chicago")
 _sp = importlib.util.spec_from_file_location("dipb", os.path.join(HERE, "dip_bot.py"))
 dipb = importlib.util.module_from_spec(_sp); _sp.loader.exec_module(dipb)
 load, save, ts, iso, rsi2, sma, tdays = dipb.load, dipb.save, dipb.ts, dipb.iso, dipb.rsi2, dipb.sma, dipb.trading_days_between
+_gk = importlib.util.spec_from_file_location("gatekeeper_for_optbuy", os.path.join(HERE, "gatekeeper.py"))
+gk = importlib.util.module_from_spec(_gk); _gk.loader.exec_module(gk)
 
 
 def tick_up(p):
     step = 0.01 if p < 3 else 0.05
     return round(math.ceil(round(p / step, 6)) * step, 2)
+
+
+def rule_state(cfg, led, rule):
+    """(ok, closedTrades, profitFactor). A rule switches itself off once it has `afterTrades` closed live
+    trades with a profit factor below the floor (board order: stop after 10 live trades if it is losing)."""
+    rb = cfg.get("rollback") or {}; since = rb.get("since") or ""
+    t = [x for x in led.get("trades") or [] if x.get("rule") == rule and (x.get("enteredAt") or "") >= since]
+    w = sum(x["pnlUsd"] for x in t if x["pnlUsd"] > 0); l = -sum(x["pnlUsd"] for x in t if x["pnlUsd"] <= 0)
+    pf = (w / l) if l > 0 else None
+    ok = not (len(t) >= rb.get("afterTrades", 10) and pf is not None and pf < rb.get("minProfitFactor", 1.0))
+    return ok, len(t), pf
+
+
+def forecast(rc, bid, ask):
+    """Expected $ per contract after costs: the rule's tested average return on what is paid (the lower of
+    its two test periods), less any buy/sell gap wider than the test assumed. <= 0 means: skip this quote."""
+    mid = (bid + ask) / 2; g = rc.get("assumedGap") or {}
+    assumed = max(float(g.get("abs", 0.01)), mid * float(g.get("pctOfPrice", 0)) / 100)
+    return round(ask * 100 * rc["expectedRetPct"] / 100 - max(0.0, (ask - bid) - assumed) * 100, 2)
 
 
 def plan(f, cfg, led):
@@ -53,34 +83,43 @@ def plan(f, cfg, led):
     none = lambda why: {"actions": [{"do": "none", "reason": why}]}
     if not f.get("marketOpen"):
         return none("market closed")
+    syms = f.get("symbols", {})
     pos = led.get("open")
     if pos:
         if "optQuote" not in f or "optHeld" not in f:
             return {"actions": [{"do": "need_position", "id": pos["id"], "note": "optHeld from get_option_positions, optQuote from get_option_quotes, tpOrder from open option orders"}]}
         if float(f["optHeld"]) <= 0:
-            return {"actions": [{"do": "record_broker_close", "id": pos["id"], "note": "sold at broker (take-profit filled?): find the filled sell and record it"}]}
-        bid, cost = float(f["optQuote"]["bid"]), pos["entryPrice"]
+            return {"actions": [{"do": "record_broker_close", "id": pos["id"], "note": "no longer held at the broker: find the filled sell and record it"}]}
+        d = syms.get(pos["symbol"])
+        if not d or not d.get("closes"):                 # the exit follows the stock, so its price and closes are needed
+            return {"actions": [{"do": "need_symbol", "symbol": pos["symbol"]}]}
+        bid, cost, px = float(f["optQuote"]["bid"]), pos["entryPrice"], float(d["price"])
         entered = ts(pos["enteredAt"]).astimezone(CT).date()
         dte = (date.fromisoformat(pos["expiration"]) - today).days
-        why = None
-        if bid >= cost * (1 + x["takeProfitPct"] / 100):
-            why = "take profit"
-        elif bid <= cost * (1 - x["stopPct"] / 100):
-            why = "stop"
-        elif tdays(entered, today) >= x["maxHoldDays"]:
-            why = "time"
-        elif dte <= x["exitAtDte"]:
-            why = "expiry near"
-        tp = f.get("tpOrder")
+        c0, c1 = (time.fromisoformat(t) for t in x["closeWindowCT"])
+        why, upx = None, pos.get("underlyingPx")
+        if entered != today:                             # as in the tests: no exit on the day it was bought
+            cl = [float(v) for v in d["closes"]]; n = x["bounceSma"]
+            if upx and px <= float(upx) * (1 - x["stockStopPct"] / 100):
+                why = "stock stop"
+            elif dte <= x["exitAtDte"]:
+                why = "expiry near"
+            elif c0 <= local.time() <= c1:
+                if len(cl) >= n - 1 and px > (sum(cl[-(n - 1):]) + px) / n:
+                    why = "bounce"
+                elif tdays(entered, today) >= x["maxHoldDays"]:
+                    why = "time"
+        tp = f.get("tpOrder")                            # this rule keeps no resting order: clear any left over
+        acts = [{"do": "cancel_order", "orderId": tp["id"]}] if tp else []
         if why:
-            acts = [{"do": "cancel_order", "orderId": tp["id"]}] if tp else []
             if bid <= 0:
                 return {"actions": acts + [{"do": "none", "reason": f"wanted to sell ({why}) but the bid is 0; next run retries"}]}
             return {"actions": acts + [{"do": "sell", "id": pos["id"], "symbol": pos["symbol"], "limitPrice": f"{bid:.2f}", "quantity": "1", "reason": why}]}
-        want = tick_up(cost * (1 + x["takeProfitPct"] / 100))
-        if not tp:
-            return {"actions": [{"do": "place_tp", "id": pos["id"], "symbol": pos["symbol"], "limitPrice": f"{want:.2f}", "quantity": "1", "timeInForce": "gtc"}]}
-        return none(f"holding {pos['label']} from {cost} (bid {bid}); take-profit resting at {tp['price']}")
+        if acts:
+            return {"actions": acts}
+        return none(f"holding {pos['label']} from {cost} (bid {bid}); {pos['symbol']} at {px}"
+                    + (" (bought today, sell checks start next session)" if entered == today else
+                       f": sells when the stock is back above its {x['bounceSma']}-day average near the close, {x['stockStopPct']}% below {upx}, or on day {x['maxHoldDays']}"))
     if not cfg.get("enabled", True):
         return none("options-buying desk disabled")
     w0, w1 = (time.fromisoformat(t) for t in s["windowCT"])
@@ -92,48 +131,67 @@ def plan(f, cfg, led):
     budget = min(r["maxPremiumUsd"], acct * r["maxPctOfAccount"] / 100, float(f.get("buyingPower", 0)) - r["minCashAfterUsd"])
     if budget < 5:
         return none("not enough free cash for an option")
-    syms, looked, sigs = f.get("symbols", {}), [], []
-    # 1) the tested ETFs (full closes, shared with the Dip desk)
+    live, off = {}, []
+    for name, rc in (cfg.get("rules") or {}).items():
+        if not rc.get("enabled", True):
+            continue
+        if not (rc.get("boardApproval") or {}).get("approvalId"):
+            off.append(f"{name} has no recorded board approval"); continue
+        ok, n, pf = rule_state(cfg, led, name)
+        if not ok:
+            off.append(f"{rc.get('name', name)} switched itself off after {n} live trades (profit factor {pf:.2f})"); continue
+        live[name] = rc
+    if not live:
+        return none("no option rule is live" + (": " + "; ".join(off) if off else ""))
+    looked, sigs = list(off), []
     skip = set(f.get("skip") or [])   # news veto for this run (EXECUTOR news check)
-    for sym in cfg["symbols"]:
-        d = syms.get(sym)
+    # 1) cheap stocks, from the nightly scan's trigger prices (the stronger evidence, so tried first)
+    cs = live.get("cheapStock")
+    if cs and cfg.get("scanUniverse"):
+        scan = f.get("scan")
+        if scan is None:
+            return {"actions": [{"do": "need_scan", "note": "facts.scan = the contents of docs/data/claudebot-optbuy-scan.json"}]}
+        age = (now - ts(scan["generatedAt"])).total_seconds() / 3600 if scan.get("generatedAt") else 999
+        if age > cfg["scan"]["maxAgeHours"] or not scan.get("asOf") or scan["asOf"] >= today.isoformat():
+            looked.append(f"cheap-stock scan stale ({age:.0f}h old), skipped")
+        else:
+            px = f.get("scanPrices") or {}
+            near = cs["maxStockPrice"] * (1 + cfg["scan"].get("maxDropPct", 6) / 100)    # could be cheap enough today
+            watch = [w for w in scan.get("watch", []) if 0 < float((scan["symbols"].get(w) or {}).get("lastClose") or 0) <= near]
+            miss = [w for w in watch if w not in px]
+            if miss:
+                return {"actions": [{"do": "need_scan_prices", "symbols": miss, "note": "scanPrices[SYM] = live price from get_equity_quotes"}]}
+            hits = []
+            for w in [w for w in watch if w not in skip]:
+                rr = scan["symbols"].get(w) or {}
+                if not rr.get("rsiTrigger"):
+                    continue
+                p_ = float(px[w])
+                if rr["trendFloor"] < p_ < rr["rsiTrigger"] and p_ <= cs["maxStockPrice"]:
+                    hits.append((w, "etf" if w in cfg.get("scanEtfs", []) else "stock", (rr["rsiTrigger"] - p_) / p_))
+                    if not (syms.get(w) or {}).get("closes"):
+                        syms[w] = {**(syms.get(w) or {}), "price": p_}
+            sigs += [(w, "cheapStock", kind) for w, kind, _ in sorted(hits, key=lambda t: -t[2])]     # deepest below its trigger first
+            looked.append(f"cheap stocks: {len(watch)} on watch, {len(hits)} signals")
+    # 2) the three index funds (full closes, shared with the Dip desk)
+    ix = live.get("index")
+    for sym in (ix or {}).get("symbols", []):
         if sym in skip:
             continue
-        if not d:
+        d = syms.get(sym)
+        if not d or not d.get("closes"):
             return {"actions": [{"do": "need_symbol", "symbol": sym}]}
         cl = [float(v) for v in d["closes"]][-(s["trendSma"] + 10):] + [float(d["price"])]
         if len(cl) < s["trendSma"] + 1:
             continue
         rv = rsi2(cl); looked.append(f"{sym} RSI2 {rv:.0f}")
         if cl[-1] > sma(cl, s["trendSma"]) and rv < s["rsi2Below"]:
-            sigs.append((sym, "etf", rv))
-    # 2) the wider universe (stocks + extra ETFs) from the nightly scan's trigger prices
-    scan = f.get("scan")
-    if cfg.get("scanUniverse") and scan is not None:
-        age = (now - ts(scan["generatedAt"])).total_seconds() / 3600 if scan.get("generatedAt") else 999
-        if age > cfg["scan"]["maxAgeHours"] or not scan.get("asOf") or scan["asOf"] >= today.isoformat():
-            looked.append(f"universe scan stale ({age:.0f}h old), skipped")
-        else:
-            px = f.get("scanPrices") or {}
-            miss = [w for w in scan.get("watch", []) if w not in px and w not in cfg["symbols"]]
-            if miss:
-                return {"actions": [{"do": "need_scan_prices", "symbols": miss, "note": "scanPrices[SYM] = live price from get_equity_quotes"}]}
-            hits = []
-            for w in [w for w in scan.get("watch", []) if w not in skip]:
-                r = scan["symbols"].get(w) or {}
-                if w in cfg["symbols"] or w not in px or not r.get("rsiTrigger"):
-                    continue
-                p_ = float(px[w])
-                if r["trendFloor"] < p_ < r["rsiTrigger"]:
-                    hits.append((w, "etf" if w in cfg.get("scanEtfs", []) else "stock", (r["rsiTrigger"] - p_) / p_))
-                    syms.setdefault(w, {"price": p_})
-            # deepest below its trigger first
-            sigs += [(w, k, -depth) for w, k, depth in sorted(hits, key=lambda t: -t[2])]
-            looked.append(f"universe: {len(scan.get('watch', []))} on watch, {len(hits)} signals")
+            sigs.append((sym, "index", "etf"))
     if not sigs:
         return none("no dip signal: " + ", ".join(looked))
     skipped = []
-    for sig, kind, _ in sigs[: cfg["scan"].get("maxSignalsPerRun", 6)]:
+    for sig, rule, kind in sigs[: cfg["scan"].get("maxSignalsPerRun", 6)]:
+        rc = live[rule]
         if kind == "stock":
             earn = f.get("earnings") or {}
             if sig not in earn:
@@ -143,33 +201,44 @@ def plan(f, cfg, led):
         exps = (f.get("expirations") or {}).get(sig)
         if exps is None:
             return {"actions": [{"do": "need_expirations", "symbol": sig}]}
-        ok = [e for e in exps if c["minDte"] <= (date.fromisoformat(e) - today).days <= c["maxDte"]]
+        ok = [e for e in exps if rc["minDte"] <= (date.fromisoformat(e) - today).days <= rc["maxDte"]]
         if not ok:
-            skipped.append(f"{sig} no {c['minDte']}-{c['maxDte']} day expiry"); continue
-        exp = min(ok, key=lambda e: abs((date.fromisoformat(e) - today).days - c["targetDte"]))
+            skipped.append(f"{sig} no {rc['minDte']}-{rc['maxDte']} day expiry"); continue
+        exp = min(ok, key=lambda e: abs((date.fromisoformat(e) - today).days - rc["targetDte"]))
         px = float(syms[sig]["price"])
+        lo, hi = ((px * (1 - rc["strikeWithinPct"] / 100), px * (1 + rc["strikeWithinPct"] / 100)) if "strikeWithinPct" in rc
+                  else (px, px * (1 + rc["maxStrikeAbovePct"] / 100)))
         cands = [k for k in f.get("calls", []) if k["symbol"] == sig and k["expiration"] == exp]
         if not cands and f"{sig}|{exp}" not in (f.get("callsFetched") or []):
-            return {"actions": [{"do": "need_calls", "symbol": sig, "expiration": exp, "type": "call", "strikeMin": round(px, 2), "strikeMax": round(px * (1 + c["maxStrikeAbovePct"] / 100), 2)}]}
-        fit = []
+            return {"actions": [{"do": "need_calls", "symbol": sig, "expiration": exp, "type": "call", "strikeMin": round(lo, 2), "strikeMax": round(hi, 2)}]}
+        fit, wide = [], 0
         for k in cands:
-            bid, ask, dl = float(k["bid"]), float(k["ask"]), abs(float(k.get("delta") or 0))
+            bid, ask, strike = float(k["bid"]), float(k["ask"]), float(k["strike"])
             mid = (bid + ask) / 2
-            if not (px <= float(k["strike"]) <= px * (1 + c["maxStrikeAbovePct"] / 100)) or bid <= 0 or dl < c["minDelta"]:
+            if not (lo - 1e-9 <= strike <= hi + 1e-9) or bid <= 0 or ask < bid:
                 continue
             if ask - bid > mid * c["maxSpreadPctOfMid"] / 100 + 1e-9:
-                continue
+                wide += 1; continue
             lim = tick_up(mid)
             if lim * 100 + 0.04 > budget:
                 continue
-            fit.append((dl, k, lim))
+            fc = forecast(rc, bid, ask)
+            # Only propose what the Profitability Gatekeeper would pass on the same numbers (it is still run
+            # independently before the order): a profit after costs, better than the Dip desk, and survivable.
+            if not gk.evaluate({"ask": ask, "bid": bid, "forecastUsd": fc}, acct, evidence="board", live=True, hold_minutes=rc.get("holdMinutes", 1170))["pass"]:
+                wide += 1; continue
+            fit.append((abs(strike - px), strike, k, lim, fc))
         if not fit:
-            skipped.append(f"{sig} no {exp} call fits"); continue
-        dl, k, lim = max(fit, key=lambda t: t[0])
-        return {"actions": [{"do": "buy", "symbol": sig, "id": k["id"], "strike": float(k["strike"]), "expiration": exp, "limitPrice": f"{lim:.2f}",
+            skipped.append(f"{sig} no {exp} call fits" + (f" ({wide} had quotes too wide to keep the tested edge)" if wide else "")); continue
+        _, strike, k, lim, fc = min(fit, key=lambda t: (t[0], t[1]))      # closest to the price
+        dl = abs(float(k.get("delta") or 0))
+        return {"actions": [{"do": "buy", "symbol": sig, "id": k["id"], "strike": strike, "expiration": exp, "limitPrice": f"{lim:.2f}",
                              "maxPrice": f"{min(float(k['ask']), budget / 100):.2f}", "quantity": "1", "delta": round(dl, 3),
-                             "label": f"{sig} {exp[5:]} {float(k['strike']):g}C", "why": f"{sig} dip signal; call delta {dl:.2f} for ${lim * 100:.0f}"}]}
-    return none(f"dip signals but nothing fits (budget ${budget:.0f}, delta >= {c['minDelta']}, tight quotes): " + "; ".join(skipped))
+                             "rule": rule, "underlyingPx": round(px, 4), "bid": float(k["bid"]), "ask": float(k["ask"]),
+                             "forecastUsd": fc, "holdMinutes": rc.get("holdMinutes", 1170), "strategyId": f"optbuy:{rule}",
+                             "label": f"{sig} {exp[5:]} {strike:g}C",
+                             "why": f"{sig} dip signal ({rc.get('name', rule)}); {strike:g} call {100 * (strike / px - 1):+.1f}% from the price for ${lim * 100:.0f}"}]}
+    return none(f"dip signals but nothing fits (budget ${budget:.0f}, tight quotes): " + "; ".join(skipped))
 
 
 def main(argv=None):
@@ -191,7 +260,8 @@ def main(argv=None):
         if led.get("open"):
             print("ERROR: position already open", file=sys.stderr); return 2
         b = json.loads(a.json)
-        led["open"] = {k: b[k] for k in ("symbol", "id", "strike", "expiration", "label", "delta")} | {"entryPrice": a.price, "enteredAt": iso(now)}
+        led["open"] = ({k: b[k] for k in ("symbol", "id", "strike", "expiration", "label", "delta")}
+                       | {k: b[k] for k in ("rule", "underlyingPx", "forecastUsd") if k in b} | {"entryPrice": a.price, "enteredAt": iso(now)})
         led["startedAt"] = led.get("startedAt") or iso(now)
         log("buy", f"bought 1 {b['label']} at {a.price} (${a.price * 100:.0f})"); save(LEDGER, led); return 0
     if a.cmd == "close":
@@ -200,7 +270,8 @@ def main(argv=None):
             print("ERROR: nothing open", file=sys.stderr); return 2
         pnl = round((a.price - o["entryPrice"]) * 100 - 0.06, 2)
         led["trades"].append({"label": o["label"], "symbol": o["symbol"], "enteredAt": o["enteredAt"], "exitedAt": iso(now), "entryPrice": o["entryPrice"],
-                              "exitPrice": a.price, "pnlUsd": pnl, "returnPct": round(100 * (a.price / o["entryPrice"] - 1), 1), "reason": a.reason})
+                              "exitPrice": a.price, "pnlUsd": pnl, "returnPct": round(100 * (a.price / o["entryPrice"] - 1), 1), "reason": a.reason,
+                              "rule": o.get("rule")})
         led["open"] = None; log("sell", f"sold {o['label']} at {a.price} ({a.reason}, {'+' if pnl >= 0 else ''}${pnl})"); save(LEDGER, led); return 0
     if a.cmd == "mark":
         # record the held option's live bid for the dashboard's "made today" (prices only)

@@ -72,8 +72,13 @@ def main():
         out["needed"] = True
         out["reasons"].append("Dip holding: verify broker position, open orders and protective exits")
     # other live desks that need Robinhood attention whenever they hold something
+    EOD = "options desk: end-of-day signal check"
     if (load(os.path.join(ROOT, "docs", "data", "claudebot-optbuy-ledger.json"), {}) or {}).get("open"):
         out["needed"] = True; out["reasons"].append("options-buying desk holds an option (manage its exit)")
+    elif market and (load(os.path.join(HERE, "optbuy_config.json"), {}) or {}).get("enabled") and local.hour * 60 + local.minute >= 14 * 60 + 35:
+        # The options desk only buys in the last run before the close and its signals are not replayed here,
+        # so that run (2:44 PM CT) must do the full check. It never triggers an extra call by itself (see below).
+        out["needed"] = True; out["reasons"].append(EOD)
     if (load(os.path.join(ROOT, "docs", "data", "claudebot-ledger.json"), {}) or {}).get("open"):
         out["reasons"].append("crypto position held (its stop rests at Robinhood; checked on full runs)")
     if market:
@@ -119,9 +124,10 @@ def main():
     last_at, last_why = prev.get("lastCallAt"), prev.get("lastCallReasons")
     out["lastCallAt"], out["lastCallReasons"] = last_at, last_why
     stale = not last_at or now - datetime.fromisoformat(last_at.replace("Z", "+00:00")) > timedelta(minutes=40)
-    out["callClaude"] = bool(out["needed"] and market and (stale or last_why != out["reasons"]))
+    call_reasons = [r_ for r_ in out["reasons"] if r_ != EOD]      # the scheduled 2:44 PM run handles the end-of-day check
+    out["callClaude"] = bool(call_reasons and out["needed"] and market and (stale or last_why != call_reasons))
     if out["callClaude"]:
-        out["lastCallAt"], out["lastCallReasons"] = out["generatedAt"], out["reasons"]
+        out["lastCallAt"], out["lastCallReasons"] = out["generatedAt"], call_reasons
     if os.environ.get("GATE_TEST_NOW"):
         print("TEST", json.dumps(out)); return
     os.makedirs(os.path.dirname(OUT), exist_ok=True)

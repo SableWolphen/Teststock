@@ -61,6 +61,8 @@ def build(data_dir=DATA, cfg_dir=os.path.join(ROOT, "claudebot")):
                                     L("claudebot-scalp-backtest.json"), L("claudebot-optscalp-paper.json"), L("claudebot-spread-paper.json"))
     optcfg = load("optbuy_config.json", cfg_dir)
     cap = (optcfg.get("risk") or {}).get("maxPremiumUsd", 50)
+    live_rule = lambda k: bool(optcfg.get("enabled") and ((optcfg.get("rules") or {}).get(k) or {}).get("enabled", False)
+                               and (((optcfg.get("rules") or {}).get(k) or {}).get("boardApproval") or {}).get("approvalId"))
     rows = []
 
     # 1) Dip calls: at/in the money, 30-60 days, held exactly as long as the stock rule
@@ -90,7 +92,7 @@ def build(data_dir=DATA, cfg_dir=os.path.join(ROOT, "claudebot")):
             "history": f"{a.get('combosPositiveBoth', '?')} settings made money in both periods. The setting that looked best on the pick period then went "
                        f"{te.get('trades')} unseen trades, {te.get('winRatePct'):.0f}% wins, account {te.get('returnPct'):+.0f}%.",
             "paper": "not paper traded", "affordable": True, "canBuy": "Yes",
-            "status": "Live desk exists but is switched off" if not optcfg.get("enabled") else "LIVE"})
+            "status": "Retired: this rule lost and is no longer traded"})
     # 2b) The winning recipe with the closest-to-the-price call the cap can buy (board idea, 2026-11-11)
     ch, chp = L("claudebot-dipcall-cheap-research.json"), L("claudebot-cheapcall-paper.json")
     if ch.get("rows"):
@@ -109,7 +111,9 @@ def build(data_dir=DATA, cfg_dir=os.path.join(ROOT, "claudebot")):
                        f"For {rng([r['noAffordableContract'] for r in ch['rows']])} of {ch['rows'][0]['signals']} signals, no contract within 15% of the price fit the cap.",
             "paper": (f"{cp['trades']} paper trades, net {money(cp['netUsd'])}" if cp["trades"] else "0 paper trades so far (its forward test at live prices has just started)"),
             "secondLook": second_look(ch),
-            "affordable": True, "canBuy": "Yes", "status": "Paper test at live prices"})
+            "affordable": True, "canBuy": "Yes",
+            "status": ("On paper for all eight funds. The SPY, QQQ and IWM part is LIVE by board order (2026-11-11), ahead of its paper test"
+                       if live_rule("index") else "Paper test at live prices")})
     # 2c) The same recipe on cheap stocks (board idea, 2026-11-11)
     cs, csp = L("claudebot-cheapstock-calls-research.json"), L("claudebot-cheapstock-paper.json")
     r30 = next((x for x in cs.get("rows", []) if x.get("dte") == 30 and x["test"].get("trades")), None)
@@ -130,7 +134,9 @@ def build(data_dir=DATA, cfg_dir=os.path.join(ROOT, "claudebot")):
             "secondLook": f"Thin evidence: {n_near} trades on a handful of names, a few big winners made most of the profit, earnings dates were not skipped, "
                           f"and only about one signal in five had a call that close to the price for ${cs.get('capUsd', cap):.0f} or less.",
             "paper": (f"{sp_['trades']} paper trades, net {money(sp_['netUsd'])}" if sp_["trades"] else "0 paper trades so far (the near-the-price version starts its forward test tonight)"),
-            "affordable": True, "canBuy": "Yes", "status": "Paper test at live prices"})
+            "affordable": True, "canBuy": "Yes",
+            "status": ("The call within 3% of the price is LIVE by board order (2026-11-11), ahead of its paper test; the paper desk keeps measuring"
+                       if live_rule("cheapStock") else "Paper test at live prices")})
     # 3) Quick in-and-out trades
     s = (sbt.get("modes") or {}).get("acct120") or {}
     seen, alls = set(), []
@@ -177,7 +183,8 @@ def build(data_dir=DATA, cfg_dir=os.path.join(ROOT, "claudebot")):
         mixed = [r for r in aff if r["verdict"] == "mixed"]
         lessons.append("At least one affordable kind held up: see below." if affordable_ok else
                        "The only kind that clearly held up costs far more than the account. Of the kinds the account can afford, "
-                       + (f"{len(aff) - len(mixed)} lost and {len(mixed)} gave mixed results and are being tested on paper." if mixed
+                       + (f"{len(aff) - len(mixed)} lost and {len(mixed)} gave mixed results and are being tested on paper."
+                          + (" The board has ordered the mixed ones traded with real money ahead of those paper tests, one option at a time." if live_rule("cheapStock") or live_rule("index") else "") if mixed
                           else "every one lost on unseen data."))
         lessons.append("Cheap contracts are far from the price and close to expiry, so they lose value fastest and the buy/sell gap takes a bigger share.")
         lessons.append("How it is sold matters as much as what is bought: the kind that held up followed the stock rule's own exit instead of a fixed target.")
