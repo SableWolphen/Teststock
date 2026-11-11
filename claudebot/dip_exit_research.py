@@ -5,12 +5,13 @@ RESEARCH ONLY: reads prices, writes one results file, never touches live rules, 
 Entry is the live Dip rule, frozen: RSI(2) < 5 at the close while the close is above the 200-day
 average. Only the exit changes between variants. Everything is checked on daily closes (the live desk
 also checks hourly, so live results will differ somewhat). Cost 0.03% per side. Same 7 funds as the
-live desk. Two periods are reported separately: 2018-2022 (includes the 2020 crash and the 2022 bear
-market) and 2023-now. Past results do not predict future results.
+live desk. Two periods are reported separately: up to 2022 and 2023-now. The data plan's history starts
+mid-2020 for most funds (longer feeds are not available on it), so the older period is mostly
+2021-2022, which includes the 2022 bear market but not the 2020 crash. Past results do not predict future results.
 Writes docs/data/claudebot-dip-exit-research.json.
 """
 import importlib.util, json, os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 spec = importlib.util.spec_from_file_location("db", os.path.join(HERE, "dip_backtest.py"))
@@ -70,49 +71,25 @@ def compare(data):
     for v in VARIANTS:
         allt = [x for s in data for x in run(data[s], v)]
         rows.append({"id": v["id"], "name": v["name"],
-                     "2018-2022": summ([x for x in allt if x["in"] < SPLIT]),
+                     "to-2022": summ([x for x in allt if x["in"] < SPLIT]),
                      "2023-now": summ([x for x in allt if x["in"] >= SPLIT])})
     return rows
-
-
-def bars_longest(sym, start):
-    """The bot's usual feed only reaches back to mid-2020 for most funds. Also try the full-market
-    historical feed (free for data older than 15 minutes) and keep whichever starts earlier, so the
-    older period really covers 2018-2022."""
-    best, name = db.ob.daily_bars(sym, start)
-    key, sec = os.environ.get("ALPACA_API_KEY"), os.environ.get("ALPACA_API_SECRET")
-    if key and sec:
-        try:
-            end = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
-            rows, tok = [], None
-            while True:
-                url = (f"https://data.alpaca.markets/v2/stocks/{sym}/bars?timeframe=1Day&start={start}&end={end}"
-                       f"&adjustment=split&feed=sip&limit=10000" + (f"&page_token={tok}" if tok else ""))
-                d = json.loads(db.ob.get(url, {"APCA-API-KEY-ID": key, "APCA-API-SECRET-KEY": sec}))
-                rows += [(b["t"][:10], float(b["c"])) for b in d.get("bars") or []]
-                tok = d.get("next_page_token")
-                if not tok:
-                    break
-            if len(rows) > 300 and rows[0][0] < best[0][0]:
-                best, name = rows, "alpaca-sip"
-        except Exception as e:  # noqa: BLE001
-            print(sym, "long-history feed unavailable:", str(e)[:80])
-    return best, name
 
 
 def main():
     data, src = {}, {}
     for s in SYMS:
-        data[s], src[s] = bars_longest(s, "2017-01-01")
+        data[s], src[s] = db.ob.daily_bars(s, "2017-01-01")
     out = {"generatedAt": datetime.now(timezone.utc).isoformat(), "symbols": SYMS, "costPerSidePct": COST * 100,
            "dataSource": src, "firstBar": {s: data[s][0][0] for s in SYMS},
            "entry": "RSI(2) < 5 at the close, close above the 200-day average (live Dip rule, frozen)",
+           "olderPeriodNote": "History starts mid-2020 for most funds, so 'to-2022' is mostly 2021-2022 and has few trades.",
            "note": "Research only. Daily closes; the live desk also checks hourly. Past results do not predict future results. "
                    "Nothing here changes live rules: the board picks.",
            "variants": compare(data)}
     json.dump(out, open(OUT, "w"), indent=1)
     for r in out["variants"]:
-        print(r["name"]); print("   2018-2022", r["2018-2022"]); print("   2023-now ", r["2023-now"])
+        print(r["name"]); print("   to-2022  ", r["to-2022"]); print("   2023-now ", r["2023-now"])
 
 
 if __name__ == "__main__":
