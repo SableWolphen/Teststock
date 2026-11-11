@@ -80,6 +80,24 @@ def build(data_dir=DATA, cfg_dir=os.path.join(ROOT, "claudebot")):
                        f"{te.get('trades')} unseen trades, {te.get('winRatePct'):.0f}% wins, account {te.get('returnPct'):+.0f}%.",
             "paper": "not paper traded", "affordable": True, "canBuy": "Yes",
             "status": "Live desk exists but is switched off" if not optcfg.get("enabled") else "LIVE"})
+    # 2b) The winning recipe with the closest-to-the-price call the cap can buy (board idea, 2026-11-11)
+    ch, chp = L("claudebot-dipcall-cheap-research.json"), L("claudebot-cheapcall-paper.json")
+    if ch.get("rows"):
+        tr = [r["train"] for r in ch["rows"] if r["train"].get("trades")]; te = [r for r in ch["rows"] if r["test"].get("trades")]
+        won_unseen = [r for r in te if (r["test"].get("avgRetPct") or -1) > 0]
+        verdict = "held up" if ch.get("verdict") == "held up" else "mixed" if won_unseen else "lost"
+        cp = paper_stats([x for st in (chp.get("strategies") or {}).values() for x in st.get("trades") or []])
+        per = "; ".join(f"{r['dte']} days: {r['test']['trades']} trades, {r['test']['winRatePct']:.0f}% wins, {r['test']['avgRetPct']:+.1f}% average" for r in te)
+        rows.append({
+            "id": "cheapdipcalls", "verdict": verdict,
+            "type": "The same recipe with the closest-to-the-price call that costs $50 or less",
+            "cost": f"up to ${ch.get('capUsd', cap):.0f} per contract, sitting {rng([r['test'].get('avgOtmPct') for r in te], '{:.0f}', '%')} above the price on average",
+            "history": f"{ch.get('settingsPositiveBoth')} settings made money in both periods. Pick period (2024): "
+                       f"{'lost at every expiry' if all((x.get('avgRetPct') or 0) <= 0 for x in tr) else 'mixed'}. Unseen (2025-26): {per}. "
+                       f"Single trades lost up to {abs(min(r['test']['worstRetPct'] for r in te)):.0f}%. "
+                       f"For {rng([r['noAffordableContract'] for r in ch['rows']])} of {ch['rows'][0]['signals']} signals, no contract within 15% of the price fit the cap.",
+            "paper": (f"{cp['trades']} paper trades, net {money(cp['netUsd'])}" if cp["trades"] else "0 paper trades so far (its forward test at live prices has just started)"),
+            "affordable": True, "canBuy": "Yes", "status": "Paper test at live prices"})
     # 3) Quick in-and-out trades
     s = (sbt.get("modes") or {}).get("acct120") or {}
     seen, alls = set(), []
@@ -122,8 +140,12 @@ def build(data_dir=DATA, cfg_dir=os.path.join(ROOT, "claudebot")):
     affordable_ok = [r for r in rows if r["affordable"] and r["verdict"] == "held up"]
     lessons = []
     if rows:
-        lessons.append("The only kind that held up costs far more than the account; every kind the account can afford lost on unseen data."
-                       if not affordable_ok else "At least one affordable kind held up: see the table.")
+        aff = [r for r in rows if r["affordable"]]
+        mixed = [r for r in aff if r["verdict"] == "mixed"]
+        lessons.append("At least one affordable kind held up: see below." if affordable_ok else
+                       "The only kind that clearly held up costs far more than the account. Of the kinds the account can afford, "
+                       + (f"{len(aff) - len(mixed)} lost and {len(mixed)} gave mixed results (it lost in one period and made money in the other)." if mixed
+                          else "every one lost on unseen data."))
         lessons.append("Cheap contracts are far from the price and close to expiry, so they lose value fastest and the buy/sell gap takes a bigger share.")
         lessons.append("How it is sold matters as much as what is bought: the kind that held up followed the stock rule's own exit instead of a fixed target.")
     return {"schemaVersion": 1, "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),

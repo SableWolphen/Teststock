@@ -11,7 +11,7 @@ r = m.build()
 rows = {x["id"]: x for x in r["rows"]}
 assert {"dipcalls", "cheapcalls", "scalps"} <= set(rows), rows.keys()
 for x in r["rows"]:
-    assert x["verdict"] in ("held up", "lost", "no edge", "too early", "not proven") and x["canBuy"] and x["history"] and x["paper"]
+    assert x["verdict"] in ("held up", "lost", "no edge", "too early", "not proven", "mixed") and x["canBuy"] and x["history"] and x["paper"]
 # the research file says no dip-call contract fits a ~$117 account: the card must not say otherwise
 src = json.load(open(os.path.join(m.DATA, "claudebot-dipcall-research.json")))
 fits = max((row.get("test") or {}).get("affordableAt117Pct") or 0 for row in src["rows"] if row["side"] == "calls")
