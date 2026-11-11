@@ -12,6 +12,7 @@ on:
 concurrency: { group: claudebot-gate, cancel-in-progress: false }
 permissions:
   contents: write
+  issues: write
 jobs:
   gate:
     runs-on: ubuntu-latest
@@ -43,6 +44,27 @@ jobs:
           git commit -m "ClaudeBot gate $(date -u +%H:%MZ)"
           for i in 1 2 3 4 5; do git pull --rebase -X theirs origin main && git push origin HEAD:main && exit 0; sleep $((i*5)); done
           exit 1
+      - name: Alert the owner when a held position hits its stop
+        # Robinhood refuses stop orders on fractional shares, so the bot's stops live in its Claude runs.
+        # If those runs are not working (for example the usage limit was reached), this GitHub alert still
+        # reaches the owner. One open alert per position; it never trades.
+        if: ${{ github.event.inputs.test_now == '' || github.event.inputs.test_now == null }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          n=$(jq '(.stopAlerts // []) | length' docs/data/claudebot-gate.json); [ "$n" -gt 0 ] || { echo "no stop hit"; exit 0; }
+          gh label create stop-alert --color B60205 --description "A held position reached its stop price" 2>/dev/null || true
+          jq -c '.stopAlerts[]' docs/data/claudebot-gate.json | while read -r a; do
+            sym=$(echo "$a" | jq -r .symbol); stop=$(echo "$a" | jq -r .stopPrice); last=$(echo "$a" | jq -r .lastPrice); entry=$(echo "$a" | jq -r .entryPrice)
+            title="Sell $sym now: it hit its stop (\$$stop)"
+            if gh issue list --label stop-alert --state open --search "in:title \"Sell $sym now\"" --json number --jq 'length' | grep -qv '^0$'; then echo "alert already open for $sym"; continue; fi
+            body="@${{ github.repository_owner }} $sym is at \$$last, at or below its stop of \$$stop (bought at \$$entry).
+
+          The bot's Claude run is meant to sell it right away. If you have not had a message saying it sold, open the Robinhood app and sell your $sym in the MCP account.
+
+          Robinhood does not accept stop orders on fractional shares, so this alert is the backup. Close this issue once it is sold. Checked $(date -u +'%H:%M UTC')."
+            gh issue create --title "$title" --label stop-alert --body "$body" && echo "alert sent for $sym"
+          done
       - name: Call Claude when a trade is ready
         if: ${{ github.event.inputs.test_now == '' || github.event.inputs.test_now == null }}
         env:

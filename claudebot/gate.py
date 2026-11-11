@@ -53,6 +53,17 @@ def symbol_facts(sym, today):
     return {"price": float(trade["p"]), "closes": closes[-260:], "heldQty": 0}
 
 
+def stop_alerts(rows, market):
+    """Held positions trading at or below their stop price while the market is open. The workflow turns each
+    one into a GitHub alert to the owner (board 2026-11-11: Robinhood refuses stop orders on fractional shares,
+    so a missed Claude run must not leave a stop unseen). Alert only; it never trades."""
+    if not market:
+        return []
+    return [{"symbol": r["symbol"], "entryPrice": r["entryPrice"], "stopPrice": r["stopPrice"], "lastPrice": r["lastPrice"],
+             "boughtThisSession": r.get("boughtThisSession", False)}
+            for r in rows if r.get("lastPrice") is not None and r["lastPrice"] <= r["stopPrice"]]
+
+
 def main():
     global H
     H = {"APCA-API-KEY-ID": os.environ["ALPACA_API_KEY"], "APCA-API-SECRET-KEY": os.environ["ALPACA_API_SECRET"], "User-Agent": "teststock"}
@@ -115,6 +126,7 @@ def main():
             sf = (facts["symbols"].get(p["symbol"]) if market else None) or symbol_facts(p["symbol"], sess.isoformat())
             rows.append(ol.exit_outlook(p, sf["closes"], sf["price"], cfg, sess, HOLIDAYS))
         out["outlook"] = {"session": sess.isoformat(), "positions": rows}
+        out["stopAlerts"] = stop_alerts(rows, market)
     except Exception as e:  # noqa: BLE001
         out["outlookError"] = str(e)[:120]
     # Call Claude right away when a trade is ready (board order 2026-11-02). At most once per 40 min
