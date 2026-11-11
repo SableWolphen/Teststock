@@ -59,10 +59,10 @@ def pick(sym, px, today, cap=CAP):
     return None
 
 
-def step(led, bars_by_sym, today):
+def step(led, bars_by_sym, today, key="cheapcall", syms=None, picker=None, max_px=None, board=None):
     """Pure ledger logic for one evening. bars_by_sym = {fund: [(day, close), ...]}."""
-    st = led["strategies"]["cheapcall"]; made = []
-    for s in dp.SYMS:
+    st = led["strategies"][key]; made = []; picker = picker or pick; nofit = 0
+    for s in (syms or dp.SYMS):
         bars = bars_by_sym.get(s) or []
         d = [x for x, _ in bars]; c = [x for _, x in bars]
         if len(c) < 210 or (led.get("lastDay") and d[-1] <= led["lastDay"]):
@@ -78,15 +78,17 @@ def step(led, bars_by_sym, today):
                 st["trades"].append({**pos, "out": day, "exitBid": bid, "why": why, "pnlUsd": pnl, "retPct": round(100 * (bid / pos["ask"] - 1), 1),
                                      "etfRetPct": round(100 * (c[-1] / pos["etfPx"] - 1), 2), "days": held})
                 del st["open"][s]; made.append(f"sold {pos['symbol']} {why} {pnl:+.2f}")
-        elif c[-1] > sum(c[-200:]) / 200 and dp.rsi2(c[-31:]) < 5:
-            opt = pick(s, c[-1], today)
+        elif (max_px is None or c[-1] <= max_px) and c[-1] > sum(c[-200:]) / 200 and dp.rsi2(c[-31:]) < 5:
+            opt = picker(s, c[-1], today)
             if opt:
                 st["open"][s] = {**opt, "in": day, "etfPx": c[-1], "underlying": s}; made.append(f"bought {opt['symbol']} at {opt['ask']}")
             else:
-                made.append(f"{s}: signal, but no call within 15% of the price costs $50 or less")
+                nofit += 1
         led["_day"] = max(led.get("_day") or "", day)
     if led.get("_day"):
         led["lastDay"] = led.pop("_day")
+    if nofit:
+        made.append(f"{nofit} signal{'s' if nofit > 1 else ''} had no call that fits the rule for $50 or less")
     def row(rid, name, t, n_open):
         w = [x["pnlUsd"] for x in t if x["pnlUsd"] > 0]; l = [x["pnlUsd"] for x in t if x["pnlUsd"] <= 0]
         return {"id": rid, "name": name, "trades": len(t), "wins": len(w), "winRatePct": round(100 * len(w) / len(t), 1) if t else None,
@@ -95,8 +97,9 @@ def step(led, bars_by_sym, today):
     # The second row is the SAME trades counted for SPY, QQQ and IWM only: on historical prices that slice was
     # about flat in 2024 and profitable in 2025-26, while the other funds lost. Tracked forward, not traded twice.
     idx = lambda x: x.get("underlying") in INDEX_FUNDS
-    led["leaderboard"] = [row("cheapcall", st["name"], st["trades"], len(st["open"])),
-                          row("cheapcall_index", "of which SPY, QQQ and IWM only", [x for x in st["trades"] if idx(x)], sum(1 for x in st["open"].values() if idx(x)))]
+    led["leaderboard"] = board(row, st) if board else [
+        row("cheapcall", st["name"], st["trades"], len(st["open"])),
+        row("cheapcall_index", "of which SPY, QQQ and IWM only", [x for x in st["trades"] if idx(x)], sum(1 for x in st["open"].values() if idx(x)))]
     led["updatedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     led["runs"] = (led.get("runs", []) + [{"t": led["updatedAt"], "detail": ", ".join(made) or "no signals"}])[-60:]
     return led

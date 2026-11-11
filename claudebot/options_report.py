@@ -110,6 +110,27 @@ def build(data_dir=DATA, cfg_dir=os.path.join(ROOT, "claudebot")):
             "paper": (f"{cp['trades']} paper trades, net {money(cp['netUsd'])}" if cp["trades"] else "0 paper trades so far (its forward test at live prices has just started)"),
             "secondLook": second_look(ch),
             "affordable": True, "canBuy": "Yes", "status": "Paper test at live prices"})
+    # 2c) The same recipe on cheap stocks (board idea, 2026-11-11)
+    cs, csp = L("claudebot-cheapstock-calls-research.json"), L("claudebot-cheapstock-paper.json")
+    r30 = next((x for x in cs.get("rows", []) if x.get("dte") == 30 and x["test"].get("trades")), None)
+    if r30:
+        near = r30["byDistance"].get("at the price (within 3%)") or {}
+        g = lambda z: f"{z['trades']} trades, {int(z['winRatePct'] + 0.5)}% wins, {z['avgRetPct']:+.1f}% average" if z.get("trades") else "no trades"
+        w = lambda z: f"{z['wideGap']['avgRetPct']:+.1f}%" if z.get("trades") else "n/a"
+        near_ok = all((near.get(k) or {}).get("trades") and near[k]["avgRetPct"] > 0 and near[k]["wideGap"]["avgRetPct"] > 0 for k in ("train", "test"))
+        sp_ = paper_stats([x for st in (csp.get("strategies") or {}).values() for x in st.get("trades") or []])
+        n_near = sum((near.get(k) or {}).get("trades", 0) for k in ("train", "test"))
+        rows.append({
+            "id": "cheapstocks", "verdict": "held up" if cs.get("verdict") == "held up" else "mixed" if near_ok else "lost",
+            "type": f"Calls on cheap stocks (${cs.get('maxStockPriceUsd', 25):.0f} or less) on the Dip signal, sold by the stock rule",
+            "cost": f"up to ${cs.get('capUsd', cap):.0f} per contract",
+            "history": f"Every $50 call it could buy, 30 days out: 2024 {g(r30['train'])}; unseen 2025-26 {g(r30['test'])}. "
+                       f"Only the call within 3% of the price: 2024 {g(near.get('train') or {})}; unseen {g(near.get('test') or {})} "
+                       f"(with a wide buy/sell gap: {w(near.get('train') or {})} and {w(near.get('test') or {})}). Calls further from the price lost in both periods.",
+            "secondLook": f"Thin evidence: {n_near} trades on a handful of names, a few big winners made most of the profit, earnings dates were not skipped, "
+                          f"and only about one signal in five had a call that close to the price for ${cs.get('capUsd', cap):.0f} or less.",
+            "paper": (f"{sp_['trades']} paper trades, net {money(sp_['netUsd'])}" if sp_["trades"] else "0 paper trades so far (the near-the-price version starts its forward test tonight)"),
+            "affordable": True, "canBuy": "Yes", "status": "Paper test at live prices"})
     # 3) Quick in-and-out trades
     s = (sbt.get("modes") or {}).get("acct120") or {}
     seen, alls = set(), []
@@ -156,7 +177,7 @@ def build(data_dir=DATA, cfg_dir=os.path.join(ROOT, "claudebot")):
         mixed = [r for r in aff if r["verdict"] == "mixed"]
         lessons.append("At least one affordable kind held up: see below." if affordable_ok else
                        "The only kind that clearly held up costs far more than the account. Of the kinds the account can afford, "
-                       + (f"{len(aff) - len(mixed)} lost and {len(mixed)} gave mixed results (it lost in one period and made money in the other)." if mixed
+                       + (f"{len(aff) - len(mixed)} lost and {len(mixed)} gave mixed results and are being tested on paper." if mixed
                           else "every one lost on unseen data."))
         lessons.append("Cheap contracts are far from the price and close to expiry, so they lose value fastest and the buy/sell gap takes a bigger share.")
         lessons.append("How it is sold matters as much as what is bought: the kind that held up followed the stock rule's own exit instead of a fixed target.")
