@@ -47,6 +47,12 @@ jobs:
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+      - name: Scoreboard - the bot vs holding SPY vs savings (reads ledgers only)
+        run: python claudebot/scoreboard.py
+        continue-on-error: true
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
       - name: Options report card (reads result files only)
         run: python claudebot/options_report.py
         continue-on-error: true
@@ -59,7 +65,7 @@ jobs:
       - run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          for f in docs/data/claudebot-cheapstock-paper.json docs/data/claudebot-cheapcall-paper.json docs/data/claudebot-options-report.json docs/data/claudebot-dipcall-paper.json docs/data/claudebot-moonshot-paper.json docs/data/claudebot-hr.json docs/data/claudebot-edge-paper.json docs/data/claudebot-edge-readiness.json docs/data/claudebot-daytrade-paper.json docs/data/claudebot-historian.json claudebot/dip_config.json; do [ -e "$f" ] && git add "$f"; done; true
+          for f in docs/data/claudebot-scoreboard.json docs/data/claudebot-cheapstock-paper.json docs/data/claudebot-cheapcall-paper.json docs/data/claudebot-options-report.json docs/data/claudebot-dipcall-paper.json docs/data/claudebot-moonshot-paper.json docs/data/claudebot-hr.json docs/data/claudebot-edge-paper.json docs/data/claudebot-edge-readiness.json docs/data/claudebot-daytrade-paper.json docs/data/claudebot-historian.json claudebot/dip_config.json; do [ -e "$f" ] && git add "$f"; done; true
           git diff --cached --quiet && exit 0
           git commit -m "Second-edge paper desk: daily update"
           for i in 1 2 3 4 5; do git pull --rebase -X theirs origin main && git push origin HEAD:main && exit 0; sleep $((i*5)); done
