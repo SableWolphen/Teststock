@@ -35,10 +35,11 @@
     "Market-wide day-trade lab, now 2,511 paper trades: gap PF 1.16 (288), VWAP 0.79 (950), ORB 0.70 (814), momentum 0.40 (459); promising list still empty",
     "Intraday VWAP dips: 14 paper trades, 5 wins, -$0.92 (PF 0.27)",
     "Paper desks for the two option rules the board put live on 2026-11-11 (cheap-stock call, index $50 call) have 0 paper trades so far; the live desk has 1 option open and 0 closed, so live and paper cannot be compared yet",
-    "Audit has failed every hour since the cheap-stock rule went market-wide: the open PAYS call was bought from the scan's all-stocks list (board order 'watch all stocks'), but the audit's 'Bought options within limits' check only accepts the fixed scanUniverse list. Left for the board"
+    "Audit has failed every hour since the cheap-stock rule went market-wide: the open PAYS call was bought from the scan's all-stocks list (board order 'watch all stocks'), but the audit's 'Bought options within limits' check only accepts the fixed scanUniverse list. Fixed the same day on the board's order ('figure it out')"
    ],
    "changed": [
-    "Trade autopsy (backlog #2): claudebot/trade_autopsy.py, weekly in the historian workflow, test in CI. Splits each closed option trade (race, option paper desks, live options desk) into spread / fees / stock-move signal / time decay / exit give-back and compares it with the forecast; the stock-price split fills in from Alpaca on its first workflow run"
+    "Trade autopsy (backlog #2): claudebot/trade_autopsy.py, weekly in the historian workflow, test in CI. Splits each closed option trade (race, option paper desks, live options desk) into spread / fees / stock-move signal / time decay / exit give-back and compares it with the forecast; the stock-price split fills in from Alpaca on its first workflow run",
+    "Audit 'Bought options within limits' now accepts a market-wide name only if the cheap-stock rule bought it, the rule and the all-stocks scan are on, the scan found the name, and the stock was within the rule's price ceiling. Size, count and duplicate checks unchanged; 7 new test cases. Audit back to 37/37"
    ],
    "nextTest": "Read the autopsy after its first Actions run (stock prices fetched) to split the race's -$23 price move into the stock signal and time decay, and run it on the live options desk as its trades close. Re-test of fixed-target Dip exits stays closed unless pre-2023 data changes (it lost then). Day-trade ideas stay rejected (2,511 paper trades, none above PF 1.3)."
   }

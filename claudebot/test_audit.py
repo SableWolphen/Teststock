@@ -44,4 +44,21 @@ o = with_patch(lambda p, d: (
     if p.endswith("claudebot/dip_config.json") else d))
 checks = next(r for r in o["reports"] if r["manager"] == "guard")["checks"]
 assert any(x["check"] == "Live edge requires separate recorded board approval" and x["status"] == "fail" for x in checks)
+# Market-wide cheap-stock option (board 2026-11-11 'watch all stocks'): passes only when bought by that rule,
+# found by the nightly scan, and priced within the rule's ceiling. Anything else still fails.
+def bought(pos):
+    o = with_patch(lambda p, d: ({**d, "positions": [pos], "open": None} if p.endswith("claudebot-optbuy-ledger.json") else
+                                 {**d, "discovered": ["ZZZQ"], "symbols": {**(d.get("symbols") or {}), "ZZZQ": {}}} if p.endswith("claudebot-optbuy-scan.json") else d))
+    return next(x for r in o["reports"] for x in r["checks"] if x["check"] == "Bought options within limits")["status"]
+ok = {"symbol": "ZZZQ", "label": "ZZZQ 12-18 10C", "rule": "cheapStock", "underlyingPx": 9.8, "entryPrice": 0.75, "enteredAt": "2026-11-11T19:00:00Z"}
+assert bought(ok) == "pass"
+assert bought({**ok, "symbol": "NOTSCANNED"}) == "fail"          # not found by the scan
+assert bought({**ok, "rule": "index"}) == "fail"                  # another rule cannot use the market-wide list
+assert bought({**ok, "rule": None}) == "fail"
+assert bought({**ok, "underlyingPx": 40}) == "fail"              # above the cheap-stock price ceiling
+assert bought({**ok, "underlyingPx": None}) == "fail"
+o = with_patch(lambda p, d: ({**d, "positions": [ok], "open": None} if p.endswith("claudebot-optbuy-ledger.json") else
+                             {**d, "discovered": ["ZZZQ"]} if p.endswith("claudebot-optbuy-scan.json") else
+                             {**d, "rules": {**d["rules"], "cheapStock": {**d["rules"]["cheapStock"], "enabled": False}}} if p.endswith("optbuy_config.json") else d))
+assert next(x for r in o["reports"] for x in r["checks"] if x["check"] == "Bought options within limits")["status"] == "fail"   # rule switched off
 print("all audit scenarios pass")

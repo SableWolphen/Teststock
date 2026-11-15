@@ -159,9 +159,27 @@ def run(now=None):
     bps = bled.get("positions") if bled.get("positions") is not None else ([bled["open"]] if bled.get("open") else [])
     bo = bps[0] if bps else None
     b_ok_syms = set(bcfg.get("symbols", [])) | set(bcfg.get("scanUniverse", [])) | {s_ for rc in brules.values() for s_ in rc.get("symbols", [])}
+    # Board order 2026-11-11 ('Make sure it watches all stocks'; confirmed 2026-11-15 'figure it out'): the
+    # cheap-stock rule may buy any name the nightly scan discovered. Such a name passes only when the position
+    # was opened by that rule, the rule and market-wide scan are on, the name is in the scan, and the stock
+    # price at entry was within the rule's price ceiling. Every other check here is unchanged.
+    bscan = load(D("docs", "data", "claudebot-optbuy-scan.json"), {}) or {}
+    b_scan_syms = set(bscan.get("discovered") or []) | set((bscan.get("symbols") or {}).keys())
+    bcs = brules.get("cheapStock") or {}
+
+    def b_sym_ok(p):
+        if p.get("symbol") in b_ok_syms:
+            return True
+        try:
+            upx = float(p.get("underlyingPx") or 0)
+        except (TypeError, ValueError):
+            return False
+        return (bool((bcfg.get("scan") or {}).get("allOptionableStocks")) and bool(bcs.get("enabled", False))
+                and p.get("rule") == "cheapStock" and p.get("symbol") in b_scan_syms
+                and 0 < upx <= float(bcs.get("maxStockPrice", 0)) + 0.01)
     # premium ceiling = the governor's hard $50 cap (was checked at $40 here, a leftover from the earlier $30/$40 cap)
     g.check("options", "Bought options within limits", len(bps) <= min(int(br.get("maxOpenPositions", 1)), 3)
-            and all((p.get("entryPrice", 99) * 100 <= 50.01 or br.get("cashIsTheCap")) and p.get("symbol") in b_ok_syms for p in bps) and len({p.get("symbol") for p in bps}) == len(bps),
+            and all((p.get("entryPrice", 99) * 100 <= 50.01 or br.get("cashIsTheCap")) and b_sym_ok(p) for p in bps) and len({p.get("symbol") for p in bps}) == len(bps),
             "no option held" if not bps else ", ".join(f"{p.get('label')} at {p.get('entryPrice')}" for p in bps))
     reports.append(g.done())
 
