@@ -36,6 +36,8 @@ Never promise returns.
    planner no longer buys a fund the broker holds but the ledger does not record.
 2. Trade autopsy (OpenAI #108), only once the options race has 20+ closed paper trades: per trade,
    forecast vs what happened, and the loss split into signal / spread / time decay / exit timing.
+   DONE 2026-11-15: `claudebot/trade_autopsy.py` (weekly in the historian workflow, test in CI) writes
+   `docs/data/claudebot-trade-autopsy.json` for the race, the option paper desks and the live options desk.
 
 ## Learn every week (board order 2026-11-03: "learn what works and what doesn't")
 1. Read `docs/data/claudebot-historian.json` (leaderboards, CIO memo, alerts), `claudebot-hr.json`,
