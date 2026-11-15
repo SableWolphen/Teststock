@@ -21,6 +21,26 @@
     "The suite found a real gap: if a Dip buy filled but the run died before booking it, the next run would have bought the same fund again. The planner now refuses new buys of any fund the broker holds but the ledger doesn't (risk-reducing only; other funds unaffected)"
    ],
    "nextTest": "Trade autopsy (backlog #2): the options race now has 22 closed paper trades, so split each loss into signal / spread / time decay / exit timing. Day-trade ideas stay rejected (2,168 unseen backtest trades + 1,134 wide paper trades all lose after costs) unless costs or data change materially."
+  },
+  {
+   "week": "2026-11-15",
+   "worked": [
+    "Dip desk exit research (Dex, first run): the current sell rule (bounce, 10 days, 5% stop) is the most consistent of 5 rules: PF 2.14 on 42 older trades and 3.44 on 141 trades since 2023. A fixed +3% target earns more per trade since 2023 (+1.30% vs +0.92%, PF 2.53) but lost before 2023 (PF 0.90), so it is not more robust. Research only; the board picks the sell rule",
+    "Second live Dip trade closed in profit: DIA +1.6% when the board trimmed it to 25% of the account; that also ended the hourly audit failure on DIA",
+    "2nd-edge paper desk: 'down 3 days' 3 wins of 4 paper trades"
+   ],
+   "didNotWork": [
+    "Trade autopsy of the options race (7 independent entries, all on 2026-11-03; 22 rows were the same entries under different exit rules): -$35.70 paper per one contract each. Bid/ask cost $12.00 (34% of the loss, average spread 4.2%), option price moves -$23.00, bids given back from the best price seen while held -$31.00. Forecasts were already negative (-$18.97 total) on the variants the CEO retired on 2026-11-03; actual was worse. The ensemble variants that need a positive forecast made 0 trades in 2 weeks",
+    "Spread paper desk: 4 paper trades, 1 win, -$82.80 (PF 0.11)",
+    "Market-wide day-trade lab, now 2,511 paper trades: gap PF 1.16 (288), VWAP 0.79 (950), ORB 0.70 (814), momentum 0.40 (459); promising list still empty",
+    "Intraday VWAP dips: 14 paper trades, 5 wins, -$0.92 (PF 0.27)",
+    "Paper desks for the two option rules the board put live on 2026-11-11 (cheap-stock call, index $50 call) have 0 paper trades so far; the live desk has 1 option open and 0 closed, so live and paper cannot be compared yet",
+    "Audit has failed every hour since the cheap-stock rule went market-wide: the open PAYS call was bought from the scan's all-stocks list (board order 'watch all stocks'), but the audit's 'Bought options within limits' check only accepts the fixed scanUniverse list. Left for the board"
+   ],
+   "changed": [
+    "Trade autopsy (backlog #2): claudebot/trade_autopsy.py, weekly in the historian workflow, test in CI. Splits each closed option trade (race, option paper desks, live options desk) into spread / fees / stock-move signal / time decay / exit give-back and compares it with the forecast; the stock-price split fills in from Alpaca on its first workflow run"
+   ],
+   "nextTest": "Read the autopsy after its first Actions run (stock prices fetched) to split the race's -$23 price move into the stock signal and time decay, and run it on the live options desk as its trades close. Re-test of fixed-target Dip exits stays closed unless pre-2023 data changes (it lost then). Day-trade ideas stay rejected (2,511 paper trades, none above PF 1.3)."
   }
  ]
 }
