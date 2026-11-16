@@ -83,7 +83,8 @@ def build(trades, spy_bars, now_iso):
 def main():
     sp = importlib.util.spec_from_file_location("ob", os.path.join(HERE, "options_backtest.py")); ob = importlib.util.module_from_spec(sp); sp.loader.exec_module(ob)
     now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    spy = ob.daily_bars("SPY", "2026-10-01")[0]
+    # Ask for more than 300 days so the Alpaca feed is used (a short request falls back to stooq, which GitHub cannot reach).
+    spy = [r for r in ob.daily_bars("SPY", "2024-06-01")[0] if r[0] >= "2026-10-01"]
     out = build(real_trades(now), spy, now)
     json.dump(out, open(OUT, "w"), indent=1)
     print(out["totals"], out["verdict"])
