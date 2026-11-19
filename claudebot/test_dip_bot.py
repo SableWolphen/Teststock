@@ -2,7 +2,7 @@
 import importlib.util, os, copy
 spec = importlib.util.spec_from_file_location("db", os.path.join(os.path.dirname(os.path.abspath(__file__)), "dip_bot.py"))
 db = importlib.util.module_from_spec(spec); spec.loader.exec_module(db)
-cfg = db.load(db.CONFIG); [e.update(enabled=False) for e in (cfg.get("edges") or {}).values()]; cfg["symbols"] = ["SPY", "QQQ"]; cfg["risk"]["reserveForOptionsUsd"] = 86; cfg["risk"]["maxOpenPositions"] = 3; cfg["risk"]["deployAllCash"] = False   # scenarios below test the fixed-size, reserve and 3-position rules
+cfg = db.load(db.CONFIG); [e.update(enabled=False) for e in (cfg.get("edges") or {}).values()]; cfg["symbols"] = ["SPY", "QQQ"]; cfg["risk"]["reserveForOptionsUsd"] = 86; cfg["risk"]["maxOpenPositions"] = 3; cfg["risk"]["deployAllCash"] = False; cfg["risk"]["positionUsd"] = 25; cfg["risk"]["positionPctOfAccount"] = 20   # scenarios below test the fixed-size, reserve and 3-position rules
 up = [600 + i * 0.6 for i in range(220)]                 # steady uptrend, last close ~731
 dip = up[:-3] + [up[-3] - 6, up[-3] - 13, up[-3] - 20]  # three down days, still above the 200d SMA
 LED = {"open": None, "trades": [], "runs": []}
@@ -62,6 +62,10 @@ assert act({**F, "accountValue": 117, "buyingPower": float("nan")})["do"] == "no
 # news veto: a skipped symbol is never bought this run
 db.options_open = lambda: True
 a = act({**F, "skip": ["SPY"]}); assert a["do"] != "buy" or a["symbol"] != "SPY", a
+# small account (board 2026-11-19 "always be trading"): $5 minimum, 25% of the account, so ~$23 free cash still buys
+cfg["risk"].update(positionUsd=5, positionPctOfAccount=25, deployAllCash=True)
+a = act({**F, "accountValue": 81.1, "buyingPower": 22.71}); assert a["do"] == "buy" and a["dollarAmount"] == "20.27", a
+assert act({**F, "accountValue": 81.1, "buyingPower": 4})["do"] == "none"
 print("all dip desk scenarios pass")
 
 # partial sale (board trim to 25%): the sold part becomes a finished trade, the rest stays open at its cost
