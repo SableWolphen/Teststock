@@ -32,6 +32,7 @@ HARD = {   # never above these, whatever the configs say (changing them needs th
     "dip.maxPctOfAccount": 25, "dip.minPositionUsd": 1, "dip.maxPositionUsdAbs": 5000, "dip.maxOpen": 5,
     "optbuy.maxPremiumUsd": 1000000, "optbuy.maxPctOfAccount": 100, "optbuy.maxOpen": 3, "optbuy.maxTotalPctOfAccount": 100,   # board 2026-11-11: "the cap is what is in the account only" (was $50 / 43% / 65%)   # maxOpen 1 -> 3 by board order 2026-11-11 ("Up to 3 at $25 each")
     "neverSell": ["KO"],
+    "spread.maxOpen": 1, "spread.widthUsd": 1, "spread.maxLossPctOfAccount": 80,   # board 2026-11-19: "set all the winnings up"
 }
 HOLIDAYS = {"2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"}
 
@@ -137,7 +138,31 @@ def check(o, root_loader=load):
         elif not any(p.get("symbol") == sym or p.get("underlying") == sym or p.get("id") == o.get("optionId") for p in held):
             deny.append("the options ledger holds no such option")
     elif desk == "spread":
-        deny.append("spreads are paper-only: Robinhood blocks agent multi-leg orders")
+        # Board 2026-11-19 ("set all the winnings up"): put credit spreads may trade live. "usd" for an
+        # opening order = cash Robinhood holds as collateral (width x 100 - credit x 100) = the max loss.
+        cfg = L("claudebot/options_config.json", {}) or {}; r = cfg.get("risk", {}); e_ = cfg.get("entry", {})
+        led = L("docs/data/claudebot-options-ledger.json", {}) or {}
+        if led.get("mode") != "live":
+            deny.append("options ledger is not in live mode")
+        if buy:
+            if not cfg.get("enabled"):
+                deny.append("spread desk is disabled")
+            if not (cfg.get("boardApproval") or {}).get("approvalId"):
+                deny.append("no recorded board approval for live spreads")
+            if sym not in (cfg.get("underlyings") or []):
+                deny.append(f"{sym} is not on the spread desk's list")
+            if led.get("open") or HARD["spread.maxOpen"] < 1:
+                deny.append("a spread is already open (one at a time)")
+            if float(e_.get("widthUsd", 9)) > HARD["spread.widthUsd"]:
+                deny.append("spread wider than the $1 hard limit")
+            if usd > bp - 1 + 0.01:
+                deny.append(f"collateral ${usd:.2f} is more than the free cash (${bp:.2f} less $1)")
+            if usd > av * min(float(r.get("maxLossPctOfAccount", 80)), HARD["spread.maxLossPctOfAccount"]) / 100 + 0.01:
+                deny.append(f"max loss ${usd:.2f} is above {min(float(r.get('maxLossPctOfAccount', 80)), HARD['spread.maxLossPctOfAccount'])}% of the account")
+            if now.astimezone(CT).date().isoformat() in (r.get("noNewEntryDates") or {}):
+                deny.append("event pause day: no new spreads")
+        elif not ((led.get("open") or {}).get("underlying") == sym):
+            deny.append("the options ledger holds no spread on that symbol")
     elif desk == "crypto":
         if buy:
             deny.append("crypto entries are off (desk fired 2026-11-02)")

@@ -66,6 +66,20 @@ assert chk(desk="optbuy", side="buy", symbol="SPY", usd=25, gatekeeper=GK, accou
 assert chk(desk="optbuy", side="sell", symbol="T", quantity="1")["allow"]                           # selling one the bot holds
 DATA["docs/data/claudebot-optbuy-ledger.json"] = {"open": None}
 assert chk(desk="spread", side="buy", symbol="SPY", usd=10)["allow"] is False
+# live spreads (board 2026-11-19)
+DATA["claudebot/options_config.json"] = {"enabled": True, "boardApproval": {"approvalId": "x"}, "underlyings": ["SPY", "IWM"], "entry": {"widthUsd": 1}, "risk": {"maxLossPctOfAccount": 80, "noNewEntryDates": {"2026-11-04": "x"}}}
+DATA["docs/data/claudebot-options-ledger.json"] = {"mode": "paper", "open": None}
+assert chk(desk="spread", side="buy", symbol="SPY", usd=86, accountValue=120, buyingPower=110)["allow"] is False   # paper ledger
+DATA["docs/data/claudebot-options-ledger.json"]["mode"] = "live"
+assert chk(desk="spread", side="buy", symbol="SPY", usd=86, accountValue=120, buyingPower=110)["allow"]
+assert chk(desk="spread", side="buy", symbol="SPY", usd=86, accountValue=81, buyingPower=110)["allow"] is False    # $86 > 80% of $81
+assert chk(desk="spread", side="buy", symbol="SPY", usd=86, accountValue=120, buyingPower=50)["allow"] is False    # not enough cash
+assert chk(desk="spread", side="buy", symbol="QQQ", usd=86, accountValue=120, buyingPower=110)["allow"] is False   # not on the list
+assert chk(desk="spread", side="buy", symbol="SPY", usd=86, accountValue=120, buyingPower=110, now="2026-11-04T18:00:00Z")["allow"] is False   # event pause
+DATA["docs/data/claudebot-options-ledger.json"]["open"] = {"underlying": "SPY"}
+assert chk(desk="spread", side="buy", symbol="IWM", usd=86, accountValue=120, buyingPower=110)["allow"] is False   # one at a time
+assert chk(desk="spread", side="sell", symbol="SPY", quantity="1")["allow"]
+assert chk(desk="spread", side="sell", symbol="IWM", quantity="1")["allow"] is False
 assert chk(desk="crypto", side="buy", symbol="BTC", usd=10)["allow"] is False
 DATA["docs/data/claudebot-dip-ledger.json"]["positions"].append({"symbol": "SPY", "usd": 25, "entryPrice": 600})
 assert chk(desk="dip", side="buy", symbol="SPY", usd=25)["allow"] is False                # at max open (2)

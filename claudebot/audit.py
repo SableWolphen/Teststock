@@ -116,8 +116,9 @@ def run(now=None):
     except Exception as e:  # noqa: BLE001
         gov_ok, gdet = False, f"governor missing or broken: {e}"
     g.check("options", "Risk governor in place and not loosened", gov_ok, gdet)
-    g.check("options", "Spreads stay paper-only (broker blocks agent multi-leg orders)", oled.get("mode", "paper") != "live",
-            "paper only: no real multi-leg orders are ever sent" if oled.get("mode", "paper") != "live" else "options ledger says LIVE but Robinhood blocks agent spreads")
+    _live = oled.get("mode", "paper") == "live"
+    g.check("options", "Live spreads carry a recorded board order", (not _live) or bool((ocfg.get("boardApproval") or {}).get("approvalId")),
+            "paper only" if not _live else ("live by board order " + (ocfg.get("boardApproval") or {}).get("approvalId", "MISSING")))
     today = now.astimezone(timezone(timedelta(hours=-6))).date().isoformat()
     opened_on_blackout = [t for t in oled.get("trades", []) + ([o] if o else []) if t and t.get("enteredAt", "")[:10] in (ocfg.get("risk", {}).get("noNewEntryDates") or {})]
     g.check("options", "No spreads opened on event-pause days", not opened_on_blackout, f"{len(opened_on_blackout)} found" if opened_on_blackout else "event pauses respected")
