@@ -125,7 +125,7 @@ def add_bars(trades):
             continue
         if s not in cache:
             first = min(day(x["entered"]) for x in trades if x["symbol"] == s)
-            start = (datetime.fromisoformat(first) - timedelta(days=60)).date().isoformat()
+            start = (datetime.fromisoformat(first) - timedelta(days=500)).date().isoformat()   # the Alpaca path needs 300+ bars
             try:
                 cache[s], src = ob.daily_bars(s, start)
             except Exception as e:  # noqa: BLE001
