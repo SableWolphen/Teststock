@@ -114,6 +114,7 @@ function chart(t) {
   const ia = Math.max(0, bars.findIndex(x => x[0] >= a)), ibRaw = bars.findIndex(x => x[0] >= b);
   const ib = ibRaw < 0 ? bars.length - 1 : ibRaw;
   const path = bars.map((x, i) => (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(x[1]).toFixed(1)).join(" ");
+  const LX = x => Math.min(W - P - 45, Math.max(P + 45, x));
   const ea = share ? t.entryPrice : bars[ia][1], eb = share ? t.exitPrice : bars[ib][1];
   const win = t.pnlUsd > 0;
   let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t.symbol)} price around the trade">`;
@@ -122,8 +123,8 @@ function chart(t) {
   s += `<path d="${path}" fill="none" stroke="#c9cbe0" stroke-width="1.8"/>`;
   s += `<circle cx="${X(ia)}" cy="${Y(ea)}" r="8" fill="#3ddc84" stroke="#0a0c11" stroke-width="2"/>`;
   s += `<circle cx="${X(ib)}" cy="${Y(eb)}" r="8" fill="${win ? "#3ddc84" : "#ff5c6c"}" stroke="#0a0c11" stroke-width="2"/>`;
-  s += `<text x="${X(ia)}" y="${Y(ea) + 20}" fill="#8a91a0" font-size="17" text-anchor="middle">buy ${fmtDay(t.entered)}</text>`;
-  s += `<text x="${X(ib)}" y="${Y(eb) - 12}" fill="#8a91a0" font-size="17" text-anchor="middle">sell ${fmtDay(t.exited)}</text>`;
+  s += `<text x="${LX(X(ia))}" y="${Y(ea) + 24}" fill="#8a91a0" font-size="17" text-anchor="middle">buy ${fmtDay(t.entered)}</text>`;
+  s += `<text x="${LX(X(ib))}" y="${Y(eb) - 14}" fill="#8a91a0" font-size="17" text-anchor="middle">sell ${fmtDay(t.exited)}</text>`;
   s += `<text x="${P}" y="${H - 6}" fill="#5f6676" font-size="14">${bars[0][0]}</text><text x="${W - P}" y="${H - 6}" fill="#5f6676" font-size="14" text-anchor="end">${bars[bars.length - 1][0]}</text>`;
   return s + "</svg>";
 }
