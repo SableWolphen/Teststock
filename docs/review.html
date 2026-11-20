@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trade Review · Teststock HQ</title>
+<meta name="description" content="Every real ClaudeBot trade on a chart (where it bought, where it sold, why) and a monthly scorecard of which strategies make or lose money.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0c11;--panel:#11141b;--panel2:#161a22;--line:#222734;--text:#e9ebf1;--muted:#8a91a0;--dim:#5f6676;
+  --accent:#7c78ff;--up:#3ddc84;--down:#ff5c6c;--warn:#f5c451;--sans:Inter,system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.45}
+.wrap{max-width:1100px;margin:0 auto;padding:18px 16px 60px}
+a{color:var(--accent)}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.top a.back{text-decoration:none;font-weight:600;font-size:13px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--panel)}
+h1{font-size:22px;margin:0}
+h2{font-size:16px;margin:28px 0 4px}
+.sub{color:var(--muted);font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.kpi b{display:block;font-family:var(--mono);font-size:20px;margin-top:2px}
+.kpi span{color:var(--muted);font-size:12px}
+.up{color:var(--up)}.down{color:var(--down)}.muted{color:var(--muted)}
+.hmwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+table.hm{border-collapse:collapse;width:100%;min-width:520px;font-size:13px}
+.hm th,.hm td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.hm th:first-child,.hm td:first-child{text-align:left;white-space:normal;min-width:200px}
+.hm thead th{color:var(--muted);font-weight:600;font-size:12px}
+.hm td.cell{font-family:var(--mono);font-size:12.5px}
+.tag{display:inline-block;font-size:10.5px;font-weight:700;border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:1px}
+.tag.real{background:rgba(124,120,255,.18);color:#b9b6ff}.tag.paper{background:#232836;color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin-top:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0}
+.card .hd{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.card .hd b{font-size:15px}
+.card .pl{font-family:var(--mono);font-weight:700;font-size:15px}
+.card .meta{color:var(--muted);font-size:12px;margin-top:2px}
+.card svg{width:100%;height:auto;display:block;margin:8px 0 4px}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:6px 0 0;font-size:12.5px}
+.card dt{color:var(--muted)}.card dd{margin:0}
+.why{font-size:12.5px;color:var(--muted);margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+.note{font-size:12.5px;color:var(--muted);margin-top:8px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.empty{color:var(--muted);padding:16px;border:1px dashed var(--line);border-radius:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="back" href="index.html">← Office</a>
+    <div>
+      <h1>Trade Review</h1>
+      <div class="sub">Every real trade on a chart, and which strategies are earning their keep. Display only: nothing here places orders.</div>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <h2>Monthly scorecard</h2>
+  <div class="sub">Profit or loss per strategy per month. <span class="tag real">REAL</span> is your money; <span class="tag paper">PAPER</span> is a free test with pretend money. Hover or tap a box for trades and wins.</div>
+  <div class="hmwrap" style="margin-top:10px"><table class="hm" id="hm"></table></div>
+  <div class="note" id="hmnote"></div>
+
+  <h2>Real trades, one by one</h2>
+  <div class="sub">The line is the fund's daily closing price. <span class="up">●</span> where the bot bought, <span class="down">●</span>/<span class="up">●</span> where it sold (red = loss, green = profit), dashed line = the 5% stop on share trades.</div>
+  <div class="cards" id="cards"></div>
+  <div class="note" id="note"></div>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const usd = v => (v < 0 ? "−$" : "+$") + Math.abs(v).toFixed(2);
+const cls = v => v > 0 ? "up" : v < 0 ? "down" : "muted";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmtDay = s => s ? new Date(s).toLocaleDateString(undefined, {month: "short", day: "numeric"}) : "";
+const monthName = m => new Date(m + "-15").toLocaleDateString(undefined, {month: "short", year: "numeric"});
+
+function cellColor(v, max) {
+  if (!v) return "transparent";
+  const a = Math.min(0.85, 0.15 + 0.7 * Math.abs(v) / (max || 1));
+  return v > 0 ? `rgba(61,220,132,${a})` : `rgba(255,92,108,${a})`;
+}
+
+function heatmap(h) {
+  if (!h.rows.length) { $("#hm").outerHTML = '<div class="empty">No closed trades yet.</div>'; return; }
+  const max = Math.max(...h.rows.flatMap(r => Object.values(r.months).map(c => Math.abs(c.pnlUsd))));
+  let html = "<thead><tr><th>Strategy</th>" + h.months.map(m => `<th>${monthName(m)}</th>`).join("") + "<th>Total</th><th>Wins</th></tr></thead><tbody>";
+  for (const r of h.rows) {
+    const nm = r.name.replace(/^(Real|Paper): /, "");
+    html += `<tr><td><span class="tag ${r.money}">${r.money === "real" ? "REAL" : "PAPER"}</span>${esc(nm)}</td>`;
+    for (const m of h.months) {
+      const c = r.months[m];
+      html += c ? `<td class="cell" style="background:${cellColor(c.pnlUsd, max)}" title="${c.trades} trades, ${c.wins} wins">${usd(c.pnlUsd)}</td>` : `<td class="cell muted">·</td>`;
+    }
+    html += `<td class="cell ${cls(r.totalUsd)}"><b>${usd(r.totalUsd)}</b></td><td class="cell muted">${r.wins}/${r.trades}</td></tr>`;
+  }
+  $("#hm").innerHTML = html + "</tbody>";
+}
+
+function chart(t) {
+  const bars = t.bars || [];
+  if (bars.length < 2) return '<div class="note">Price chart appears after the next daily refresh.</div>';
+  const W = 600, H = 230, P = 30;
+  const a = t.entered.slice(0, 10), b = t.exited.slice(0, 10);
+  const share = t.kind === "shares";
+  const ys = bars.map(x => x[1]);
+  if (share) { ys.push(t.entryPrice, t.exitPrice, t.entryPrice * 0.95); }
+  const lo = Math.min(...ys), hi = Math.max(...ys), pad = (hi - lo) * 0.08 || 1;
+  const X = i => P + i * (W - 2 * P) / (bars.length - 1);
+  const Y = v => H - P - (v - (lo - pad)) * (H - 2 * P) / ((hi + pad) - (lo - pad));
+  const ia = Math.max(0, bars.findIndex(x => x[0] >= a)), ibRaw = bars.findIndex(x => x[0] >= b);
+  const ib = ibRaw < 0 ? bars.length - 1 : ibRaw;
+  const path = bars.map((x, i) => (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(x[1]).toFixed(1)).join(" ");
+  const ea = share ? t.entryPrice : bars[ia][1], eb = share ? t.exitPrice : bars[ib][1];
+  const win = t.pnlUsd > 0;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t.symbol)} price around the trade">`;
+  s += `<rect x="${X(ia)}" y="${P / 2}" width="${Math.max(2, X(ib) - X(ia))}" height="${H - P * 1.5}" fill="rgba(124,120,255,.10)"/>`;
+  if (share) s += `<line x1="${P}" x2="${W - P}" y1="${Y(t.entryPrice * 0.95)}" y2="${Y(t.entryPrice * 0.95)}" stroke="#ff5c6c" stroke-dasharray="4 4" stroke-width="1" opacity=".7"/><text x="${W - P}" y="${Y(t.entryPrice * 0.95) - 4}" fill="#ff5c6c" font-size="17" text-anchor="end">stop −5%</text>`;
+  s += `<path d="${path}" fill="none" stroke="#c9cbe0" stroke-width="1.8"/>`;
+  s += `<circle cx="${X(ia)}" cy="${Y(ea)}" r="8" fill="#3ddc84" stroke="#0a0c11" stroke-width="2"/>`;
+  s += `<circle cx="${X(ib)}" cy="${Y(eb)}" r="8" fill="${win ? "#3ddc84" : "#ff5c6c"}" stroke="#0a0c11" stroke-width="2"/>`;
+  s += `<text x="${X(ia)}" y="${Y(ea) + 20}" fill="#8a91a0" font-size="17" text-anchor="middle">buy ${fmtDay(t.entered)}</text>`;
+  s += `<text x="${X(ib)}" y="${Y(eb) - 12}" fill="#8a91a0" font-size="17" text-anchor="middle">sell ${fmtDay(t.exited)}</text>`;
+  s += `<text x="${P}" y="${H - 6}" fill="#5f6676" font-size="14">${bars[0][0]}</text><text x="${W - P}" y="${H - 6}" fill="#5f6676" font-size="14" text-anchor="end">${bars[bars.length - 1][0]}</text>`;
+  return s + "</svg>";
+}
+
+function card(t) {
+  const price = v => v == null ? "—" : "$" + (+v).toFixed(v < 5 ? 2 : 2);
+  const what = t.kind === "option" ? "Option premium" : t.kind === "spread" ? "Credit / buy-back" : "Price";
+  return `<div class="card">
+    <div class="hd"><b>${esc(t.label)}${t.partial ? ' <span class="muted" style="font-size:12px">(part)</span>' : ""}</b><span class="pl ${cls(t.pnlUsd)}">${usd(t.pnlUsd)}</span></div>
+    <div class="meta">${esc(t.ruleName)} · ${esc(t.desk)} · held ${t.holdDays} days${t.returnPct != null ? ` · ${t.returnPct > 0 ? "+" : ""}${(+t.returnPct).toFixed(1)}%` : ""}</div>
+    ${chart(t)}
+    <dl><dt>${what}</dt><dd>bought ${price(t.entryPrice)} → sold ${price(t.exitPrice)}</dd>
+    <dt>Why it sold</dt><dd>${esc(t.reason || "—")}</dd></dl>
+    <div class="why"><b>The rule:</b> ${esc(t.ruleWhy)}</div>
+  </div>`;
+}
+
+fetch("data/claudebot-review.json?ts=" + Date.now()).then(r => r.json()).then(d => {
+  const rt = d.realTotals;
+  const best = d.heatmap.rows.filter(r => r.money === "real").sort((x, y) => y.totalUsd - x.totalUsd);
+  $("#kpis").innerHTML = [
+    ["Real trades closed", rt.trades, ""],
+    ["Won", `${rt.wins} of ${rt.trades}`, ""],
+    ["Real profit / loss", usd(rt.pnlUsd), cls(rt.pnlUsd)],
+    ["Best real strategy", best.length ? best[0].name.replace("Real: ", "") : "—", ""],
+    ["Worst real strategy", best.length ? best[best.length - 1].name.replace("Real: ", "") : "—", ""],
+  ].map(([k, v, c]) => `<div class="kpi"><span>${k}</span><b class="${c}" style="${String(v).length > 12 ? "font-size:14px;font-family:var(--sans)" : ""}">${esc(v)}</b></div>`).join("");
+  heatmap(d.heatmap);
+  $("#hmnote").textContent = "A strategy's month only means something after dozens of trades; one or two trades is mostly luck either way.";
+  $("#cards").innerHTML = d.trades.length ? d.trades.map(card).join("") : '<div class="empty">No real trades closed yet.</div>';
+  $("#note").textContent = d.note + " Updated " + new Date(d.generatedAt).toLocaleString() + ".";
+}).catch(() => { $("#cards").innerHTML = '<div class="empty">Couldn\'t load the review data. It refreshes after each trading day.</div>'; });
+</script>
+</body>
+</html>
