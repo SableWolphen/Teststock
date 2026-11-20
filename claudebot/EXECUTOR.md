@@ -143,6 +143,8 @@ several days); `"paper"` = record only, place nothing. Tickers and rules live in
 - Reconcile: `get_option_positions(nonzero=true)` and open `get_option_orders` (state queued/confirmed).
   - `spreadOnBroker` = true if both the ledger spread's legs are held (short shortId, long longId), false if neither is.
   - `tpOrder` = `{id, price}` of an open debit order that closes exactly those two legs, else null.
+  - Board holdings: anything listed in `docs/data/claudebot-board-holdings.json` (e.g. the board's IWM $290 call
+    and its resting sell order) is EXPLAINED: ignore it here and everywhere, and never touch it.
   - If Robinhood holds option positions or open option orders the ledger doesn't explain (anything else, or only one
     leg), do NOT trade: log an error and stop Part B.
 - `underlyings[SYM]` for the open spread's ticker, or (when flat) for each ticker the planner
@@ -283,6 +285,15 @@ all free cash (minus $1) across the day's signals; always buy exactly the `dolla
 4. `sell`: governor check (desk dip, side sell, quantity) must ALLOW; then review_equity_order(side sell, type market, quantity = quantity) then place it.
    Poll until filled, then `dip_bot.py close --symbol S --price <average fill price> --reason <reason>`.
    Never sell more than the quantity given (the account holds other shares, e.g. KO).
+4b. `buy_park` / `sell_park` (board 2026-11-20, "make as much money as possible by holding"): idle cash is held
+   in the park fund (VOO) instead of sitting in cash, and sold when a dip buy needs the money.
+   `buy_park`: governor check (desk park, side buy, symbol VOO, usd dollarAmount) must ALLOW; review then place
+   a market buy with dollar_amount = dollarAmount; poll until filled; then
+   `dip_bot.py park-open --price <avg fill> --qty <filled shares> --usd <filled notional>`.
+   `sell_park`: governor check (desk park, side sell, symbol VOO, quantity) must ALLOW; review then place a
+   market sell of exactly that quantity; poll until filled; then
+   `dip_bot.py park-close --price <avg fill> --qty <filled shares> --reason "<reason from the action>"`.
+   Then refresh buyingPower and re-plan as usual. VOO's facts: price + heldQty (closes not needed).
 5. `record_broker_close`: find the filled sell of that symbol in get_equity_orders and record it with `close --symbol S`.
    After any buy, sell or record_broker_close, refresh buyingPower and re-plan (up to 6 rounds):
    the planner returns one action at a time and several positions may need work in one run.
@@ -291,6 +302,8 @@ all free cash (minus $1) across the day's signals; always buy exactly the `dolla
 Add `docs/data/claudebot-dip-ledger.json` to the same commit.
 
 ## E7. Options-buying desk (LIVE, single-leg calls), right after the Dip desk
+
+> Board holdings in `docs/data/claudebot-board-holdings.json` are explained: they never block the Dip desk or this desk, and the bot never trades them.
 
 **Board order 2026-11-11** ("Live: cheap-stock + index", chosen when asked whether to skip the 30-paper-trade
 rule): the desk trades two rules with real money, one option at a time, inside the governor's caps ($50 and

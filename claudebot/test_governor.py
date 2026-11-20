@@ -66,6 +66,19 @@ assert chk(desk="optbuy", side="buy", symbol="SPY", usd=25, gatekeeper=GK, accou
 assert chk(desk="optbuy", side="sell", symbol="T", quantity="1")["allow"]                           # selling one the bot holds
 DATA["docs/data/claudebot-optbuy-ledger.json"] = {"open": None}
 assert chk(desk="spread", side="buy", symbol="SPY", usd=10)["allow"] is False
+# park the idle cash in VOO (board 2026-11-20)
+_saved = {k: DATA.get(k) for k in ("claudebot/dip_config.json", "docs/data/claudebot-dip-ledger.json")}
+DATA["claudebot/dip_config.json"] = {**(DATA.get("claudebot/dip_config.json") or {}), "risk": {"park": {"enabled": True, "symbol": "VOO"}}}
+DATA["docs/data/claudebot-dip-ledger.json"] = {"park": None}
+assert chk(desk="park", side="buy", symbol="VOO", usd=60, buyingPower=65)["allow"]
+assert chk(desk="park", side="buy", symbol="TQQQ", usd=10, buyingPower=65)["allow"] is False
+assert chk(desk="park", side="buy", symbol="VOO", usd=65, buyingPower=65)["allow"] is False      # must leave $1
+assert chk(desk="park", side="sell", symbol="VOO", quantity="0.1")["allow"] is False              # nothing parked
+DATA["docs/data/claudebot-dip-ledger.json"] = {"park": {"symbol": "VOO", "qty": 0.1}}
+assert chk(desk="park", side="sell", symbol="VOO", quantity="0.1")["allow"]
+for _k, _v in _saved.items():
+    if _v is None: DATA.pop(_k, None)
+    else: DATA[_k] = _v
 # live spreads (board 2026-11-19)
 DATA["claudebot/options_config.json"] = {"enabled": True, "boardApproval": {"approvalId": "x"}, "underlyings": ["SPY", "IWM"], "entry": {"widthUsd": 1}, "risk": {"maxLossPctOfAccount": 80, "noNewEntryDates": {"2026-11-04": "x"}}}
 DATA["docs/data/claudebot-options-ledger.json"] = {"mode": "paper", "open": None}

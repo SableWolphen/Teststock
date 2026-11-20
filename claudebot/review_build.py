@@ -23,6 +23,7 @@ RULES = {  # plain-English names and what each rule waits for
     "down3": ("3 down days", "Buys after three lower closes in an uptrend; sells on the first up close."),
     "cheapStock": ("Cheap-stock calls", "Bought a call on a cheap stock near its price (desk now OFF)."),
     "index50": ("$50 index calls", "Bought a ~$50 call on SPY/QQQ/IWM (desk now OFF)."),
+    "park": ("Holding the market (VOO)", "Idle cash held in an S&P 500 fund; sold only when a dip trade needs the money."),
     "spread": ("Put credit spreads", "Sells a put and buys a cheaper one below it; wins if the fund stays above the short strike."),
 }
 

@@ -2,7 +2,7 @@
 import importlib.util, os, copy
 spec = importlib.util.spec_from_file_location("db", os.path.join(os.path.dirname(os.path.abspath(__file__)), "dip_bot.py"))
 db = importlib.util.module_from_spec(spec); spec.loader.exec_module(db)
-cfg = db.load(db.CONFIG); cfg["enabled"] = True; [e.update(enabled=False) for e in (cfg.get("edges") or {}).values()]; cfg["symbols"] = ["SPY", "QQQ"]; cfg["risk"]["reserveForOptionsUsd"] = 86; cfg["risk"]["maxOpenPositions"] = 3; cfg["risk"]["deployAllCash"] = False; cfg["risk"]["positionUsd"] = 25; cfg["risk"]["positionPctOfAccount"] = 20   # scenarios below test the fixed-size, reserve and 3-position rules
+cfg = db.load(db.CONFIG); cfg["enabled"] = True; [e.update(enabled=False) for e in (cfg.get("edges") or {}).values()]; cfg["symbols"] = ["SPY", "QQQ"]; cfg["risk"]["reserveForOptionsUsd"] = 86; cfg["risk"]["maxOpenPositions"] = 3; cfg["risk"]["deployAllCash"] = False; cfg["risk"]["positionUsd"] = 25; cfg["risk"]["positionPctOfAccount"] = 20; cfg["risk"]["park"] = {"enabled": False, "symbol": "VOO", "minUsd": 2}   # scenarios below test the fixed-size, reserve and 3-position rules
 up = [600 + i * 0.6 for i in range(220)]                 # steady uptrend, last close ~731
 dip = up[:-3] + [up[-3] - 6, up[-3] - 13, up[-3] - 20]  # three down days, still above the 200d SMA
 LED = {"open": None, "trades": [], "runs": []}
@@ -66,6 +66,17 @@ a = act({**F, "skip": ["SPY"]}); assert a["do"] != "buy" or a["symbol"] != "SPY"
 cfg["risk"].update(positionUsd=5, positionPctOfAccount=25, deployAllCash=True)
 a = act({**F, "accountValue": 81.1, "buyingPower": 22.71}); assert a["do"] == "buy" and a["dollarAmount"] == "20.27", a
 assert act({**F, "accountValue": 81.1, "buyingPower": 4})["do"] == "none"
+# park the idle cash in VOO (board 2026-11-20 "make as much money as possible by holding")
+cfg["risk"]["park"]["enabled"] = True
+NOD = {**F, "symbols": {"SPY": {"price": up[-1] + 1, "closes": up, "heldQty": 0}, "QQQ": F["symbols"]["QQQ"]}}   # no dip today
+a = act({**NOD, "buyingPower": 30, "accountValue": 80}); assert a["do"] == "buy_park" and a["symbol"] == "VOO" and a["dollarAmount"] == "29.00", a
+assert act({**NOD, "buyingPower": 2.5})["do"] == "none"                                   # too little to park
+assert act({**NOD, "marketOpen": False})["reason"] == "market closed"
+PK = {**LED, "park": {"symbol": "VOO", "qty": 0.1, "costUsd": 60.0, "avgPrice": 600.0, "since": "2026-11-03T20:14:00Z"}}
+assert act({**F, "buyingPower": 3, "accountValue": 80}, PK)["do"] == "need_symbol"         # needs the park's price first
+FP = {**F, "buyingPower": 3, "accountValue": 80, "symbols": {**F["symbols"], "VOO": {"price": 610, "heldQty": 0.1}}}
+a = act(FP, PK); assert a["do"] == "sell_park" and a["quantity"] == "0.100000", a          # a dip needs the cash: sell the park first
+a = act({**FP, "buyingPower": 64, "symbols": {**FP["symbols"], "VOO": {"price": 610, "heldQty": 0}}}, {**LED}); assert a["do"] == "buy" and a["symbol"] == "SPY", a
 print("all dip desk scenarios pass")
 
 # partial sale (board trim to 25%): the sold part becomes a finished trade, the rest stays open at its cost

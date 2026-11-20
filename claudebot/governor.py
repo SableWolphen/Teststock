@@ -32,6 +32,7 @@ HARD = {   # never above these, whatever the configs say (changing them needs th
     "dip.maxPctOfAccount": 25, "dip.minPositionUsd": 1, "dip.maxPositionUsdAbs": 5000, "dip.maxOpen": 5,
     "optbuy.maxPremiumUsd": 1000000, "optbuy.maxPctOfAccount": 100, "optbuy.maxOpen": 3, "optbuy.maxTotalPctOfAccount": 100,   # board 2026-11-11: "the cap is what is in the account only" (was $50 / 43% / 65%)   # maxOpen 1 -> 3 by board order 2026-11-11 ("Up to 3 at $25 each")
     "neverSell": ["KO"],
+    "park.symbols": ["VOO", "SPY", "IVV"],   # broad S&P 500 funds only
     "spread.maxOpen": 1, "spread.widthUsd": 1, "spread.maxLossPctOfAccount": 80,   # board 2026-11-19: "set all the winnings up"
 }
 HOLIDAYS = {"2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"}
@@ -163,6 +164,18 @@ def check(o, root_loader=load):
                 deny.append("event pause day: no new spreads")
         elif not ((led.get("open") or {}).get("underlying") == sym):
             deny.append("the options ledger holds no spread on that symbol")
+    elif desk == "park":
+        # Board 2026-11-20 ("make as much money as possible by holding"): idle cash parks in one broad
+        # market fund; it is sold only to fund a dip buy. Only the configured fund, only cash on hand.
+        pk = ((L("claudebot/dip_config.json", {}) or {}).get("risk") or {}).get("park") or {}
+        led = L("docs/data/claudebot-dip-ledger.json", {}) or {}
+        if not pk.get("enabled") or sym != pk.get("symbol") or sym not in HARD["park.symbols"]:
+            deny.append("not the configured park fund")
+        if buy:
+            if usd > bp - 1 + 0.01:
+                deny.append("park buy must leave $1 in cash")
+        elif not ((led.get("park") or {}).get("symbol") == sym):
+            deny.append("the ledger holds no parked shares of that fund")
     elif desk == "crypto":
         if buy:
             deny.append("crypto entries are off (desk fired 2026-11-02)")

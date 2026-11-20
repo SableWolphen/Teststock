@@ -96,7 +96,7 @@ def trading_days_between(a: date, b: date):
     return n
 
 
-def plan(facts, cfg, led):
+def _plan(facts, cfg, led):
     now = ts(facts["now"]); local = now.astimezone(CT)
     e, x, r = cfg["entry"], cfg["exit"], cfg["risk"]
     none = lambda why: {"actions": [{"do": "none", "reason": why}]}
@@ -221,6 +221,41 @@ def plan(facts, cfg, led):
                          "why": (f"{sym} RSI(2) {rv:.1f} < {e['rsi2Below']} above its 200-day average" if rule == "dip" else f"{sym} {rule} signal (paper-proven edge) above its 200-day average") + ("; loss brake on (3 losses in a row): small size until a win" if brake else f"; {len(hits)} signals today, free cash split between them" if r.get("deployAllCash") else "")}]}
 
 
+
+def plan(facts, cfg, led):
+    """Board 2026-11-20 ("make as much money as possible by holding"): idle cash is parked in a broad
+    market fund (risk.park.symbol, VOO) instead of sitting at $0 return. When a dip signal needs the
+    money, the park is sold first; whatever is left over after the day's dip buys is parked again.
+    Exits of dip positions always come first. The park is the board's long-term holding, kept in
+    led["park"] (separate from dip positions), with no stop: it is the "hold the market" sleeve."""
+    pk = (cfg.get("risk") or {}).get("park") or {}
+    if not pk.get("enabled"):
+        return _plan(facts, cfg, led)
+    psym, P = pk["symbol"], led.get("park")
+    syms = facts.get("symbols", {})
+    bp = float(facts.get("buyingPower", 0))
+    pval = 0.0
+    if P:
+        s = syms.get(psym)
+        if not s or s.get("price") is None:
+            return {"actions": [{"do": "need_symbol", "symbol": psym}]}
+        pval = float(s["price"]) * min(float(P["qty"]), float(s.get("heldQty") or 0))
+    core_syms = {k: v for k, v in syms.items() if k != psym}   # the park is not an unrecorded dip holding
+    res = _plan({**facts, "symbols": core_syms, "buyingPower": bp + pval}, cfg, led)
+    a = res["actions"][0]
+    if a["do"] == "buy" and float(a["dollarAmount"]) > bp - cfg["risk"]["minBuyingPowerAfterUsd"] + 0.005:
+        if not P or pval <= 0:
+            return _plan(facts, cfg, led)
+        q = min(float(P["qty"]), float(syms[psym].get("heldQty") or 0))
+        return {"actions": [{"do": "sell_park", "symbol": psym, "quantity": f"{q:.6f}",
+                             "reason": f"free cash for a {a['symbol']} {a.get('rule', 'dip')} buy (${a['dollarAmount']})"}]}
+    if a["do"] == "none" and not any(w in a.get("reason", "") for w in ("market closed", "reconcile", "disabled", "paused", "invalid")):   # never park while books need reconciling
+        spare = round(bp - cfg["risk"]["minBuyingPowerAfterUsd"], 2)
+        if spare >= float(pk.get("minUsd", 2)):
+            return {"actions": [{"do": "buy_park", "symbol": psym, "dollarAmount": f"{spare:.2f}",
+                                 "why": f"no dip trade needs the cash right now; holding the market ({psym}) instead of $0 in cash. " + a.get("reason", "")}]}
+    return res
+
 def main(argv=None):
     ap = argparse.ArgumentParser(); sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("plan"); p.add_argument("facts")
@@ -229,6 +264,8 @@ def main(argv=None):
     # partial sale ordered by the board (e.g. trim to 25% of the account): book the sold part as a finished trade, keep the rest open
     p = sub.add_parser("trim"); p.add_argument("--symbol", required=True); p.add_argument("--price", type=float, required=True)
     p.add_argument("--qty", type=float, required=True); p.add_argument("--account-value", type=float, required=True); p.add_argument("--reason", required=True)
+    p = sub.add_parser("park-open"); p.add_argument("--price", type=float, required=True); p.add_argument("--qty", type=float, required=True); p.add_argument("--usd", type=float, required=True)
+    p = sub.add_parser("park-close"); p.add_argument("--price", type=float, required=True); p.add_argument("--qty", type=float, required=True); p.add_argument("--reason", required=True)
     p = sub.add_parser("log"); p.add_argument("--action", required=True); p.add_argument("--detail", default="")
     p = sub.add_parser("mark"); p.add_argument("facts")
     a = ap.parse_args(argv)
@@ -240,6 +277,25 @@ def main(argv=None):
     if a.cmd == "plan":
         print(json.dumps(plan(load(a.facts), cfg, led), indent=1)); return 0
     ps = positions(led)
+    if a.cmd in ("park-open", "park-close"):
+        psym = cfg["risk"]["park"]["symbol"]; P = led.get("park")
+        if a.cmd == "park-open":
+            q0, c0 = (float(P["qty"]), float(P["costUsd"])) if P else (0.0, 0.0)
+            led["park"] = {"symbol": psym, "qty": round(q0 + a.qty, 6), "costUsd": round(c0 + a.usd, 2),
+                           "avgPrice": round((c0 + a.usd) / (q0 + a.qty), 4), "since": (P or {}).get("since") or iso(now)}
+            log("park-buy", f"parked ${a.usd:.2f} in {psym} at {a.price}")
+        else:
+            if not P:
+                print("ERROR: nothing parked", file=sys.stderr); return 2
+            q = min(a.qty, float(P["qty"])); cost = float(P["costUsd"]) * q / float(P["qty"])
+            pnl = round(q * a.price - cost, 2)
+            led.setdefault("trades", []).append({"label": psym, "symbol": psym, "enteredAt": P["since"], "exitedAt": iso(now), "entryPrice": P["avgPrice"],
+                                                 "exitPrice": a.price, "usd": round(cost, 2), "rule": "park", "returnPct": round(100 * (a.price / P["avgPrice"] - 1), 3),
+                                                 "pnlUsd": pnl, "reason": a.reason})
+            rest = round(float(P["qty"]) - q, 6)
+            led["park"] = None if rest <= 1e-6 else {**P, "qty": rest, "costUsd": round(float(P["costUsd"]) - cost, 2)}
+            log("park-sell", f"sold {psym} at {a.price} ({pnl:+.2f}): {a.reason}")
+        save_led(led, ps); return 0
     if a.cmd == "open":
         if any(p_["symbol"] == a.symbol for p_ in ps):
             print(f"ERROR: already holding {a.symbol}", file=sys.stderr); return 2
