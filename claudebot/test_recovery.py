@@ -25,7 +25,7 @@ gv = _mod("rec_gov", "governor.py")
 ob = _mod("rec_opt", "optbuy_bot.py")
 
 # ---------------------------------------------------------------- fixtures
-cfg = db.load(db.CONFIG)
+cfg = db.load(db.CONFIG); cfg["enabled"] = True   # scenarios test the desk while it is ON
 for e in (cfg.get("edges") or {}).values():
     e["enabled"] = False
 cfg["symbols"] = ["SPY", "QQQ"]

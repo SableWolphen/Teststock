@@ -52,7 +52,7 @@ matter on THIS run (Chicago time), then commit and stop. Exits are never skipped
 | Part | When to do it |
 |---|---|
 | A crypto | only if `docs/data/claudebot-ledger.json` has an `open` position (live crypto entries are off) |
-| B options spreads (LIVE, board 2026-11-19) | every run while a spread is open (exits, take-profit order); when flat, only at runs 9:00-13:30 CT AND only if buying power is at least $100 (else skip Part B without fetching anything) |
+| B options spreads (PAPER, paused 2026-11-20) | every run while a paper spread is open; when flat, only at runs 9:00-13:30 CT |
 | E Dip desk | every run: buys at the first run of the day where a fund qualifies (hourly: 8:44, 9:44, 10:14, 11:14, 12:14, 1:14, 2:14, 2:44; board 2026-11-06), stops, bounce and time exits at every run too |
 | E7 options-buying | every run while an option is held (the exit follows the stock); when flat and `claudebot/optbuy_config.json` has `"enabled": true`, every run 8:40-14:59 CT (board 2026-11-11: buys and sells all day) |
 | C Paper Lab | never: Sim was fired 2026-11-03 |
@@ -119,7 +119,9 @@ spread opened or closed, or an error). One or two lines: what, price, why, and r
 
 ---
 
-# Part B: options (put credit spreads), LIVE (board 2026-11-19)
+# Part B: options (put credit spreads), PAPER ONLY again (CEO pause 2026-11-20)
+
+> Never submit a real multi-leg order while the options ledger mode is "paper".
 
 > Robinhood blocked agent multi-leg orders on 2026-11-02 but accepted one in a review on 2026-11-19, so the
 > board ("set all the winnings up") put spreads back live with the same rules. Before every live
