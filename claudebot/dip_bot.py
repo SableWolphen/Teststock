@@ -250,7 +250,7 @@ def plan(facts, cfg, led):
         return {"actions": [{"do": "sell_park", "symbol": psym, "quantity": f"{q:.6f}",
                              "reason": f"free cash for a {a['symbol']} {a.get('rule', 'dip')} buy (${a['dollarAmount']})"}]}
     if a["do"] == "none" and not any(w in a.get("reason", "") for w in ("market closed", "reconcile", "disabled", "paused", "invalid")):   # never park while books need reconciling
-        spare = round(bp - cfg["risk"]["minBuyingPowerAfterUsd"], 2)
+        spare = round(bp - max(cfg["risk"]["minBuyingPowerAfterUsd"], float(pk.get("keepCashUsd", 0))), 2)   # keep cash for the options desk
         if spare >= float(pk.get("minUsd", 2)):
             return {"actions": [{"do": "buy_park", "symbol": psym, "dollarAmount": f"{spare:.2f}",
                                  "why": f"no dip trade needs the cash right now; holding the market ({psym}) instead of $0 in cash. " + a.get("reason", "")}]}

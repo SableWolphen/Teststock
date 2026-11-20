@@ -53,7 +53,7 @@ def bought(pos):
                                  {**d, "discovered": ["ZZZQ"], "symbols": {**(d.get("symbols") or {}), "ZZZQ": {}}} if p.endswith("claudebot-optbuy-scan.json") else
                                  ON(d) if p.endswith("claudebot/optbuy_config.json") else d))
     return next(x for r in o["reports"] for x in r["checks"] if x["check"] == "Bought options within limits")["status"]
-ok = {"symbol": "ZZZQ", "label": "ZZZQ 12-18 10C", "rule": "cheapStock", "underlyingPx": 9.8, "entryPrice": 0.75, "enteredAt": "2026-11-11T19:00:00Z"}
+ok = {"symbol": "ZZZQ", "label": "ZZZQ 12-18 10C", "rule": "cheapStock", "underlyingPx": 9.8, "entryPrice": 0.20, "enteredAt": "2026-11-11T19:00:00Z"}   # within the $25 cap (board 2026-11-20)
 assert bought(ok) == "pass"
 assert bought({**ok, "symbol": "NOTSCANNED"}) == "fail"          # not found by the scan
 assert bought({**ok, "rule": "index"}) == "fail"                  # another rule cannot use the market-wide list

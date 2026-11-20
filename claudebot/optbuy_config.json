@@ -1,5 +1,5 @@
 {
- "enabled": false,
+ "enabled": true,
  "symbols": [
   "SPY",
   "QQQ",
@@ -16,7 +16,7 @@
  "rules": {
   "cheapStock": {
    "name": "Cheap-stock call near the price",
-   "enabled": false,
+   "enabled": true,
    "maxStockPrice": 25,
    "targetDte": 30,
    "minDte": 24,
@@ -30,9 +30,9 @@
    "holdMinutes": 1170,
    "evidence": "claudebot-cheapstock-calls-research.json (real historical option prices, Feb 2024 on): the call within 3% of the price, 30 days out, on names at $25 or less made money in both periods: 2024 23 trades, 57% wins, +15.2% average; unseen 2025-26 30 trades, 57% wins, +13.7% average; with a wide buy/sell gap (4 cents or 8%) +6.6% and +6.8%. expectedRetPct is the lower wide-gap figure. THIN: 53 trades on nine names, five trades made two-thirds of the profit, earnings were not skipped in the test, 2026 was about flat. Calls further from the price lost in both periods. No paper trades yet.",
    "boardApproval": {
-    "approvalId": "board-2026-11-11-live-cheap-stock-and-index-calls",
-    "by": "board, 2026-11-11: asked whether to skip the 30-paper-trade rule and trade these with real money, chose 'Live: cheap-stock + index'",
-    "terms": "one option at a time, up to $50 (about 43% of the account); a losing trade can lose the whole premium; earnings skipped; the rule switches itself off after 10 live trades if it is losing"
+    "approvalId": "board-2026-11-20-live-first-profit",
+    "by": "board, 2026-11-20: 'Ok let do that when it gets profit we sell we don't hold' then 'No paper ... start it' (after seeing 3 wins / 8 losses, -$110 net, and a 22-trade paper test of quick take-profits that lost $115)",
+    "terms": "one option at a time, up to $25; a resting sell order at +10% from the moment it fills; sold if the premium falls 30%; the rule switches itself off after 10 live trades if it is losing"
    },
    "boardReenabled": "2026-11-11 13:01 CT: board, after being shown that the rule lost on the 66 added stocks in both periods: 'No run it'.",
    "quality": {
@@ -80,21 +80,23 @@
   "closeWindowCT": [
    "08:40",
    "14:59"
-  ]
+  ],
+  "takeProfitPct": 10,
+  "premiumStopPct": 30
  },
  "rollback": {
   "afterTrades": 10,
   "minProfitFactor": 1.0,
-  "since": "2026-11-11T00:00:00Z"
+  "since": "2026-11-20T00:00:00Z"
  },
  "risk": {
-  "maxPremiumUsd": 1000000,
-  "maxPctOfAccount": 100,
-  "maxOpenPositions": 3,
+  "maxPremiumUsd": 25,
+  "maxPctOfAccount": 35,
+  "maxOpenPositions": 1,
   "pauseBelowAccountValueUsd": 60,
   "minCashAfterUsd": 1,
-  "maxTotalPctOfAccount": 100,
-  "cashIsTheCap": true
+  "maxTotalPctOfAccount": 35,
+  "cashIsTheCap": false
  },
  "evidence": "LIVE by board order 2026-11-11 for two rules only (see rules.*.evidence for each rule's numbers and limits). The desk's earlier rule (+10% target, -40% stop on cheap out-of-the-money calls) lost in both periods and is retired. The hard caps in claudebot/governor.py are unchanged.",
  "scan": {
@@ -319,7 +321,8 @@
   "2026-11-11: Board order ('Multiple options at a time', chose 'Up to 3 at $25 each'): up to 3 options held at once, each at most $25 (and 22% of the account), all together at most 65% of the account, never two on the same stock. Losing all three at once would take about $75 off a $117 account. The $60 pause floor still stops new buys below $60.",
   "2026-11-11: Board order ('make the cap higher than 25, the cap is what is in the account only'): no dollar or percent limit per option; an option can use all free cash (buying power minus $1). Still up to 3 options at once, never two on one stock, the $60 pause floor for new buys, the quote checks and the 10-trade switch-off. One option can now be most of the account and can lose all of it.",
   "2026-11-11: Board order: cheap-stock calls only on 'good stocks': profitable (positive P/E) and rated a buy by at least half of 3+ analysts. Untested filter.",
-  "2026-11-19: board: 'only do winning'. Buying calls lost on real past option prices (-10% to -19% per trade) and the first live cheap-stock call lost $35, so the whole options-buying desk is OFF. Any held option would still be managed to its exit."
+  "2026-11-19: board: 'only do winning'. Buying calls lost on real past option prices (-10% to -19% per trade) and the first live cheap-stock call lost $35, so the whole options-buying desk is OFF. Any held option would still be managed to its exit.",
+  "2026-11-20: board 'start it' (no paper): cheap-stock calls LIVE again with the board's 'sell at first profit' exit: resting GTC sell at +10%, premium stop -30%, $25 max, one at a time. Index rule stays off. Rollback after 10 live trades if profit factor < 1."
  ],
  "wideningAddedSymbols": [
   "KEY",

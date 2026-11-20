@@ -121,8 +121,19 @@ def plan(f, cfg, led):
                         why = "bounce"
                     elif tdays(entered, today) >= x["maxHoldDays"]:
                         why = "time"
-            tp = (f.get("tpOrders") or {}).get(pos["id"])     # this rule keeps no resting order: clear any left over
-            acts = [{"do": "cancel_order", "orderId": tp["id"]}] if tp else []
+            tp = (f.get("tpOrders") or {}).get(pos["id"])
+            tpp, psp = x.get("takeProfitPct"), x.get("premiumStopPct")
+            if psp and not why and bid > 0 and bid <= cost * (1 - psp / 100):
+                why = f"premium stop (-{psp:g}%)"       # board 2026-11-20: cut losers early, any day
+            if tpp and not why:
+                # board 2026-11-20 "when it gets profit we sell, we don't hold": a resting sell order at +tpp% from the moment it is bought
+                tgt = max(math.ceil(round(cost * (1 + tpp / 100) * 100, 6)) / 100, round(cost + 0.02, 2))
+                if not tp:
+                    return {"actions": [{"do": "place_tp", "id": pos["id"], "label": pos["label"], "limitPrice": f"{tgt:.2f}", "quantity": "1",
+                                         "note": "GTC limit sell-to-close; it sells automatically as soon as the option is worth this much"}]}
+                notes.append(f"holding {pos['label']} from {cost} (bid {bid}); take-profit order resting at {tp.get('price')}; {pos['symbol']} at {px}")
+                continue
+            acts = [{"do": "cancel_order", "orderId": tp["id"]}] if tp else []   # cancel any resting order before a different sell
             if why:
                 if bid <= 0:
                     notes.append(f"{pos['label']}: wanted to sell ({why}) but the bid is 0; next run retries")

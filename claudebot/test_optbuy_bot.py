@@ -8,7 +8,13 @@ for _rc in cfg["rules"].values(): _rc["enabled"] = True    # scenarios exercise 
 # the live file must carry exactly what the board approved
 assert set(cfg["rules"]) == {"cheapStock", "index"} and all(rc["boardApproval"]["approvalId"] for rc in cfg["rules"].values())
 assert cfg["rules"]["index"]["symbols"] == ["SPY", "QQQ", "IWM"] and cfg["rules"]["cheapStock"]["maxStockPrice"] == 25 and cfg["rules"]["cheapStock"]["strikeWithinPct"] == 3
-assert cfg["risk"]["cashIsTheCap"] and cfg["risk"]["maxOpenPositions"] == 3 and cfg["risk"]["minCashAfterUsd"] >= 1   # board 2026-11-11: up to 3 options, free cash is the only size limit
+# board 2026-11-20 live terms: one option, up to $25, sell at +10%, premium stop -30%
+assert cfg["risk"]["maxPremiumUsd"] == 25 and cfg["risk"]["maxOpenPositions"] == 1 and cfg["risk"]["minCashAfterUsd"] >= 1
+assert cfg["exit"]["takeProfitPct"] == 10 and cfg["exit"]["premiumStopPct"] == 30
+LIVE_EXIT = dict(cfg["exit"])
+for _k in ("takeProfitPct", "premiumStopPct"): cfg["exit"].pop(_k)
+cfg["rollback"]["since"] = "2026-11-11T00:00:00Z"          # the older scenarios below test the stock-based exits alone
+cfg["risk"].update({"maxPremiumUsd": 1000000, "maxPctOfAccount": 100, "maxOpenPositions": 3, "maxTotalPctOfAccount": 100, "cashIsTheCap": True})   # the 2026-11-11 caps those scenarios were written for
 cfg25 = copy.deepcopy(cfg); cfg25["risk"].update({"maxPremiumUsd": 25, "maxPctOfAccount": 22, "maxTotalPctOfAccount": 65, "cashIsTheCap": False})   # the earlier caps, to keep the contract-choice scenarios exact
 cfg_cash = cfg; cfg = cfg25
 assert cfg["exit"]["stockStopPct"] == 5 and cfg["exit"]["maxHoldDays"] == 10 and "takeProfitPct" not in cfg["exit"]
@@ -133,6 +139,7 @@ a = act({**U2, "calls": FC, "symbols": copy.deepcopy(F["symbols"])})[0]; assert 
 buy = act({**U2, "calls": FC}, c=cc)[0]
 with tempfile.TemporaryDirectory() as d:
     ob.LEDGER = os.path.join(d, "led.json")
+    _live_cfg = ob.CONFIG; ob.CONFIG = os.path.join(d, "cfg.json"); json.dump(cfg_cash, open(ob.CONFIG, "w"))   # the 3-option limit these steps were written for
     assert ob.main(["open", "--json", json.dumps(buy), "--price", "0.46"]) == 0
     o = json.load(open(ob.LEDGER))["open"]; assert o["rule"] == "cheapStock" and o["underlyingPx"] == 12.1 and o["entryPrice"] == 0.46, o
     assert ob.main(["open", "--json", json.dumps(buy), "--price", "0.46"]) == 2                      # never the same option twice
@@ -168,4 +175,10 @@ a = _act({**F2, "calls": CK, "buyingPower": 83}, LED, cfg_cash)[0]; assert a["do
 assert float(a["maxPrice"]) * 100 <= 82
 a = _act({**F2, "calls": CK, "buyingPower": 40}, LED, cfg_cash)[0]; assert a["do"] == "buy" and a["id"] == "b", a       # only $39 usable: falls back to the $21 one
 assert _act({**F2, "calls": CK, "buyingPower": 15}, LED, cfg_cash)[0]["do"] == "none"                                   # not enough cash for either
+# board 2026-11-20 "when it gets profit we sell": resting take-profit at +10%, premium stop -30%
+CT2 = copy.deepcopy(C1); CT2["exit"].update(takeProfitPct=10, premiumStopPct=30)
+a = act(hold(PX), L, CT2)[0]; assert a["do"] == "place_tp" and a["limitPrice"] == "0.46", a          # bought at 0.41 -> sell order at 0.46 (+10% = 0.451, rounded up)
+a = act({**hold(PX), "tpOrders": {"b": {"id": "o1", "price": 0.47}}}, L, CT2)[0]; assert a["do"] == "none", a   # order resting: just hold
+a = act({**hold(PX), "tpOrders": {"b": {"id": "o1", "price": 0.47}}, "optQuotes": {"b": {"bid": 0.28, "ask": 0.30}}}, L, CT2)
+assert a[0]["do"] == "cancel_order" and a[1]["do"] == "sell" and "premium stop" in a[1]["reason"], a   # -30%: cancel the order, sell at the bid
 print("all options-buying scenarios pass")
