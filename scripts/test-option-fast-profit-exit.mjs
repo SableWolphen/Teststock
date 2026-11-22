@@ -28,3 +28,9 @@ test('deadline outranks profit and loss',()=>{
  const r=planOptionProfitExit({...base,bid:.45,highestConfirmedBid:.45,sessionExitDeadline:true});
  assert.equal(r.reason,'SESSION_EXIT_DEADLINE');
 });
+
+test('higher executable bid updates high-water mark instead of rejecting quote',()=>{
+ const r=planOptionProfitExit({...base,bid:.62,ask:.63,highestConfirmedBid:.55});
+ assert.equal(r.highestConfirmedBid,.62);
+ assert.equal(r.action,'EXIT_REVIEW_NOW');
+});

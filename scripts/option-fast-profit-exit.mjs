@@ -24,8 +24,7 @@ export function planOptionProfitExit({
   if(thresholds.some(x=>finite(x)===null||x<0)||trailDistancePct>=100)
     return {action:'RECONCILE_OR_WAIT',blockers:['INVALID_PROTECTION_POLICY'],maySubmitOrder:false};
   const observedHigh=finite(highestConfirmedBid);
-  if(observedHigh!==null&&observedHigh<bid)
-    return {action:'RECONCILE_OR_WAIT',blockers:['INCONSISTENT_BID_HIGH_WATER'],maySubmitOrder:false};
+  // A new bid above the previous high-water mark is normal: advance it.
   const high=Math.max(observedHigh??bid,bid);
   const profitUsd=(bid-entryAsk)*100*quantity-knownExitFeesUsd;
   const profitPct=100*(bid-entryAsk)/entryAsk;
