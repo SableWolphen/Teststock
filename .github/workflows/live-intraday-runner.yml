@@ -90,6 +90,11 @@ jobs:
           foreach ($dir in $candidates) {
             if (Test-Path (Join-Path $dir 'bash.exe')) {
               Add-Content -Path $env:GITHUB_PATH -Value $dir
+              $gitRoot = Split-Path -Parent $dir
+              foreach ($helper in @('cmd','usr\bin')) {
+                $helperDir = Join-Path $gitRoot $helper
+                if (Test-Path $helperDir) { Add-Content -Path $env:GITHUB_PATH -Value $helperDir }
+              }
               $found = $true
               Write-Host "Git Bash available from $dir"
               break
