@@ -1,3 +1,4 @@
+import {measuredNumber, confirmedStockOutcome} from './performance-evidence.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -19,8 +20,8 @@ const MIN_SYMBOL_SAMPLES=20;
 const normalize=s=>String(s??'UNKNOWN').trim().toUpperCase().replace(/\s+/g,'_')||'UNKNOWN';
 const tradeDate=t=>Date.parse(t.finalExitAt||t.resolvedAt||t.entryFilledAt||t.entrySubmittedAt||t.createdAt||0);
 const weight=t=>{const ts=tradeDate(t);if(!Number.isFinite(ts))return 1;const age=Math.max(0,(now-ts)/86400000);return Math.pow(.5,age/HALF_LIFE_DAYS);};
-const validRealTrade=t=>String(t.assetClass||'STOCK').toUpperCase()==='STOCK'&&t.reconciledFromRobinhood===true&&['WIN','LOSS','FLAT'].includes(String(t.outcome||'').toUpperCase())&&Number.isFinite(Number(t.realizedR));
-const finiteValues=(rows,key)=>rows.map(x=>Number(x?.[key])).filter(Number.isFinite);
+const validRealTrade=confirmedStockOutcome;
+const finiteValues=(rows,key)=>rows.map(x=>x?.[key]).filter(measuredNumber).map(Number);
 
 function summarize(rows,{dimension,key}={}){
   const n=rows.length;
@@ -29,7 +30,8 @@ function summarize(rows,{dimension,key}={}){
   const flats=n-wins-losses;
   const rawWin=n?wins/n:.5;
   const rawAvgR=n?rows.reduce((s,t)=>s+Number(t.realizedR),0)/n:0;
-  const pnl=finiteValues(rows,'realizedPnlDollars').reduce((s,x)=>s+x,0);
+  const pnlValues=finiteValues(rows,'realizedPnlDollars');
+  const pnl=pnlValues.reduce((s,x)=>s+x,0);
   let wSum=0,wWins=0,wR=0;
   for(const t of rows){const w=weight(t);wSum+=w;wWins+=w*(String(t.outcome).toUpperCase()==='WIN'?1:0);wR+=w*Number(t.realizedR);}
   const recentWin=wSum?wWins/wSum:.5,recentAvgR=wSum?wR/wSum:0;
@@ -43,7 +45,7 @@ function summarize(rows,{dimension,key}={}){
     else if(shrunkWin<=.45||shrunkAvgR<=-.10){state='PRIORITY_DOWN';priorityScoreDelta=-clamp((.5-shrunkWin)*30+Math.max(0,-shrunkAvgR)*4,1,4);sizeMultiplier=.75;}
     if(n>=MIN_BLOCK_SAMPLES&&shrunkWin<=.42&&shrunkAvgR<=-.25){state='TEMP_BLOCK';priorityScoreDelta=-6;sizeMultiplier=0;temporaryBlock=true;}
   }
-  return {dimension,key,samples:n,wins,losses,flats,winRatePct:n?round(rawWin*100,1):null,averageRealizedR:n?round(rawAvgR,3):null,realizedPnlDollars:round(pnl,2),recencyWeightedWinRatePct:n?round(recentWin*100,1):null,recencyWeightedAverageR:n?round(recentAvgR,3):null,shrunkWinRatePct:n?round(shrunkWin*100,1):null,shrunkAverageR:n?round(shrunkAvgR,3):null,state,priorityScoreDelta:round(priorityScoreDelta,2),sizeMultiplier,temporaryBlock};
+  return {dimension,key,samples:n,wins,losses,flats,winRatePct:n?round(rawWin*100,1):null,averageRealizedR:n?round(rawAvgR,3):null,realizedPnlDollars:n>0&&pnlValues.length===n?round(pnl,2):null,knownRealizedPnlDollars:pnlValues.length?round(pnl,2):null,realizedPnlSamples:pnlValues.length,missingRealizedPnlSamples:n-pnlValues.length,recencyWeightedWinRatePct:n?round(recentWin*100,1):null,recencyWeightedAverageR:n?round(recentAvgR,3):null,shrunkWinRatePct:n?round(shrunkWin*100,1):null,shrunkAverageR:n?round(shrunkAvgR,3):null,state,priorityScoreDelta:round(priorityScoreDelta,2),sizeMultiplier,temporaryBlock};
 }
 function bucket(rows,dimension,keyFn,minSamples=0){
   const m=new Map();
@@ -92,7 +94,7 @@ const executionQuality={
   averageProtectionLatencySeconds:protectLat.length?round(avg(protectLat),1):null
 };
 
-const recentTrades=realTrades.slice(-12).reverse().map(t=>({journalId:t.journalId||null,symbol:t.symbol||null,setupType:t.setupType||'UNKNOWN',runtimeRegime:t.runtimeRegime||t.regime||'UNKNOWN',entrySessionBucket:t.entrySessionBucket||'UNKNOWN',finalExitAt:t.finalExitAt||t.resolvedAt||null,outcome:t.outcome,realizedR:round(t.realizedR,3),realizedPnlDollars:Number.isFinite(Number(t.realizedPnlDollars))?round(t.realizedPnlDollars,2):null,exitReason:t.exitReason||'UNKNOWN',protectionMode:t.protectionMode||'UNKNOWN'}));
+const recentTrades=realTrades.slice(-12).reverse().map(t=>({journalId:t.journalId||null,symbol:t.symbol||null,setupType:t.setupType||'UNKNOWN',runtimeRegime:t.runtimeRegime||t.regime||'UNKNOWN',entrySessionBucket:t.entrySessionBucket||'UNKNOWN',finalExitAt:t.finalExitAt||t.resolvedAt||null,outcome:t.outcome,realizedR:round(t.realizedR,3),realizedPnlDollars:measuredNumber(t.realizedPnlDollars)?round(t.realizedPnlDollars,2):null,exitReason:t.exitReason||'UNKNOWN',protectionMode:t.protectionMode||'UNKNOWN'}));
 const shadow=await read(shadowFile,{summary:{}});
 const shadowSummary=shadow?.summary||{};
 const opportunityCost={
