@@ -8,6 +8,7 @@ const write=(f,x)=>fs.writeFile(f,JSON.stringify(x,null,2));
 const signal=await read('docs/signal.json');
 const tournament=await read('docs/data/stock-tournament.json');
 const shadow=await read('docs/data/shadow-trades.json',{trades:[]});
+const forward=await read('docs/data/stock-intraday-forward.json',{trades:[]});
 const realJournal=await read('docs/data/real-trade-journal.json',{trades:[]});
 const entryValidation=await read('docs/data/entry-gate-validation.json',{});
 const probabilityPolicy=await read('docs/data/probability-first-policy.json',{});
@@ -15,7 +16,7 @@ if(!signal||!tournament)throw new Error('signal or stock tournament missing');
 
 const norm=s=>String(s??'UNKNOWN').trim().toUpperCase().replace(/\s+/g,'_')||'UNKNOWN';
 const intradayOnly=signal.dayTradeOnlyEntryPolicy?.enabled===true||signal.timeHorizonPolicy?.stocks?.defaultFlatBySessionEnd===true;
-const resolvedShadow=(shadow.trades||[]).filter(x=>eligibleStockShadowEvidence(x,{intradayOnly})).map(x=>({...x,evidenceSource:'SHADOW'}));
+const resolvedShadow=[...(shadow.trades||[]),...(forward.trades||[])].filter(x=>eligibleStockShadowEvidence(x,{intradayOnly})).map(x=>({...x,evidenceSource:'SHADOW'}));
 const resolvedReal=(realJournal.trades||[]).filter(confirmedStockOutcome).filter(x=>!intradayOnly||sameSessionOutcome(x.entryFilledAt,x.finalExitAt)).map(x=>({createdDate:String(x.entryFilledAt||x.finalExitAt||'').slice(0,10),symbol:x.symbol,setupType:x.setupType,runtimeRegime:x.runtimeRegime,realizedR:x.realizedR,evidenceSource:'REAL',journalId:x.journalId}));
 const independentResolved=independentOutcomes([...resolvedShadow,...resolvedReal]);
 const MIN_SHADOW_MICRO=SAFETY_POLICY.stocks.microSamples,MIN_SHADOW=SAFETY_POLICY.stocks.probationSamples,MIN_SHADOW_DAYS_MICRO=SAFETY_POLICY.stocks.microDays,MIN_SHADOW_DAYS=SAFETY_POLICY.stocks.probationDays,MIN_REAL_PROBATION=6,MIN_REAL_FULL=12;
@@ -23,7 +24,7 @@ const SHADOW_MIN_WIN=SAFETY_POLICY.stocks.minWinRatePct,SHADOW_MIN_AVG_R=SAFETY_
 
 function shadowStats(setup,regime){
   const exact=independentResolved.filter(x=>norm(x.setupType)===setup&&norm(x.runtimeRegime)===regime);
-  const setupOnly=independentResolved.filter(x=>norm(x.setupType)===setup&&(!intradayOnly||sameSessionOutcome(x.entryFilledAt,x.finalExitAt)));
+  const setupOnly=independentResolved.filter(x=>norm(x.setupType)===setup);
   const rows=exact.length>=MIN_SHADOW?exact:setupOnly;
   const wins=rows.filter(x=>Number(x.realizedR)>0).length;
   const gains=rows.filter(x=>Number(x.realizedR)>0).reduce((sum,x)=>sum+Number(x.realizedR),0);
@@ -32,7 +33,7 @@ function shadowStats(setup,regime){
   return {scope:exact.length>=MIN_SHADOW?'REGIME_SETUP':'SETUP_FALLBACK',samples:rows.length,distinctTradingDays:new Set(rows.map(x=>x.createdDate).filter(Boolean)).size,winRatePct:rows.length?wins/rows.length*100:null,averageR:rows.length?rows.reduce((s,x)=>s+Number(x.realizedR),0)/rows.length:null,profitFactor:losses>0?gains/losses:gains>0?999:null,realFillSamples,shadowOnlySamples:rows.length-realFillSamples};
 }
 function realStats(setup,regime){
-  const rows=(realJournal.trades||[]).filter(x=>norm(x.setupType)===setup);
+  const rows=(realJournal.trades||[]).filter(x=>norm(x.setupType)===setup&&(!intradayOnly||sameSessionOutcome(x.entryFilledAt,x.finalExitAt)));
   const exact=rows.filter(x=>norm(x.runtimeRegime)===regime);
   const exactStats=realOutcomeStats(exact);
   return exactStats.samples>=MIN_REAL_PROBATION?exactStats:realOutcomeStats(rows);

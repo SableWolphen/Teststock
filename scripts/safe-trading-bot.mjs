@@ -75,7 +75,7 @@ export function inspectCandidate(symbol, snapshot, asset, now=Date.now(),config=
   }
   return {symbol,asset,feed:asset==='stock'?'iex':asset==='option'?'indicative':'alpaca-us',researchOnly:true,liveEligible:false,
     status:reasons.some(r=>r!=='INDICATIVE_RESEARCH_ONLY')?'REJECTED':'WATCH',reasons,
-    ask:positive(q?.ap)?q.ap:null,spread:Number.isFinite(spread)?spread:null,momentum};
+    bid:positive(q?.bp)?q.bp:null,ask:positive(q?.ap)?q.ap:null,spread:Number.isFinite(spread)?spread:null,momentum};
 }
 
 // All money is integer cents. Snapshot must be independently reconciled and private.
@@ -127,7 +127,7 @@ export async function scan(reader,{now=Date.now(),scope='BROAD',inputs={universe
   report.scopeDescription=scope==='CURRENT_ACCESS_CORE'?'Five named IEX stock symbols and three named Alpaca US crypto pairs; options excluded because current recent-history access is unverified.':'Bounded broad provider discovery; omissions remain incomplete.';
   let macro=null;
   let marketOpen=false;
-  try {const clock=await reader.get('clock');if(!validResearchClock(clock,evaluationNow()))throw Error();marketOpen=clock.is_open;report.lanes.session=marketOpen?'OPEN':'CLOSED';}
+  try {const clock=await reader.get('clock');if(!validResearchClock(clock,evaluationNow()))throw Error();marketOpen=clock.is_open;report.session={source:'ALPACA_CLOCK',asOf:clock.timestamp,isOpen:clock.is_open,closeAt:clock.next_close??null};report.lanes.session=marketOpen?'OPEN':'CLOSED';}
   catch {report.lanes.session='UNVERIFIED';}
   const rowsByAsset={stock:new Map(),crypto:new Map(),option:new Map()};
   const waitForObservationTime=async assets=>{

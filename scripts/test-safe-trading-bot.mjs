@@ -8,7 +8,13 @@ const now=Date.parse('2026-10-16T16:00:00Z'),t=new Date(now).toISOString();
 const snap=()=>({latestQuote:{bp:99.9,ap:100,bs:10,as:10,t},latestTrade:{p:100,t},prevDailyBar:{c:98,v:1000000,t}});
 const account=()=>({source:'robinhood',reconciled:true,uncertainOrders:false,asOf:t,equityCents:1000000,settledCashCents:100000,cashBuyingPowerCents:80000,pendingBuyCommitmentsCents:20000,openRiskCents:0,exposureSymbols:[],dailyLoss:{asOf:t,sessionDate:'2026-10-16',grossRealizedLossCents:0,unrealizedLossCents:0},dailyLossState:{version:1,sessionDate:'2026-10-16',halted:false,peakLossCents:0,grossRealizedLossCents:0,updatedAt:t}});
 const candidate=(symbol='AAPL',asset='stock',ask=100)=>({symbol,asset,ask,status:'WATCH'});
-test('fresh stock remains research only',()=>{const c=inspectCandidate('AAPL',snap(),'stock',now);assert.equal(c.status,'WATCH');assert.equal(c.liveEligible,false);});
+test('fresh stock remains research only',()=>{const c=inspectCandidate('AAPL',snap(),'stock',now);assert.equal(c.status,'WATCH');assert.equal(c.liveEligible,false);assert.equal(c.bid,99.9);});
+
+test('scanner retains authoritative close and raw stock bid for paper observation',async()=>{
+ const result=await scan({get:async lane=>lane==='clock'?{is_open:true,timestamp:t,next_close:'2026-10-16T20:00:00Z'}:lane==='stocks'?Object.fromEntries(UNIVERSE.stocks.map(s=>[s,snap()])):lane==='crypto'?{snapshots:{}}:{bars:{}}},{now,scope:'CURRENT_ACCESS_CORE'});
+ assert.equal(result.session.source,'ALPACA_CLOCK');assert.equal(result.session.closeAt,'2026-10-16T20:00:00Z');
+ assert.equal(result.candidates.find(c=>c.symbol==='SPY').bid,99.9);
+});
 for(const [name,mutate] of [
  ['stale',s=>s.latestQuote.t='2020-01-01'],['future',s=>s.latestQuote.t=new Date(now+1).toISOString()],
  ['crossed',s=>s.latestQuote.bp=101],['wide',s=>s.latestQuote.bp=90],['zero size',s=>s.latestQuote.bs=0],

@@ -158,3 +158,17 @@ test('reports expose incomplete closed trades and scorecards retain actual regim
   const score=await f.read('docs/data/real-fill-scorecard.json');
   assert.equal(score.resolvedTrades,1);assert.equal(score.scorecards.regime[0].regime,'UPTREND');assert.equal(score.scorecards.regime[0].averageEntrySlippagePct,null);
 });
+
+test('intraday forward evidence feeds only its exact strategy version',async t=>{
+  const row={symbol:'SPY',setupType:'BREAKOUT_VOLUME_V1',runtimeRegime:'UNKNOWN',createdDate:'2026-09-01',entryTouchedAt:'2026-09-01T14:00:00Z',resolvedAt:'2026-09-01T15:00:00Z',timeHorizon:'INTRADAY',status:'RESOLVED',decision:'ACCEPTED',evidenceEligible:true,afterCosts:true,grossRealizedR:2.01,transactionCostR:.01,realizedR:2};
+  const f=await fixture(t,{'docs/signal.json':{dayTradeOnlyEntryPolicy:{enabled:true}},
+    'docs/data/stock-intraday-forward.json':{trades:[row,{...row,symbol:'QQQ',evidenceEligible:false}]},
+    'docs/data/real-trade-journal.json':{trades:[{assetClass:'STOCK',symbol:'XYZ',setupType:'TREND',reconciledFromRobinhood:true,outcome:'WIN',realizedR:2,entryFilledAt:'2026-09-01T14:00:00Z',finalExitAt:'2026-09-02T15:00:00Z'}]},
+    'docs/data/stock-tournament.json':{liveQueue:[{ticker:'ABC',setupType:'BREAKOUT_VOLUME_V1'},{ticker:'DEF',setupType:'TREND'}]}});
+  f.run('apply-profitability-admission.mjs');
+  const rows=(await f.read('docs/data/stock-tournament.json')).liveQueue;
+  assert.equal(rows[0].profitabilityAdmission.shadow.samples,1);
+  assert.equal(rows[1].profitabilityAdmission.shadow.samples,0);
+  assert.equal(rows[1].profitabilityAdmission.real.samples,0,'real swing returns cannot promote intraday size');
+  assert.equal(rows[0].profitabilityAdmission.state,'SHADOW_ONLY','one paper result never creates admission');
+});
