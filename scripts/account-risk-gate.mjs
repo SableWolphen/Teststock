@@ -14,6 +14,8 @@
 //   node scripts/account-risk-gate.mjs exit  '<json>'
 // Prints the decision as JSON; exit code 0 = allowed, 2 = blocked.
 
+import {pathToFileURL} from 'node:url';
+
 export const DEFAULT_LIMITS = Object.freeze({
   // Sizing: an option premium is 100% at risk, so it is capped as a slice of the account.
   maxOptionPremiumPctOfAccount: 15,
@@ -42,6 +44,23 @@ const num = x => typeof x === 'number' && Number.isFinite(x);
 const pos = x => num(x) && x > 0;
 const nonneg = x => num(x) && x >= 0;
 const round2 = x => Math.round(x * 100) / 100;
+const validSymbol = x => typeof x === 'string' && /^[A-Z][A-Z0-9.-]{0,14}$/.test(x);
+
+// Callers may tighten the hard limits; malformed or risk-increasing overrides fail closed.
+function checkedLimits(overrides={}) {
+  if(!overrides||typeof overrides!=='object'||Array.isArray(overrides)) return null;
+  for(const [key,value] of Object.entries(overrides)) {
+    if(!Object.hasOwn(DEFAULT_LIMITS,key)) return null;
+    const base=DEFAULT_LIMITS[key];
+    if(typeof base==='boolean') {if(value!==false) return null;continue;}
+    if(!nonneg(value)) return null;
+    const minimum=key.startsWith('min')||key==='noEntriesBeforeNyMinute';
+    if(minimum?value<base:value>base) return null;
+  }
+  const limits={...DEFAULT_LIMITS,...overrides};
+  if(limits.minOptionDte>limits.maxOptionDte||limits.noEntriesBeforeNyMinute>limits.noEntriesAfterNyMinute) return null;
+  return limits;
+}
 /* Enforce settled/unleveraged capacity independent of margin buying power.
    Missing values block entries; never use a leveraged buying-power number. */
 export function cashOnlyBudget(account = {}) {
@@ -64,14 +83,18 @@ export function nyDate(now = Date.now()) {
 
 export function daysToExpiration(expirationDate, now = Date.now()) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(expirationDate || ''))) return NaN;
+  const expiry=Date.parse(`${expirationDate}T00:00:00Z`);
+  if(!Number.isFinite(expiry)||new Date(expiry).toISOString().slice(0,10)!==expirationDate) return NaN;
   const today = Date.parse(`${nyDate(now)}T00:00:00Z`);
   return Math.round((Date.parse(`${expirationDate}T00:00:00Z`) - today) / 86400000);
 }
 
 // Day-level brakes shared by every entry. `account` values are in dollars.
 export function evaluateAccountBrakes(account = {}, limits = DEFAULT_LIMITS, now = Date.now()) {
+  limits=checkedLimits(limits);
+  if(!limits||!num(now)||!Number.isFinite(new Date(now).getTime())) return {allowed:false,reasons:['RISK_LIMITS_OR_CLOCK_INVALID'],dayLossPct:null,drawdownPct:null};
   const reasons = [];
-  const { accountValue, dayStartValue, peakValue, entriesToday = 0, losingExitsToday = 0 } = account;
+  const { accountValue, dayStartValue, peakValue, entriesToday, losingExitsToday } = account;
   if (!pos(accountValue) || !pos(dayStartValue) || !pos(peakValue)) {
     return { allowed: false, reasons: ['ACCOUNT_VALUES_UNVERIFIED'], dayLossPct: null, drawdownPct: null };
   }
@@ -100,10 +123,12 @@ function reentryCheck(account, underlying, limits, reasons) {
 
 // Long call / long put buy-to-open. Returns the maximum whole contracts allowed (0 = blocked).
 export function evaluateOptionEntry({ account = {}, contract = {}, limits: overrides = {}, now = Date.now() } = {}) {
-  const limits = { ...DEFAULT_LIMITS, ...overrides };
+  const limits = checkedLimits(overrides);
+  if(!limits||!num(now)||!Number.isFinite(new Date(now).getTime())) return {allowed:false,maxContracts:0,reasons:['RISK_LIMITS_OR_CLOCK_INVALID']};
   const brakes = evaluateAccountBrakes(account, limits, now);
   const reasons = [...brakes.reasons];
   const { underlying, kind, bid, ask, expirationDate, openInterest, volume } = contract;
+  if(!validSymbol(underlying)) reasons.push('UNDERLYING_UNVERIFIED');
   if (!['LONG_CALL', 'LONG_PUT'].includes(kind)) reasons.push('ONLY_LONG_CALL_OR_PUT');
   if (!pos(ask) || !nonneg(bid) || bid > ask) reasons.push('QUOTE_UNVERIFIED');
   const dte = daysToExpiration(expirationDate, now);
@@ -144,10 +169,12 @@ export function evaluateOptionEntry({ account = {}, contract = {}, limits: overr
 
 // Long stock buy. Requires a stop price so risk is defined before entry.
 export function evaluateStockEntry({ account = {}, order = {}, limits: overrides = {}, now = Date.now() } = {}) {
-  const limits = { ...DEFAULT_LIMITS, ...overrides };
+  const limits = checkedLimits(overrides);
+  if(!limits||!num(now)||!Number.isFinite(new Date(now).getTime())) return {allowed:false,maxShares:0,reasons:['RISK_LIMITS_OR_CLOCK_INVALID']};
   const brakes = evaluateAccountBrakes(account, limits, now);
   const reasons = [...brakes.reasons];
   const { symbol, entryPrice, stopPrice } = order;
+  if(!validSymbol(symbol)) reasons.push('SYMBOL_UNVERIFIED');
   if (!pos(entryPrice)) reasons.push('ENTRY_PRICE_UNVERIFIED');
   if (!pos(stopPrice) || !(stopPrice < entryPrice)) reasons.push('STOP_REQUIRED_BELOW_ENTRY');
   reentryCheck(account, symbol, limits, reasons);
@@ -164,7 +191,9 @@ export function evaluateStockEntry({ account = {}, order = {}, limits: overrides
       value * limits.maxStockRiskPctOfAccount / 100 / riskPerShare,
       value * limits.maxStockPositionPctOfAccount / 100 / entryPrice,
       cash / entryPrice,
+      nonneg(account.openRisk)?Math.max(0,value*limits.maxTotalOpenRiskPctOfAccount/100-account.openRisk)/riskPerShare:0,
     ));
+    if(!nonneg(account.openRisk)) reasons.push('OPEN_RISK_UNVERIFIED');
     if (shares <= 0) reasons.push('POSITION_TOO_SMALL');
     else openRiskCheck(account, shares * riskPerShare, limits, reasons);
   }
@@ -186,7 +215,7 @@ export function evaluateExitOrder({ assetClass, type, trigger = 'immediate', lim
   return { allowed: reasons.length === 0, reasons };
 }
 
-const isMain = import.meta.url === new URL(`file://${process.argv[1]}`).href;
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMain) {
   const [mode, raw] = process.argv.slice(2);
   let input;

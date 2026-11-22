@@ -1,3 +1,4 @@
+import {measuredNumber, acceptedShadowOutcome, independentOutcomes, realOutcomeStats, confirmedAssetOutcome} from './performance-evidence.mjs';
 import fs from 'node:fs/promises';
 
 const read=async(f,x=null)=>{try{return JSON.parse(await fs.readFile(f,'utf8'));}catch{return x;}};
@@ -14,27 +15,17 @@ const cryptoPolicy=policy.crypto||{};
 // and 4-hour confirmation and were the day's chosen allocation). REJECTED rows stay in
 // crypto-shadow-trades.json for opportunity-cost diagnostics only, per AGENTS.md's rule that
 // backtests/historical stats are diagnostic and cannot themselves create eligibility.
-const acceptedResolved=(shadow.trades||[]).filter(x=>x.decision==='ACCEPTED'&&x.status==='RESOLVED'&&Number.isFinite(Number(x.realizedR)));
-const independentMap=new Map();
-for(const x of acceptedResolved){
-  const k=`${x.createdDate}|${x.symbol}`;
-  const old=independentMap.get(k);
-  if(!old||Number(x.realizedR)<Number(old.realizedR))independentMap.set(k,x);
-}
-const independent=[...independentMap.values()];
+const acceptedResolved=(shadow.trades||[]).filter(acceptedShadowOutcome);
+const independent=independentOutcomes(acceptedResolved,'symbol',false);
 const wins=independent.filter(x=>Number(x.realizedR)>0).length;
 const shadowStats={
   samples:independent.length,
-  winRatePct:independent.length?round(wins/independent.length*100,1):null,
-  averageR:independent.length?round(independent.reduce((s,x)=>s+Number(x.realizedR),0)/independent.length,2):null,
+  winRatePct:independent.length?wins/independent.length*100:null,
+  averageR:independent.length?independent.reduce((s,x)=>s+Number(x.realizedR),0)/independent.length:null,
 };
 
-const realSummary=evidence.summary||{};
-const real={
-  samples:Number(realSummary.resolvedTrades||0),
-  winRatePct:realSummary.winRatePct??null,
-  averageRealizedR:realSummary.averageRealizedR??null,
-};
+const real=realOutcomeStats(evidence.trades||[],t=>confirmedAssetOutcome(t,['CRYPTO'],true));
+
 
 const MIN_SHADOW_MICRO=6, MIN_SHADOW=12;
 const SHADOW_MIN_WIN=50, SHADOW_MIN_AVG_R=.15;
@@ -50,9 +41,9 @@ const shadowPassed=shadowStats.samples>=MIN_SHADOW&&Number(shadowStats.winRatePc
 let state='SHADOW_ONLY',sizeMultiplier=0,reason='Crypto pattern has not yet proven positive shadow expectancy; zero or unknown forward evidence is never a pass.';
 if(earlyShadowPassed){state='MICRO_PROBATION';sizeMultiplier=.25;reason='Six independent positive forward-shadow outcomes passed; live crypto capital remains capped at one-quarter size.';}
 if(shadowPassed){state='PROBATION';sizeMultiplier=.5;reason='Twelve independent positive shadow outcomes passed; live crypto capital remains reduced while real-fill evidence accumulates.';}
-if(shadowPassed&&real.samples>=REAL_MIN_RESOLVED&&Number(real.averageRealizedR)>=REAL_MIN_AVG_R&&Number(real.winRatePct)>=REAL_MIN_WIN){
+if(!(real.recentSamples>=REAL_MIN_SUSPEND_CHECK&&Number(real.recentAverageRealizedR)<0)&&shadowPassed&&real.samples>=REAL_MIN_RESOLVED&&Number(real.averageRealizedR)>=REAL_MIN_AVG_R&&Number(real.winRatePct)>=REAL_MIN_WIN){
   state='LIVE_ADMITTED';sizeMultiplier=1;reason='Shadow proof and sufficient positive real-fill evidence passed; full size restored.';
-}else if(shadowPassed&&real.samples>=REAL_MIN_SUSPEND_CHECK&&Number(real.averageRealizedR)<0){
+}else if(real.samples>=REAL_MIN_SUSPEND_CHECK&&(Number(real.averageRealizedR)<0||(real.recentSamples>=REAL_MIN_SUSPEND_CHECK&&Number(real.recentAverageRealizedR)<0))){
   state='LIVE_SUSPENDED';sizeMultiplier=0;reason='Real-fill crypto evidence has turned negative; returned to shadow-only observation.';
 }
 

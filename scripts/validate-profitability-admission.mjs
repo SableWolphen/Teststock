@@ -1,4 +1,6 @@
 import { stockExecutionPolicyFailures } from './stock-execution-policy-validation.mjs';
+import {SAFETY_POLICY,earnedAdmission} from './safety-policy.mjs';
+import {measuredNumber} from './performance-evidence.mjs';
 import fs from 'node:fs/promises';
 const read=async f=>JSON.parse(await fs.readFile(f,'utf8'));
 const [s,t]=await Promise.all(['docs/signal.json','docs/data/stock-tournament.json'].map(read)),fail=[];
@@ -8,10 +10,15 @@ if(t.profitabilityAdmissionPolicy?.mode!=='EVIDENCE_FIRST_DAY_TRADING')fail.push
 for(const x of t.liveQueue||[]){
   const a=x.profitabilityAdmission||{},blocked=['SHADOW_ONLY','LIVE_SUSPENDED'].includes(a.state);
   if(a.historicalEvidenceIsDiagnosticOnly!==true)fail.push(`${x.ticker}: historical authority`);
-  if(a.state==='MICRO_PROBATION'){
-    if(Number(a.sizeMultiplier)>.25||Number(x.adaptiveSizeMultiplier)>.25)fail.push(`${x.ticker}: micro size`);
-    const shadow=Number(a.shadow?.samples)>=100&&Number(a.shadow?.distinctTradingDays)>=20&&Number(a.shadow?.winRatePct)>=50&&Number(a.shadow?.averageR)>=.10&&Number(a.shadow?.profitFactor)>=1.25&&a.regimeDisabled!==true&&a.contradictoryShadow!==true;
-    if(!shadow)fail.push(`${x.ticker}: forward micro evidence`);
+  if(!blocked&&!earnedAdmission(a.state))fail.push(`${x.ticker}: unknown admission state`);
+  if(earnedAdmission(a.state)){
+    const micro=a.state==='MICRO_PROBATION',floor=SAFETY_POLICY.stocks,cap=micro?.25:a.state==='PROBATION'?.5:1;
+    if(!measuredNumber(a.sizeMultiplier)||!measuredNumber(x.adaptiveSizeMultiplier)||Number(a.sizeMultiplier)<0||Number(x.adaptiveSizeMultiplier)<0||Number(a.sizeMultiplier)>cap||Number(x.adaptiveSizeMultiplier)>cap)fail.push(`${x.ticker}: admission size`);
+    const s=a.shadow||{};
+    const shadow=['samples','distinctTradingDays','winRatePct','averageR','profitFactor'].every(k=>measuredNumber(s[k]))&&Number(s.samples)>=(micro?floor.microSamples:floor.probationSamples)&&Number(s.distinctTradingDays)>=(micro?floor.microDays:floor.probationDays)&&Number(s.winRatePct)>=floor.minWinRatePct&&Number(s.averageR)>=floor.minAverageR&&Number(s.profitFactor)>=floor.minProfitFactor&&a.regimeDisabled!==true&&a.contradictoryShadow!==true;
+    if(!shadow)fail.push(`${x.ticker}: forward admission evidence`);
+    if(a.negativeRealProbation===true||(Number(a.real?.samples)>=6&&measuredNumber(a.real?.averageRealizedR)&&Number(a.real.averageRealizedR)<0)||(Number(a.real?.recentSamples)>=6&&measuredNumber(a.real?.recentAverageRealizedR)&&Number(a.real.recentAverageRealizedR)<0))fail.push(`${x.ticker}: negative real evidence`);
+    if(a.state==='LIVE_ADMITTED'&&!(Number(a.real?.samples)>=12&&measuredNumber(a.real?.averageRealizedR)&&Number(a.real.averageRealizedR)>=.08))fail.push(`${x.ticker}: real full-size evidence`);
   }
   if(x.entryTier==='B'&&!blocked&&Number(x.adaptiveSizeMultiplier)>.25)fail.push(`${x.ticker}: B above micro cap`);
   if(blocked&&x.action!=='PROFITABILITY_ADMISSION_BLOCK')fail.push(`${x.ticker}: block`);

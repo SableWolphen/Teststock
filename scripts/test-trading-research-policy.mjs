@@ -92,7 +92,7 @@ test('loss latch resets on New York date, not UTC midnight',()=>{
  const nextDay=Date.parse('2026-10-17T05:00:00Z');a.asOf=a.dailyLoss.asOf=new Date(nextDay).toISOString();a.dailyLoss.sessionDate='2026-10-17';assert.equal(evaluateDailyLoss(a,s,8000,nextDay).allowed,true);
 });
 test('missing/stale/reversed daily losses block plans',()=>{
- const a=account();assert.equal(evaluateDailyLoss(a,null,8000,now).allowed,false);
+ const a={...account(),equityCents:1000000};assert.equal(evaluateDailyLoss(a,null,8000,now).allowed,false);
  assert.equal(evaluateDailyLoss({...a,dailyLoss:{...a.dailyLoss,asOf:'2020-01-01'}},state(),8000,now).allowed,false);
  assert.equal(evaluateDailyLoss(a,{...state(),grossRealizedLossCents:4000},8000,now).reason,'DAILY_LOSS_REWIND');
  assert.ok(planSettledCash([],a,now).blockers.includes('DAILY_STATE_UNAVAILABLE'));
