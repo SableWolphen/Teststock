@@ -55,6 +55,7 @@ export function resolveStockShadowTrade(trade,bars,now=Date.now()) {
 }
 
 export function eligibleStockShadowEvidence(trade,{intradayOnly=false}={}) {
+  if(trade.evidenceEligible===false)return false;
   if(trade.status!=='RESOLVED'||trade.decision!=='ACCEPTED'||trade.afterCosts!==true||!measuredNumber(trade.realizedR)||!measuredNumber(trade.grossRealizedR)||!measuredNumber(trade.transactionCostR)||Number(trade.transactionCostR)<0) return false;
   if(Math.abs(Number(trade.grossRealizedR)-Number(trade.transactionCostR)-Number(trade.realizedR))>1e-6)return false;
   if(intradayOnly) {
