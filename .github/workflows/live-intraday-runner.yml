@@ -74,6 +74,37 @@ jobs:
         with:
           node-version: '22'
 
+      # A Windows self-hosted runner can have Git Bash installed but missing from PATH.
+      # Repair PATH before any step requests shell: bash. Never weaken the trading lock.
+      - name: Locate Git Bash on Windows runner
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $candidates = @(
+            'C:\Program Files\Git\bin',
+            'C:\Program Files\Git\usr\bin',
+            'C:\Git\bin',
+            'C:\Git\usr\bin'
+          )
+          $found = $false
+          foreach ($dir in $candidates) {
+            if (Test-Path (Join-Path $dir 'bash.exe')) {
+              Add-Content -Path $env:GITHUB_PATH -Value $dir
+              $gitRoot = Split-Path -Parent $dir
+              foreach ($helper in @('cmd','usr\bin')) {
+                $helperDir = Join-Path $gitRoot $helper
+                if (Test-Path $helperDir) { Add-Content -Path $env:GITHUB_PATH -Value $helperDir }
+              }
+              $found = $true
+              Write-Host "Git Bash available from $dir"
+              break
+            }
+          }
+          if (-not $found) {
+            Write-Error 'Git Bash is absent from the known Windows paths. Install Git for Windows on the self-hosted runner and ensure bash.exe and git.exe are on PATH. No trading cycle will start.'
+            exit 1
+          }
+
       - name: Verify persistent trading runtime
         shell: bash
         run: |

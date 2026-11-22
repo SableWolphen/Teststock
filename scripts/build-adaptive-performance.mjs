@@ -54,6 +54,7 @@ function bucket(rows,dimension,keyFn,minSamples=0){
 }
 
 const journal=await read(journalFile,{trades:[]});
+const closedStockRows=(journal.trades||[]).filter(t=>String(t.assetClass||'STOCK').toUpperCase()==='STOCK'&&t.finalExitAt);
 const realTrades=(journal.trades||[]).filter(validRealTrade).sort((a,b)=>tradeDate(a)-tradeDate(b));
 const byRegime=bucket(realTrades,'REGIME',t=>normalize(t.runtimeRegime||t.regime));
 const bySetupType=bucket(realTrades,'SETUP_TYPE',t=>normalize(t.setupType));
@@ -115,6 +116,7 @@ const report={
   status:realTrades.length?'ACTIVE':'WAITING_FOR_RECONCILED_REAL_FILLS',
   performanceState,performanceReason,
   resolvedRealStockTrades:realTrades.length,
+  dataQuality:{closedStockJournalRows:closedStockRows.length,closedRowsMissingRealizedR:closedStockRows.filter(t=>!measuredNumber(t.realizedR)).length,closedRowsMissingDollarPnl:closedStockRows.filter(t=>!measuredNumber(t.realizedPnlDollars)).length,closedRowsNotReconciled:closedStockRows.filter(t=>t.reconciledFromRobinhood!==true).length},
   policy:{recencyHalfLifeDays:HALF_LIFE_DAYS,shrinkagePseudoSamples:SHRINK_SAMPLES,minimumSamplesForPriority:MIN_PRIORITY_SAMPLES,minimumSamplesForTemporaryBlock:MIN_BLOCK_SAMPLES,minimumSamplesForSymbolLearning:MIN_SYMBOL_SAMPLES,mayIncreaseRankingPriority:true,mayReduceRankingPriority:true,mayReduceSize:true,mayTemporarilyBlockWeakPattern:true,mayIncreaseMaximumLiveRisk:false,mayLoosenHardSafetyGate:false,preserveUntouchedValidationHoldouts:true,note:'Adaptive evidence can only reorder already-qualified candidates or reduce/block risk. It cannot create eligibility, increase maximum risk, loosen validation, or override account/protection rules.'},
   overall,recentPerformance:{last5:recent5,last10:recent10},executionQuality,
   buckets:{byRegime,bySetupType,byRegimeSetup,byRiskCluster,byEntrySession,bySymbol},

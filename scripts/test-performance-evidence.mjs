@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
-import {measuredNumber} from './performance-evidence.mjs';
+import {measuredNumber,independentOutcomes} from './performance-evidence.mjs';
 
 const scripts=path.dirname(fileURLToPath(import.meta.url));
 async function fixture(t, files) {
@@ -14,7 +14,8 @@ async function fixture(t, files) {
   await fs.mkdir(path.join(cwd,'docs/data'),{recursive:true});
   for(const [file,value] of Object.entries(files)) await fs.writeFile(path.join(cwd,file),JSON.stringify(value));
   return {
-    run(name) {const r=spawnSync(process.execPath,[path.join(scripts,name)],{cwd,encoding:'utf8'});assert.equal(r.status,0,r.stderr);},
+    run(name,success=true) {const r=spawnSync(process.execPath,[path.join(scripts,name)],{cwd,encoding:'utf8'});assert.equal(r.status===0,success,r.stderr);},
+    async write(file,value) {await fs.writeFile(path.join(cwd,file),JSON.stringify(value));},
     async read(file) {return JSON.parse(await fs.readFile(path.join(cwd,file),'utf8'));}
   };
 }
@@ -73,4 +74,82 @@ test('adaptive performance preserves unknown dollar P&L and execution measuremen
   assert.equal(r.executionQuality.confirmedEntrySlippageSamples,0);
   assert.equal(r.executionQuality.averageAdverseEntrySlippagePct,null);
   assert.ok(r.recentTrades.some(x=>x.realizedPnlDollars===null));
+});
+
+test('independent samples require valid dates and collapse case variants conservatively',()=>{
+  const row={symbol:'ABC',createdDate:'2026-09-01',realizedR:2};
+  const rows=independentOutcomes([row,{...row,symbol:'abc',realizedR:-1},{...row,createdDate:'bad'},{...row,createdDate:'2026-02-30'},{...row,symbol:''}]);
+  assert.equal(rows.length,1);assert.equal(rows[0].realizedR,-1);
+});
+
+test('stock suspension uses confirmed journal losses even when cached aggregates are positive',async t=>{
+  const accepted=Array.from({length:200},(_,i)=>({status:'RESOLVED',decision:'ACCEPTED',symbol:`S${i}`,createdDate:`2026-09-${String(1+i%30).padStart(2,'0')}`,setupType:'TREND',runtimeRegime:'UPTREND',realizedR:2}));
+  const journal=Array.from({length:18},(_,i)=>({assetClass:'STOCK',symbol:`R${i}`,setupType:'TREND',runtimeRegime:'UPTREND',reconciledFromRobinhood:true,outcome:i<12?'WIN':'LOSS',realizedR:i<12?2:-1,entryFilledAt:`2026-09-${String(i+1).padStart(2,'0')}T14:00:00Z`,finalExitAt:`2026-09-${String(i+1).padStart(2,'0')}T15:00:00Z`}));
+  for(const [trades,state] of [[journal,'LIVE_SUSPENDED'],[journal.slice(0,12),'LIVE_ADMITTED']]) {
+    const f=await fixture(t,{
+      'docs/signal.json':{},'docs/data/shadow-trades.json':{trades:accepted},
+      'docs/data/real-trade-journal.json':{trades},
+      'docs/data/adaptive-performance.json':{buckets:{byRegimeSetup:[{key:'UPTREND|TREND',samples:100,averageRealizedR:99}]}},
+      'docs/data/stock-tournament.json':{adaptiveLearning:{currentRegime:'UPTREND'},liveQueue:[{ticker:'ABC',setupType:'TREND',entryTier:'A',action:'AUTO_BUY_ELIGIBLE'}]}
+    });
+    f.run('apply-profitability-admission.mjs');
+    const row=(await f.read('docs/data/stock-tournament.json')).liveQueue[0];
+    assert.equal(row.profitabilityAdmission.state,state);
+    assert.equal(row.profitabilityAdmission.real.samples,trades.length);
+    if(state==='LIVE_ADMITTED') {
+      const signal=await f.read('docs/signal.json');
+      signal.autopilot={requiresPerOrderApproval:false};
+      await f.write('docs/signal.json',signal);
+      f.run('apply-chatgpt-unattended-execution-policy.mjs');
+      f.run('apply-robinhood-executable-universe.mjs');
+      f.run('validate-profitability-admission.mjs');
+      const tournament=await f.read('docs/data/stock-tournament.json');
+      tournament.liveQueue[0].profitabilityAdmission.shadow.samples=0;
+      await f.write('docs/data/stock-tournament.json',tournament);
+      f.run('validate-profitability-admission.mjs',false);
+    }
+  }
+});
+
+test('options, index options and crypto ignore summary-only real-fill claims',async t=>{
+  const f=await fixture(t,Object.fromEntries(['options','index-options','crypto'].map(lane=>[`docs/data/${lane}-real-trade-journal.json`,{trades:[],summary:{resolvedTrades:999,winRatePct:100,averageRealizedR:99}}])));
+  for(const lane of ['options','index-options','crypto']) {
+    f.run(`apply-${lane}-profitability-admission.mjs`);
+    const result=await f.read(`docs/data/${lane}-profitability-admission.json`);
+    assert.equal(result.real.samples,0);assert.equal(result.real.averageRealizedR,null);assert.equal(result.state,'SHADOW_ONLY');
+  }
+});
+
+test('negative real options suspend without requiring a passing shadow pool',async t=>{
+  const trades=Array.from({length:3},(_,i)=>({assetClass:'OPTION',symbol:`ABC${i}`,entryFilledAt:`2026-09-0${i+1}T14:00:00Z`,finalExitAt:`2026-09-0${i+1}T15:00:00Z`,reconciledFromRobinhood:true,outcome:'LOSS',realizedR:-1}));
+  const f=await fixture(t,{'docs/data/options-real-trade-journal.json':{trades}});
+  f.run('apply-options-profitability-admission.mjs');
+  const result=await f.read('docs/data/options-profitability-admission.json');
+  assert.equal(result.state,'LIVE_SUSPENDED');assert.equal(result.executionAuthorized,false);
+});
+
+test('learning consensus reports the actual adaptive real-trade sample count',async t=>{
+  const f=await fixture(t,{'docs/data/adaptive-performance.json':{resolvedRealStockTrades:1}});
+  f.run('build-learning-consensus.mjs');
+  const result=await f.read('docs/data/learning-consensus.json');
+  assert.equal(result.evidence.realFills.resolvedTrades,1);
+});
+
+test('index admission does not round a failing profit factor up to its threshold',async t=>{
+  const trades=Array.from({length:50},(_,i)=>({status:'RESOLVED',evidenceEligible:true,indexSymbol:i%2?'DJX':'XND',createdDate:`2026-09-${String(1+Math.floor(i/2)).padStart(2,'0')}`,realizedR:i%2?-1:1.299}));
+  const f=await fixture(t,{'docs/data/index-options-shadow-trades.json':{trades}});
+  f.run('apply-index-options-profitability-admission.mjs');
+  const r=await f.read('docs/data/index-options-profitability-admission.json');
+  assert.equal(r.shadow.samples,50);assert.ok(r.shadow.profitFactor<1.3);assert.equal(r.state,'SHADOW_ONLY');
+});
+
+test('reports expose incomplete closed trades and scorecards retain actual regime',async t=>{
+  const base={assetClass:'STOCK',symbol:'ABC',runtimeRegime:'UPTREND',reconciledFromRobinhood:true,outcome:'LOSS',entryFilledAt:'2026-09-01T14:00:00Z',finalExitAt:'2026-09-01T15:00:00Z',realizedR:-1,realizedPnlDollars:null,adverseEntrySlippagePct:null};
+  const f=await fixture(t,{'docs/data/real-trade-journal.json':{trades:[base,{...base,symbol:'DEF',outcome:'UNKNOWN',realizedR:null}]}});
+  f.run('build-adaptive-performance.mjs');
+  const r=await f.read('docs/data/adaptive-performance.json');
+  assert.equal(r.dataQuality.closedStockJournalRows,2);assert.equal(r.dataQuality.closedRowsMissingRealizedR,1);assert.equal(r.dataQuality.closedRowsMissingDollarPnl,2);
+  f.run('build-real-fill-scorecard.mjs');
+  const score=await f.read('docs/data/real-fill-scorecard.json');
+  assert.equal(score.resolvedTrades,1);assert.equal(score.scorecards.regime[0].regime,'UPTREND');assert.equal(score.scorecards.regime[0].averageEntrySlippagePct,null);
 });

@@ -3,10 +3,10 @@ import importlib.util, os, json, copy
 spec = importlib.util.spec_from_file_location("au", os.path.join(os.path.dirname(os.path.abspath(__file__)), "audit.py"))
 au = importlib.util.module_from_spec(spec); spec.loader.exec_module(au)
 orig_load, orig_out = au.load, au.OUT
-au.OUT = "/dev/null"
+au.OUT = os.devnull
 def with_patch(fn):
     def load(path, default=None):
-        d = orig_load(path, default); return fn(path, copy.deepcopy(d))
+        d = orig_load(path, default); return fn(str(path).replace("\\", "/"), copy.deepcopy(d))
     au.load = load
     try: return au.run()
     finally: au.load = orig_load

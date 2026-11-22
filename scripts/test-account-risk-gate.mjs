@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import { evaluateOptionEntry, evaluateStockEntry, evaluateExitOrder, evaluateAccountBrakes, daysToExpiration, cashOnlyBudget, DEFAULT_LIMITS } from './account-risk-gate.mjs';
 
 // 2026-10-29 10:30 New York (EDT) — inside the entry window.
@@ -95,7 +97,41 @@ test('daily loss cap shrinks to 5% of equity on small accounts', async () => {
   const { effectiveDailyLossLimitCents } = await import('./daily-loss-guard.mjs');
   assert.equal(effectiveDailyLossLimitCents(6400, 8000), 320); // $64 account -> $3.20, not $80
   assert.equal(effectiveDailyLossLimitCents(1000000, 8000), 8000); // fixed cap still binds on big accounts
-  assert.equal(effectiveDailyLossLimitCents(undefined, 8000), 8000);
+  assert.equal(effectiveDailyLossLimitCents(undefined, 8000), null);
+  for(const equity of [null,0,-1,NaN,Infinity]) assert.equal(effectiveDailyLossLimitCents(equity,8000),null);
+  assert.equal(effectiveDailyLossLimitCents(6400,8000,10),null);
+});
+
+test('risk limits may be tightened but never weakened or disabled',()=>{
+  for(const limits of [{maxOptionPremiumPctOfAccount:100},{maxDailyLossPctOfDayStart:NaN},{minOptionDte:0},{maxTotalOpenRiskPctOfAccount:undefined},{allowSameDayReentrySameUnderlying:true},{typo:1}]) {
+    assert.equal(evaluateOptionEntry({account:bigAccount(),contract:goodContract(),limits,now:NOW}).allowed,false);
+    assert.equal(evaluateStockEntry({account:bigAccount(),order:{symbol:'AAPL',entryPrice:200,stopPrice:194},limits,now:NOW}).allowed,false);
+  }
+  const reduced=evaluateOptionEntry({account:bigAccount(),contract:goodContract(),limits:{maxOptionPremiumPctOfAccount:5},now:NOW});
+  assert.equal(reduced.allowed,true);assert.equal(reduced.maxContracts,2);
+});
+
+test('missing trade counters, invalid dates, symbols and clocks fail closed',()=>{
+  assert.equal(evaluateAccountBrakes(bigAccount({entriesToday:undefined}),DEFAULT_LIMITS,NOW).allowed,false);
+  assert.equal(evaluateAccountBrakes(bigAccount({losingExitsToday:undefined}),DEFAULT_LIMITS,NOW).allowed,false);
+  assert.equal(evaluateOptionEntry({account:bigAccount(),contract:goodContract({underlying:''}),now:NOW}).allowed,false);
+  assert.equal(evaluateOptionEntry({account:bigAccount(),contract:goodContract(),now:NaN}).allowed,false);
+  assert.ok(Number.isNaN(daysToExpiration('2026-02-30',NOW)));
+  assert.equal(evaluateStockEntry({account:bigAccount(),order:{entryPrice:200,stopPrice:194},now:NOW}).allowed,false);
+});
+
+test('stock size shrinks to remaining aggregate risk capacity',()=>{
+  const r=evaluateStockEntry({account:bigAccount({openRisk:2990}),order:{symbol:'AAPL',entryPrice:200,stopPrice:194},now:NOW});
+  assert.equal(r.allowed,true,r.reasons.join());
+  assert.ok(r.maxShares>0&&r.maxShares*6<=10);
+  const unknown=evaluateStockEntry({account:bigAccount({openRisk:undefined}),order:{symbol:'AAPL',entryPrice:200,stopPrice:194},now:NOW});
+  assert.equal(unknown.allowed,false);assert.ok(unknown.reasons.includes('OPEN_RISK_UNVERIFIED'));
+});
+
+test('risk CLI runs on Windows paths and returns a blocked decision for missing account data',()=>{
+  const run=spawnSync(process.execPath,[fileURLToPath(new URL('./account-risk-gate.mjs',import.meta.url)),'entry',JSON.stringify({order:{symbol:'ABC',entryPrice:100,stopPrice:95}})],{encoding:'utf8'});
+  assert.equal(run.status,2,run.stderr);
+  assert.equal(JSON.parse(run.stdout).allowed,false);
 });
 
 test('strict cash-only rule rejects missing unleveraged balance, including margin accounts', () => {

@@ -1,3 +1,4 @@
+import {measuredNumber, acceptedShadowOutcome, independentOutcomes, realOutcomeStats, confirmedAssetOutcome} from './performance-evidence.mjs';
 import {SAFETY_POLICY, earnedAdmission} from './safety-policy.mjs';
 import fs from 'node:fs/promises';
 
@@ -12,33 +13,23 @@ const resolved=(shadow.trades||[]).filter(x=>
   x?.status==='RESOLVED' &&
   x?.evidenceEligible===true &&
   ['XND','DJX'].includes(x?.indexSymbol) &&
-  Number.isFinite(Number(x?.realizedR))
+  measuredNumber(x?.realizedR)
 );
 
-const independentMap=new Map();
-for(const x of resolved){
-  const key=`${x.createdDate}|${x.indexSymbol}`;
-  const old=independentMap.get(key);
-  if(!old||Number(x.realizedR)<Number(old.realizedR))independentMap.set(key,x);
-}
-const independent=[...independentMap.values()];
+const independent=independentOutcomes(resolved,'indexSymbol',false);
 const wins=independent.filter(x=>Number(x.realizedR)>0).length;
 const gains=independent.filter(x=>Number(x.realizedR)>0).reduce((s,x)=>s+Number(x.realizedR),0);
 const losses=Math.abs(independent.filter(x=>Number(x.realizedR)<0).reduce((s,x)=>s+Number(x.realizedR),0));
 const shadowStats={
   samples:independent.length,
   distinctTradingDays:new Set(independent.map(x=>x.createdDate).filter(Boolean)).size,
-  winRatePct:independent.length?round(wins/independent.length*100,1):null,
-  averageR:independent.length?round(independent.reduce((s,x)=>s+Number(x.realizedR),0)/independent.length,3):null,
-  profitFactor:losses>0?round(gains/losses,2):gains>0?999:null,
+  winRatePct:independent.length?wins/independent.length*100:null,
+  averageR:independent.length?independent.reduce((s,x)=>s+Number(x.realizedR),0)/independent.length:null,
+  profitFactor:losses>0?gains/losses:gains>0?999:null,
 };
 
-const realSummary=realJournal.summary||{};
-const real={
-  samples:Number(realSummary.resolvedTrades||0),
-  winRatePct:realSummary.winRatePct??null,
-  averageRealizedR:realSummary.averageRealizedR??null,
-};
+const real=realOutcomeStats(realJournal.trades||[],t=>confirmedAssetOutcome(t,['INDEX_OPTION','OPTION','OPTIONS'])&&['XND','DJX'].includes(t.indexSymbol||t.symbol));
+
 
 const MICRO={samples:50,days:20,winRatePct:50,averageR:.05,profitFactor:1.30};
 const PROBATION={samples:100,days:30,winRatePct:50,averageR:.08,profitFactor:1.35};
@@ -51,9 +42,9 @@ const passes=t=>shadowStats.samples>=t.samples&&shadowStats.distinctTradingDays>
 let state='SHADOW_ONLY',sizeMultiplier=0,reason='Exact-contract forward evidence is required. Live bootstrap overrides are disabled by safety-policy.mjs.';
 if(passes(MICRO)){state='MICRO_PROBATION';sizeMultiplier=.25;reason='Index options passed the strict broker-resolved micro-probation shadow threshold; live execution still requires every broker/account/contract gate.';}
 if(passes(PROBATION)){state='PROBATION';sizeMultiplier=.5;reason='Index options passed the stricter probation shadow threshold; live size remains reduced until real-fill evidence is positive.';}
-if(passes(PROBATION)&&real.samples>=LIVE.samples&&Number(real.winRatePct)>=LIVE.winRatePct&&Number(real.averageRealizedR)>=LIVE.averageR){
+if(!(real.recentSamples>=3&&Number(real.recentAverageRealizedR)<0)&&passes(PROBATION)&&real.samples>=LIVE.samples&&Number(real.winRatePct)>=LIVE.winRatePct&&Number(real.averageRealizedR)>=LIVE.averageR){
   state='LIVE_ADMITTED';sizeMultiplier=1;reason='Index options passed both broker-resolved shadow proof and the required positive Robinhood-confirmed real-fill threshold.';
-}else if(real.samples>=3&&Number(real.averageRealizedR)<0){
+}else if(real.samples>=3&&(Number(real.averageRealizedR)<0||Number(real.recentAverageRealizedR)<0)){
   state='LIVE_SUSPENDED';sizeMultiplier=0;reason='Robinhood-confirmed index-option real-fill expectancy is negative; new index-option risk is suspended.';
 }
 

@@ -6,7 +6,7 @@ export const lossSession=now=>new Intl.DateTimeFormat('en-CA',{timeZone:'America
 // The fixed cap alone is meaningless on a small account ($80 is more than a $64 account).
 // The effective cap is the smaller of the fixed cap and a percentage of current equity.
 export function effectiveDailyLossLimitCents(equityCents,fixedCents=8000,pct=5){
-  if(!money(equityCents)||equityCents===0)return fixedCents;
+  if(!money(equityCents)||equityCents===0||!money(fixedCents)||fixedCents===0||typeof pct!=='number'||!Number.isFinite(pct)||pct<=0||pct>5)return null;
   return Math.max(1,Math.min(fixedCents,Math.floor(equityCents*pct/100)));
 }
 export function evaluateDailyLoss(account,previous,limitCents=8000,now=Date.now()) {

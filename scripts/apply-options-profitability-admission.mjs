@@ -1,3 +1,4 @@
+import {measuredNumber, acceptedShadowOutcome, independentOutcomes, realOutcomeStats, confirmedAssetOutcome} from './performance-evidence.mjs';
 import {SAFETY_POLICY, earnedAdmission} from './safety-policy.mjs';
 import {eligibleOptionEvidence} from './options-shadow-engine.mjs';
 import fs from 'node:fs/promises';
@@ -19,30 +20,20 @@ const policy=await read('docs/data/probability-first-policy.json',{});
 const optionsPolicy=policy.options||{};
 
 const resolved=(shadow.trades||[]).filter(eligibleOptionEvidence);
-const independentMap=new Map();
-for(const x of resolved){
-  const k=`${x.createdDate}|${x.underlying}`;
-  const old=independentMap.get(k);
-  if(!old||Number(x.realizedR)<Number(old.realizedR))independentMap.set(k,x);
-}
-const independent=[...independentMap.values()];
+const independent=independentOutcomes(resolved,'underlying',false);
 const wins=independent.filter(x=>Number(x.realizedR)>0).length;
 const gains=independent.filter(x=>Number(x.realizedR)>0).reduce((s,x)=>s+Number(x.realizedR),0);
 const losses=Math.abs(independent.filter(x=>Number(x.realizedR)<0).reduce((s,x)=>s+Number(x.realizedR),0));
 const shadowStats={
   samples:independent.length,
   distinctTradingDays:new Set(independent.map(x=>x.createdDate).filter(Boolean)).size,
-  winRatePct:independent.length?round(wins/independent.length*100,1):null,
-  averageR:independent.length?round(independent.reduce((s,x)=>s+Number(x.realizedR),0)/independent.length,2):null,
-  profitFactor:losses>0?round(gains/losses,2):gains>0?999:null,
+  winRatePct:independent.length?wins/independent.length*100:null,
+  averageR:independent.length?independent.reduce((s,x)=>s+Number(x.realizedR),0)/independent.length:null,
+  profitFactor:losses>0?gains/losses:gains>0?999:null,
 };
 
-const realSummary=evidence.summary||{};
-const real={
-  samples:Number(realSummary.resolvedTrades||0),
-  winRatePct:realSummary.winRatePct??null,
-  averageRealizedR:realSummary.averageRealizedR??null,
-};
+const real=realOutcomeStats(evidence.trades||[],t=>confirmedAssetOutcome(t,['OPTION','OPTIONS']));
+
 
 // Many candidates can be observed each day, but correlated same-day outcomes do not replace
 // experience across market regimes. Both sample count and distinct trading-day coverage are
@@ -62,9 +53,9 @@ const shadowPassed=shadowStats.samples>=MIN_SHADOW&&shadowStats.distinctTradingD
 let state='SHADOW_ONLY',sizeMultiplier=0,reason='Options pattern has not yet proven positive shadow expectancy; zero or unknown forward evidence is never a pass. No live option order is authorized in this state.';
 if(earlyShadowPassed){state='MICRO_PROBATION';sizeMultiplier=.25;reason=`${MIN_SHADOW_MICRO} independent positive forward-shadow outcomes passed; any future live options capital would remain capped at one-quarter size. This state alone still does not authorize a live order -- that requires a separate, explicit execution-lane policy.`;}
 if(shadowPassed){state='PROBATION';sizeMultiplier=.5;reason=`${MIN_SHADOW} independent positive shadow outcomes passed; any future live options capital would remain reduced while real-fill evidence accumulates. This state alone still does not authorize a live order.`;}
-if(shadowPassed&&real.samples>=REAL_MIN_RESOLVED&&Number(real.averageRealizedR)>=REAL_MIN_AVG_R&&Number(real.winRatePct)>=REAL_MIN_WIN){
+if(!(real.recentSamples>=REAL_MIN_SUSPEND_CHECK&&Number(real.recentAverageRealizedR)<0)&&shadowPassed&&real.samples>=REAL_MIN_RESOLVED&&Number(real.averageRealizedR)>=REAL_MIN_AVG_R&&Number(real.winRatePct)>=REAL_MIN_WIN){
   state='LIVE_ADMITTED';sizeMultiplier=1;reason='Shadow proof and sufficient positive real-fill evidence passed; probability-first-policy.json\'s options real-fill gate is satisfied.';
-}else if(shadowPassed&&real.samples>=REAL_MIN_SUSPEND_CHECK&&Number(real.averageRealizedR)<0){
+}else if(real.samples>=REAL_MIN_SUSPEND_CHECK&&(Number(real.averageRealizedR)<0||(real.recentSamples>=REAL_MIN_SUSPEND_CHECK&&Number(real.recentAverageRealizedR)<0))){
   state='LIVE_SUSPENDED';sizeMultiplier=0;reason='Real-fill options evidence has turned negative; returned to shadow-only observation.';
 }
 

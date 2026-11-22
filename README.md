@@ -4,6 +4,14 @@ For the additive, paused-by-default stock/options/crypto research runner, see [S
 
 A mobile-first stock + options decision engine for finding small, defined-risk opportunities without forcing a trade every day.
 
+## Performance evidence and loss controls
+
+Stock qualification uses accepted shadow decisions and reconciled real journal rows with known returns. Rejected research remains diagnostic. All admission lanes derive real-fill statistics from journal rows rather than trusting cached summaries. Duplicate episodes count once, using the most adverse return; invalid dates and missing returns cannot add evidence. Negative average R across the last six stock outcomes suspends the affected setup even if its older average is positive. Options and crypto retain their separate suspension thresholds.
+
+The stock generator and validator share minimum profitability thresholds, and validation covers micro probation, probation and full admission. Account risk overrides may tighten the hard limits only. Unknown equity cannot fall back to the fixed $80 loss cap. Stock sizing also respects the remaining aggregate risk budget.
+
+Unknown dollar P&L and execution measurements remain `null`. Performance reports expose known P&L and coverage separately. Replay follows provider pagination, measures horizons using elapsed time, excludes pre-fill/post-exit intervals, and leaves unavailable exit observations unknown. Sparse IEX bars and hypothetical shadow returns do not prove executable after-cost profits. Missing lot quantities, fees and complete fill histories still require broker reconciliation; this system never invents them. The canonical live-execution lock remains active.
+
 ## Financial Freedom planning
 
 Open **Financial Freedom** in the app or `docs/financial-freedom.html` on the published desk. The shared planner replaces the old $100M page with a $10,000/month goal over 12 or 24 months, optional contributions, capital milestones, withdrawal capacity, inflation and loss scenarios. The $76.21 example is a historical app default, not a live balance. Browser-local inputs never feed trading size or admission. Published journal evidence is separate; missing P&L remains unknown. See [planning assumptions](docs/FINANCIAL-FREEDOM.md).

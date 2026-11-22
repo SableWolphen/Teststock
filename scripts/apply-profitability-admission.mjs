@@ -1,4 +1,4 @@
-import {confirmedStockOutcome, acceptedShadowOutcome} from './performance-evidence.mjs';
+import {confirmedStockOutcome, acceptedShadowOutcome, independentOutcomes, realOutcomeStats} from './performance-evidence.mjs';
 import {SAFETY_POLICY, earnedAdmission} from './safety-policy.mjs';
 import fs from 'node:fs/promises';
 
@@ -8,7 +8,6 @@ const signal=await read('docs/signal.json');
 const tournament=await read('docs/data/stock-tournament.json');
 const shadow=await read('docs/data/shadow-trades.json',{trades:[]});
 const realJournal=await read('docs/data/real-trade-journal.json',{trades:[]});
-const adaptive=await read('docs/data/adaptive-performance.json',{});
 const entryValidation=await read('docs/data/entry-gate-validation.json',{});
 const probabilityPolicy=await read('docs/data/probability-first-policy.json',{});
 if(!signal||!tournament)throw new Error('signal or stock tournament missing');
@@ -16,12 +15,9 @@ if(!signal||!tournament)throw new Error('signal or stock tournament missing');
 const norm=s=>String(s??'UNKNOWN').trim().toUpperCase().replace(/\s+/g,'_')||'UNKNOWN';
 const resolvedShadow=(shadow.trades||[]).filter(acceptedShadowOutcome).map(x=>({...x,evidenceSource:'SHADOW'}));
 const resolvedReal=(realJournal.trades||[]).filter(confirmedStockOutcome).map(x=>({createdDate:String(x.entryFilledAt||x.finalExitAt||'').slice(0,10),symbol:x.symbol,setupType:x.setupType,runtimeRegime:x.runtimeRegime,realizedR:x.realizedR,evidenceSource:'REAL',journalId:x.journalId}));
-const independentMap=new Map();
-for(const x of [...resolvedShadow,...resolvedReal]){const k=[x.createdDate,x.symbol,norm(x.setupType),norm(x.runtimeRegime)].join('|'),old=independentMap.get(k);if(!old||Number(x.realizedR)<Number(old.realizedR))independentMap.set(k,x);}
-const independentResolved=[...independentMap.values()];
-const realBuckets=adaptive?.buckets||{};
+const independentResolved=independentOutcomes([...resolvedShadow,...resolvedReal]);
 const MIN_SHADOW_MICRO=SAFETY_POLICY.stocks.microSamples,MIN_SHADOW=SAFETY_POLICY.stocks.probationSamples,MIN_SHADOW_DAYS_MICRO=SAFETY_POLICY.stocks.microDays,MIN_SHADOW_DAYS=SAFETY_POLICY.stocks.probationDays,MIN_REAL_PROBATION=6,MIN_REAL_FULL=12;
-const SHADOW_MIN_WIN=50,SHADOW_MIN_AVG_R=.10,SHADOW_MIN_PROFIT_FACTOR=SAFETY_POLICY.stocks.minProfitFactor,REAL_MIN_AVG_R=.08;
+const SHADOW_MIN_WIN=SAFETY_POLICY.stocks.minWinRatePct,SHADOW_MIN_AVG_R=SAFETY_POLICY.stocks.minAverageR,SHADOW_MIN_PROFIT_FACTOR=SAFETY_POLICY.stocks.minProfitFactor,REAL_MIN_AVG_R=.08;
 
 function shadowStats(setup,regime){
   const exact=independentResolved.filter(x=>norm(x.setupType)===setup&&norm(x.runtimeRegime)===regime);
@@ -34,9 +30,10 @@ function shadowStats(setup,regime){
   return {scope:exact.length>=MIN_SHADOW?'REGIME_SETUP':'SETUP_FALLBACK',samples:rows.length,distinctTradingDays:new Set(rows.map(x=>x.createdDate).filter(Boolean)).size,winRatePct:rows.length?wins/rows.length*100:null,averageR:rows.length?rows.reduce((s,x)=>s+Number(x.realizedR),0)/rows.length:null,profitFactor:losses>0?gains/losses:gains>0?999:null,realFillSamples,shadowOnlySamples:rows.length-realFillSamples};
 }
 function realStats(setup,regime){
-  const exact=(realBuckets.byRegimeSetup||[]).find(x=>x.key===`${regime}|${setup}`);
-  const fallback=(realBuckets.bySetupType||[]).find(x=>x.key===setup);
-  return exact||fallback||{samples:0,averageRealizedR:null,winRatePct:null};
+  const rows=(realJournal.trades||[]).filter(x=>norm(x.setupType)===setup);
+  const exact=rows.filter(x=>norm(x.runtimeRegime)===regime);
+  const exactStats=realOutcomeStats(exact);
+  return exactStats.samples>=MIN_REAL_PROBATION?exactStats:realOutcomeStats(rows);
 }
 function admission(row){
   const tier=String(row.entryTier||'A').toUpperCase();
@@ -46,7 +43,7 @@ function admission(row){
   const historical={samples:Number(row.historicalSamples||row.validation?.samples||0),winRatePct:Number(row.historicalWinRate||row.validation?.winRate||0),rewardRisk:Number(row.rewardRisk||0)};
   const regimeDisabled=(entryValidation.disabledRegimes||[]).map(norm).includes(regime);
   const contradictoryShadow=s.samples>=3&&(Number(s.averageR)<0||Number(s.winRatePct)<40);
-  const negativeRealProbation=Number(r.samples||0)>=MIN_REAL_PROBATION&&Number(r.averageRealizedR)<0;
+  const negativeRealProbation=Number(r.samples||0)>=MIN_REAL_PROBATION&&(Number(r.averageRealizedR)<0||(r.recentSamples>=MIN_REAL_PROBATION&&Number(r.recentAverageRealizedR)<0));
   const earlyShadowPassed=s.samples>=MIN_SHADOW_MICRO&&s.distinctTradingDays>=MIN_SHADOW_DAYS_MICRO&&Number(s.winRatePct)>=SHADOW_MIN_WIN&&Number(s.averageR)>=SHADOW_MIN_AVG_R&&Number(s.profitFactor)>=SHADOW_MIN_PROFIT_FACTOR&&!regimeDisabled&&!contradictoryShadow;
   const shadowPassed=s.samples>=MIN_SHADOW&&s.distinctTradingDays>=MIN_SHADOW_DAYS&&Number(s.winRatePct)>=SHADOW_MIN_WIN&&Number(s.averageR)>=SHADOW_MIN_AVG_R&&Number(s.profitFactor)>=SHADOW_MIN_PROFIT_FACTOR&&!regimeDisabled&&!contradictoryShadow;
   let state='SHADOW_ONLY',sizeMultiplier=0,reason='Candidate is not eligible because a hard profitability/regime contradiction remains.';
@@ -59,7 +56,7 @@ function admission(row){
   if(state!=='LIVE_SUSPENDED'&&shadowPassed){state='PROBATION';sizeMultiplier=.5;reason='At least 200 independent positive outcomes across 30 trading days passed; live capital remains reduced while real-fill evidence accumulates.';}
   if(state!=='LIVE_SUSPENDED'&&shadowPassed&&Number(r.samples)>=MIN_REAL_FULL&&Number(r.averageRealizedR)>=REAL_MIN_AVG_R){state='LIVE_ADMITTED';sizeMultiplier=1;reason='Forward proof and sufficient positive real-fill evidence passed.';}
 
-  return {state,sizeMultiplier,entryTier:tier,setupType:setup,runtimeRegime:regime,historical,historicalEvidenceIsDiagnosticOnly:true,regimeDisabled,contradictoryShadow,negativeRealProbation,shadow:{...s,independenceKey:'decisionDate+symbol+setup+regime',duplicateResolutionRule:'Keep the most adverse realized R for duplicate keys.',evidencePoolNote:'Pool includes accepted hypothetical shadow outcomes and reconciled resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split.'},real:{samples:Number(r.samples||0),winRatePct:r.winRatePct??null,averageRealizedR:r.averageRealizedR??null},thresholds:{minimumIndependentShadowSamplesForMicro:MIN_SHADOW_MICRO,minimumIndependentShadowSamples:MIN_SHADOW,minimumDistinctTradingDaysForMicro:MIN_SHADOW_DAYS_MICRO,minimumDistinctTradingDays:MIN_SHADOW_DAYS,minimumShadowWinRatePct:SHADOW_MIN_WIN,minimumShadowAverageR:SHADOW_MIN_AVG_R,minimumShadowProfitFactor:SHADOW_MIN_PROFIT_FACTOR,minimumRealSamplesForSuspensionCheck:MIN_REAL_PROBATION,minimumRealSamplesForFullAdmission:MIN_REAL_FULL,minimumRealAverageRForFullAdmission:REAL_MIN_AVG_R},reason};
+  return {state,sizeMultiplier,entryTier:tier,setupType:setup,runtimeRegime:regime,historical,historicalEvidenceIsDiagnosticOnly:true,regimeDisabled,contradictoryShadow,negativeRealProbation,shadow:{...s,independenceKey:'decisionDate+symbol+setup+regime',duplicateResolutionRule:'Keep the most adverse realized R for duplicate keys.',evidencePoolNote:'Pool includes accepted hypothetical shadow outcomes and reconciled resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split.'},real:{samples:Number(r.samples||0),winRatePct:r.winRatePct??null,averageRealizedR:r.averageRealizedR??null,recentSamples:r.recentSamples,recentAverageRealizedR:r.recentAverageRealizedR??null},thresholds:{minimumIndependentShadowSamplesForMicro:MIN_SHADOW_MICRO,minimumIndependentShadowSamples:MIN_SHADOW,minimumDistinctTradingDaysForMicro:MIN_SHADOW_DAYS_MICRO,minimumDistinctTradingDays:MIN_SHADOW_DAYS,minimumShadowWinRatePct:SHADOW_MIN_WIN,minimumShadowAverageR:SHADOW_MIN_AVG_R,minimumShadowProfitFactor:SHADOW_MIN_PROFIT_FACTOR,minimumRealSamplesForSuspensionCheck:MIN_REAL_PROBATION,minimumRealSamplesForFullAdmission:MIN_REAL_FULL,minimumRealAverageRForFullAdmission:REAL_MIN_AVG_R},reason};
 }
 function apply(row){
   const a=admission(row);
