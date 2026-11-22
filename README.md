@@ -10,6 +10,8 @@ Stock qualification uses accepted shadow decisions and reconciled real journal r
 
 The stock generator and validator share minimum profitability thresholds, and validation covers micro probation, probation and full admission. Account risk overrides may tighten the hard limits only. Unknown equity cannot fall back to the fixed $80 loss cap. Stock sizing also respects the remaining aggregate risk budget.
 
+New daily-bar stock paper outcomes include an explicit assumption of 10 basis points per side for spread/slippage and report sensitivity at 5, 10 and 20 basis points. These are research assumptions, not observed broker costs. Gap-through-stop losses may exceed one R; ambiguous daily entry/exit ordering stays unknown. Existing resolved records retain their original values and are labeled separately from new cost-adjusted samples. The 20-session daily-bar ledger remains swing research. Same-day stock qualification requires cost-adjusted same-session evidence; multi-session paper results and real swing trades cannot qualify a day-trading entry. Collecting sufficient intraday forward evidence remains necessary before that lane can qualify.
+
 Unknown dollar P&L and execution measurements remain `null`. Performance reports expose known P&L and coverage separately. Replay follows provider pagination, measures horizons using elapsed time, excludes pre-fill/post-exit intervals, and leaves unavailable exit observations unknown. Sparse IEX bars and hypothetical shadow returns do not prove executable after-cost profits. Missing lot quantities, fees and complete fill histories still require broker reconciliation; this system never invents them. The canonical live-execution lock remains active.
 
 ## Financial Freedom planning

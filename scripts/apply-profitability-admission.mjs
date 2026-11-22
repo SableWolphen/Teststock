@@ -1,4 +1,5 @@
-import {confirmedStockOutcome, acceptedShadowOutcome, independentOutcomes, realOutcomeStats} from './performance-evidence.mjs';
+import {eligibleStockShadowEvidence,sameSessionOutcome} from './stock-shadow-engine.mjs';
+import {confirmedStockOutcome, independentOutcomes, realOutcomeStats} from './performance-evidence.mjs';
 import {SAFETY_POLICY, earnedAdmission} from './safety-policy.mjs';
 import fs from 'node:fs/promises';
 
@@ -13,15 +14,16 @@ const probabilityPolicy=await read('docs/data/probability-first-policy.json',{})
 if(!signal||!tournament)throw new Error('signal or stock tournament missing');
 
 const norm=s=>String(s??'UNKNOWN').trim().toUpperCase().replace(/\s+/g,'_')||'UNKNOWN';
-const resolvedShadow=(shadow.trades||[]).filter(acceptedShadowOutcome).map(x=>({...x,evidenceSource:'SHADOW'}));
-const resolvedReal=(realJournal.trades||[]).filter(confirmedStockOutcome).map(x=>({createdDate:String(x.entryFilledAt||x.finalExitAt||'').slice(0,10),symbol:x.symbol,setupType:x.setupType,runtimeRegime:x.runtimeRegime,realizedR:x.realizedR,evidenceSource:'REAL',journalId:x.journalId}));
+const intradayOnly=signal.dayTradeOnlyEntryPolicy?.enabled===true||signal.timeHorizonPolicy?.stocks?.defaultFlatBySessionEnd===true;
+const resolvedShadow=(shadow.trades||[]).filter(x=>eligibleStockShadowEvidence(x,{intradayOnly})).map(x=>({...x,evidenceSource:'SHADOW'}));
+const resolvedReal=(realJournal.trades||[]).filter(confirmedStockOutcome).filter(x=>!intradayOnly||sameSessionOutcome(x.entryFilledAt,x.finalExitAt)).map(x=>({createdDate:String(x.entryFilledAt||x.finalExitAt||'').slice(0,10),symbol:x.symbol,setupType:x.setupType,runtimeRegime:x.runtimeRegime,realizedR:x.realizedR,evidenceSource:'REAL',journalId:x.journalId}));
 const independentResolved=independentOutcomes([...resolvedShadow,...resolvedReal]);
 const MIN_SHADOW_MICRO=SAFETY_POLICY.stocks.microSamples,MIN_SHADOW=SAFETY_POLICY.stocks.probationSamples,MIN_SHADOW_DAYS_MICRO=SAFETY_POLICY.stocks.microDays,MIN_SHADOW_DAYS=SAFETY_POLICY.stocks.probationDays,MIN_REAL_PROBATION=6,MIN_REAL_FULL=12;
 const SHADOW_MIN_WIN=SAFETY_POLICY.stocks.minWinRatePct,SHADOW_MIN_AVG_R=SAFETY_POLICY.stocks.minAverageR,SHADOW_MIN_PROFIT_FACTOR=SAFETY_POLICY.stocks.minProfitFactor,REAL_MIN_AVG_R=.08;
 
 function shadowStats(setup,regime){
   const exact=independentResolved.filter(x=>norm(x.setupType)===setup&&norm(x.runtimeRegime)===regime);
-  const setupOnly=independentResolved.filter(x=>norm(x.setupType)===setup);
+  const setupOnly=independentResolved.filter(x=>norm(x.setupType)===setup&&(!intradayOnly||sameSessionOutcome(x.entryFilledAt,x.finalExitAt)));
   const rows=exact.length>=MIN_SHADOW?exact:setupOnly;
   const wins=rows.filter(x=>Number(x.realizedR)>0).length;
   const gains=rows.filter(x=>Number(x.realizedR)>0).reduce((sum,x)=>sum+Number(x.realizedR),0);
@@ -56,7 +58,7 @@ function admission(row){
   if(state!=='LIVE_SUSPENDED'&&shadowPassed){state='PROBATION';sizeMultiplier=.5;reason='At least 200 independent positive outcomes across 30 trading days passed; live capital remains reduced while real-fill evidence accumulates.';}
   if(state!=='LIVE_SUSPENDED'&&shadowPassed&&Number(r.samples)>=MIN_REAL_FULL&&Number(r.averageRealizedR)>=REAL_MIN_AVG_R){state='LIVE_ADMITTED';sizeMultiplier=1;reason='Forward proof and sufficient positive real-fill evidence passed.';}
 
-  return {state,sizeMultiplier,entryTier:tier,setupType:setup,runtimeRegime:regime,historical,historicalEvidenceIsDiagnosticOnly:true,regimeDisabled,contradictoryShadow,negativeRealProbation,shadow:{...s,independenceKey:'decisionDate+symbol+setup+regime',duplicateResolutionRule:'Keep the most adverse realized R for duplicate keys.',evidencePoolNote:'Pool includes accepted hypothetical shadow outcomes and reconciled resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split.'},real:{samples:Number(r.samples||0),winRatePct:r.winRatePct??null,averageRealizedR:r.averageRealizedR??null,recentSamples:r.recentSamples,recentAverageRealizedR:r.recentAverageRealizedR??null},thresholds:{minimumIndependentShadowSamplesForMicro:MIN_SHADOW_MICRO,minimumIndependentShadowSamples:MIN_SHADOW,minimumDistinctTradingDaysForMicro:MIN_SHADOW_DAYS_MICRO,minimumDistinctTradingDays:MIN_SHADOW_DAYS,minimumShadowWinRatePct:SHADOW_MIN_WIN,minimumShadowAverageR:SHADOW_MIN_AVG_R,minimumShadowProfitFactor:SHADOW_MIN_PROFIT_FACTOR,minimumRealSamplesForSuspensionCheck:MIN_REAL_PROBATION,minimumRealSamplesForFullAdmission:MIN_REAL_FULL,minimumRealAverageRForFullAdmission:REAL_MIN_AVG_R},reason};
+  return {state,sizeMultiplier,entryTier:tier,setupType:setup,runtimeRegime:regime,historical,historicalEvidenceIsDiagnosticOnly:true,requiredEvidenceHorizon:intradayOnly?'INTRADAY':'COST_ADJUSTED',regimeDisabled,contradictoryShadow,negativeRealProbation,shadow:{...s,independenceKey:'decisionDate+symbol+setup+regime',duplicateResolutionRule:'Keep the most adverse realized R for duplicate keys.',evidencePoolNote:'Pool includes horizon-matched, cost-adjusted accepted hypothetical shadow outcomes and reconciled resolved real Robinhood fills for this setup/regime; realFillSamples/shadowOnlySamples show the split.'},real:{samples:Number(r.samples||0),winRatePct:r.winRatePct??null,averageRealizedR:r.averageRealizedR??null,recentSamples:r.recentSamples,recentAverageRealizedR:r.recentAverageRealizedR??null},thresholds:{minimumIndependentShadowSamplesForMicro:MIN_SHADOW_MICRO,minimumIndependentShadowSamples:MIN_SHADOW,minimumDistinctTradingDaysForMicro:MIN_SHADOW_DAYS_MICRO,minimumDistinctTradingDays:MIN_SHADOW_DAYS,minimumShadowWinRatePct:SHADOW_MIN_WIN,minimumShadowAverageR:SHADOW_MIN_AVG_R,minimumShadowProfitFactor:SHADOW_MIN_PROFIT_FACTOR,minimumRealSamplesForSuspensionCheck:MIN_REAL_PROBATION,minimumRealSamplesForFullAdmission:MIN_REAL_FULL,minimumRealAverageRForFullAdmission:REAL_MIN_AVG_R},reason};
 }
 function apply(row){
   const a=admission(row);

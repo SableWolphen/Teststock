@@ -26,7 +26,7 @@ test('unknown numeric measurements never become zero',()=>{
 });
 
 test('admission excludes rejected research, unconfirmed fills and missing R',async t=>{
-  const shadow=Array.from({length:200},(_,i)=>({status:'RESOLVED',decision:'REJECTED',symbol:`S${i}`,createdDate:`2026-08-${String(1+i%28).padStart(2,'0')}`,setupType:'TREND',runtimeRegime:'UPTREND',realizedR:2}));
+  const shadow=Array.from({length:200},(_,i)=>({status:'RESOLVED',decision:'REJECTED',symbol:`S${i}`,createdDate:`2026-08-${String(1+i%28).padStart(2,'0')}`,setupType:'TREND',runtimeRegime:'UPTREND',afterCosts:true,grossRealizedR:2.01,transactionCostR:.01,realizedR:2}));
   const real=shadow.map((x,i)=>({...x,assetClass:'STOCK',outcome:'WIN',reconciledFromRobinhood:false,entryFilledAt:`${x.createdDate}T15:00:00Z`,symbol:`R${i}`}));
   const f=await fixture(t,{
     'docs/signal.json':{},
@@ -50,10 +50,15 @@ test('admission excludes rejected research, unconfirmed fills and missing R',asy
   assert.equal(row.profitabilityAdmission.state,'MICRO_PROBATION');
   assert.equal(row.profitabilityAdmission.shadow.samples,200);
   assert.equal(row.adaptiveSizeMultiplier,.25);
+  await g.write('docs/signal.json',{dayTradeOnlyEntryPolicy:{enabled:true}});
+  g.run('apply-profitability-admission.mjs');
+  const intradayRow=(await g.read('docs/data/stock-tournament.json')).liveQueue[0];
+  assert.equal(intradayRow.profitabilityAdmission.state,'SHADOW_ONLY','cost-adjusted multi-session evidence cannot prove a day-trading strategy');
+  assert.equal(intradayRow.profitabilityAdmission.requiredEvidenceHorizon,'INTRADAY');
   const h=await fixture(t,{
     'docs/signal.json':{},
     'docs/data/stock-tournament.json':{adaptiveLearning:{currentRegime:'UPTREND'},liveQueue:[{ticker:'ABC',setupType:'TREND',action:'AUTO_BUY_ELIGIBLE'}]},
-    'docs/data/shadow-trades.json':{trades:accepted.map(x=>({...x,realizedR:.05}))}
+    'docs/data/shadow-trades.json':{trades:accepted.map(x=>({...x,grossRealizedR:.06,realizedR:.05}))}
   });
   h.run('apply-profitability-admission.mjs');
   row=(await h.read('docs/data/stock-tournament.json')).liveQueue[0];
@@ -83,7 +88,7 @@ test('independent samples require valid dates and collapse case variants conserv
 });
 
 test('stock suspension uses confirmed journal losses even when cached aggregates are positive',async t=>{
-  const accepted=Array.from({length:200},(_,i)=>({status:'RESOLVED',decision:'ACCEPTED',symbol:`S${i}`,createdDate:`2026-09-${String(1+i%30).padStart(2,'0')}`,setupType:'TREND',runtimeRegime:'UPTREND',realizedR:2}));
+  const accepted=Array.from({length:200},(_,i)=>({status:'RESOLVED',decision:'ACCEPTED',symbol:`S${i}`,createdDate:`2026-09-${String(1+i%30).padStart(2,'0')}`,setupType:'TREND',runtimeRegime:'UPTREND',afterCosts:true,grossRealizedR:2.01,transactionCostR:.01,realizedR:2}));
   const journal=Array.from({length:18},(_,i)=>({assetClass:'STOCK',symbol:`R${i}`,setupType:'TREND',runtimeRegime:'UPTREND',reconciledFromRobinhood:true,outcome:i<12?'WIN':'LOSS',realizedR:i<12?2:-1,entryFilledAt:`2026-09-${String(i+1).padStart(2,'0')}T14:00:00Z`,finalExitAt:`2026-09-${String(i+1).padStart(2,'0')}T15:00:00Z`}));
   for(const [trades,state] of [[journal,'LIVE_SUSPENDED'],[journal.slice(0,12),'LIVE_ADMITTED']]) {
     const f=await fixture(t,{
