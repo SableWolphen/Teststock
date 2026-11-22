@@ -164,3 +164,16 @@ A high-confidence model can still lose money. The lane should maximize decision 
 - At +15% versus confirmed entry premium, protection may move to break-even. At +25%, protect at least +10%. At +35%, trail no lower than 15% below the confirmed executable-bid high-water mark.
 - A raised option protection floor may never move down. Reconcile any working exit before replacing it; never create duplicate sell orders.
 - Sell to close before the encoded session cutoff. Do not carry a Teststock option overnight, exercise it, or allow expiration to create stock exposure.
+
+
+## Fast option profit-exit decision packets (research / no order authority)
+
+`scripts/option-fast-profit-exit.mjs` implements a pure, conservative exit-review planner:
+- Use the **broker executable bid** on the exact confirmed contract; never midpoint/mark or the underlying stock's percent move.
+- Check quote age (5 seconds maximum in this planner), confirmed position size, trading session, and working sell-to-close orders before recommending any action.
+- For initial paper evaluation, use a +10% *gross* bid-price target **only if estimated net proceeds after known fees are positive**. This is a starting hypothesis, not validated optimal profitability.
+- Preserve protection rules: arm break-even at +15%, protect +10% at +25%, trail a 15%-below-bid-high floor from +35%. Exit reviews can be triggered when the executable bid retraces to the computed floor.
+- A session exit deadline or invalidated thesis outranks an ordinary target; an exit-order conflict requires broker reconciliation, never another sell submission.
+- The returned `EXIT_REVIEW_NOW` packet is **not** a broker order, nor a guarantee of fill. No automatically enabled live execution is provided by this helper. Real order type, venue liquidity, fill confirmation, and risk controls still require the independent execution layer.
+
+Robinhood offers option limit, stop-limit, stop-market and certain single-leg market orders, but no native options trailing stop. Stop-limit and limit orders can remain unfilled in fast markets; market and stop-market executions have price uncertainty. A software-simulated trail depends on a continuously healthy monitor and must never be advertised as broker-native protection. Test broker-supported exit order sequencing and cancellations explicitly before any production connection.
