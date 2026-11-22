@@ -42,6 +42,28 @@
     "Audit 'Bought options within limits' now accepts a market-wide name only if the cheap-stock rule bought it, the rule and the all-stocks scan are on, the scan found the name, and the stock was within the rule's price ceiling. Size, count and duplicate checks unchanged; 7 new test cases. Audit back to 37/37"
    ],
    "nextTest": "Read the autopsy after its first Actions run (stock prices fetched) to split the race's -$23 price move into the stock signal and time decay, and run it on the live options desk as its trades close. Re-test of fixed-target Dip exits stays closed unless pre-2023 data changes (it lost then). Day-trade ideas stay rejected (2,511 paper trades, none above PF 1.3)."
+  },
+  {
+   "week": "2026-11-22",
+   "worked": [
+    "Dip desk exit research (Dex, 2026-11-22 run) unchanged in ranking: current rule (bounce, 10 days, 5% stop) PF 2.14 on 42 trades to 2022 and 3.44 on 141 trades since 2023; +2% target PF 1.06/2.15; +3% target PF 0.90/2.53; 15-day hold PF 2.14/3.50 (near-identical to current); 3% stop PF 1.84/2.34. Research only; board picks the sell rule",
+    "'Dip rule on 14 funds' paper variant: 2 paper trades, 1 win, +$0.21 (PF 1.77) - far too few to judge",
+    "Gap-down buy (market-wide lab) is the least-bad day-trade idea: 437 paper trades, PF 0.94"
+   ],
+   "didNotWork": [
+    "First closed live cheap-stock option (board order 2026-11-11): PAYS call sold by the stock stop on 2026-11-16, -46.7% (-$35.06). Its paper desk has 0 closed trades (6 open), so live and paper cannot be compared yet; the live desk is off since 2026-11-19",
+    "Double 7s live: DIA +1.6% (partial, board trim), then DIA -2.0% and KRE -1.8% closed by the board's 'sell all and restart' on 2026-11-19; 3 new positions (XLY, XLF, XLE) opened 2026-11-20. Paper Double 7s: 4 closed, 0 wins, -$3.35 - paper and live both weak so far (auto-rollback after 10 live trades at PF < 1.0 still applies)",
+    "3 down days paper: 6 trades, 3 wins, PF 0.45",
+    "VOO cash park: -1.7% in under 3 hours when sold to fund the XLF buy on 2026-11-20 (one trade; parking adds round trips)",
+    "Market-wide day-trade lab, now 3,783 paper trades: gap PF 0.94, VWAP 0.54 (1,638), ORB 0.42 (1,144), momentum 0.34 (564); promising list still empty",
+    "Intraday VWAP dips: 22 paper trades, 8 wins, PF 0.27. Spread paper: 4 trades, PF 0.11 (unchanged)",
+    "Hourly audit has failed since 2026-11-20: 'Dip positions within limits' only accepts the core 7-fund list, but the live Double 7s edge is board-approved (2026-11-06) on its own 14-fund researched list and bought XLY, XLF, XLE. A fix was written and tested but not shipped by the CEO because it relaxes an audit check; it waits for the board (claudebot-proposals.json)",
+    "'Live Teststock intraday runner' workflow fails on every run seen this week (Teststock lane; outside the CEO's remit, reported only)"
+   ],
+   "changed": [
+    "No live or audit change this week. Proposal filed: let the Dip audit accept a fund only when the position names an enabled, board-approved edge whose own list holds it (size, count and duplicate checks unchanged; 8 test cases written)"
+   ],
+   "nextTest": "Compare the cheap-stock paper desk with the live PAYS loss once its 6 open paper calls close, and watch Double 7s toward its 10-live-trade rollback check. Day-trade ideas stay rejected (3,783 wide paper trades, all PF < 1) unless costs or data change materially; fixed-target Dip exits stay closed (lost before 2023)."
   }
  ]
 }
