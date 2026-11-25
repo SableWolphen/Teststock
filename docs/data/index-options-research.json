@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-25T15:16:55.286Z",
+  "generatedAt": "2026-11-25T15:33:08.075Z",
   "source": "TESTSTOCK_INDEX_OPTIONS_RESEARCH",
-  "sourceOptionsScanGeneratedAt": "2026-11-25T15:16:55.286Z",
+  "sourceOptionsScanGeneratedAt": "2026-11-25T15:33:08.075Z",
   "mode": "SEPARATE_BROKER_RESOLVED_SHADOW_FIRST",
   "indexes": [
     "XND",
@@ -14,10 +14,10 @@
       "underlyingType": "INDEX_OPTION",
       "proxySymbol": "QQQ",
       "marketExposure": "NASDAQ_100",
-      "proxyBias": "BEARISH",
-      "proxyPrice": 613.84,
+      "proxyBias": "MIXED",
+      "proxyPrice": 610.69,
       "proxyScore": 48.3,
-      "researchStatus": "BROKER_SHADOW_SAMPLE_READY",
+      "researchStatus": "WAIT_PROXY_DIRECTION",
       "liveExecutionEligible": false,
       "admissionStateRequired": [
         "MICRO_PROBATION",
@@ -27,9 +27,7 @@
       "brokerContractResolutionRequired": true,
       "brokerResolution": {
         "chainSymbol": "XND",
-        "allowedKinds": [
-          "LONG_PUT"
-        ],
+        "allowedKinds": [],
         "minDte": 3,
         "maxDte": 45,
         "requiresLiveTradability": true,
@@ -55,15 +53,15 @@
       "evidenceRule": "QQQ/DIA establishes research direction only. A shadow or live result counts only from the exact Robinhood-resolved XND/DJX contract using executable ask at entry and executable bid at exit.",
       "proxyReference": {
         "symbol": "QQQ",
-        "price": 613.84,
-        "ma20": 631,
-        "ma50": 638.13,
+        "price": 610.69,
+        "ma20": 629.37,
+        "ma50": 637.24,
         "ma200": null,
         "atrPct": null,
-        "direction": "BEARISH",
-        "optionBias": "BEARISH",
+        "direction": "MIXED",
+        "optionBias": "MIXED",
         "score": 48.3,
-        "momentumPct": -0.51,
+        "momentumPct": 0.332,
         "underlyingType": "INDEX_ETF",
         "source": "ALPACA_15MIN_PROXY"
       }
@@ -73,9 +71,9 @@
       "underlyingType": "INDEX_OPTION",
       "proxySymbol": "DIA",
       "marketExposure": "DOW_JONES_INDUSTRIAL_AVERAGE",
-      "proxyBias": "MIXED",
-      "proxyPrice": 492.7,
-      "proxyScore": 31.9,
+      "proxyBias": "UNKNOWN",
+      "proxyPrice": null,
+      "proxyScore": null,
       "researchStatus": "WAIT_PROXY_DIRECTION",
       "liveExecutionEligible": false,
       "admissionStateRequired": [
@@ -110,20 +108,7 @@
         "verifyWithTaxProfessional": true
       },
       "evidenceRule": "QQQ/DIA establishes research direction only. A shadow or live result counts only from the exact Robinhood-resolved XND/DJX contract using executable ask at entry and executable bid at exit.",
-      "proxyReference": {
-        "symbol": "DIA",
-        "price": 492.7,
-        "ma20": 497.87,
-        "ma50": 496.8,
-        "ma200": null,
-        "atrPct": null,
-        "direction": "MIXED",
-        "optionBias": "MIXED",
-        "score": 31.9,
-        "momentumPct": -1.181,
-        "underlyingType": "INDEX_ETF",
-        "source": "ALPACA_15MIN_PROXY"
-      }
+      "proxyReference": null
     }
   ],
   "rules": [
@@ -131,41 +116,33 @@
     "The exact index option contract must be resolved from Robinhood immediately before any broker shadow sample or future live order.",
     "Index options have a separate profitability-admission ledger and may never borrow stock-option admission.",
     "Tax treatment is informational only and can never create or increase trade eligibility.",
-    "Cash settlement and European exercise remove early-assignment risk but do not remove premium, liquidity, settlement, or expiration risk."
+    "Cash settlement and European exercise remove early-assignment risk but do not remove premium, liquidity, settlement, or expiration risk.",
+    "One or more proxy refreshes failed; affected index rows remain WAIT/UNKNOWN and cannot create eligibility."
   ],
   "proxyRefresh": {
     "source": "ALPACA_IEX_15MIN",
-    "generatedAt": "2026-11-25T15:16:55.286Z",
+    "generatedAt": "2026-11-25T15:33:08.075Z",
     "rows": [
       {
         "symbol": "QQQ",
-        "price": 613.84,
-        "ma20": 631,
-        "ma50": 638.13,
-        "ma200": null,
-        "atrPct": null,
-        "direction": "BEARISH",
-        "optionBias": "BEARISH",
-        "score": 48.3,
-        "momentumPct": -0.51,
-        "underlyingType": "INDEX_ETF",
-        "source": "ALPACA_15MIN_PROXY"
-      },
-      {
-        "symbol": "DIA",
-        "price": 492.7,
-        "ma20": 497.87,
-        "ma50": 496.8,
+        "price": 610.69,
+        "ma20": 629.37,
+        "ma50": 637.24,
         "ma200": null,
         "atrPct": null,
         "direction": "MIXED",
         "optionBias": "MIXED",
-        "score": 31.9,
-        "momentumPct": -1.181,
+        "score": 48.3,
+        "momentumPct": 0.332,
         "underlyingType": "INDEX_ETF",
         "source": "ALPACA_15MIN_PROXY"
       }
     ],
-    "errors": []
+    "errors": [
+      {
+        "proxySymbol": "DIA",
+        "error": "Alpaca 429: {\"message\": \"too many requests.\"}\n"
+      }
+    ]
   }
 }
