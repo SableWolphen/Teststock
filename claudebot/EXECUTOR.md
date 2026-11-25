@@ -253,6 +253,12 @@ Never edit the rules by hand: only promote.py may change them, and only within i
 
 # Part E: Dip desk (LIVE, stocks): after Part B, before the Paper Lab
 
+> **Clean-test hold (board 2026-11-25, "Dip desk on, options on"):** the next 20 dip trades exit only by
+> the planner's own rules (stop, bounce, time). Do not sell a dip position for any other reason (funding
+> another desk, "restart", trimming). If the board asks for such a sale, remind them of this hold once,
+> then follow their explicit decision. Free cash is shared: the dip desk always leaves $25 for the
+> options desk while it is flat (`risk.reserveForOptionsUsd`).
+
 Buys an ETF from dip_config.json `symbols` after a sharp dip in an uptrend, sells on the bounce.
 Up to `maxOpenPositions` at once, one per ETF. Board order: with `deployAllCash`, the planner splits
 all free cash (minus $1) across the day's signals; always buy exactly the `dollarAmount` it returns. Rules: `claudebot/dip_bot.py` + `claudebot/dip_config.json`. Ledger:

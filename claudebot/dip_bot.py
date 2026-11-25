@@ -202,8 +202,8 @@ def _plan(facts, cfg, led):
     if r.get("deployAllCash") and not brake:
         # board order: don't sit in cash when there is something to buy -> split free cash across today's signals
         slots = min(len(hits), r["maxOpenPositions"] - len(held))
-        size = round(max(size, (bp - r["minBuyingPowerAfterUsd"]) / max(slots, 1)), 2)
-        size = min(size, round(bp - r["minBuyingPowerAfterUsd"], 2))
+        size = round(max(size, (bp - reserve) / max(slots, 1)), 2)   # board 2026-11-25: keep the options reserve free
+        size = min(size, round(bp - reserve, 2))
         if size < 1:
             return none("not enough free cash")
     # Never propose more than the independent governor can authorize.
