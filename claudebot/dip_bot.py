@@ -89,11 +89,9 @@ def save_led(led, ps):
 
 
 def trading_days_between(a: date, b: date):
-    n, d = 0, a
-    while d < b:
-        d = date.fromordinal(d.toordinal() + 1)
-        if d.weekday() < 5: n += 1
-    return n
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import mktcal   # holidays are not trading days (the "day 10" exit counted Thanksgiving)
+    return mktcal.trading_days_between(a, b)
 
 
 def _plan(facts, cfg, led):

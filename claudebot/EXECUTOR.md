@@ -29,7 +29,7 @@ Right after cloning, read `docs/data/claudebot-gate.json` (written every 5 min i
   parts, no commit, no message. (GitHub already ran the paper desks, audit inputs and research.)
 - Otherwise (`needed` true, or the file is missing/stale): do the full run below. Robinhood is the
   authority: re-check everything live; the gate only decides whether to look.
-- If the file is stale (`freshUntil` passed) during market hours (8:30-15:00 CT, weekdays), GitHub's
+- If the file is stale (`freshUntil` passed) during market hours (8:30 CT to the close, trading days only; see `claudebot/mktcal.py`), GitHub's
   timer slipped: restart the all-day loop first with
   `gh api -X POST repos/SableWolphen/Teststock/actions/workflows/claudebot-market-loop.yml/dispatches -f ref=main`
   (a second copy just queues and exits, so this is always safe), then do the full run.
@@ -44,6 +44,10 @@ Exit code 0 = ALLOW: proceed. Exit code 1 = DENY: place NOTHING for that action,
 The governor reads the configs and ledgers itself and has hard ceilings of its own; never edit it,
 never skip it, never retry a denied order with different numbers to get around it. Cancelling the
 bot's own resting orders does not need it.
+
+**Market calendar (2026-11-26):** holidays and early closes live only in `claudebot/mktcal.py`. Every
+hour window below ends at that day's close (12:00 CT on early-close days: e.g. 8:40-14:59 becomes 8:40-11:59).
+When the market is closed the gate stays fresh until the next open, so closed-day runs stop at the gate.
 
 ## Run budget (board order 2026-11-02: keep the company running within the usage limit)
 
@@ -136,7 +140,7 @@ several days); `"paper"` = record only, place nothing. Tickers and rules live in
 `claudebot/options_config.json` (`underlyings`, in priority order).
 
 ## B1. Facts -> /tmp/ofacts.json
-- `now` (UTC, Z). `marketOpen` = weekday, 8:30-15:00 Central, and the SPY quote's
+- `now` (UTC, Z). `marketOpen` = `python3 -c "import sys; sys.path.insert(0,'claudebot'); import mktcal, datetime; print(mktcal.market_open(datetime.datetime.now(datetime.timezone.utc)))"` is True (trading day, 8:30 CT to the close: 15:00, or 12:00 on early-close days such as the day after Thanksgiving and Dec 24; holidays closed), and the SPY quote's
   venue_last_trade_time is within 15 minutes. If closed: write `{"now":..., "marketOpen": false}`,
   run plan (it returns none), skip to B3.
 - `accountValue` = get_portfolio total_value, `buyingPower` = buying_power.buying_power.

@@ -35,7 +35,9 @@ HARD = {   # never above these, whatever the configs say (changing them needs th
     "park.symbols": ["VOO", "SPY", "IVV"],   # broad S&P 500 funds only
     "spread.maxOpen": 1, "spread.widthUsd": 1, "spread.maxLossPctOfAccount": 80,   # board 2026-11-19: "set all the winnings up"
 }
-HOLIDAYS = {"2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"}
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import mktcal  # noqa: E402  shared holiday + early-close calendar
+HOLIDAYS = mktcal.HOLIDAYS
 
 
 def load(rel, d=None):
@@ -47,8 +49,7 @@ def load(rel, d=None):
 
 
 def market_open(now):
-    loc = now.astimezone(CT); m = loc.hour * 60 + loc.minute
-    return loc.weekday() < 5 and loc.date().isoformat() not in HOLIDAYS and 8 * 60 + 30 <= m < 15 * 60
+    return mktcal.market_open(now)   # regular hours, holidays and early closes (12:00 CT)
 
 
 def check(o, root_loader=load):

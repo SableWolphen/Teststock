@@ -5,9 +5,11 @@ import json, os, sys
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-HOLIDAYS = {"2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"}
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import mktcal  # noqa: E402  shared holiday + early-close calendar
+HOLIDAYS = mktcal.HOLIDAYS
 now = datetime.now(timezone.utc); ct = now.astimezone(ZoneInfo("America/Chicago"))
-if ct.weekday() >= 5 or ct.date().isoformat() in HOLIDAYS or not (10 * 60 <= ct.hour * 60 + ct.minute <= 15 * 60 + 30):
+if ct.weekday() >= 5 or ct.date().isoformat() in HOLIDAYS or not (10 * 60 <= ct.hour * 60 + ct.minute <= mktcal.close_minute(ct.date()) + 30):
     print("market closed: nothing to watch"); sys.exit(0)
 def load(n):
     try: return json.load(open(os.path.join(ROOT, "docs", "data", n)))

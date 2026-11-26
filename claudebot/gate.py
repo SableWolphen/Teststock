@@ -23,7 +23,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 OUT = os.path.join(ROOT, "docs", "data", "claudebot-gate.json")
 CT = ZoneInfo("America/Chicago")
-HOLIDAYS = {"2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"}
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import mktcal  # noqa: E402  shared holiday + early-close calendar
+HOLIDAYS = mktcal.HOLIDAYS
 H = None
 
 
@@ -106,8 +108,11 @@ def main():
     if os.environ.get("GATE_TEST_NOW"):               # test mode: pretend it is this time (writes nothing)
         now = datetime.fromisoformat(os.environ["GATE_TEST_NOW"].replace("Z", "+00:00"))
     local = now.astimezone(CT); today = local.date().isoformat()
-    market = local.weekday() < 5 and today not in HOLIDAYS and 8 * 60 + 30 <= local.hour * 60 + local.minute < 15 * 60
-    out = {"generatedAt": now.isoformat().replace("+00:00", "Z"), "freshUntil": (now + timedelta(minutes=45)).isoformat().replace("+00:00", "Z"),
+    market = mktcal.market_open(now)
+    # Closed (night, weekend, holiday, after an early close): nothing can trade until the next open, so the
+    # gate stays valid until then and hourly Claude runs stop instead of re-checking Robinhood all day.
+    fresh = now + timedelta(minutes=45) if market else max(now + timedelta(minutes=45), mktcal.next_open(now))
+    out = {"generatedAt": now.isoformat().replace("+00:00", "Z"), "freshUntil": fresh.isoformat().replace("+00:00", "Z"),
            "marketOpen": market, "needed": False, "reasons": [], "checked": []}
     sp = importlib.util.spec_from_file_location("db", os.path.join(HERE, "dip_bot.py")); db = importlib.util.module_from_spec(sp); sp.loader.exec_module(db)
     cfg, led = db.load(db.CONFIG), db.load(db.LEDGER)

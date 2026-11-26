@@ -187,7 +187,9 @@ def run(now=None):
     # ---------------- Analyst: check each active research agent's OWN output
     from zoneinfo import ZoneInfo
     ct = now.astimezone(ZoneInfo("America/Chicago"))
-    mkt = ct.weekday() < 5 and 8 * 60 + 30 <= ct.hour * 60 + ct.minute < 15 * 60
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import mktcal   # holidays and early closes (Thanksgiving 2026 gave a false "Trader is running" fail)
+    mkt = mktcal.market_open(now)
     fired = {f["agent"] for f in (load(D("docs", "data", "claudebot-hr.json"), {}) or {}).get("fired", [])}
     a = Report("analyst", "Head of Research", ["scout", "vega", "clio", "moxie", "sim", "echo"])
 

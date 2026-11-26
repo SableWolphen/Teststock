@@ -63,7 +63,9 @@ PAPER_ACCOUNT = 117.0
 # 2026-11-03 live prices they averaged -12% per trade (8% bid/ask cost, and 30-min moves reversed 14%).
 # Only the ensemble versions (forecast must be positive) and the Gatekeeper-approved version keep trading.
 CEO_RETIRED = {v["id"] for v in VARIANTS if v["mode"] != "ens"}
-HOLIDAYS = {"2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"}
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import mktcal  # noqa: E402  shared holiday + early-close calendar
+HOLIDAYS = mktcal.HOLIDAYS
 H = None
 DEBUG = []
 OCC = re.compile(r"^([A-Z]+)(\d{6})([CP])(\d{8})$")
@@ -267,7 +269,7 @@ def main():
         for mode in ("mom", "fade", "ens"):
             print("pick", mode, pick(now, mv, mode=mode))
         print("why", DEBUG); return
-    if local.weekday() >= 5 or day in HOLIDAYS or not (8 * 60 + 35 <= mins <= 15 * 60):
+    if local.weekday() >= 5 or day in HOLIDAYS or not (8 * 60 + 35 <= mins <= mktcal.close_minute(day)):
         print("market closed"); return
     st = load() or {}
     st.setdefault("schemaVersion", 1); st["mode"] = "paper"
@@ -295,7 +297,7 @@ def main():
             why = "profit target"
         elif bid > 0 and bid <= p["ask"] * (1 - v["sl"] / 100):
             why = "stop"
-        elif mins >= 14 * 60 + 45 or p["day"] != day:
+        elif mins >= mktcal.close_minute(day) - 15 or p["day"] != day:
             why = "end of day"
         elif v.get("maxMin") and now - datetime.fromisoformat(p["boughtAt"].replace("Z", "+00:00")) >= timedelta(minutes=v["maxMin"]):
             why = "time limit"
